@@ -15,9 +15,42 @@ from apps.management.selection import (
     toggle_id,
 )
 
-from .filters import FactsFilter
+from .filters import (
+    LABELS_MODE_ALL,
+    LABELS_MODE_ANY,
+    FactsFilter,
+    coerce_label_ids,
+    normalize_facts_filter_data,
+)
 from .forms import FactForm
 from .generate_pdf import generate_facts_pdf
+
+
+def labels_mode_from(filter_data):
+    """The stored any/all match mode, defaulting to any."""
+    mode = filter_data.get("labels_mode")
+    return LABELS_MODE_ALL if mode == LABELS_MODE_ALL else LABELS_MODE_ANY
+
+
+def label_filter_options(matter, filter_data):
+    """Every label the matter can filter on, flagged with its selected state."""
+    if not matter:
+        return []
+    selected = set(coerce_label_ids(filter_data.get("labels")))
+    if not selected:
+        selected = set(coerce_label_ids(filter_data.get("label")))
+    labels = Label.objects.filter(Q(matter=matter) | Q(matter__isnull=True)).order_by(
+        "name"
+    )
+    return [
+        {
+            "id": label.id,
+            "name": label.name,
+            "color": label.color,
+            "selected": str(label.id) in selected,
+        }
+        for label in labels
+    ]
 
 
 def get_facts_data(request, matter, matter_id):
@@ -57,10 +90,16 @@ def get_facts_data(request, matter, matter_id):
     visible_ids = [fact.id for fact in facts]
     all_selected = all_visible_selected(selected_facts, visible_ids)
 
+    label_options = label_filter_options(matter, filter_data)
+    active_labels = [option for option in label_options if option["selected"]]
+
     return {
         "facts": facts,
         "selected_facts": selected_facts,
         "all_selected": all_selected,
+        "label_options": label_options,
+        "active_labels": active_labels,
+        "labels_mode": labels_mode_from(filter_data),
         "fact_colors": [value for value, _ in Fact.COLOR_CHOICES if value],
         "current_order": current_order,
         "keyword": keyword,
@@ -548,25 +587,75 @@ def facts_filter(request, matter_id):
     filter_session_key = get_session_key("facts_filter", matter_id)
 
     if request.method == "POST":
+        # labels is multi-valued, so read it via getlist (the items() loop
+        # would keep only the last checked chip).
         filter_data = {
             key: value
             for key, value in request.POST.items()
-            if key != "csrfmiddlewaretoken"
+            if key not in ("csrfmiddlewaretoken", "labels")
         }
+        filter_data["labels"] = request.POST.getlist("labels")
         request.session[filter_session_key] = filter_data
         request.session.modified = True
         return HttpResponse(status=204, headers={"HX-Trigger": "factsChanged"})
 
     # GET - show filter modal
-    filter_data = request.session.get(filter_session_key, {})
+    filter_data = normalize_facts_filter_data(
+        request.session.get(filter_session_key, {})
+    )
 
     queryset = Fact.objects.filter(matter=matter) if matter else Fact.objects.none()
 
     filter_obj = FactsFilter(filter_data, queryset=queryset, matter=matter)
 
     return render(
-        request, "case/facts/filter.html", {"filter": filter_obj, "matter": matter}
+        request,
+        "case/facts/filter.html",
+        {
+            "filter": filter_obj,
+            "matter": matter,
+            "label_options": label_filter_options(matter, filter_data),
+        },
     )
+
+
+@login_required
+def facts_filter_label(request, matter_id, label_id):
+    """Toggle one label in the active label filter (0 clears them all)."""
+    filter_session_key = get_session_key("facts_filter", matter_id)
+    filter_data = normalize_facts_filter_data(
+        request.session.get(filter_session_key, {})
+    )
+    labels = filter_data["labels"]
+    if label_id == 0:
+        labels = []
+    elif str(label_id) in labels:
+        labels = [item for item in labels if item != str(label_id)]
+    else:
+        labels = labels + [str(label_id)]
+    filter_data["labels"] = labels
+
+    request.session[filter_session_key] = filter_data
+    request.session.modified = True
+
+    return redirect("case:facts-list", matter_id=matter_id)
+
+
+@login_required
+def facts_filter_labels_mode(request, matter_id, mode):
+    """Switch the label filter between any-of and all-of matching."""
+    filter_session_key = get_session_key("facts_filter", matter_id)
+    filter_data = normalize_facts_filter_data(
+        request.session.get(filter_session_key, {})
+    )
+    filter_data["labels_mode"] = (
+        LABELS_MODE_ALL if mode == LABELS_MODE_ALL else LABELS_MODE_ANY
+    )
+
+    request.session[filter_session_key] = filter_data
+    request.session.modified = True
+
+    return redirect("case:facts-list", matter_id=matter_id)
 
 
 @login_required
