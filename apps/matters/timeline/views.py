@@ -39,7 +39,7 @@ def timeline_list(request, id):
     facts = Fact.objects.filter(matter=matter.id).order_by("date", "time")
 
     # Apply filters if present
-    filterset = FactsFilter(request.GET, queryset=facts)
+    filterset = FactsFilter(request.GET, queryset=facts, matter=matter)
     facts = filterset.qs
 
     context = {

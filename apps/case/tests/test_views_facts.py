@@ -387,3 +387,31 @@ class TestFactsBulkActions:
         assert response.status_code == 200
         assert fact.labels.count() == 0
         assert other_fact.labels.count() == 0
+
+
+class TestFactsLabelFilter:
+    def test_filter_modal_lists_matter_labels(
+        self, client_with_matter, label, global_label
+    ):
+        matter_id = client_with_matter.matter.id
+        response = client_with_matter.get(f"/case/{matter_id}/facts/filter/")
+        assert response.status_code == 200
+        assert label.name.encode() in response.content
+        assert global_label.name.encode() in response.content
+
+    def test_applied_label_narrows_list(self, client_with_matter, user, label):
+        matter = client_with_matter.matter
+        tagged = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-01", description="Tagged fact"
+        )
+        tagged.labels.add(label)
+        Fact.objects.create(
+            user=user, matter=matter, date="2024-01-02", description="Untagged fact"
+        )
+        response = client_with_matter.post(
+            f"/case/{matter.id}/facts/filter/", {"label": label.id}
+        )
+        assert response.status_code == 204
+        response = client_with_matter.get(f"/case/{matter.id}/facts/list/")
+        assert b"Tagged fact" in response.content
+        assert b"Untagged fact" not in response.content
