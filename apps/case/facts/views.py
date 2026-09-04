@@ -31,7 +31,7 @@ def get_facts_data(request, matter, matter_id):
 
         # Apply filters if present
         if filter_data:
-            facts_filter = FactsFilter(filter_data, queryset=queryset)
+            facts_filter = FactsFilter(filter_data, queryset=queryset, matter=matter)
             facts = facts_filter.qs
         else:
             facts = queryset
@@ -562,7 +562,7 @@ def facts_filter(request, matter_id):
 
     queryset = Fact.objects.filter(matter=matter) if matter else Fact.objects.none()
 
-    filter_obj = FactsFilter(filter_data, queryset=queryset)
+    filter_obj = FactsFilter(filter_data, queryset=queryset, matter=matter)
 
     return render(
         request, "case/facts/filter.html", {"filter": filter_obj, "matter": matter}
