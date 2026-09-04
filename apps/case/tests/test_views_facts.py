@@ -409,9 +409,87 @@ class TestFactsLabelFilter:
             user=user, matter=matter, date="2024-01-02", description="Untagged fact"
         )
         response = client_with_matter.post(
-            f"/case/{matter.id}/facts/filter/", {"label": label.id}
+            f"/case/{matter.id}/facts/filter/", {"labels": [label.id]}
         )
         assert response.status_code == 204
         response = client_with_matter.get(f"/case/{matter.id}/facts/list/")
         assert b"Tagged fact" in response.content
         assert b"Untagged fact" not in response.content
+
+    def test_legacy_single_label_session_still_filters(
+        self, client_with_matter, user, label
+    ):
+        matter = client_with_matter.matter
+        tagged = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-01", description="Tagged fact"
+        )
+        tagged.labels.add(label)
+        Fact.objects.create(
+            user=user, matter=matter, date="2024-01-02", description="Untagged fact"
+        )
+        session = client_with_matter.session
+        session[f"facts_filter_{matter.id}"] = {"label": str(label.id)}
+        session.save()
+        response = client_with_matter.get(f"/case/{matter.id}/facts/list/")
+        assert b"Tagged fact" in response.content
+        assert b"Untagged fact" not in response.content
+
+    def test_toolbar_toggle_adds_then_removes_label(
+        self, client_with_matter, user, label
+    ):
+        matter = client_with_matter.matter
+        tagged = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-01", description="Tagged fact"
+        )
+        tagged.labels.add(label)
+        Fact.objects.create(
+            user=user, matter=matter, date="2024-01-02", description="Untagged fact"
+        )
+        url = f"/case/{matter.id}/facts/filter/label/{label.id}/"
+        response = client_with_matter.get(url, follow=True)
+        assert b"Tagged fact" in response.content
+        assert b"Untagged fact" not in response.content
+        response = client_with_matter.get(url, follow=True)
+        assert b"Untagged fact" in response.content
+
+    def test_toolbar_clear_labels(self, client_with_matter, user, label):
+        matter = client_with_matter.matter
+        Fact.objects.create(
+            user=user, matter=matter, date="2024-01-02", description="Untagged fact"
+        )
+        client_with_matter.get(f"/case/{matter.id}/facts/filter/label/{label.id}/")
+        response = client_with_matter.get(
+            f"/case/{matter.id}/facts/filter/label/0/", follow=True
+        )
+        assert b"Untagged fact" in response.content
+        session = client_with_matter.session
+        assert session[f"facts_filter_{matter.id}"]["labels"] == []
+
+    def test_labels_mode_all(self, client_with_matter, user, label, global_label):
+        matter = client_with_matter.matter
+        both = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-01", description="Both labels"
+        )
+        both.labels.add(label, global_label)
+        one = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-02", description="One label"
+        )
+        one.labels.add(label)
+        client_with_matter.post(
+            f"/case/{matter.id}/facts/filter/",
+            {"labels": [label.id, global_label.id]},
+        )
+        response = client_with_matter.get(f"/case/{matter.id}/facts/list/")
+        assert b"One label" in response.content
+        response = client_with_matter.get(
+            f"/case/{matter.id}/facts/filter/labels-mode/all/", follow=True
+        )
+        assert b"Both labels" in response.content
+        assert b"One label" not in response.content
+
+    def test_list_toolbar_shows_active_labels(self, client_with_matter, label):
+        matter = client_with_matter.matter
+        client_with_matter.get(f"/case/{matter.id}/facts/filter/label/{label.id}/")
+        response = client_with_matter.get(f"/case/{matter.id}/facts/list/")
+        assert b'id="facts-labels-filter"' in response.content
+        assert b"toggle-active" in response.content

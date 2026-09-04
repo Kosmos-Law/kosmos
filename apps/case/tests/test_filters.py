@@ -179,8 +179,52 @@ class TestFactsFilter:
     def test_filter_by_label(self, matter, fact, label):
         fact.labels.add(label)
         queryset = Fact.objects.filter(matter=matter)
+        filter_obj = FactsFilter(
+            {"labels": [label.id]}, queryset=queryset, matter=matter
+        )
+        assert fact in filter_obj.qs
+
+    def test_filter_by_legacy_single_label_key(self, matter, fact, label):
+        fact.labels.add(label)
+        queryset = Fact.objects.filter(matter=matter)
         filter_obj = FactsFilter({"label": label.id}, queryset=queryset, matter=matter)
         assert fact in filter_obj.qs
+
+    def test_filter_by_labels_any(self, user, matter, fact, label, global_label):
+        fact.labels.add(label)
+        other = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-26", description="Other"
+        )
+        other.labels.add(global_label)
+        untagged = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-27", description="Untagged"
+        )
+        queryset = Fact.objects.filter(matter=matter)
+        filter_obj = FactsFilter(
+            {"labels": [label.id, global_label.id], "labels_mode": "any"},
+            queryset=queryset,
+            matter=matter,
+        )
+        results = list(filter_obj.qs)
+        assert fact in results
+        assert other in results
+        assert untagged not in results
+        assert len(results) == 2
+
+    def test_filter_by_labels_all(self, user, matter, fact, label, global_label):
+        fact.labels.add(label, global_label)
+        partial = Fact.objects.create(
+            user=user, matter=matter, date="2024-01-26", description="Partial"
+        )
+        partial.labels.add(label)
+        queryset = Fact.objects.filter(matter=matter)
+        filter_obj = FactsFilter(
+            {"labels": [label.id, global_label.id], "labels_mode": "all"},
+            queryset=queryset,
+            matter=matter,
+        )
+        results = list(filter_obj.qs)
+        assert results == [fact]
 
     def test_order_by_description(self, matter, fact):
         queryset = Fact.objects.filter(matter=matter)
@@ -192,4 +236,4 @@ class TestFactsFilter:
     def test_label_queryset_filtered(self, matter, label):
         queryset = Fact.objects.filter(matter=matter)
         filter_obj = FactsFilter({}, queryset=queryset, matter=matter)
-        assert label in filter_obj.filters["label"].queryset
+        assert label in filter_obj.filters["labels"].queryset

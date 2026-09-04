@@ -5,6 +5,14 @@
      @click.prevent="toggle()"
      :aria-expanded="open"><i class="icon-tag"></i>{{ label.name }}</a>
   <ul class="dropdown-menu" x-ref="menu" x-show="open">
+    {% if filter_url %}
+      <li>
+        <a class="dropdown-item"
+           href="#"
+           hx-get="{{ filter_url }}"
+           hx-target="{{ filter_target }}"><i class="icon-list-filter"></i> Filter by Label</a>
+      </li>
+    {% endif %}
     <li>
       <a class="dropdown-item"
          href="#"
