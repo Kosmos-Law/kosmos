@@ -58,19 +58,6 @@ def _kind_param(source, default="classic"):
     return kind if kind in VALID_KINDS else "classic"
 
 
-# Models only agentic conversations may use (premium pricing tier); a
-# classic create that names one falls back to the default Claude pick.
-# Mirrors the retired research chat's server-side model gate.
-AGENT_ONLY_LLMS = {"claude-fable"}
-AGENT_ONLY_FALLBACK = "claude-opus-5"
-
-
-def _llm_for_kind(llm, kind):
-    if kind != "agent" and llm in AGENT_ONLY_LLMS:
-        return AGENT_ONLY_FALLBACK
-    return llm
-
-
 def get_accessible_matters():
     """Get all matters accessible to logged-in users."""
     return Matter.objects.all()
@@ -303,7 +290,6 @@ def new_conversation_view(request, matter_id):
     provided_title = request.GET.get("title", "").strip()
 
     kind = _kind_param(request.GET)
-    llm = _llm_for_kind(llm, kind)
 
     # Create a dummy conversation object for template (not saved). When the
     # user named the chat from the new-conversation prompt, use that name as
@@ -346,7 +332,7 @@ def create_conversation(request, matter_id):
     conversation = Conversation.objects.create(
         matter=matter,
         title=request.POST.get("title", "").strip() or "New Conversation",
-        llm=_llm_for_kind(llm, kind),
+        llm=llm,
         kind=kind,
         user=request.user,
     )
@@ -469,7 +455,7 @@ def send_message(request, matter_id):
         conversation = Conversation.objects.create(
             matter=matter,
             title=title,
-            llm=_llm_for_kind(llm, kind),
+            llm=llm,
             kind=kind,
             user=request.user,
         )

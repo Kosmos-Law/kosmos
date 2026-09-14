@@ -95,7 +95,8 @@
   </td>
   <td class="labels{% if fact.color %} hl-{{ fact.color|lower }}{% endif %}">
     {% for label in fact.labels.all %}
-      {% include "case/labels/badge.html" with object_type="fact" object=fact %}
+      {% url 'case:facts-filter-label' fact.matter_id label.id as label_filter_url %}
+      {% include "case/labels/badge.html" with object_type="fact" object=fact filter_url=label_filter_url filter_target="#facts" %}
     {% empty %}
       <a href="#"
          class="add-icon"

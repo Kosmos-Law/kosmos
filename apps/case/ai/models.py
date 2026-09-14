@@ -14,8 +14,8 @@ class Conversation(AuditMixin, models.Model):
     # Note: "claude" (Sonnet 4.6) and "gemini-pro" (Gemini 2.5 Pro) were
     # retired from the picker but remain supported in the dispatch/selector
     # plumbing so existing conversations on those models keep working.
-    # "claude-fable" (Fable 5, double Opus pricing) is offered for agentic
-    # conversations only; the views fall a classic create back to Opus 5.
+    # "claude-fable" (Fable 5, double Opus pricing) is available in both
+    # Classic and Agentic mode.
     LLM_CHOICES = [
         ("claude-fable", "Claude Fable 5"),
         ("claude-opus-5", "Claude Opus 5"),

@@ -226,3 +226,64 @@ Create label inline form (in apply modal)
 .create-label-form button {
   white-space: nowrap;
 }
+
+/* ------------------------------------------------
+Facts filter: label chips (modal) and toolbar swatches
+------------------------------------------------ */
+
+.filter .filter-labels-flow {
+  padding-top: 0.25rem;
+}
+
+/* A chip is a real <label> around a visually hidden checkbox, so it keeps
+   keyboard focus and posts like any other form control. Unchecked chips
+   fade back and show the tag; checked chips come forward and show a check,
+   which reads the same in the filled (light) and outline (dark) badge
+   styles without a per-theme rule. */
+.filter-label-chip {
+  cursor: pointer;
+  opacity: 0.6;
+  position: relative;
+  user-select: none;
+}
+
+.filter-label-chip input[type="checkbox"] {
+  height: 0;
+  margin: 0;
+  opacity: 0;
+  position: absolute;
+  width: 0;
+}
+
+.filter-label-chip .icon-check {
+  display: none;
+}
+
+.filter-label-chip:has(:checked) {
+  opacity: 1;
+}
+
+.filter-label-chip:has(:checked) .icon-tag {
+  display: none;
+}
+
+.filter-label-chip:has(:checked) .icon-check {
+  display: inline;
+}
+
+.filter-label-chip:has(:focus-visible) {
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.label-swatch {
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.75rem;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+  width: 0.75rem;
+}
+
+.facts-labels-menu-mode {
+  border-top: solid 1px var(--border-medium);
+}

@@ -14,7 +14,42 @@
             hx-target="#htmx-modal-container"
             hx-post="{% url 'case:facts-filter' matter.id %}">
         {% csrf_token %}
-        {{ filter.form }}
+        {% for field in filter.form %}
+          {% if field.name == "labels" %}
+            {% comment %}
+              Labels render as toggleable chips rather than the default
+              checkbox list, so the modal reads like the row badges. The
+              real checkboxes stay in the DOM (visually hidden) so the
+              form posts one labels= value per chip.
+            {% endcomment %}
+            {{ field.label_tag }}
+            <div>
+              {% if label_options %}
+                <div class="labels-flow filter-labels-flow">
+                  {% for option in label_options %}
+                    <label class="app-badge label-{{ option.color }} filter-label-chip">
+                      <input type="checkbox"
+                             name="labels"
+                             value="{{ option.id }}"
+                             {% if option.selected %}checked{% endif %}>
+                      <i class="icon-tag"></i><i class="icon-check"></i>{{ option.name }}
+                    </label>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="bulk-labels-empty">No labels yet. Create labels in the Labels tab first.</span>
+              {% endif %}
+              {{ field.errors }}
+            </div>
+          {% else %}
+            {{ field.label_tag }}
+            <div>
+              {{ field }}
+              {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+              {{ field.errors }}
+            </div>
+          {% endif %}
+        {% endfor %}
       </form>
     </div>
     <div class="modal-footer">

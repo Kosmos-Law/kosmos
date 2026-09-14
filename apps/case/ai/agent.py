@@ -35,6 +35,11 @@ logger = logging.getLogger(__name__)
 AGENT_HISTORY_CEILING = 0.45
 AGENT_CLAUDE_EFFORT = "high"
 AGENT_MAX_OUTPUT_TOKENS = 16_000
+# Fable's thinking is mandatory and always-on (it can't be disabled, unlike
+# the other Claude models here) and runs noticeably deeper per turn; at the
+# standard budget it can burn the whole turn on reasoning before ever
+# reaching a tool call or an answer.
+AGENT_FABLE_MAX_OUTPUT_TOKENS = 32_000
 
 REFUSAL_MESSAGE = (
     "The model declined this request (safety refusal). Try rephrasing, or "
@@ -140,7 +145,11 @@ def run_agent_request(
             on_thinking=writer.thinking,
             on_turn=writer.turn,
             on_note=writer.note,
-            max_tokens=AGENT_MAX_OUTPUT_TOKENS,
+            max_tokens=(
+                AGENT_FABLE_MAX_OUTPUT_TOKENS
+                if llm == "claude-fable"
+                else AGENT_MAX_OUTPUT_TOKENS
+            ),
         )
         if llm in GEMINI_MODELS:
             result = send_to_gemini_with_tools(
