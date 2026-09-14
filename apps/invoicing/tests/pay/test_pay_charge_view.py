@@ -89,6 +89,19 @@ class TestPayChargeFailures:
         sent_invoice.refresh_from_db()
         assert sent_invoice.status == "SENT"
 
+    def test_soft_decline_returns_402_not_success(self, public_client, sent_invoice):
+        """A processor can return a transaction that just isn't accepted
+        (Confido: status_v2 ERROR) instead of raising at the GraphQL layer.
+        This must still fail the request — not report success with nothing
+        recorded, which is what the client actually saw the charge as."""
+        response = _post_charge(public_client, sent_invoice, token="fake-soft-decline")
+        assert response.status_code == 402
+        assert response.json()["success"] is False
+
+        assert not Payment.objects.exists()
+        sent_invoice.refresh_from_db()
+        assert sent_invoice.status == "SENT"
+
     def test_already_paid_invoice_returns_400_no_charge(
         self, public_client, paid_invoice
     ):
