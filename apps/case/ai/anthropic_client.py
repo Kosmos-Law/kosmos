@@ -139,11 +139,19 @@ def count_claude_tokens(
     return result.input_tokens
 
 
+_MAX_TOKENS_RETRY_NUDGE = (
+    "Your last turn hit the output limit before you wrote any answer "
+    "(it was likely all spent on reasoning). Think less and answer "
+    "directly and concisely."
+)
+
+
 def send_to_claude(
     system_context: str,
     messages: list[dict],
     model: str = "claude-sonnet-4-6",
     is_cancelled: Callable[[], bool] | None = None,
+    max_tokens: int = 4096,
 ) -> tuple[str, int, int]:
     """
     Send a conversation to Claude and get a response using streaming.
@@ -158,14 +166,27 @@ def send_to_claude(
     under the model window even when always-included content (highlights,
     facts, notes, reference convos) inflates the fixed portion.
 
+    On some models (Fable) thinking is mandatory and always-on and can run
+    deep enough to consume the whole turn before any visible text is
+    written — stop_reason "max_tokens" with an empty response. When that
+    happens the request is retried once with a nudge to think less and
+    answer directly, rather than silently returning nothing (see
+    send_to_claude_with_tools, which has the same retry for the agent
+    loop).
+
     Args:
         system_context: The system prompt with matter context
         messages: List of {"role": "user"|"assistant", "content": str}
         model: Claude model to use — see CLAUDE_MODELS in tasks.py
         is_cancelled: Optional callback that returns True if request should be cancelled
+        max_tokens: Output token ceiling for the turn — see CLASSIC_MAX_OUTPUT_TOKENS
+            in tasks.py; models with mandatory thinking need more headroom.
 
     Returns:
-        tuple of (response_text, input_tokens, output_tokens)
+        tuple of (response_text, input_tokens, output_tokens). input_tokens
+        is the whole prompt (Anthropic reports the uncached portion alone
+        in usage.input_tokens; the cached portion is added back in here —
+        see the cost-accounting note below).
 
     Raises:
         anthropic.APIError: If the API call fails
@@ -175,43 +196,68 @@ def send_to_claude(
 
     formatted_messages = _format_messages(messages)
 
-    # Use streaming to allow cancellation
-    response_parts = []
-    input_tokens = 0
-    output_tokens = 0
+    def _stream_once(send_messages):
+        response_parts = []
+        with client.messages.stream(
+            model=model,
+            max_tokens=max_tokens,
+            system=_build_system(system_context),
+            messages=send_messages,
+        ) as stream:
+            for text in stream.text_stream:
+                # Check for cancellation on each chunk
+                if is_cancelled and is_cancelled():
+                    raise InterruptedError("Request cancelled")
+                response_parts.append(text)
+            final_message = stream.get_final_message()
 
-    with client.messages.stream(
-        model=model,
-        max_tokens=4096,
-        system=_build_system(system_context),
-        messages=formatted_messages,
-    ) as stream:
-        for text in stream.text_stream:
-            # Check for cancellation on each chunk
-            if is_cancelled and is_cancelled():
-                raise InterruptedError("Request cancelled")
-            response_parts.append(text)
-
-        # Get final usage stats
-        final_message = stream.get_final_message()
-        input_tokens = final_message.usage.input_tokens
-        output_tokens = final_message.usage.output_tokens
-
-        # Log prompt-cache usage when available so we can see hit rate in logs.
-        cache_created = (
-            getattr(final_message.usage, "cache_creation_input_tokens", 0) or 0
-        )
-        cache_read = getattr(final_message.usage, "cache_read_input_tokens", 0) or 0
-        if cache_created or cache_read:
+        usage = final_message.usage
+        cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
+        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        if cache_write or cache_read:
             logger.info(
-                "Claude prompt cache: created=%d read=%d input=%d model=%s",
-                cache_created,
+                "Claude prompt cache: created=%d read=%d uncached=%d model=%s",
+                cache_write,
                 cache_read,
-                input_tokens,
+                usage.input_tokens or 0,
                 model,
             )
+        # usage.input_tokens is the uncached portion alone; Message has no
+        # column for the cache split (unlike agent_run.usage, which keeps
+        # it), so fold the cached portion back in here. pricing.message_cost
+        # then prices classic messages as fully uncached at the full input
+        # rate — a deliberate overestimate (see its docstring) — but only
+        # if this total is the true prompt size; returning the uncached
+        # count alone silently dropped the (often much larger) cached
+        # portion from the estimate entirely, undercounting real cost on
+        # every turn after the first in a conversation.
+        total_input = (usage.input_tokens or 0) + cache_read + cache_write
+        return (
+            "".join(response_parts),
+            final_message,
+            total_input,
+            usage.output_tokens or 0,
+        )
 
-    response_text = "".join(response_parts)
+    response_text, final_message, input_tokens, output_tokens = _stream_once(
+        formatted_messages
+    )
+
+    if final_message.stop_reason == "max_tokens" and not response_text.strip():
+        logger.warning(
+            "Claude classic turn hit max_tokens with no text (model=%s); retrying",
+            model,
+        )
+        # The failed attempt still billed its (thinking-only) tokens; fold
+        # them into the totals returned to the caller so cost reporting
+        # isn't undercounted by a silently discarded call.
+        retry_text, final_message, retry_input, retry_output = _stream_once(
+            formatted_messages + [{"role": "user", "content": _MAX_TOKENS_RETRY_NUDGE}]
+        )
+        response_text = retry_text
+        input_tokens += retry_input
+        output_tokens += retry_output
+
     return response_text, input_tokens, output_tokens
 
 
