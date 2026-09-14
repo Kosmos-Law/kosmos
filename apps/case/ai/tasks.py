@@ -32,6 +32,14 @@ CLAUDE_MODELS = {
 # conversations get their default from the surface that creates them.
 CLAUDE_FALLBACK_MODEL = "claude-sonnet-4-6"
 
+# Output token ceiling for a classic (single-completion) Claude turn.
+CLASSIC_MAX_OUTPUT_TOKENS = 4096
+# Fable's thinking is mandatory and always-on (unlike the other Claude
+# models here) and reasons noticeably deeper per turn; at the standard
+# ceiling it can burn the whole turn on reasoning before writing any
+# visible answer. See the matching bump in agent.py for agentic mode.
+CLASSIC_FABLE_MAX_OUTPUT_TOKENS = 16_000
+
 # Picker choice -> Gemini model ID. "gemini-pro" is the retired 2.5 Pro pin.
 GEMINI_MODELS = {
     "gemini-flash": "gemini-2.5-flash",
@@ -490,6 +498,11 @@ def process_ai_request(
                 chat_history,
                 model=claude_model,
                 is_cancelled=is_cancelled,
+                max_tokens=(
+                    CLASSIC_FABLE_MAX_OUTPUT_TOKENS
+                    if llm == "claude-fable"
+                    else CLASSIC_MAX_OUTPUT_TOKENS
+                ),
             )
 
         # Check for cancellation before citation verification
