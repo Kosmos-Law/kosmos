@@ -269,6 +269,15 @@ def pay_charge(request, token):
             {"success": False, "error": "This invoice is already paid."}, status=400
         )
 
+    # A soft decline (Confido can return a completed session whose transaction
+    # itself is status_v2 ERROR, rather than a GraphQL error) reaches here
+    # without raising ChargeError — accepted=False must still fail the request,
+    # or the client sees "success" for a charge that was never recorded.
+    if not result.accepted:
+        return JsonResponse(
+            {"success": False, "error": "Payment was declined."}, status=402
+        )
+
     return JsonResponse(
         {
             "success": True,
@@ -531,6 +540,13 @@ def balance_charge(request, token):
         return JsonResponse(
             {"success": False, "error": "This request has already been paid."},
             status=400,
+        )
+
+    # See the matching check in pay_charge: a soft decline (transaction
+    # returned but not accepted) must not be reported to the client as success.
+    if not result.accepted:
+        return JsonResponse(
+            {"success": False, "error": "Payment was declined."}, status=402
         )
 
     return JsonResponse(

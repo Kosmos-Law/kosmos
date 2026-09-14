@@ -13,6 +13,9 @@ Outcomes are driven by special token strings so tests are deterministic:
 
     fake-ok            -> normal (card: SUCCEEDED; bank: PENDING)
     fake-decline       -> ChargeError at charge time
+    fake-soft-decline  -> a transaction IS returned, but status FAILED/not
+                          accepted — no ChargeError (mirrors Confido returning
+                          a transaction with status_v2 ERROR)
     fake-ach-return    -> bank charge accepted PENDING, destined to RETURN
     fake-ach-fail      -> bank charge accepted PENDING, destined to FAIL
 
@@ -53,6 +56,7 @@ _EVENT_COUNTER = itertools.count(1)
 
 # Token strings that script a charge's behaviour.
 _DECLINE_TOKEN = "fake-decline"
+_SOFT_DECLINE_TOKEN = "fake-soft-decline"
 _ACH_RETURN_TOKEN = "fake-ach-return"
 _ACH_FAIL_TOKEN = "fake-ach-fail"
 
@@ -108,7 +112,10 @@ class FakeProcessor(PaymentProcessor):
         txn_id = f"fake_{method}_{uuid4().hex[:16]}"
 
         # Card settles immediately; bank is accepted but provisional.
-        if method == CARD:
+        if token == _SOFT_DECLINE_TOKEN:
+            status = FAILED
+            destiny = FAILED
+        elif method == CARD:
             status = SUCCEEDED
             destiny = SUCCEEDED
         else:  # BANK / ACH
