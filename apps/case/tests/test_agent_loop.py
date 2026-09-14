@@ -278,6 +278,39 @@ class TestClaudeLoop:
         assert "output limit" in fake.calls[1]["messages"][-1]["content"][0]["text"]
         assert result.text == "The answer."
 
+    def test_max_tokens_with_no_tool_calls_retries_instead_of_returning_empty(
+        self, claude
+    ):
+        # Models with mandatory always-on thinking (e.g. Fable) can burn the
+        # whole turn on reasoning and hit max_tokens before emitting a
+        # tool_use block or any text. Previously this fell straight to the
+        # generic "not tool_use" break and silently returned an empty
+        # result.text — the "behaves like Classic mode and never answers"
+        # bug. It should retry once instead, same as the tool-call case.
+        thinking_only_final = SimpleNamespace(
+            content=[Block(type="thinking", thinking="", signature="sig-1")],
+            usage=usage(),
+            stop_reason="max_tokens",
+            stop_details=None,
+        )
+        fake = claude(
+            [
+                ([thinking_event("Thinking a lot...")], thinking_only_final),
+                answer_turn(),
+            ]
+        )
+        notes = []
+        result = anthropic_client.send_to_claude_with_tools(
+            "sys", HISTORY, TOOLS, echo_batch, "claude-fable-5", on_note=notes.append
+        )
+        assert result.text == "The answer."
+        assert result.stop_reason == "end_turn"
+        assert len(fake.calls) == 2
+        assert "output limit" in fake.calls[1]["messages"][-1]["content"][0]["text"]
+        assert notes == [
+            "The turn hit the output limit before answering; asking for a shorter one"
+        ]
+
 
 # ── Gemini fakes ─────────────────────────────────────────────────────────────
 
