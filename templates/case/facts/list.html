@@ -203,18 +203,78 @@
         </li>
       </ul>
     </div>
-    <input type="text"
-           id="facts-keyword-input"
-           name="keyword"
-           placeholder="Keyword Search"
-           value="{{ keyword }}"
-           class="filter-input keyword-input {% if keyword %}toggle-active{% endif %}"
-           hx-get="{% url 'case:facts-filter-keyword' matter.id %}"
-           hx-target="#facts-table"
-           hx-trigger="keyup changed delay:500ms"
-           hx-include="this"
-           oninput="this.classList.toggle('toggle-active', this.value.trim() !== '')">
+    {% if label_options %}
+      <div class="dropdown" x-data="dropdown()">
+        <button type="button"
+                id="facts-labels-filter"
+                class="select-btn filter-dropdown-button {% if active_labels %}toggle-active{% endif %}"
+                x-ref="button"
+                @click="toggle()"
+                :aria-expanded="open">
+        <span><i class="icon-tag with-text"></i>
+        {% if active_labels %}
+          {% for option in active_labels %}
+            {% if not forloop.first %}
+              {% if labels_mode == "all" %}
+                +
+              {% else %}
+                ,
+              {% endif %}
+            {% endif %}
+            {{ option.name }}
+          {% endfor %}
+        {% else %}
+          Labels
+        {% endif %}
+      </span>
+      <small>
+        <i class="icon-chevron-down"></i>
+      </small>
+    </button>
+    <ul class="dropdown-menu facts-labels-menu" x-ref="menu" x-show="open">
+      {% for option in label_options %}
+        <li>
+          <a class="dropdown-item {% if option.selected %}active{% endif %}"
+             href="#"
+             hx-get="{% url 'case:facts-filter-label' matter.id option.id %}"
+             hx-target="#facts"><span class="label-swatch label-{{ option.color }}"></span> {{ option.name }}</a>
+        </li>
+      {% endfor %}
+      <li class="facts-labels-menu-mode">
+        <a class="dropdown-item {% if labels_mode != "all" %}active{% endif %}"
+           href="#"
+           hx-get="{% url 'case:facts-filter-labels-mode' matter.id 'any' %}"
+           hx-target="#facts"><i class="icon-circle-dot"></i> Match Any Label</a>
+      </li>
+      <li>
+        <a class="dropdown-item {% if labels_mode == "all" %}active{% endif %}"
+           href="#"
+           hx-get="{% url 'case:facts-filter-labels-mode' matter.id 'all' %}"
+           hx-target="#facts"><i class="icon-circle-check"></i> Match All Labels</a>
+      </li>
+      {% if active_labels %}
+        <li>
+          <a class="dropdown-item"
+             href="#"
+             hx-get="{% url 'case:facts-filter-label' matter.id 0 %}"
+             hx-target="#facts"><i class="icon-x"></i> Clear Labels</a>
+        </li>
+      {% endif %}
+    </ul>
   </div>
+{% endif %}
+<input type="text"
+       id="facts-keyword-input"
+       name="keyword"
+       placeholder="Keyword Search"
+       value="{{ keyword }}"
+       class="filter-input keyword-input {% if keyword %}toggle-active{% endif %}"
+       hx-get="{% url 'case:facts-filter-keyword' matter.id %}"
+       hx-target="#facts-table"
+       hx-trigger="keyup changed delay:500ms"
+       hx-include="this"
+       oninput="this.classList.toggle('toggle-active', this.value.trim() !== '')">
+</div>
 {% endif %}
 </div>
 <div class="toolbar-right">

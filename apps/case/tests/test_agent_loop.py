@@ -58,6 +58,15 @@ class FakeStream:
     def __iter__(self):
         return iter(self.events)
 
+    @property
+    def text_stream(self):
+        # send_to_claude (classic, non-tool path) reads this instead of
+        # iterating raw events; only text_delta events produce text.
+        for event in self.events:
+            delta = getattr(event, "delta", None)
+            if getattr(delta, "type", "") == "text_delta":
+                yield delta.text
+
     def get_final_message(self):
         return self.final
 
@@ -277,6 +286,99 @@ class TestClaudeLoop:
         assert batches == []
         assert "output limit" in fake.calls[1]["messages"][-1]["content"][0]["text"]
         assert result.text == "The answer."
+
+    def test_max_tokens_with_no_tool_calls_retries_instead_of_returning_empty(
+        self, claude
+    ):
+        # Models with mandatory always-on thinking (e.g. Fable) can burn the
+        # whole turn on reasoning and hit max_tokens before emitting a
+        # tool_use block or any text. Previously this fell straight to the
+        # generic "not tool_use" break and silently returned an empty
+        # result.text — the "behaves like Classic mode and never answers"
+        # bug. It should retry once instead, same as the tool-call case.
+        thinking_only_final = SimpleNamespace(
+            content=[Block(type="thinking", thinking="", signature="sig-1")],
+            usage=usage(),
+            stop_reason="max_tokens",
+            stop_details=None,
+        )
+        fake = claude(
+            [
+                ([thinking_event("Thinking a lot...")], thinking_only_final),
+                answer_turn(),
+            ]
+        )
+        notes = []
+        result = anthropic_client.send_to_claude_with_tools(
+            "sys", HISTORY, TOOLS, echo_batch, "claude-fable-5", on_note=notes.append
+        )
+        assert result.text == "The answer."
+        assert result.stop_reason == "end_turn"
+        assert len(fake.calls) == 2
+        assert "output limit" in fake.calls[1]["messages"][-1]["content"][0]["text"]
+        assert notes == [
+            "The turn hit the output limit before answering; asking for a shorter one"
+        ]
+
+
+class TestClassicClaude:
+    """send_to_claude — the single-completion path used by Classic mode."""
+
+    def test_input_tokens_include_cached_portion(self, claude):
+        # The SDK reports usage.input_tokens as the uncached remainder
+        # alone; Message has no column for the cache split (unlike
+        # agent_run.usage), so the cached portion must be folded back in
+        # here or classic conversations silently undercount cost/tokens
+        # on every turn after the first (once the system prompt caches).
+        final = SimpleNamespace(
+            content=[Block(type="text", text="Hi.")],
+            usage=usage(
+                input_tokens=100,
+                cache_read_input_tokens=9000,
+                cache_creation_input_tokens=0,
+            ),
+            stop_reason="end_turn",
+            stop_details=None,
+        )
+        claude([([text_event("Hi.")], final)])
+        text, input_tokens, output_tokens = anthropic_client.send_to_claude(
+            "sys", HISTORY, model="claude-opus-5"
+        )
+        assert text == "Hi."
+        assert input_tokens == 100 + 9000
+        assert output_tokens == 20
+
+    def test_max_tokens_with_no_text_retries_and_sums_usage(self, claude):
+        # Same starvation failure as the agent loop (mandatory thinking on
+        # Fable can burn the whole turn), but on the classic single-shot
+        # path: previously this silently returned "" with no recovery.
+        thinking_only_final = SimpleNamespace(
+            content=[Block(type="thinking", thinking="", signature="sig-1")],
+            usage=usage(input_tokens=50),
+            stop_reason="max_tokens",
+            stop_details=None,
+        )
+        answered_final = SimpleNamespace(
+            content=[Block(type="text", text="The answer.")],
+            usage=usage(input_tokens=60, output_tokens=10),
+            stop_reason="end_turn",
+            stop_details=None,
+        )
+        fake = claude(
+            [
+                ([thinking_event("Thinking a lot...")], thinking_only_final),
+                ([text_event("The answer.")], answered_final),
+            ]
+        )
+        text, input_tokens, output_tokens = anthropic_client.send_to_claude(
+            "sys", HISTORY, model="claude-fable-5", max_tokens=16_000
+        )
+        assert text == "The answer."
+        assert len(fake.calls) == 2
+        assert "output limit" in fake.calls[1]["messages"][-1]["content"]
+        # Both calls' billed usage counted, not just the retry's.
+        assert input_tokens == 50 + 60
+        assert output_tokens == 20 + 10
 
 
 # ── Gemini fakes ─────────────────────────────────────────────────────────────

@@ -316,6 +316,16 @@ urlpatterns = [
         name="facts-filter-importance",
     ),
     path(
+        "case/<int:matter_id>/facts/filter/label/<int:label_id>/",
+        facts.facts_filter_label,
+        name="facts-filter-label",
+    ),
+    path(
+        "case/<int:matter_id>/facts/filter/labels-mode/<str:mode>/",
+        facts.facts_filter_labels_mode,
+        name="facts-filter-labels-mode",
+    ),
+    path(
         "case/<int:matter_id>/facts/sort/<str:order>/",
         facts.facts_sort,
         name="facts-sort",
