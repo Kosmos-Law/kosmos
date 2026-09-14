@@ -358,25 +358,38 @@ def send_to_claude_with_tools(
                 }
             break
 
-        if final.stop_reason == "max_tokens" and tool_blocks and not retried_overflow:
-            # The turn ran out of room mid tool calls; they are unusable.
-            # Ask for a shorter turn once instead of echoing a broken one.
+        if final.stop_reason == "max_tokens" and not retried_overflow:
+            # The turn ran out of room — either mid tool calls (unusable) or,
+            # on models with mandatory always-on thinking (Fable), entirely
+            # inside the thinking block with no tool_use and no text ever
+            # emitted. Either way there is nothing usable to return; ask for
+            # a shorter turn once instead of echoing (or silently returning)
+            # a broken one.
             retried_overflow = True
-            if on_note:
-                on_note("The turn hit the output limit; asking for a shorter one")
+            if tool_blocks:
+                if on_note:
+                    on_note("The turn hit the output limit; asking for a shorter one")
+                nudge = (
+                    "Your last turn hit the output limit and its tool calls "
+                    "were discarded. Make fewer calls per turn and keep "
+                    "prose short."
+                )
+            else:
+                if on_note:
+                    on_note(
+                        "The turn hit the output limit before answering; "
+                        "asking for a shorter one"
+                    )
+                nudge = (
+                    "Your last turn hit the output limit before you made a "
+                    "tool call or gave an answer. Think less and act "
+                    "sooner — keep reasoning brief and get to a tool call "
+                    "or a direct answer quickly."
+                )
             convo.append(
                 {
                     "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": (
-                                "Your last turn hit the output limit and its "
-                                "tool calls were discarded. Make fewer calls "
-                                "per turn and keep prose short."
-                            ),
-                        }
-                    ],
+                    "content": [{"type": "text", "text": nudge}],
                 }
             )
             continue
