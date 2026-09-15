@@ -382,6 +382,12 @@ class TestOtherReads:
         payload, outcome = run(executor, "read_matter_section", section="nope")
         assert outcome["is_error"]
 
+    def test_money_sections_are_not_agent_readable(self, executor):
+        for section in ("ledger", "trust"):
+            payload, outcome = run(executor, "read_matter_section", section=section)
+            assert outcome["is_error"]
+            assert "ledger" not in payload["error"]
+
 
 class TestBatchRunner:
     def test_order_preserved_with_parallel_workers(self):
