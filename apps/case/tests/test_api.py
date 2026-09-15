@@ -15,13 +15,17 @@ from apps.activity.flat_fees.models import FlatFeeEntry
 from apps.activity.models import ActivityCategory
 from apps.activity.time.models import TimeEntry
 from apps.calendar.models import Event
+from apps.case.ai.models import Conversation, Message
 from apps.case.models import Fact, Witness
 from apps.drafts.models import CompanionToken
+from apps.invoicing.invoices.models import Invoice
+from apps.invoicing.payments.models import Payment
 from apps.mail.models import Email
 from apps.matters.models import Matter
 from apps.matters.rates.models import Rate
 from apps.matters.settlement.models import SettlementEntry
 from apps.tasks.models import Task
+from apps.trust.models import Transaction
 
 pytestmark = pytest.mark.django_db
 
@@ -318,3 +322,183 @@ class TestTaskCreate:
         assert response.status_code == 201
         task = Task.objects.get(pk=response.json()["id"])
         assert task.matter_id == twin.id
+
+
+@pytest.fixture
+def conversation(matter, user):
+    conv = Conversation.objects.create(
+        matter=matter, user=user, title="Damages theory", kind="agent"
+    )
+    Message.objects.create(
+        conversation=conv, role="user", user=user, content="What are our damages?"
+    )
+    Message.objects.create(
+        conversation=conv, role="assistant", content="Lost profits plus costs."
+    )
+    return conv
+
+
+class TestConversations:
+    def test_manifest_lists_handles_and_omits_never(self, api, matter, conversation):
+        Conversation.objects.create(
+            matter=matter, title="Private musings", ai_context="never"
+        )
+        text = section_text(api, matter, "conversations")
+        assert f"[conv:{conversation.id}] Damages theory" in text
+        assert "Agentic" in text
+        assert "2 messages" in text
+        assert "Private musings" not in text
+
+    def test_transcript(self, api, matter, conversation):
+        url = f"/case/api/matter/{matter.id}/conversations/{conversation.id}/"
+        response = api.get(url)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["title"] == "Damages theory"
+        assert "What are our damages?" in body["text"]
+        assert "**Assistant:** Lost profits plus costs." in body["text"]
+
+    def test_never_conversation_is_404(self, api, matter):
+        conv = Conversation.objects.create(matter=matter, ai_context="never")
+        response = api.get(f"/case/api/matter/{matter.id}/conversations/{conv.id}/")
+        assert response.status_code == 404
+
+    def test_denied_matter_is_404(self, restricted_api, matter, conversation):
+        url = f"/case/api/matter/{matter.id}/conversations/{conversation.id}/"
+        assert restricted_api.get(url).status_code == 404
+
+
+@pytest.fixture
+def sent_invoice(matter, user):
+    invoice = Invoice.objects.create(
+        matter=matter, status="SENT", date_limit="2026-01-31", date_issued="2026-02-01"
+    )
+    TimeEntry.objects.create(
+        matter=matter,
+        user=user,
+        date="2026-01-05",
+        actions="Draft complaint",
+        hours=2,
+        rate=200,
+        invoice=invoice,
+    )
+    ExpenseEntry.objects.create(
+        matter=matter,
+        user=user,
+        date="2026-01-06",
+        category="Filing fee",
+        description="Clerk of court",
+        amount=100,
+        invoice=invoice,
+    )
+    return invoice
+
+
+@pytest.fixture
+def no_financial_api(user):
+    user.perm_financial = False
+    user.save()
+    return Client(HTTP_X_KOSMOS_TOKEN=CompanionToken.for_user(user).key)
+
+
+class TestMoney:
+    def test_ledger(self, api, matter, sent_invoice):
+        Payment.objects.create(
+            matter=matter, date="2026-02-10", amount=300, payment_method="CHECK"
+        )
+        Invoice.objects.create(
+            matter=matter,
+            status="DRAFT",
+            date_limit="2025-12-31",
+            date_issued="2026-03-01",
+        )
+        text = section_text(api, matter, "ledger")
+        assert (
+            f"[inv:{sent_invoice.id}] Invoice {sent_invoice.id} $500.00 (Sent)" in text
+        )
+        assert "Credit: Payment by Check $300.00 | balance $200.00" in text
+        assert "Balance due: $200.00" in text
+        assert "Payments received: $300.00" in text
+        assert "Invoices not yet sent:" in text
+
+    def test_trust(self, api, matter):
+        Transaction.objects.create(
+            contact=matter.client,
+            date="2026-01-02",
+            type="Deposit",
+            method="Check",
+            description="Retainer",
+            amount=1000,
+            confirmed=True,
+        )
+        Transaction.objects.create(
+            contact=matter.client,
+            date="2026-01-20",
+            type="Withdrawal",
+            description="Invoice 1",
+            amount=250,
+        )
+        text = section_text(api, matter, "trust")
+        assert "for Test Client" in text
+        assert "Trust balance: $750.00 (confirmed $1,000.00)" in text
+        assert "- [2026-01-02] Deposit $1,000.00 by Check: Retainer" in text
+        assert "- [2026-01-20] Withdrawal $250.00: Invoice 1 [unconfirmed]" in text
+
+    def test_invoice_read(self, api, sent_invoice):
+        response = api.get(f"/case/api/invoices/{sent_invoice.id}/")
+        assert response.status_code == 200
+        text = response.json()["text"]
+        assert f"Invoice #{sent_invoice.id}" in text
+        assert "Draft complaint — 2.0h @ $200/hr ($400.00)" in text
+        assert "Filing fee: Clerk of court ($100.00)" in text
+
+    def test_invoice_denied_is_404(self, restricted_api, sent_invoice):
+        response = restricted_api.get(f"/case/api/invoices/{sent_invoice.id}/")
+        assert response.status_code == 404
+
+    @pytest.mark.parametrize("section", ["ledger", "trust"])
+    def test_money_sections_need_financial_perm(
+        self, no_financial_api, matter, section
+    ):
+        response = no_financial_api.get(section_url(matter, section))
+        assert response.status_code == 403
+
+    def test_invoice_needs_financial_perm(self, no_financial_api, sent_invoice):
+        response = no_financial_api.get(f"/case/api/invoices/{sent_invoice.id}/")
+        assert response.status_code == 403
+
+
+class TestMaterialSearch:
+    @pytest.fixture(autouse=True)
+    def _no_semantic_pass(self, monkeypatch):
+        monkeypatch.setattr(
+            "apps.case.ai.agent_tools.semantic_entries", lambda *a, **k: []
+        )
+
+    def test_hits(self, api, matter, document):
+        from watson import search as watson
+
+        document.ocr_text = "Alpha " * 50 + "spoliation letter " + "omega " * 50
+        document.ocr_status = "completed"
+        document.save(update_fields=["ocr_text", "ocr_status"])
+        watson.default_search_engine.update_obj_index(document)
+        response = post_json(
+            api, f"/case/api/matter/{matter.id}/search/", {"query": "spoliation"}
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["queries"] == ["spoliation"]
+        assert "budget" not in body
+        hit = next(h for h in body["hits"] if h["kind"] == "document")
+        assert hit["handle"] == f"doc:{document.id}"
+        assert "spoliation" in hit["snippet"]
+
+    def test_empty_query_is_400(self, api, matter):
+        response = post_json(api, f"/case/api/matter/{matter.id}/search/", {})
+        assert response.status_code == 400
+
+    def test_denied_matter_is_404(self, restricted_api, matter):
+        response = post_json(
+            restricted_api, f"/case/api/matter/{matter.id}/search/", {"query": "x"}
+        )
+        assert response.status_code == 404

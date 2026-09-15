@@ -29,8 +29,8 @@ app_name = "case"
 
 urlpatterns = [
     # Token-authed JSON API for the Claude Desktop MCP server. The
-    # facts/witnesses/emails routes must precede the <str:section>
-    # catch-all so their POST/extra-segment forms match first.
+    # facts/witnesses/emails/conversations routes must precede the
+    # <str:section> catch-all so their POST/extra-segment forms match first.
     path(
         "case/api/matter/<int:matter_id>/facts/",
         case_api.api_matter_facts,
@@ -47,6 +47,16 @@ urlpatterns = [
         name="api-email-thread",
     ),
     path(
+        "case/api/matter/<int:matter_id>/conversations/<int:conversation_id>/",
+        case_api.api_conversation,
+        name="api-conversation",
+    ),
+    path(
+        "case/api/matter/<int:matter_id>/search/",
+        case_api.api_search_materials,
+        name="api-search-materials",
+    ),
+    path(
         "case/api/matter/<int:matter_id>/<str:section>/",
         case_api.api_matter_section,
         name="api-matter-section",
@@ -55,6 +65,11 @@ urlpatterns = [
         "case/api/documents/<int:document_id>/",
         case_api.api_document,
         name="api-document",
+    ),
+    path(
+        "case/api/invoices/<int:invoice_id>/",
+        case_api.api_invoice,
+        name="api-invoice",
     ),
     path(
         "case/api/tasks/",

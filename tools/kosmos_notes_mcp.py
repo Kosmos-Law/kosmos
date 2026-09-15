@@ -6,11 +6,14 @@
 
 A deliberately thin stdio translator: every tool is one HTTP call against
 the token-authed JSON APIs in Kosmos (apps/notes/api.py for notes,
-apps/case/api.py for the matter record), which own all access control,
-ranking, and formatting. Reads cover notes plus every section of a
-matter; writes are narrow: append/replace on notes whose editor AI-write
-toggle is on (a 24-hour grant), and create-only timeline facts,
-witnesses, and tasks.
+apps/case/api.py for the matter record, apps/search/api.py for the
+practice-wide search), which own all access control, ranking, and
+formatting. Reads cover notes, every section of a matter (including its
+AI conversations, ledger, and trust position), invoices, the matter's
+hybrid keyword+semantic material search, and the practice-wide search;
+writes are narrow: append/replace on notes whose editor AI-write toggle
+is on (a 24-hour grant), and create-only timeline facts, witnesses, and
+tasks. Money reads require the user's financial permission in Kosmos.
 
 Claude Desktop launches this script itself; configure it in
 claude_desktop_config.json (this is Claude DESKTOP's config, not
@@ -60,6 +63,9 @@ MATTER_SECTIONS = (
     "timeline",
     "witnesses",
     "emails",
+    "conversations",
+    "ledger",
+    "trust",
 )
 
 mcp = MCPServer("kosmos-notes")
@@ -241,11 +247,95 @@ def read_matter(matter_id: int, section: str) -> str:
     document's full text), highlights (excerpts with [hl:ID] handles
     usable as add_fact sources), timeline (the facts chronology),
     witnesses, emails (thread manifest; use read_email_thread for a
-    full thread).
+    full thread), conversations (manifest of earlier AI chats on the
+    matter with [conv:ID] handles; use read_conversation for a
+    transcript), ledger (sent invoices, payments, credits, running
+    balance, unbilled work, unsent invoices, open payment requests;
+    [inv:ID] handles feed read_invoice), trust (the client's trust
+    balance, trust available, and transaction history).
 
+    ledger and trust require the user's financial permission in Kosmos.
     Start with overview; then read only the sections the question needs.
     """
     return _truncate(_get(f"case/api/matter/{matter_id}/{section}/")["text"])
+
+
+@mcp.tool()
+def search_matter(
+    matter_id: int,
+    query: str | None = None,
+    queries: list[str] | None = None,
+    kinds: list[str] | None = None,
+    limit: int = 15,
+) -> str:
+    """Hybrid search across one matter's materials: documents (OCR
+    text), matter notes, firm library notes, synced emails, highlights,
+    and timeline facts. Matches by meaning as well as by words (semantic
+    neighbors are merged with the keyword hits).
+
+    Keyword side: words are stemmed and ANDed; use "quoted phrases" for
+    exact wording, OR between alternatives, and -word to exclude. Prefer
+    queries with 2 to 4 differently phrased variants (synonyms, terms of
+    art, statute numbers): one call runs them all and merges the ranked
+    hits. When nothing matches, near-miss titles come back as fuzzy
+    hits. kinds restricts to any of: document, note, library, email,
+    highlight, fact. limit is at most 40.
+
+    Each hit carries a snippet and the handle to read the full item
+    (doc: read_document, thread: read_email_thread, note: and lib:
+    read_note, hl: and fact: are already in the highlights and timeline
+    sections). Hits marked semantic were found by meaning alone, so the
+    words themselves may not appear in the text.
+    """
+    payload = {"query": query, "queries": queries, "kinds": kinds, "limit": limit}
+    result = _post(f"case/api/matter/{matter_id}/search/", payload)
+    hits = result["hits"]
+    if not hits:
+        return f"No materials match {result['queries']!r}."
+    lines = []
+    for hit in hits:
+        bits = [hit["name"]]
+        if hit.get("category"):
+            bits.append(hit["category"])
+        if hit.get("date"):
+            bits.append(hit["date"])
+        flags = []
+        if hit.get("semantic"):
+            flags.append("semantic")
+        if hit.get("fuzzy"):
+            flags.append("fuzzy")
+        if hit.get("matched") and len(result["queries"]) > 1:
+            flags.append("matched: " + "; ".join(hit["matched"]))
+        line = f"- [{hit['handle']}] {' | '.join(bits)}"
+        if flags:
+            line += f" ({', '.join(flags)})"
+        if hit.get("snippet"):
+            line += f"\n  {hit['snippet']}"
+        if hit.get("summary"):
+            line += f"\n  Summary: {hit['summary']}"
+        lines.append(line)
+    if result.get("note"):
+        lines.append(result["note"])
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def search_kosmos(query: str, scope: str = "all") -> str:
+    """Search the whole practice the way the Kosmos search page does:
+    matters (name, status note, description), proceedings (fuzzy case
+    number: "2024cv12345" finds "2024-CV-12345"), contacts (name,
+    company, email, phone, notes), intakes (name, email, phone), and
+    notes. An all-digit query matches client reference ids and phone
+    numbers exactly.
+
+    scope is one of: all, matters, proceedings, contacts, intakes,
+    notes. Results carry [matter:ID], [proceeding:ID], [contact:ID],
+    [intake:ID], and [note:ID] handles; matter ids feed the read_matter
+    tools (open matters only) and note ids feed read_note. Use
+    find_matter instead when you only need a matter's id by name.
+    """
+    result = _get("search/api/", q=query, scope=scope)
+    return result["text"]
 
 
 @mcp.tool()
@@ -277,6 +367,36 @@ def read_email_thread(matter_id: int, thread_id: str) -> str:
     """
     result = _get(f"case/api/matter/{matter_id}/emails/{thread_id}/")
     return _truncate(result["text"])
+
+
+@mcp.tool()
+def read_conversation(matter_id: int, conversation_id: int) -> str:
+    """Read the full transcript of one earlier AI conversation on a
+    matter, by the [conv:ID] id shown in the conversations section.
+
+    Useful when the section's summary suggests the conversation already
+    analyzed the question. Messages are oldest-first, each labelled with
+    the speaker. Very large transcripts are truncated, with an explicit
+    marker saying so.
+    """
+    result = _get(f"case/api/matter/{matter_id}/conversations/{conversation_id}/")
+    return (
+        f"# {result['title']}\n"
+        f"Matter: {result['matter']}\n"
+        f"Mode: {result['kind']}, model: {result['llm']}\n\n"
+        f"{_truncate(result['text'])}"
+    )
+
+
+@mcp.tool()
+def read_invoice(invoice_id: int) -> str:
+    """Read one invoice, by the [inv:ID] id shown in the ledger section:
+    totals, discount, balance remaining, and every time, expense, and
+    flat-fee line item. Requires the user's financial permission in
+    Kosmos. Only for billing questions.
+    """
+    result = _get(f"case/api/invoices/{invoice_id}/")
+    return f"Matter: {result['matter']}\n\n{_truncate(result['text'])}"
 
 
 @mcp.tool()
