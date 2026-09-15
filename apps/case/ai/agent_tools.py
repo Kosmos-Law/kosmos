@@ -1409,12 +1409,15 @@ def make_agent_executor(
         }
 
     def _read_section(tool_input):
-        from apps.case.api import SECTIONS
+        from apps.case.api import FINANCIAL_SECTIONS, SECTIONS
 
+        # The money sections are gated on the user's financial permission,
+        # which the executor does not carry; the agent has read_invoice.
+        allowed = [s for s in SECTIONS if s not in FINANCIAL_SECTIONS]
         section = str(tool_input.get("section") or "")
-        if section not in SECTIONS:
+        if section not in allowed:
             return {
-                "error": f"Unknown section. Valid sections: {', '.join(SECTIONS)}."
+                "error": f"Unknown section. Valid sections: {', '.join(allowed)}."
             }, {}
         text = SECTIONS[section](matter)[:SECTION_CAP]
         return {"section": section, "text": text}, {

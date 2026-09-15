@@ -8,13 +8,18 @@ they exist so the two surfaces cannot drift; writes are create-only
 creators the in-app AI's fenced blocks use.
 
 Access mirrors the app: matters are the user's accessible OPEN matters
-only, and every denial is a 404 so it doesn't confirm existence.
+only, and every denial is a 404 so it doesn't confirm existence. The
+money sections (ledger, trust) and invoice reads additionally require the
+user's financial permission, like the in-app Ledger tab; that denial is a
+403 since the matter's existence is already known to the caller.
 """
 
 import json
 
-from django.db.models import Q
+from django.db.models import Count, F, Max, Q
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.accounts.access import filter_matters_for_user
@@ -24,6 +29,7 @@ from apps.activity.time.models import TimeEntry
 from apps.case.ai.context import (
     format_contacts,
     format_events,
+    format_invoice,
     format_matter_overview,
     format_proceedings,
     format_settlement,
@@ -31,17 +37,36 @@ from apps.case.ai.context import (
     format_witnesses,
 )
 from apps.case.ai.fact_blocks import _create_fact_from_entry
+from apps.case.ai.models import Conversation
 from apps.case.ai.witness_blocks import _create_witness_from_entry
 from apps.case.models import Document, Fact, Highlight
 from apps.drafts.api_auth import kosmos_api_auth
+from apps.invoicing.invoices.models import Invoice
+from apps.invoicing.requests.models import PaymentRequest
 from apps.mail.ai import format_email_thread, group_by_thread, thread_subject
+from apps.matters.ledger.get_ledger_data import get_ledger_data
 from apps.matters.models import Matter
 from apps.matters.rates.models import Rate
 from apps.tasks.services import create_task_from_ai_entry
+from apps.trust.available import client_trust_available, trust_available_severity
+from apps.trust.trust import (
+    get_client_history,
+    get_confirmed_client_balance,
+    get_pending_client_balance,
+)
 
 MATTER_404 = "No such matter, or you do not have access to it."
 DOCUMENT_404 = "No such document, or you do not have access to it."
 THREAD_404 = "No such email thread in this matter."
+CONVERSATION_404 = "No such AI conversation in this matter."
+INVOICE_404 = "No such invoice, or you do not have access to it."
+FINANCIAL_403 = "Your Kosmos account does not have financial access."
+
+FINANCIAL_SECTIONS = ("ledger", "trust")
+
+
+def _has_financial_access(user):
+    return user.is_admin or user.perm_financial
 
 
 def _get_matter(user, matter_id):
@@ -262,6 +287,222 @@ def _format_email_threads(matter):
     return "\n".join(lines)
 
 
+def _format_conversations(matter):
+    """Manifest of the matter's AI conversations; [conv:ID] handles feed
+    read_conversation. Conversations the attorney marked never-for-AI are
+    omitted, as the in-app agent omits them."""
+    conversations = (
+        Conversation.objects.filter(matter=matter)
+        .exclude(ai_context="never")
+        .annotate(
+            message_count=Count("messages"),
+            last_activity=Coalesce(Max("messages__created_at"), F("created_at")),
+        )
+        .order_by("-last_activity")
+    )
+    if not conversations:
+        return "No AI conversations."
+    lines = []
+    for conv in conversations:
+        count = conv.message_count
+        line = (
+            f"- [conv:{conv.id}] {conv.title or 'Untitled'} "
+            f"({conv.get_kind_display()}, {conv.get_llm_display()}, "
+            f"{count} message{'s' if count != 1 else ''}, "
+            f"last activity {timezone.localtime(conv.last_activity):%Y-%m-%d})"
+        )
+        if conv.ai_context == "always":
+            line += " [pinned]"
+        if conv.summary:
+            summary = " ".join(conv.summary.split())
+            line += f"\n  Summary: {summary[:300]}"
+        lines.append(line)
+    lines.append(
+        "Use read_conversation with a conversation id for the full transcript."
+    )
+    return "\n".join(lines)
+
+
+def _format_transcript(conversation):
+    lines = [f"Conversation: {conversation.title or 'Untitled'}"]
+    messages = conversation.messages.select_related("user").order_by("created_at")
+    for msg in messages:
+        if msg.role == "user":
+            who = msg.user.get_full_name() if msg.user else "User"
+        else:
+            who = "Assistant"
+        lines.append(f"**{who}:** {msg.content}")
+    return "\n\n".join(lines)
+
+
+def _money(amount):
+    amount = amount or 0
+    return f"-${-amount:,.2f}" if amount < 0 else f"${amount:,.2f}"
+
+
+def _format_ledger(matter):
+    """The matter ledger as the in-app Ledger tab computes it, plus unsent
+    invoices and open payment requests; [inv:ID] handles feed read_invoice."""
+    data = get_ledger_data(matter)
+    value = matter.value
+    sections = []
+
+    if data["transactions"]:
+        lines = [
+            "Ledger (charges are sent invoices; credits are payments and credits):"
+        ]
+        for t in data["transactions"]:
+            is_charge = t["transaction_type"] == "Charge"
+            handle = f"[inv:{t['id']}] " if is_charge else ""
+            line = (
+                f"- [{t['date']}] {t['transaction_type']}: {handle}{t['description']} "
+                f"{_money(t['amount'])}"
+            )
+            if t.get("invoice_status"):
+                line += f" ({t['invoice_status'].title()})"
+            if t.get("processor_status") == "pending":
+                line += " [online payment pending settlement]"
+            if t.get("affects_balance", True):
+                line += f" | balance {_money(t['balance'])}"
+            lines.append(line)
+        sections.append("\n".join(lines))
+    else:
+        sections.append(
+            "No ledger activity yet (no sent invoices, payments, or credits)."
+        )
+
+    totals = [f"Balance due: {_money(data['balance_due'])}"]
+    if data["has_deferred"]:
+        totals.append(f"Currently owed: {_money(data['currently_owed'])}")
+        totals.append(
+            "Deferred (recovery claim, not currently collectible): "
+            f"{_money(data['deferred_total'])}"
+        )
+    totals.append(f"Payments received: {_money(value['invoices']['payment_sum'])}")
+    totals.append(f"Credits: {_money(data['total_credits'])}")
+    totals.append(
+        "Unbilled work in progress: "
+        f"{_money(value['unbilled']['net_fees_and_expenses'])}"
+    )
+    sections.append("\n".join(totals))
+
+    unsent = Invoice.objects.filter(
+        matter=matter, status__in=["DRAFT", "APPROVED"]
+    ).order_by("date_issued")
+    if unsent:
+        lines = ["Invoices not yet sent:"]
+        for invoice in unsent:
+            lines.append(
+                f"- [inv:{invoice.id}] Invoice {invoice.id} ({invoice.status.title()}, "
+                f"dated {invoice.date_issued}) {_money(invoice.value['final_total'])}"
+            )
+        sections.append("\n".join(lines))
+
+    requests = PaymentRequest.objects.filter(matter=matter, status="SENT").order_by(
+        "created_at"
+    )
+    if requests:
+        lines = ["Open payment requests:"]
+        for req in requests:
+            lines.append(
+                f"- {_money(req.amount_requested)} to {req.recipient_email} "
+                f"({req.account} account), sent {timezone.localdate(req.created_at)}"
+            )
+        sections.append("\n".join(lines))
+
+    sections.append("Use read_invoice with an invoice id for its line items.")
+    return "\n\n".join(sections)
+
+
+_TRUST_SEVERITY = {
+    "danger": "in deficit",
+    "warning": "running low",
+    "ok": "ok",
+    "none": "no trust held",
+}
+
+
+def _format_trust(matter):
+    """The client's trust position and transaction history. Trust is held per
+    client and pooled across that client's matters, so the figures are the
+    client's, not this matter's alone."""
+    client = matter.client
+    if client is None:
+        return "No client on this matter, so there is no trust account to report."
+    pending = get_pending_client_balance(client.id)
+    confirmed = get_confirmed_client_balance(client.id)
+    available = client_trust_available(client.id)
+    severity = trust_available_severity(available, pending)
+    lines = [
+        "Trust is held per client and pooled across the client's matters; "
+        f"these figures are for {client.name}.",
+        f"Trust balance: {_money(pending)} (confirmed {_money(confirmed)})",
+        "Trust available after what is currently owed and unbilled work "
+        f"across the client's matters: {_money(available)} "
+        f"({_TRUST_SEVERITY[severity]})",
+    ]
+    history = get_client_history(client.id)
+    if history:
+        lines.append("Transactions:")
+        for t in history:
+            line = f"- [{t.date}] {t.type} {_money(t.amount)}"
+            if t.method:
+                line += f" by {t.method}"
+            if t.description:
+                line += f": {t.description}"
+            if not t.confirmed:
+                line += " [unconfirmed]"
+            lines.append(line)
+    else:
+        lines.append("No trust transactions for this client.")
+    return "\n".join(lines)
+
+
+def _format_invoice_lines(invoice):
+    sections = []
+    entries = (
+        TimeEntry.objects.filter(invoice=invoice)
+        .select_related("user")
+        .order_by("date")
+    )
+    if entries:
+        lines = ["Time entries:"]
+        for entry in entries:
+            user_name = entry.user.get_full_name() if entry.user else "Unknown"
+            fee = entry.hours * entry.rate if entry.rate else 0
+            line = (
+                f"- [{entry.date}] {entry.actions} — {entry.hours}h @ "
+                f"${entry.rate}/hr ({_money(fee)}) by {user_name}"
+            )
+            if entry.comp:
+                line += " [COMP]"
+            lines.append(line)
+        sections.append("\n".join(lines))
+    expenses = ExpenseEntry.objects.filter(invoice=invoice).order_by("date")
+    if expenses:
+        lines = ["Expenses:"]
+        for expense in expenses:
+            label = f"{expense.category}: " if expense.category else ""
+            line = (
+                f"- [{expense.date}] {label}{expense.description} "
+                f"({_money(expense.amount)})"
+            )
+            if expense.comp:
+                line += " [COMP]"
+            lines.append(line)
+        sections.append("\n".join(lines))
+    flat_fees = FlatFeeEntry.objects.filter(invoice=invoice).order_by("date")
+    if flat_fees:
+        lines = ["Flat fees:"]
+        for fee in flat_fees:
+            line = f"- [{fee.date}] {fee.description} ({_money(fee.amount)})"
+            if fee.comp:
+                line += " [COMP]"
+            lines.append(line)
+        sections.append("\n".join(lines))
+    return "\n\n".join(sections) or "No line items."
+
+
 SECTIONS = {
     "overview": format_matter_overview,
     "contacts": format_contacts,
@@ -276,6 +517,9 @@ SECTIONS = {
     "timeline": _format_facts,
     "witnesses": format_witnesses,
     "emails": _format_email_threads,
+    "conversations": _format_conversations,
+    "ledger": _format_ledger,
+    "trust": _format_trust,
 }
 
 
@@ -302,6 +546,8 @@ def api_matter_section(request, matter_id, section):
             {"error": f"Unknown section. Valid sections: {', '.join(SECTIONS)}."},
             status=400,
         )
+    if section in FINANCIAL_SECTIONS and not _has_financial_access(request.api_user):
+        return JsonResponse({"error": FINANCIAL_403}, status=403)
     return _section_response(matter, section)
 
 
@@ -349,6 +595,80 @@ def api_email_thread(request, matter_id, thread_id):
             "thread_id": thread_id,
             "subject": thread_subject(emails),
             "text": format_email_thread(emails),
+        }
+    )
+
+
+@kosmos_api_auth
+@require_http_methods(["POST"])
+def api_search_materials(request, matter_id):
+    """Hybrid (keyword + semantic) search over a matter's materials, run
+    through the in-app agent's own search_materials handler so ranking,
+    fusion, and hit shapes stay identical between the two surfaces."""
+    from apps.case.ai.agent_tools import make_agent_executor
+
+    matter = _get_matter(request.api_user, matter_id)
+    if matter is None:
+        return JsonResponse({"error": MATTER_404}, status=404)
+    body = _json_body(request)
+    if body is None:
+        return JsonResponse({"error": "Body must be a JSON object."}, status=400)
+    execute = make_agent_executor(matter, None)
+    outcome = execute([{"id": "search", "name": "search_materials", "input": body}])[0]
+    payload = json.loads(outcome["content"])
+    if outcome["is_error"]:
+        return JsonResponse(
+            {"error": payload.get("error", "Search failed.")}, status=400
+        )
+    payload.pop("budget", None)
+    return JsonResponse(payload)
+
+
+@kosmos_api_auth
+@require_GET
+def api_conversation(request, matter_id, conversation_id):
+    """One AI conversation's full transcript."""
+    matter = _get_matter(request.api_user, matter_id)
+    if matter is None:
+        return JsonResponse({"error": MATTER_404}, status=404)
+    conversation = (
+        Conversation.objects.filter(matter=matter, pk=conversation_id)
+        .exclude(ai_context="never")
+        .first()
+    )
+    if conversation is None:
+        return JsonResponse({"error": CONVERSATION_404}, status=404)
+    return JsonResponse(
+        {
+            "conversation_id": conversation.id,
+            "title": conversation.title or "Untitled",
+            "matter": matter.name,
+            "kind": conversation.get_kind_display(),
+            "llm": conversation.get_llm_display(),
+            "text": _format_transcript(conversation),
+        }
+    )
+
+
+@kosmos_api_auth
+@require_GET
+def api_invoice(request, invoice_id):
+    """One invoice with totals, balance, and line items."""
+    invoice = (
+        Invoice.objects.select_related("matter")
+        .filter(pk=invoice_id, matter__status="Open")
+        .first()
+    )
+    if invoice is None or not request.api_user.has_matter_access(invoice.matter):
+        return JsonResponse({"error": INVOICE_404}, status=404)
+    if not _has_financial_access(request.api_user):
+        return JsonResponse({"error": FINANCIAL_403}, status=403)
+    return JsonResponse(
+        {
+            "invoice_id": invoice.id,
+            "matter": invoice.matter.name,
+            "status": invoice.status_display,
+            "text": f"{format_invoice(invoice)}\n\n{_format_invoice_lines(invoice)}",
         }
     )
 
