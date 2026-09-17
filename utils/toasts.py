@@ -25,7 +25,15 @@ Usage in views:
 import json
 
 
-def add_toast(response, toast_type, message, title=None, duration=None, link=None):
+def add_toast(
+    response,
+    toast_type,
+    message,
+    title=None,
+    duration=None,
+    link=None,
+    mobile_only=False,
+):
     """
     Add a toast notification to an HTMX response.
 
@@ -37,6 +45,10 @@ def add_toast(response, toast_type, message, title=None, duration=None, link=Non
         duration: Auto-dismiss duration in ms (0 = no auto-dismiss)
                   Defaults: success/warning/info = 5000ms, error = 0 (sticky)
         link: Optional dict with 'url' and 'text' for a link in the toast body
+        mobile_only: The page already shows the result on desktop (e.g. the
+                  new row lands in the visible table), so toasts.js drops the
+                  toast there. Phones keep it because the row is often
+                  off-screen.
 
     Returns:
         The modified response object
@@ -55,6 +67,9 @@ def add_toast(response, toast_type, message, title=None, duration=None, link=Non
     if link:
         toast_data["link"] = link
 
+    if mobile_only:
+        toast_data["mobile_only"] = True
+
     # Check if there are existing toasts
     existing = response.get("HX-Toasts")
     if existing:
@@ -71,9 +86,13 @@ def add_toast(response, toast_type, message, title=None, duration=None, link=Non
     return response
 
 
-def toast_success(response, message, title=None, duration=5000, link=None):
+def toast_success(
+    response, message, title=None, duration=5000, link=None, mobile_only=False
+):
     """Add a success toast to the response."""
-    return add_toast(response, "success", message, title, duration, link)
+    return add_toast(
+        response, "success", message, title, duration, link, mobile_only=mobile_only
+    )
 
 
 def toast_error(response, message, title=None, duration=0):
