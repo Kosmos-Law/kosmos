@@ -1,3 +1,4 @@
+import json
 import re
 
 import pytest
@@ -27,6 +28,27 @@ def test_add_post(client, folder, task_data):
     assert response.status_code == 204
     found = Task.objects.filter(description=task_data["description"]).first()
     assert found
+
+
+def _palette_add(client, task_data, current_url):
+    task_data["description"] = "Palette task"
+    task_data["importance"] = "1"
+    response = client.post(
+        "/tasks/add?from=palette", task_data, HTTP_HX_CURRENT_URL=current_url
+    )
+    assert response.status_code == 204
+    return json.loads(response.headers["HX-Toast"])
+
+
+def test_palette_add_toast_is_mobile_only_on_tasks_tab(client, folder, task_data):
+    # The new row is the confirmation there, so desktop drops the toast.
+    toast = _palette_add(client, task_data, "https://testserver/?view=board")
+    assert toast["mobile_only"] is True
+
+
+def test_palette_add_toasts_from_other_tabs(client, folder, task_data):
+    toast = _palette_add(client, task_data, "https://testserver/calendar")
+    assert "mobile_only" not in toast
 
 
 def test_edit_get(client, task):

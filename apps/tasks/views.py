@@ -1,11 +1,13 @@
 import json
 import logging
 from datetime import datetime
+from urllib.parse import urlsplit
 
 import markdown
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -226,6 +228,12 @@ def tasks_select(request):
     return redirect("tasks:index")
 
 
+def _on_tasks_tab(request):
+    """True when the htmx request came from the tasks tab (list or board)."""
+    path = urlsplit(request.headers.get("HX-Current-URL", "")).path
+    return path == reverse("tasks:index")
+
+
 @login_required
 def tasks_add(request):
     if request.method == "POST":
@@ -248,7 +256,13 @@ def tasks_add(request):
                 status=204, headers={"HX-Trigger": "tasksListChanged"}
             )
             if request.GET.get("from") == "palette":
-                toast_success(response, f"Task created for {task.user.full_name}.")
+                # The palette opens this modal from any tab. On the tasks tab
+                # the new row is the confirmation, so desktop skips the toast.
+                toast_success(
+                    response,
+                    f"Task created for {task.user.full_name}.",
+                    mobile_only=_on_tasks_tab(request),
+                )
             return response
 
     else:
@@ -351,7 +365,9 @@ def tasks_add_quick(request):
         details = [matter_name, f"due {task.date_due}"]
         if task.user_id != request.user.id:
             details.append(f"for {task.user.full_name}")
-        toast_success(response, f"Added to {', '.join(details)}.")
+        # Quick add only lives on the tasks tab, where the new row is the
+        # confirmation on desktop.
+        toast_success(response, f"Added to {', '.join(details)}.", mobile_only=True)
         if entry.get("matter") and task.matter is None:
             toast_warning(
                 response,

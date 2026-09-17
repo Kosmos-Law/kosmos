@@ -174,6 +174,13 @@ const Toast = (function () {
   };
 })();
 
+// A mobile_only toast confirms something the desktop page already shows (the
+// new task row landing in the table), so it only appears at phone width.
+function showHeaderToast(toastData) {
+  if (toastData.mobile_only && window.innerWidth > 768) return;
+  Toast.show(toastData);
+}
+
 // HTMX Integration - Listen for HX-Toast header in responses
 function handleToastHeaders(xhr) {
   if (!xhr) return;
@@ -182,7 +189,7 @@ function handleToastHeaders(xhr) {
   if (toastHeader) {
     try {
       const toastData = JSON.parse(toastHeader);
-      Toast.show(toastData);
+      showHeaderToast(toastData);
     } catch (e) {
       console.error("Failed to parse HX-Toast header:", e);
     }
@@ -193,7 +200,7 @@ function handleToastHeaders(xhr) {
     try {
       const toasts = JSON.parse(toastsHeader);
       if (Array.isArray(toasts)) {
-        toasts.forEach((t) => Toast.show(t));
+        toasts.forEach((t) => showHeaderToast(t));
       }
     } catch (e) {
       console.error("Failed to parse HX-Toasts header:", e);
