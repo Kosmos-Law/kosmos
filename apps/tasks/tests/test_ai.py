@@ -1,3 +1,4 @@
+import json
 from datetime import date
 
 import pytest
@@ -59,6 +60,8 @@ class TestQuickAddView:
         assert task.importance == 4
         assert task.id in client.session["new_task_ids"]
         assert client.session["last_quick_task_matter"] == matter.id
+        # The new row is the confirmation on desktop; only phones toast.
+        assert json.loads(response.headers["HX-Toast"])["mobile_only"] is True
 
     def test_ai_unresolved_matter_files_under_admin(self, client, user, monkeypatch):
         monkeypatch.setattr(
@@ -78,6 +81,10 @@ class TestQuickAddView:
         task = Task.objects.get()
         assert task.matter is None
         assert task.date_due == date.today()
+        # The misfiling warning still shows everywhere.
+        toast = json.loads(response.headers["HX-Toast"])
+        assert toast["type"] == "warning"
+        assert "mobile_only" not in toast
 
     def test_ai_failure_falls_back_to_legacy(self, client, user, monkeypatch):
         from apps.settings.models import Firm
