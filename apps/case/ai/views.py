@@ -42,9 +42,16 @@ logger = logging.getLogger(__name__)
 
 # Every llm key the dispatch understands: the picker's current choices plus
 # the retired ones older conversations still carry ("claude" is Sonnet 4.6,
+# "claude-opus-5" / "claude-opus" / "claude-opus-4-6" are Opus 5 / 4.8 / 4.6,
 # "gemini-pro" is Gemini 2.5 Pro). Derived rather than spelled out, so adding
 # a model to LLM_CHOICES doesn't have to be mirrored in each request handler.
-RETIRED_LLMS = ("claude", "gemini-pro")
+RETIRED_LLMS = (
+    "claude",
+    "claude-opus-5",
+    "claude-opus",
+    "claude-opus-4-6",
+    "gemini-pro",
+)
 VALID_LLMS = {key for key, _ in Conversation.LLM_CHOICES} | set(RETIRED_LLMS)
 
 # Modes a new conversation may be created in. "research" is retired and
@@ -1481,12 +1488,9 @@ def context_preview(request, matter_id):
             "input_price": 2.00,
             "context_limit": 1_000_000,
         },
-        {"name": "Claude Sonnet 4.6", "input_price": 3.00, "context_limit": 1_000_000},
         {"name": "Claude Sonnet 5", "input_price": 3.00, "context_limit": 1_000_000},
-        {"name": "Claude Opus 5", "input_price": 5.00, "context_limit": 1_000_000},
+        {"name": "Claude Opus 5.5", "input_price": 4.00, "context_limit": 1_000_000},
         {"name": "Claude Fable 5", "input_price": 10.00, "context_limit": 1_000_000},
-        {"name": "Claude Opus 4.8", "input_price": 5.00, "context_limit": 1_000_000},
-        {"name": "Claude Opus 4.6", "input_price": 5.00, "context_limit": 1_000_000},
     ]
 
     for model in model_costs:

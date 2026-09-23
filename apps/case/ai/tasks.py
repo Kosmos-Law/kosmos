@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
 # Picker choice -> Anthropic model ID. Every entry has a 1M-token context
 # window with no beta header and no long-context surcharge; the selector
 # budget plus the hard-ceiling check in context assembly keep prompts inside
-# it. "claude" is the retired Sonnet 4.6 choice, kept so conversations
-# started on it still send.
+# it. Retired picker choices ("claude" is Sonnet 4.6; the older Opus keys)
+# stay here so conversations started on them still send.
 CLAUDE_MODELS = {
     "claude": "claude-sonnet-4-6",
+    "claude-opus-5-5": "claude-opus-5-5",
     "claude-opus-5": "claude-opus-5",
     "claude-fable": "claude-fable-5",
     "claude-sonnet-5": "claude-sonnet-5",

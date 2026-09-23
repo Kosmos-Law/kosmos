@@ -3,8 +3,9 @@ Estimated API cost per exchange, for the chat status bar.
 
 List rates in USD per million tokens, with the cache economics applied:
 Anthropic bills cache writes at 1.25x and cache reads at 0.10x the input
-rate; Gemini's implicit cache bills cached prompt tokens at roughly a
-quarter of the input rate, and Gemini Pro bills prompts over 200k tokens
+rate (0.05x on Opus 5.5); Gemini's implicit cache bills cached prompt
+tokens at roughly a quarter of the input rate, and Gemini Pro bills
+prompts over 200k tokens
 at a higher tier. ``input_tokens`` here always means the whole prompt
 (cache reads and writes included), matching TurnUsage and
 Message.input_tokens. These are estimates for orientation, not invoices.
@@ -17,6 +18,7 @@ PRICING = {
     "claude-opus": (5.00, 25.00),  # Opus 4.8
     "claude-opus-4-6": (5.00, 25.00),
     "claude-opus-5": (5.00, 25.00),
+    "claude-opus-5-5": (4.00, 20.00),
     "claude-fable": (10.00, 50.00),
     "gemini-flash": (0.30, 2.50),
     "gemini-pro": (1.25, 10.00),
@@ -32,6 +34,8 @@ GEMINI_LONG_THRESHOLD = 200_000
 
 CACHE_WRITE_MULTIPLIER = 1.25
 CACHE_READ_MULTIPLIER = 0.10
+# Models whose cache hits are cheaper than the standard 0.10x.
+CACHE_READ_MULTIPLIERS = {"claude-opus-5-5": 0.05}
 GEMINI_CACHE_READ_MULTIPLIER = 0.25
 
 
@@ -56,11 +60,12 @@ def estimate_cost(llm, input_tokens, output_tokens, cache_read=0, cache_write=0)
         return (input_cost + output_tokens * out_rate) / 1_000_000
 
     in_rate, out_rate = rates
+    read_multiplier = CACHE_READ_MULTIPLIERS.get(llm, CACHE_READ_MULTIPLIER)
     uncached = max(0, input_tokens - cache_read - cache_write)
     input_cost = (
         uncached * in_rate
         + cache_write * in_rate * CACHE_WRITE_MULTIPLIER
-        + cache_read * in_rate * CACHE_READ_MULTIPLIER
+        + cache_read * in_rate * read_multiplier
     )
     return (input_cost + output_tokens * out_rate) / 1_000_000
 

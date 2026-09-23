@@ -2,6 +2,7 @@ import pytest
 from pytest_django.asserts import assertTemplateUsed
 
 from apps.case.ai.models import Conversation, Message
+from apps.case.ai.pricing import PRICING
 from apps.case.ai.selector import MODEL_CONTEXT_LIMITS, MODEL_HARD_LIMITS
 from apps.case.ai.tasks import CLAUDE_MODELS, GEMINI_MODELS
 from apps.case.ai.views import RETIRED_LLMS, VALID_LLMS
@@ -158,15 +159,23 @@ class TestLLMChoiceWiring:
                 f"{key} maps to no provider model ID"
             )
 
-    def test_opus_4_6_dispatches_to_opus_4_6(self):
-        assert CLAUDE_MODELS["claude-opus-4-6"] == "claude-opus-4-6"
-        assert MODEL_HARD_LIMITS["claude-opus-4-6"] == 1_000_000
+    def test_opus_5_5_dispatches_to_opus_5_5(self):
+        assert CLAUDE_MODELS["claude-opus-5-5"] == "claude-opus-5-5"
+        assert MODEL_HARD_LIMITS["claude-opus-5-5"] == 1_000_000
+
+    def test_picker_offers_one_opus(self):
+        """Superseded Opus versions are retired, not listed alongside."""
+        opus = [key for key, _ in Conversation.LLM_CHOICES if "opus" in key]
+        assert opus == ["claude-opus-5-5"]
 
     def test_retired_choices_still_dispatch(self):
-        """Conversations started on a retired model keep sending."""
+        """Conversations started on a retired model keep sending, and keep
+        pricing at the rates they ran on."""
         for key in RETIRED_LLMS:
             assert key in VALID_LLMS
             assert key in CLAUDE_MODELS or key in GEMINI_MODELS
+            assert key in MODEL_CONTEXT_LIMITS and key in MODEL_HARD_LIMITS
+            assert key in PRICING, f"{key} lost its price"
 
 
 class TestBuildChatHistory:
