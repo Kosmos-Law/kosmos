@@ -62,6 +62,7 @@ def run_agent_request(
     from .tasks import (
         CLAUDE_FALLBACK_MODEL,
         CLAUDE_MODELS,
+        FABLE_LLMS,
         GEMINI_MODELS,
         PromptTooLargeError,
         finalize_response,
@@ -147,7 +148,7 @@ def run_agent_request(
             on_note=writer.note,
             max_tokens=(
                 AGENT_FABLE_MAX_OUTPUT_TOKENS
-                if llm == "claude-fable"
+                if llm in FABLE_LLMS
                 else AGENT_MAX_OUTPUT_TOKENS
             ),
         )

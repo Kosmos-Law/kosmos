@@ -14,15 +14,15 @@ class Conversation(AuditMixin, models.Model):
     # The picker offers one entry per model family at its current version.
     # Superseded versions are retired from the picker (see RETIRED_LLMS in
     # views.py: "claude" is Sonnet 4.6, "claude-opus-5" / "claude-opus" /
-    # "claude-opus-4-6" are Opus 5 / 4.8 / 4.6, "gemini-pro" is Gemini 2.5
-    # Pro) but stay wired through the dispatch, selector and pricing
-    # tables so conversations started on them keep working and keep their
+    # "claude-opus-4-6" are Opus 5 / 4.8 / 4.6, "claude-fable" is Fable 5,
+    # "gemini-pro" is Gemini 2.5 Pro) but stay wired through the dispatch,
+    # selector and pricing tables so conversations started on them keep working and keep their
     # original pricing. Anthropic publishes no "latest" alias, so a new
     # version is a new key here plus rows in those tables (and a
-    # migration for the choices). "claude-fable" (Fable 5, double Opus
-    # pricing) is available in both Classic and Agentic mode.
+    # migration for the choices). Fable (double Opus pricing) is available
+    # in both Classic and Agentic mode.
     LLM_CHOICES = [
-        ("claude-fable", "Claude Fable 5"),
+        ("claude-fable-5-1", "Claude Fable 5.1"),
         ("claude-opus-5-5", "Claude Opus 5.5"),
         ("claude-sonnet-5", "Claude Sonnet 5"),
         ("gemini-pro-latest", "Gemini Pro (Latest)"),

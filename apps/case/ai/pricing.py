@@ -3,9 +3,9 @@ Estimated API cost per exchange, for the chat status bar.
 
 List rates in USD per million tokens, with the cache economics applied:
 Anthropic bills cache writes at 1.25x and cache reads at 0.10x the input
-rate (0.05x on Opus 5.5); Gemini's implicit cache bills cached prompt
-tokens at roughly a quarter of the input rate, and Gemini Pro bills
-prompts over 200k tokens
+rate (0.05x on Opus 5.5, 0.025x on Fable 5.1); Gemini's implicit cache
+bills cached prompt tokens at roughly a quarter of the input rate, and
+Gemini Pro bills prompts over 200k tokens
 at a higher tier. ``input_tokens`` here always means the whole prompt
 (cache reads and writes included), matching TurnUsage and
 Message.input_tokens. These are estimates for orientation, not invoices.
@@ -14,12 +14,13 @@ Message.input_tokens. These are estimates for orientation, not invoices.
 # Picker key -> (input, output) USD per million tokens.
 PRICING = {
     "claude": (3.00, 15.00),  # Sonnet 4.6
-    "claude-sonnet-5": (3.00, 15.00),
+    "claude-sonnet-5": (2.00, 10.00),
     "claude-opus": (5.00, 25.00),  # Opus 4.8
     "claude-opus-4-6": (5.00, 25.00),
     "claude-opus-5": (5.00, 25.00),
     "claude-opus-5-5": (4.00, 20.00),
-    "claude-fable": (10.00, 50.00),
+    "claude-fable": (10.00, 50.00),  # Fable 5
+    "claude-fable-5-1": (10.00, 50.00),
     "gemini-flash": (0.30, 2.50),
     "gemini-pro": (1.25, 10.00),
     "gemini-pro-latest": (1.25, 10.00),
@@ -35,7 +36,7 @@ GEMINI_LONG_THRESHOLD = 200_000
 CACHE_WRITE_MULTIPLIER = 1.25
 CACHE_READ_MULTIPLIER = 0.10
 # Models whose cache hits are cheaper than the standard 0.10x.
-CACHE_READ_MULTIPLIERS = {"claude-opus-5-5": 0.05}
+CACHE_READ_MULTIPLIERS = {"claude-opus-5-5": 0.05, "claude-fable-5-1": 0.025}
 GEMINI_CACHE_READ_MULTIPLIER = 0.25
 
 

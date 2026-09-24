@@ -4,7 +4,7 @@ from pytest_django.asserts import assertTemplateUsed
 from apps.case.ai.models import Conversation, Message
 from apps.case.ai.pricing import PRICING
 from apps.case.ai.selector import MODEL_CONTEXT_LIMITS, MODEL_HARD_LIMITS
-from apps.case.ai.tasks import CLAUDE_MODELS, GEMINI_MODELS
+from apps.case.ai.tasks import CLAUDE_MODELS, FABLE_LLMS, GEMINI_MODELS
 from apps.case.ai.views import RETIRED_LLMS, VALID_LLMS
 from apps.settings.models import Firm
 
@@ -163,10 +163,15 @@ class TestLLMChoiceWiring:
         assert CLAUDE_MODELS["claude-opus-5-5"] == "claude-opus-5-5"
         assert MODEL_HARD_LIMITS["claude-opus-5-5"] == 1_000_000
 
-    def test_picker_offers_one_opus(self):
-        """Superseded Opus versions are retired, not listed alongside."""
-        opus = [key for key, _ in Conversation.LLM_CHOICES if "opus" in key]
-        assert opus == ["claude-opus-5-5"]
+    def test_picker_offers_one_version_per_family(self):
+        """Superseded versions are retired, not listed alongside."""
+        keys = [key for key, _ in Conversation.LLM_CHOICES]
+        assert [k for k in keys if "opus" in k] == ["claude-opus-5-5"]
+        assert [k for k in keys if "fable" in k] == ["claude-fable-5-1"]
+
+    def test_fable_keys_get_the_thinking_headroom(self):
+        assert FABLE_LLMS == {"claude-fable-5-1", "claude-fable"}
+        assert CLAUDE_MODELS["claude-fable-5-1"] == "claude-fable-5-1"
 
     def test_retired_choices_still_dispatch(self):
         """Conversations started on a retired model keep sending, and keep
