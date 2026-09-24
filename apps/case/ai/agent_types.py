@@ -42,6 +42,9 @@ class LoopResult:
     stop_reason: str = ""
     stop_details: dict | None = None
     forced_answer: bool = False
+    # Set when the refusal fallback answered any turn of this run (the
+    # model ID that served); see anthropic_client.FALLBACK_MODELS.
+    served_model: str = ""
     per_turn: list[TurnUsage] = field(default_factory=list)
 
     def add_turn(self, usage: TurnUsage) -> None:

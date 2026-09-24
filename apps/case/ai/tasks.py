@@ -509,6 +509,7 @@ def process_ai_request(
                     if llm in FABLE_LLMS
                     else CLASSIC_MAX_OUTPUT_TOKENS
                 ),
+                on_note=log_activity,
             )
 
         # Check for cancellation before citation verification

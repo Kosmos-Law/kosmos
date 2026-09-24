@@ -209,7 +209,7 @@ def test_classic_chat_applies_fact_blocks(user, matter, monkeypatch):
 
     captured = {}
 
-    def fake_send(context_text, chat_history, model, is_cancelled=None):
+    def fake_send(context_text, chat_history, model, **kwargs):
         captured["context"] = context_text
         return (
             block([{"date": "2024-03-15", "description": "Complaint filed"}]),
@@ -246,7 +246,7 @@ def test_unrelated_chat_gets_no_write_protocols(user, matter, monkeypatch):
 
     captured = {}
 
-    def fake_send(context_text, chat_history, model, is_cancelled=None):
+    def fake_send(context_text, chat_history, model, **kwargs):
         captured["context"] = context_text
         return "Decent, given the contract terms.", 10, 10
 

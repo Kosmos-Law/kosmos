@@ -35,6 +35,76 @@ logger = logging.getLogger(__name__)
 # the log. Every real matter context clears it comfortably.
 _ANTHROPIC_CACHE_MIN_CHARS = 5000
 
+# Server-side refusal fallback. Fable runs safety classifiers that can
+# decline benign-adjacent requests (an HTTP 200 with stop_reason
+# "refusal", before any output or mid-stream); with `fallbacks` the API
+# re-runs the same request on the fallback model inside the same call, so
+# the user gets an answer instead of the refusal notice. Targets must be
+# in the requested model's allowed_fallback_models: Opus 4.8 and Opus 5
+# for both Fable models as of 2026-09-24 (Opus 5.5 is not yet allowed).
+# The array form takes exactly this beta header. Once a conversation has
+# fallen back, later turns are routed straight to the fallback model for
+# about an hour ("sticky"); served_by_fallback catches those too. A
+# fallback-served turn bills at the fallback model's rates; pricing.py
+# still prices it at the picker rate, an overestimate.
+FALLBACK_MODELS = {
+    "claude-fable-5-1": "claude-opus-5",
+    "claude-fable-5": "claude-opus-5",
+}
+_FALLBACK_BETA = "server-side-fallback-2026-06-01"
+
+
+def _fallback_kwargs(model: str) -> dict:
+    fallback = FALLBACK_MODELS.get(model)
+    if not fallback:
+        return {}
+    return {"betas": [_FALLBACK_BETA], "fallbacks": [{"model": fallback}]}
+
+
+def _messages_api(client, model: str):
+    """The beta namespace when the request carries fallbacks (the parameter
+    lives there); the stable one otherwise."""
+    return client.beta.messages if model in FALLBACK_MODELS else client.messages
+
+
+def served_by_fallback(final_message) -> str | None:
+    """The fallback model's ID when it produced this message, else None.
+
+    A fallback_message entry in usage.iterations is the served-by signal
+    (sticky-routed turns carry no fallback content block); the top-level
+    model names what answered.
+    """
+    usage = getattr(final_message, "usage", None)
+    for entry in getattr(usage, "iterations", None) or []:
+        if getattr(entry, "type", None) == "fallback_message":
+            return getattr(final_message, "model", None) or "the fallback model"
+    return None
+
+
+def _note_fallback(on_note, model: str, served: str) -> None:
+    logger.info("Claude refusal fallback: %s served for %s", served, model)
+    if on_note:
+        on_note(f"Served by {served} (safety fallback for {model})")
+
+
+def _after_fallback(content: list) -> list:
+    """The content blocks the served model actually stands behind.
+
+    After a mid-output fallback, the declined partial's thinking and
+    tool_use blocks before the final fallback marker were never acted on
+    (only its text carried over as context) and must be neither executed
+    nor echoed back; the marker itself is an audit block the API ignores.
+    """
+    boundary = -1
+    for i, block in enumerate(content):
+        if getattr(block, "type", "") == "fallback":
+            boundary = i
+    if boundary < 0:
+        return list(content)
+    dead = ("thinking", "redacted_thinking", "tool_use")
+    kept = [b for b in content[:boundary] if getattr(b, "type", "") not in dead]
+    return kept + list(content[boundary + 1 :])
+
 
 def _build_system(system_context):
     """Return the `system=` argument for messages.stream.
@@ -152,6 +222,7 @@ def send_to_claude(
     model: str = "claude-sonnet-4-6",
     is_cancelled: Callable[[], bool] | None = None,
     max_tokens: int = 4096,
+    on_note: Callable[[str], None] | None = None,
 ) -> tuple[str, int, int]:
     """
     Send a conversation to Claude and get a response using streaming.
@@ -181,6 +252,8 @@ def send_to_claude(
         is_cancelled: Optional callback that returns True if request should be cancelled
         max_tokens: Output token ceiling for the turn — see CLASSIC_MAX_OUTPUT_TOKENS
             in tasks.py; models with mandatory thinking need more headroom.
+        on_note: Optional callback for a line worth showing in the activity
+            log (currently: the turn was served by the refusal fallback).
 
     Returns:
         tuple of (response_text, input_tokens, output_tokens). input_tokens
@@ -198,11 +271,12 @@ def send_to_claude(
 
     def _stream_once(send_messages):
         response_parts = []
-        with client.messages.stream(
+        with _messages_api(client, model).stream(
             model=model,
             max_tokens=max_tokens,
             system=_build_system(system_context),
             messages=send_messages,
+            **_fallback_kwargs(model),
         ) as stream:
             for text in stream.text_stream:
                 # Check for cancellation on each chunk
@@ -210,6 +284,10 @@ def send_to_claude(
                     raise InterruptedError("Request cancelled")
                 response_parts.append(text)
             final_message = stream.get_final_message()
+
+        served = served_by_fallback(final_message)
+        if served:
+            _note_fallback(on_note, model, served)
 
         usage = final_message.usage
         cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
@@ -338,6 +416,7 @@ def send_to_claude_with_tools(
             messages=convo,
             thinking=_thinking_for(model),
             output_config={"effort": effort},
+            **_fallback_kwargs(model),
         )
         if force_answer:
             kwargs["tool_choice"] = {"type": "none"}
@@ -345,7 +424,7 @@ def send_to_claude_with_tools(
         text_parts: list[str] = []
         thinking_parts: list[str] = []
         started = time.time()
-        with client.messages.stream(**kwargs) as stream:
+        with _messages_api(client, model).stream(**kwargs) as stream:
             for event in stream:
                 if is_cancelled and is_cancelled():
                     raise InterruptedError("Request cancelled")
@@ -363,8 +442,14 @@ def send_to_claude_with_tools(
                         on_thinking("".join(thinking_parts))
             final = stream.get_final_message()
 
+        served = served_by_fallback(final)
+        if served and not result.served_model:
+            result.served_model = served
+            _note_fallback(on_note, model, served)
+
         usage = final.usage
-        tool_blocks = [b for b in final.content if getattr(b, "type", "") == "tool_use"]
+        content = _after_fallback(final.content)
+        tool_blocks = [b for b in content if getattr(b, "type", "") == "tool_use"]
         cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
         cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
         turn_usage = TurnUsage(
@@ -443,13 +528,12 @@ def send_to_claude_with_tools(
         if final.stop_reason != "tool_use" or not tool_blocks:
             break
 
-        # Echo the assistant turn back verbatim (text, thinking, tool_use).
+        # Echo the assistant turn back verbatim (text, thinking, tool_use),
+        # minus anything a mid-output fallback left behind.
         convo.append(
             {
                 "role": "assistant",
-                "content": [
-                    block.model_dump(exclude_unset=True) for block in final.content
-                ],
+                "content": [block.model_dump(exclude_unset=True) for block in content],
             }
         )
 
