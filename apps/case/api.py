@@ -258,11 +258,19 @@ def _format_facts(matter):
 
 
 def _format_email_threads(matter):
-    """Thread manifest: one line per Gmail thread, newest activity last."""
+    """Thread manifest: one line per Gmail thread, most recent activity
+    first, so a reader that truncates the manifest loses the oldest
+    threads rather than the latest."""
     threads = group_by_thread(matter.emails.dedup())
     if not threads:
         return "No synced emails."
-    lines = []
+    threads.sort(
+        key=lambda emails: emails[-1].date or emails[-1].created_at, reverse=True
+    )
+    lines = [
+        "Threads, most recent activity first. "
+        "Use read_email_thread with a thread id for the full thread."
+    ]
     for emails in threads:
         key = emails[0].thread_id or emails[0].gmail_id
         first, last = emails[0], emails[-1]
@@ -283,7 +291,6 @@ def _format_email_threads(matter):
         if last.snippet:
             line += f"\n  Latest: {last.snippet[:150]}"
         lines.append(line)
-    lines.append("Use read_email_thread with a thread id for the full thread.")
     return "\n".join(lines)
 
 
