@@ -188,6 +188,23 @@ class TestSections:
         text = section_text(api, matter, "emails")
         assert "[thread t100] Discovery schedule (2 messages" in text
 
+    def test_emails_manifest_lists_latest_activity_first(self, api, matter):
+        # An old thread with a recent reply outranks a newer, quiet thread.
+        for gmail_id, thread_id, subject, days_ago in [
+            ("a1", "old", "Old thread", 300),
+            ("b1", "mid", "Middle thread", 100),
+            ("a2", "old", "Old thread", 1),
+        ]:
+            Email.objects.create(
+                matter=matter,
+                gmail_id=gmail_id,
+                thread_id=thread_id,
+                subject=subject,
+                date=timezone.now() - timedelta(days=days_ago),
+            )
+        text = section_text(api, matter, "emails")
+        assert text.index("[thread old]") < text.index("[thread mid]")
+
 
 class TestFullReads:
     def test_document_text(self, api, document):

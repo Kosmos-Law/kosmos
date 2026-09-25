@@ -246,8 +246,10 @@ def read_matter(matter_id: int, section: str) -> str:
     settlement, documents (metadata manifest; use read_document for a
     document's full text), highlights (excerpts with [hl:ID] handles
     usable as add_fact sources), timeline (the facts chronology),
-    witnesses, emails (thread manifest; use read_email_thread for a
-    full thread), conversations (manifest of earlier AI chats on the
+    witnesses, emails (thread manifest, most recent activity first;
+    use read_email_thread for a full thread, and search_matter with
+    kinds=["email"] for older threads past the truncation point),
+    conversations (manifest of earlier AI chats on the
     matter with [conv:ID] handles; use read_conversation for a
     transcript), ledger (sent invoices, payments, credits, running
     balance, unbilled work, unsent invoices, open payment requests;
