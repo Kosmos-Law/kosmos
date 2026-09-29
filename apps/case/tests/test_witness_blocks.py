@@ -149,7 +149,7 @@ def test_classic_chat_applies_witness_blocks(user, matter, monkeypatch):
 
     captured = {}
 
-    def fake_send(context_text, chat_history, model, is_cancelled=None):
+    def fake_send(context_text, chat_history, model, **kwargs):
         captured["context"] = context_text
         return (
             block([{"name": "Bob Smith", "knowledge": "Saw the crash"}]),

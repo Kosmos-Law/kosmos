@@ -90,7 +90,7 @@ def test_send_to_legacy_research_conversation_works(client, matter, user, _no_wo
 # --------------------------------------------------------------------------- #
 # The new-conversation modal (title + model only)
 # --------------------------------------------------------------------------- #
-def _prompt_html(client, matter, llm="claude-opus"):
+def _prompt_html(client, matter, llm="claude-opus-5-5"):
     url = reverse("case:ai-new-conversation-prompt", args=[matter.id])
     response = client.get(url, {"llm": llm})
     assert response.status_code == 200
@@ -112,8 +112,8 @@ def test_modal_mode_sits_above_model(client, matter):
 
 
 def test_modal_keeps_requested_llm(client, matter):
-    html = _prompt_html(client, matter, llm="claude-opus")
-    assert re.search(r'value="claude-opus"\s+selected', html)
+    html = _prompt_html(client, matter, llm="claude-opus-5-5")
+    assert re.search(r'value="claude-opus-5-5"\s+selected', html)
     assert not re.search(r'value="gemini-pro-latest"\s+selected', html)
 
 

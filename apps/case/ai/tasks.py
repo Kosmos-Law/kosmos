@@ -16,11 +16,13 @@ logger = logging.getLogger(__name__)
 # Picker choice -> Anthropic model ID. Every entry has a 1M-token context
 # window with no beta header and no long-context surcharge; the selector
 # budget plus the hard-ceiling check in context assembly keep prompts inside
-# it. "claude" is the retired Sonnet 4.6 choice, kept so conversations
-# started on it still send.
+# it. Retired picker choices ("claude" is Sonnet 4.6; the older Opus keys)
+# stay here so conversations started on them still send.
 CLAUDE_MODELS = {
     "claude": "claude-sonnet-4-6",
+    "claude-opus-5-5": "claude-opus-5-5",
     "claude-opus-5": "claude-opus-5",
+    "claude-fable-5-1": "claude-fable-5-1",
     "claude-fable": "claude-fable-5",
     "claude-sonnet-5": "claude-sonnet-5",
     "claude-opus": "claude-opus-4-8",
@@ -32,12 +34,16 @@ CLAUDE_MODELS = {
 # conversations get their default from the surface that creates them.
 CLAUDE_FALLBACK_MODEL = "claude-sonnet-4-6"
 
+# Picker keys that run a Fable model. Fable's thinking is mandatory and
+# always-on (unlike the other Claude models here) and reasons noticeably
+# deeper per turn, so these keys get a higher output ceiling.
+FABLE_LLMS = frozenset({"claude-fable-5-1", "claude-fable"})
+
 # Output token ceiling for a classic (single-completion) Claude turn.
 CLASSIC_MAX_OUTPUT_TOKENS = 4096
-# Fable's thinking is mandatory and always-on (unlike the other Claude
-# models here) and reasons noticeably deeper per turn; at the standard
-# ceiling it can burn the whole turn on reasoning before writing any
-# visible answer. See the matching bump in agent.py for agentic mode.
+# At the standard ceiling Fable can burn the whole turn on reasoning before
+# writing any visible answer. See the matching bump in agent.py for
+# agentic mode.
 CLASSIC_FABLE_MAX_OUTPUT_TOKENS = 16_000
 
 # Picker choice -> Gemini model ID. "gemini-pro" is the retired 2.5 Pro pin.
@@ -500,9 +506,10 @@ def process_ai_request(
                 is_cancelled=is_cancelled,
                 max_tokens=(
                     CLASSIC_FABLE_MAX_OUTPUT_TOKENS
-                    if llm == "claude-fable"
+                    if llm in FABLE_LLMS
                     else CLASSIC_MAX_OUTPUT_TOKENS
                 ),
+                on_note=log_activity,
             )
 
         # Check for cancellation before citation verification

@@ -76,6 +76,8 @@ class FakeClaude:
         self.turns = list(turns)
         self.calls = []
         self.messages = self
+        # Requests that carry `fallbacks` go through client.beta.messages.
+        self.beta = self
 
     def stream(self, **kwargs):
         # Snapshot the conversation as sent; the loop mutates its list.
@@ -379,6 +381,128 @@ class TestClassicClaude:
         # Both calls' billed usage counted, not just the retry's.
         assert input_tokens == 50 + 60
         assert output_tokens == 20 + 10
+
+
+def fallback_block():
+    return Block(
+        type="fallback",
+        from_={"model": "claude-fable-5-1"},
+        to={"model": "claude-opus-5"},
+    )
+
+
+def fallback_iterations():
+    return [
+        SimpleNamespace(type="refusal_message"),
+        SimpleNamespace(type="fallback_message"),
+    ]
+
+
+class TestRefusalFallback:
+    def test_fable_requests_carry_the_server_side_fallback(self, claude):
+        fake = claude([answer_turn()])
+        anthropic_client.send_to_claude_with_tools(
+            "sys", HISTORY, TOOLS, echo_batch, "claude-fable-5-1"
+        )
+        call = fake.calls[0]
+        assert call["betas"] == ["server-side-fallback-2026-06-01"]
+        assert call["fallbacks"] == [{"model": "claude-opus-5"}]
+
+    def test_opus_requests_do_not(self, claude):
+        fake = claude([answer_turn()])
+        anthropic_client.send_to_claude_with_tools(
+            "sys", HISTORY, TOOLS, echo_batch, "claude-opus-5-5"
+        )
+        assert "fallbacks" not in fake.calls[0]
+        assert "betas" not in fake.calls[0]
+
+    def test_mid_output_fallback_drops_the_declined_partial(self, claude):
+        # Fable got as far as a thought and a tool call, the classifier
+        # fired mid-stream, and Opus 5 continued from the partial text with
+        # its own call. Only Opus's call runs, and the echoed assistant
+        # turn omits the dead thinking/tool_use blocks and the marker.
+        final = SimpleNamespace(
+            model="claude-opus-5",
+            content=[
+                Block(type="thinking", thinking="", signature="sig-f"),
+                Block(type="text", text="Looking at the file."),
+                Block(type="tool_use", id="dead", name="read_document", input={}),
+                fallback_block(),
+                Block(type="tool_use", id="live", name="read_note", input={"n": 2}),
+            ],
+            usage=usage(iterations=fallback_iterations()),
+            stop_reason="tool_use",
+            stop_details=None,
+        )
+        fake = claude([([text_event("Looking at the file.")], final), answer_turn()])
+        seen, notes = [], []
+
+        def batch(calls):
+            seen.append([c["id"] for c in calls])
+            return echo_batch(calls)
+
+        result = anthropic_client.send_to_claude_with_tools(
+            "sys", HISTORY, TOOLS, batch, "claude-fable-5-1", on_note=notes.append
+        )
+        assert seen == [["live"]]
+        echoed = fake.calls[1]["messages"][-2]["content"]
+        assert [b["type"] for b in echoed] == ["text", "tool_use"]
+        assert echoed[1]["id"] == "live"
+        assert result.served_model == "claude-opus-5"
+        assert result.text == "The answer."
+        assert notes == [
+            "Served by claude-opus-5 (safety fallback for claude-fable-5-1)"
+        ]
+
+    def test_sticky_turns_note_once(self, claude):
+        # No fallback block on a sticky-served turn; usage.iterations still
+        # says who served. Two such turns produce one note.
+        def sticky(text, stop="end_turn", tool=None):
+            content = [Block(type="text", text=text)]
+            if tool:
+                content.append(
+                    Block(type="tool_use", id=tool, name="read_note", input={})
+                )
+            final = SimpleNamespace(
+                model="claude-opus-5",
+                content=content,
+                usage=usage(iterations=fallback_iterations()),
+                stop_reason=stop,
+                stop_details=None,
+            )
+            return [text_event(text)], final
+
+        notes = []
+        claude([sticky("Reading.", "tool_use", "t1"), sticky("Done.")])
+        result = anthropic_client.send_to_claude_with_tools(
+            "sys", HISTORY, TOOLS, echo_batch, "claude-fable-5-1", on_note=notes.append
+        )
+        assert result.served_model == "claude-opus-5"
+        assert len(notes) == 1
+
+    def test_classic_notes_a_fallback_served_turn(self, claude):
+        final = SimpleNamespace(
+            model="claude-opus-5",
+            content=[Block(type="text", text="Hi.")],
+            usage=usage(iterations=fallback_iterations()),
+            stop_reason="end_turn",
+            stop_details=None,
+        )
+        fake = claude([([text_event("Hi.")], final)])
+        notes = []
+        text, _, _ = anthropic_client.send_to_claude(
+            "sys", HISTORY, model="claude-fable-5-1", on_note=notes.append
+        )
+        assert text == "Hi."
+        assert fake.calls[0]["fallbacks"] == [{"model": "claude-opus-5"}]
+        assert notes == [
+            "Served by claude-opus-5 (safety fallback for claude-fable-5-1)"
+        ]
+
+    def test_classic_opus_request_is_unchanged(self, claude):
+        fake = claude([answer_turn()])
+        anthropic_client.send_to_claude("sys", HISTORY, model="claude-opus-5-5")
+        assert "fallbacks" not in fake.calls[0]
 
 
 # ── Gemini fakes ─────────────────────────────────────────────────────────────

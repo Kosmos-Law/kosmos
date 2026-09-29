@@ -149,7 +149,13 @@ with the summary requested on Opus 4.8 (`agent_types`, `anthropic_client
 `TurnUsage.input` is the whole prompt with `cache_read` broken out beside
 it so both providers report alike. A `max_tokens` tool turn is retried
 once with a note; Gemini's `MALFORMED_FUNCTION_CALL` likewise; a Claude
-`refusal` is terminal (`stop_details` stored).
+`refusal` is terminal (`stop_details` stored). Fable requests carry the
+server-side refusal fallback (`anthropic_client.FALLBACK_MODELS`, Opus 5):
+a classifier decline re-runs the turn on the fallback model inside the
+same call, the run gets a note naming it, `LoopResult.served_model`
+records it, and the echo drops the declined partial's thinking and
+tool_use blocks (`_after_fallback`). Only a whole-chain refusal is
+terminal.
 
 Requires `anthropic>=1.0` (the 0.40 stream accumulator dropped thinking
 blocks, which the loop must echo back).

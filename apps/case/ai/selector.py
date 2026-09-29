@@ -36,7 +36,9 @@ logger = logging.getLogger(__name__)
 # Every Claude and Gemini model in the picker has a ~1M-token window.
 MODEL_CONTEXT_LIMITS = {
     "claude": 600_000,
+    "claude-opus-5-5": 600_000,
     "claude-opus-5": 600_000,
+    "claude-fable-5-1": 600_000,
     "claude-fable": 600_000,
     "claude-sonnet-5": 600_000,
     "claude-opus": 600_000,
@@ -51,7 +53,9 @@ MODEL_CONTEXT_LIMITS = {
 # the ceiling, auto-selected items are dropped to fit before sending.
 MODEL_HARD_LIMITS = {
     "claude": 1_000_000,
+    "claude-opus-5-5": 1_000_000,
     "claude-opus-5": 1_000_000,
+    "claude-fable-5-1": 1_000_000,
     "claude-fable": 1_000_000,
     "claude-sonnet-5": 1_000_000,
     "claude-opus": 1_000_000,

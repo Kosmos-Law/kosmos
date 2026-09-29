@@ -19,6 +19,25 @@ def test_classic_uncached():
     assert estimate_cost("claude-opus", 100_000, 2_000) == pytest.approx(0.55)
 
 
+def test_fable_5_1_cache_read():
+    # Same $10/$50 as Fable 5; cache hits at 0.025x.
+    assert estimate_cost("claude-fable-5-1", 100_000, 0, cache_read=100_000) == (
+        pytest.approx(0.025)
+    )
+
+
+def test_sonnet_5_standard_price():
+    # The $2/$10 launch price became permanent.
+    assert estimate_cost("claude-sonnet-5", 100_000, 10_000) == pytest.approx(0.30)
+
+
+def test_opus_5_5_rates_and_cache_read():
+    # $4/M in, $20/M out, cache hits at 0.05x rather than the usual 0.10x.
+    assert estimate_cost("claude-opus-5-5", 100_000, 2_000) == pytest.approx(0.44)
+    cached = estimate_cost("claude-opus-5-5", 100_000, 0, cache_read=100_000)
+    assert cached == pytest.approx(0.02)
+
+
 def test_gemini_long_context_tier():
     short = estimate_cost("gemini-pro-latest", 100_000, 1_000)
     long = estimate_cost("gemini-pro-latest", 250_000, 1_000)
