@@ -45,10 +45,7 @@
    knob. */
 .sidebar-brand-wordmark {
   display: block;
-  /* The sparkle cut's em-box is 102 units against the word's 100-unit cap
-     (the constellation cut's was 123), so 1.25rem holds the letters at the
-     approved 1.5rem-constellation size. */
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
@@ -66,7 +63,7 @@
   display: none;
   flex-shrink: 0;
   /* The sparkle kappa is 1.15em wide, flush top and bottom to the letter. */
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
