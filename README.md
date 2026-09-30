@@ -32,16 +32,19 @@ functionality.
 ## Table of Contents
 
 - [Getting Started](#getting-started)
-  - [Setting up PostgreSQL](#setting-up-postgresql)
-  - [Virtual Environment](#virtual-environment)
-  - [Installing Dependencies](#installing-dependencies)
-  - [Installing Code Quality Tools](#installing-code-quality-tools)
-  - [Environment Variables](#environment-variables)
-  - [Running Migrations](#running-migrations)
-  - [Building the Search Index](#building-the-search-index)
-  - [Running the Application](#running-the-application)
-  - [Running Background Tasks](#running-background-tasks)
-  - [Creating the first Superuser](#creating-the-first-superuser)
+  - [Quick install](#quick-install)
+  - [Production install](#production-install)
+  - [Manual setup](#manual-setup)
+    - [Machine requirements](#machine-requirements)
+    - [Setting up PostgreSQL](#setting-up-postgresql)
+    - [Installing dependencies](#installing-dependencies)
+    - [Installing code quality tools](#installing-code-quality-tools)
+    - [Environment variables](#environment-variables)
+    - [Migrations and post-migration commands](#migrations-and-post-migration-commands)
+    - [Running the application](#running-the-application)
+    - [Running background tasks](#running-background-tasks)
+    - [Production services (systemd and nginx)](#production-services-systemd-and-nginx)
+    - [Creating the first superuser](#creating-the-first-superuser)
 - [Troubleshooting](#troubleshooting)
   - [Troubleshoot Dependency Installation](#troubleshoot-dependency-installation)
   - [Troubleshoot Running Migrations](#troubleshoot-running-migrations)
@@ -62,16 +65,89 @@ functionality.
 
 ## Getting Started
 
-Make sure to have the following installed on your machine:
+### Quick install
 
-- Python 3.10 or higher
-- PostgreSQL
+On a fresh Ubuntu or Debian machine, one command stands up a working
+development instance:
+
+```bash
+git clone https://github.com/Kosmos-Law/kosmos.git
+cd kosmos
+scripts/install.sh
+```
+
+The script installs the system packages, PostgreSQL with the `pgvector` and
+`pg_trgm` extensions, [uv](https://docs.astral.sh/uv/) and the Python
+environment, generates `config/.env` from `config/.env.dev` with a fresh secret
+key, runs migrations and the post-migration commands, and asks for the first
+superuser. It uses `sudo` where it has to and never runs as root. It is
+idempotent: re-run it after pulling new code or after a failure and it only
+does what is still missing. An existing `config/.env` is always kept.
+
+Then start the app in two terminals:
+
+```bash
+.venv/bin/python manage.py runserver
+.venv/bin/python manage.py qcluster
+```
+
+| Option | Effect |
+| --- | --- |
+| `--db-name`, `--db-user`, `--db-password` | database settings (default `kosmos` / `kosmos` / `kosmos`); values in an existing `config/.env` win |
+| `--no-superuser` | skip the superuser prompt |
+| `--seed-intake-forms` | also run `manage.py seed_intake_forms` |
+| `--auto-summary-time "30 1"` | passed to `setup_schedules` |
+| `--yes` | skip the confirmation prompt |
+| `--dry-run` | print every command instead of running it; rendered files are left in a temp dir for inspection |
+| `--force` | production only: overwrite system files that differ from the templates and remove nginx's default site |
+
+For a non-interactive superuser, export `DJANGO_SUPERUSER_USERNAME`,
+`DJANGO_SUPERUSER_EMAIL` and `DJANGO_SUPERUSER_PASSWORD` before running.
+
+Nix users: `flake.nix` and `process-compose.yaml` provide a development shell
+instead; note their database defaults (`aletheia` on port 5433) differ from
+`config/.env.dev` (`kosmos` on 5432).
+
+### Production install
+
+```bash
+scripts/install.sh --prod --domain kosmos.example.com
+```
+
+In addition to the steps above, `--prod` generates `config/.env` with
+`DEBUG=False`, `ENV=prod`, a generated database password and the hostname in
+`ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` and `PUBLIC_BASE_URL`; installs
+`nginx`; copies `deploy/gunicorn.conf.py` to the repository root (gitignored,
+edit it there); renders and installs the systemd units and nginx site from
+[`deploy/`](deploy/README.md); runs `collectstatic`; and starts `law.socket`,
+`law.service` and `qcluster.service`. Finish with:
+
+```bash
+sudo certbot --nginx -d kosmos.example.com
+```
+
+Certbot rewrites the site file with the TLS listeners; later runs of the
+installer leave a certbot-managed file alone. Then fill in the blanks in
+`config/.env`: SMTP settings and `EMAIL_BACKEND=smtp`, `ADMINS`, API keys, and
+`STORAGE_BACKEND=s3` with the DigitalOcean Spaces credentials if uploads should
+live in object storage. Restart both services after editing `.env`:
+
+```bash
+sudo systemctl restart law.service qcluster.service
+```
+
+### Manual setup
+
+The steps the installer automates, for other platforms or for reference.
+
+#### Machine requirements
+
+- Python 3.13 (uv downloads it on demand; `.python-version` pins it)
+- PostgreSQL 14 or newer with the **pgvector** extension package
+  (`postgresql-16-pgvector` on Ubuntu 24.04) and contrib (`pg_trgm`)
 - [uv](https://docs.astral.sh/uv/)
 
-### Additional Machine Requirements
-
-The application needs additional software to be installed on the machine
-where the application will be running:
+The application needs additional software on the machine where it runs:
 
 ```bash
 sudo apt-get install -y libpangocairo-1.0-0 tesseract-ocr ghostscript poppler-utils pandoc libreoffice-writer-nogui python3-uno
@@ -88,127 +164,65 @@ sudo apt-get install -y libpangocairo-1.0-0 tesseract-ocr ghostscript poppler-ut
   Markdown for the case-notes sync (`manage.py sync_drive_notes`). Spreadsheets
   (Google Sheets / `.xlsx` / `.ods` / `.csv`) in the same `Notes` folder are also
   synced, rendered as Markdown tables (one per sheet) via the `openpyxl` and
-  `odfpy` Python packages — no extra system binary required.
+  `odfpy` Python packages, no extra system binary required.
 - **LibreOffice Writer** (`libreoffice-writer-nogui` + `python3-uno`) - Applies
   AI-proposed edits to `.odt` drafts as native tracked changes
   (`apps/drive/redline.py`). The driver runs under the system python3 (which
   has the UNO bindings), not the project venv; override the binaries with the
   `SOFFICE_BIN` / `UNO_PYTHON` env vars if they live elsewhere.
 
-### Setting up PostgreSQL
+#### Setting up PostgreSQL
 
-After installing PostgreSQL on your machine, create a new database, user
-and set up privileges and permissions for the user.
+Create a role and a database owned by it, then create the two extensions the
+migrations depend on. Creating extensions needs a superuser, so do it as the
+`postgres` user rather than making the application role a superuser.
 
 **NOTE:** Replace all instances inside `< >` with your own values.
 
-```postgresql
-CREATE DATABASE <database_name>;
-CREATE USER <database_user> WITH ENCRYPTED PASSWORD '<user_password>';
-GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <database_user>;
-ALTER DATABASE <database_name> OWNER TO <database_user>;
-```
-
-The upper commands will create a new database, user with an encrypted
-password and grant all privileges to the user while also making the user
-the owner of the database.
-
-**IMPORTANT:** Remember all the values you used as variables as they will
-be needed in the next steps.
-
-### Virtual Environment
-
-If running the application outside a container, it is recommended to create
-a virtual environment to manage all project dependencies.
-
-To create a virtual environment, navigate to the project root directory
-and run the following command:
-
 ```bash
-uv venv
+sudo -u postgres psql <<'SQL'
+CREATE ROLE <database_user> WITH LOGIN PASSWORD '<user_password>';
+CREATE DATABASE <database_name> OWNER <database_user>;
+SQL
+sudo -u postgres psql -d <database_name> -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm' -c 'CREATE EXTENSION IF NOT EXISTS vector'
 ```
 
-This creates a `.venv` directory with the virtual environment.
+Ownership matters: on PostgreSQL 15 and newer a role that does not own the
+database cannot create tables in its `public` schema. If the database already
+exists, `ALTER DATABASE <database_name> OWNER TO <database_user>;`.
 
----
+**IMPORTANT:** Remember the values you used; they go into `config/.env`.
 
-After creating the virtual environment, activate it by running:
+#### Installing dependencies
 
-**Windows:**
-
-```bash
-.\.venv\Scripts\activate
-```
-
-**Linux/MacOS:**
-
-```bash
-source .venv/bin/activate
-```
-
-**NOTE:** We will be installing all dependencies, running migrations,
-running all Django commands and tests and running the application
-inside the virtual environment. For all the following steps, make sure
-the virtual environment is activated.
-
-### Installing Dependencies
-
-All the project dependencies are defined in `pyproject.toml` located in the
-project root directory.
-
-To install all dependencies (including dev dependencies), run:
+All the project dependencies are defined in `pyproject.toml` and locked in
+`uv.lock`. From the project root:
 
 ```bash
 uv sync
 ```
 
-If any problems occur during the installation of dependencies, please
-refer to the [Troubleshooting - Troubleshoot Dependency Installation](#troubleshoot-dependency-installation)
-section.
+This creates `.venv` with Python 3.13 and installs everything, including the
+dev group (pytest, pre-commit). Pass `--no-dev` on a production host. Either
+activate the environment (`source .venv/bin/activate`) or call
+`.venv/bin/python` directly; the rest of this guide assumes it is activated.
 
-### Installing Code Quality Tools
+#### Installing code quality tools
 
 The project uses [Ruff](https://docs.astral.sh/ruff/) for code formatting
 and linting. Ruff should be installed system-wide (not as a project
 dependency) to ensure compatibility across different development
-environments.
-
-**Install ruff using one of the following methods:**
-
-#### Option 1: Using pipx (Recommended)
+environments:
 
 ```bash
-pipx install ruff
-```
-
-#### Option 2: Using Homebrew (macOS/Linux)
-
-```bash
-brew install ruff
-```
-
-#### Option 3: Using uv tool
-
-```bash
-uv tool install ruff
-```
-
-#### Option 4: Using pip
-
-```bash
-pip install ruff
-```
-
-After installation, verify ruff is available:
-
-```bash
+uv tool install ruff    # or: pipx install ruff / brew install ruff / pip install ruff
 ruff --version
 ```
 
 **Note:** On NixOS, ruff is automatically provided by the development
 shell and doesn't need separate installation.
 
-### Environment Variables
+#### Environment variables
 
 The project uses a number of environment variables to store either
 sensitive information or instance-specific configuration.
@@ -228,10 +242,16 @@ cp config/.env.dev config/.env
 
 The application only reads `config/.env`; `.env.dev` is a copy-ready template
 and is never loaded directly. Its PostgreSQL defaults are database `kosmos`,
-user `kosmos`, and password `kosmos` on `localhost:5432`.
+user `kosmos`, and password `kosmos` on `localhost:5432`. Replace
+`SECRET_KEY` with a fresh value (for example
+`python3 -c 'import secrets; print(secrets.token_urlsafe(50))'`).
 
-For staging or production, start from `config/.env.example` instead and supply
-real secrets and service configuration.
+For staging or production, start from `config/.env.dev` as well and change
+`DEBUG`, `ENV`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `PUBLIC_BASE_URL`, the
+database values and the email settings, using `config/.env.example` as the
+reference for every optional integration. The `[string]` placeholders in
+`.env.example` are not blank, so do not copy that file as-is: a placeholder
+API key enables the integration it belongs to.
 
 For a credential-free local setup, keep `STORAGE_BACKEND=local` and
 `EMAIL_BACKEND=console`. Set `STORAGE_BACKEND=s3` to use DigitalOcean Spaces,
@@ -240,122 +260,90 @@ are only required when that mode is selected. Never expose a production local
 `MEDIA_ROOT` directly through a web server because it contains confidential
 client documents.
 
-### Running Migrations
+Leave `SEMANTIC_AUTO_INDEX=False` until `GEMINI_API_KEY` is set. Saving a
+record with it on queues embedding tasks that need Gemini, and without a key
+the worker keeps retrying tasks that cannot succeed.
 
-Migrations in this project are versioned and stored in the `migrations`
-directory located in each Django app. To run all migrations and create
-the necessary database schema, run the following command:
+#### Migrations and post-migration commands
 
-**NOTE:** Make sure the virtual environment is activated.
+Migrations are versioned in each app's `migrations` directory. Two pieces of
+schema live outside migrations and must be created by commands, and the search
+index needs building once. Run these in order:
 
 ```bash
 python manage.py migrate
+python manage.py createcachetable      # the ai_status_cache table used by AI chat status polling
+python manage.py installwatson         # watson's search_tsv column and trigger
+python manage.py buildwatson           # build the full-text index
+python manage.py setup_schedules       # recurring Django-Q jobs
 ```
 
-If any problems occur during the migration process, please refer to the
-[Troubleshooting - Running Migrations](#troubleshoot-running-migrations)
-section
+`createcachetable`, `installwatson` and `setup_schedules` are safe to re-run.
+`buildwatson` only needs to run once; watson keeps the index current
+afterwards. Rebuild it after restoring a database from backup or changing
+which fields are indexed.
 
-### Building the Search Index
+With `DEBUG=False` (production), also run `python manage.py collectstatic`.
+`STATIC_ROOT` is the repository's own `static/` directory, so this only adds
+the Django admin assets; nginx serves `static/` straight from the checkout.
 
-The application uses django-watson for full-text search across documents,
-highlights, and facts. After running migrations for the first time (or
-after restoring a database), build the search index:
+If any problems occur during the migration process, refer to
+[Troubleshooting - Running Migrations](#troubleshoot-running-migrations).
 
-```bash
-python manage.py buildwatson
-```
-
-**Note:** You only need to run this once. Watson automatically keeps the
-index updated as you create, edit, or delete records. You'll need to
-rebuild if you:
-
-- Restore a database from backup
-- Add new models to the search configuration
-- Change which fields are indexed for existing models
-
-### Running the Application
-
-To run the application locally, run the following command:
-
-**NOTE:** Make sure the virtual environment is activated.
+#### Running the application
 
 ```bash
 python manage.py runserver
 ```
 
-After running the command, the application should be accessible at
+The application is then accessible at
 [http://localhost:8000](http://localhost:8000).
 
-### Running Background Tasks
+#### Running background tasks
 
-The application uses Django-Q for background task processing (OCR, etc.).
-To process background tasks, run the following command in a separate terminal:
-
-**NOTE:** Make sure the virtual environment is activated.
+The application uses Django-Q for background task processing (OCR, syncs,
+AI jobs). Run the worker in a separate terminal:
 
 ```bash
 python manage.py qcluster
 ```
 
-Recurring jobs are installed explicitly and idempotently after migrations:
+Recurring jobs are installed explicitly and idempotently by
+`python manage.py setup_schedules`. This one command configures the digest,
+Google Calendar, Google Drive, Gmail, AI-summary, daily-plan, and
+chat-retention schedules. It is safe to run again after a deployment;
+migrations and schedule setup are never run automatically when the
+application starts.
 
-```bash
-python manage.py setup_schedules
-```
+#### Production services (systemd and nginx)
 
-This one command configures the digest, Google Calendar, Google Drive, Gmail,
-AI-summary, daily-plan, and chat-retention schedules. It is safe to run again
-after a deployment; migrations and schedule setup are never run automatically
-when the application starts.
-
-#### Production Setup (systemd)
-
-For production deployments, create a systemd service to run the task worker.
-
-Create `/etc/systemd/system/qcluster.service`:
-
-```ini
-[Unit]
-Description=Django-Q Cluster
-After=network.target
-
-[Service]
-User=<your_user>
-Group=<your_group>
-WorkingDirectory=/path/to/law
-ExecStart=/path/to/law/.venv/bin/python manage.py qcluster
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Then enable and start the service:
+Templates for the gunicorn config, the `law.socket` / `law.service` /
+`qcluster.service` units and the nginx site live in [`deploy/`](deploy/README.md).
+`scripts/install.sh --prod` renders and installs them; to do it by hand,
+replace `@USER@`, `@APP_DIR@` and `@DOMAIN@` in each file, copy the units to
+`/etc/systemd/system/`, the site to `/etc/nginx/sites-available/` (symlinked
+into `sites-enabled/`), the snippets to `/etc/nginx/snippets/`, and
+`deploy/gunicorn.conf.py` to the repository root. Then:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable qcluster
-sudo systemctl start qcluster
+sudo systemctl enable --now law.socket law.service qcluster.service
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d <your-host>
 ```
 
-### Creating the first Superuser
+nginx runs as `www-data` and reads `static/` from the checkout, so that user
+needs traverse access to the checkout's parent directories.
+
+#### Creating the first superuser
 
 The object manager for the `CustomUser` model has a custom method
 for creating a superuser allowing the creation of the superuser
-through the Django built-in `createsuperuser` command.
-
-To create the first superuser, run the following command:
-
-**NOTE:** Make sure the virtual environment is activated.
+through the Django built-in `createsuperuser` command:
 
 ```bash
 python manage.py createsuperuser
 ```
-
-After running the command, follow the instructions in the terminal
-to create the superuser.
 
 ## Troubleshooting
 
@@ -386,6 +374,10 @@ the following:
 - The database is running and accessible
 - The database is not blocked by any firewall or antivirus software
 - The database is not corrupted or missing any necessary extensions
+  (`could not open extension control file` for `vector` means the pgvector
+  package is not installed; `permission denied to create extension` means the
+  extensions must be created by the `postgres` superuser first, see
+  [Setting up PostgreSQL](#setting-up-postgresql))
 - The database is not missing any necessary configuration
 
 ### Steps After Squashing Migrations
@@ -535,7 +527,7 @@ changes through the Drive Changes API.
 ### Prerequisites
 
 - **pandoc** installed on the server (see
-  [Additional Machine Requirements](#additional-machine-requirements)) —
+  [Additional Machine Requirements](#machine-requirements)) —
   required to convert `.docx`/`.odt` notes to Markdown.
 - A Google Cloud project (the same one used for Calendar/Contacts) with:
   - the **Google Drive API** enabled,

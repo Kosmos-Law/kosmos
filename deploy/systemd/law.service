@@ -1,0 +1,15 @@
+[Unit]
+Description=Kosmos web (gunicorn)
+Requires=law.socket
+After=network.target postgresql.service
+
+[Service]
+User=@USER@
+Group=www-data
+WorkingDirectory=@APP_DIR@
+ExecStart=@APP_DIR@/.venv/bin/gunicorn -c @APP_DIR@/gunicorn.conf.py config.wsgi:application
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
