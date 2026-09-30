@@ -37,7 +37,7 @@ def stale_today_filter(user, days_old=1):
 def test_refresh_date_preset_restamps_presets():
     today = timezone.localdate()
     fresh = quick_date_filters(today)
-    for label in ("today", "next_workday", "next7", "week", "next_week"):
+    for label in ("past_due", "today", "next_workday", "next7", "week", "next_week"):
         stale = {"filter_label": label, "date_due_min": "x", "date_due_max": "y"}
         refreshed = refresh_date_preset(stale, today)
         assert refreshed["date_due_min"] == fresh[label]["date_due_min"]

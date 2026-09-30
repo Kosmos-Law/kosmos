@@ -237,3 +237,8 @@ def test_modal_apply_keeps_preset_label_despite_unknown_has_due_date(client):
     post = _session_for(client, "tasks_filter")
     assert post.get("has_due_date") == ""
     assert post.get("filter_label") == "today"
+
+
+def test_detect_label_past_due():
+    today = date(2026, 5, 15)
+    assert _detect_filter_label({"date_due_max": "2026-05-14"}, today) == "past_due"

@@ -35,13 +35,15 @@
         <div class="dropdown" x-data="dropdown()">
           <button type="button"
                   id="tasks-date-filter"
-                  class="select-btn filter-dropdown-button {% if filter_label == 'today' or filter_label == 'next_workday' or filter_label == 'next7' or filter_label == 'week' or filter_label == 'next_week' or filter_label == 'unscheduled' or filter_label == 'custom' %}toggle-active{% endif %}"
+                  class="select-btn filter-dropdown-button {% if filter_label == 'past_due' or filter_label == 'today' or filter_label == 'next_workday' or filter_label == 'next7' or filter_label == 'week' or filter_label == 'next_week' or filter_label == 'unscheduled' or filter_label == 'custom' %}toggle-active{% endif %}"
                   x-ref="button"
                   @click="toggle()"
                   :aria-expanded="open">
             <span>
               <i class="icon-calendar with-text"></i>
-              {% if filter_label == "today" %}
+              {% if filter_label == "past_due" %}
+                Past Due
+              {% elif filter_label == "today" %}
                 Today
               {% elif filter_label == "next_workday" %}
                 Next Workday
@@ -70,6 +72,14 @@
                  hx-post="{% url 'matters:tasks-filter-quick' matter.id 'all' %}"
                  hx-swap="none">
                 <i class="icon-calendar"></i> All Dates
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item {% if filter_label == 'past_due' %}active{% endif %}"
+                 href="#"
+                 hx-post="{% url 'matters:tasks-filter-quick' matter.id 'past_due' %}"
+                 hx-swap="none">
+                <i class="icon-calendar"></i> Past Due
               </a>
             </li>
             <li>

@@ -273,6 +273,8 @@ def detect_filter_label(filter_data, today):
         return "custom"
 
     today_s = str(today)
+    if date_due_max == str(today - timedelta(days=1)) and not has_due_date:
+        return "past_due"
     end_of_week_s = str(week_start + timedelta(days=6))
     next7_s = str(today + timedelta(days=6))
     if date_due_max == today_s and not has_due_date:
@@ -309,6 +311,13 @@ def quick_date_filters(today):
             "has_due_date": "false",
             "date_due_min": "",
             "date_due_max": "",
+        },
+        # Due before today: open-ended start, ends yesterday.
+        "past_due": {
+            "filter_label": "past_due",
+            "date_due_min": "",
+            "date_due_max": (today - timedelta(days=1)).strftime("%Y-%m-%d"),
+            "has_due_date": "",
         },
         "today": {
             "filter_label": "today",
