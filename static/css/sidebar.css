@@ -62,7 +62,7 @@
 .sidebar-brand-mark-inline {
   display: none;
   flex-shrink: 0;
-  /* The sparkle kappa is 1.17em wide, flush top and bottom to the letter. */
+  /* The sparkle kappa is 1.22em wide, flush top and bottom to the letter. */
   font-size: 1.275rem;
   line-height: 1;
 }
