@@ -92,6 +92,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Let nginx reach the checkout
+        # The runner's home directory is 0750, so www-data cannot traverse it
+        # to serve static/. The installer reports this rather than changing
+        # the operator's home directory; here we do what its note says.
+        run: chmod o+x "$HOME"
+
       - name: Run the installer
         # --force removes nginx's default site so http://localhost reaches
         # the Kosmos site; on a real host that choice belongs to the operator.

@@ -236,8 +236,11 @@ apt_install_missing() {
     return 0
   fi
   info "installing: ${missing[*]}"
-  run sudo -n apt-get update -qq
-  run sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${missing[@]}"
+  # apt waits forever for the dpkg lock by default; an unattended upgrade in
+  # progress would hang the install silently. Wait up to ten minutes, loudly.
+  local apt=(sudo -n env DEBIAN_FRONTEND=noninteractive apt-get -q -o DPkg::Lock::Timeout=600)
+  run "${apt[@]}" update
+  run "${apt[@]}" install -y "${missing[@]}"
 }
 
 apt_pkgs=("${APT_BASE[@]}")
