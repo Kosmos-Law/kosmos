@@ -76,6 +76,15 @@
   /* Brand surfaces (sidebar mark/wordmark, auth monogram) follow the link
      colour unless a theme pins a dedicated ink. */
   --brand-ink: var(--link);
+  /* The brand gradient (after the landing page's wordmark, mirrored): it
+     leads with the brand ink, the stronger colour, and runs out into a
+     second hue each theme picks from its own palette, across the word and
+     again across the sparkle. Only that far end is a per-theme decision;
+     a theme that sets --brand-grad-to to var(--brand-ink) keeps a flat
+     brand. Matcha: the link green into violet, two steps lighter than
+     the accent-icon violet so the tail lifts rather than deepens. */
+  --brand-grad-from: var(--brand-ink);
+  --brand-grad-to: var(--violet-500);
 
   /* Keyboard focus ring: each theme's accent pulled halfway toward a
      fixed mid-gray (OKLCH mix keeps the hue) — link colours are
@@ -282,6 +291,9 @@
      canonical frost deep blue on hover */
   --link: var(--nord10-deep);
   --link-hover: var(--nord10);
+  /* Brand gradient — the frost link blue into the aurora purple at ink
+     weight (the accent-icon hue, as Matcha runs into its violet) */
+  --brand-grad-to: var(--nord15-ink);
 
   /* Backgrounds — the Snow Storm ladder: nord6 body and table cells under a
      shared nord5 chrome tier, nord4 nav */
@@ -474,6 +486,9 @@
      navy — one job per blue: navy = brand + primary actions, steel =
      links, azure = active state. */
   --brand-ink: var(--oxford-navy);
+  /* Brand gradient — all blue: the brand navy lifting into the
+     active-state azure */
+  --brand-grad-to: var(--oxford-azure);
 
   /* Accent icons (filter, active sort, badges) — violet, the one hue no
      other Oxford role uses; the azure blended into the blue family and
@@ -551,6 +566,8 @@
      charts, and the blue highlight class */
   --link: var(--lh-ink-soft);
   --link-hover: var(--lh-ink);
+  /* Brand gradient — the letter's soft ink warming into old-gold ink */
+  --brand-grad-to: var(--lh-gold-ink);
 
   /* Backgrounds — paper ground, field chrome, chip actives */
   --background-nav: var(--lh-rule);
@@ -743,6 +760,7 @@
   --gb-bright-orange: oklch(0.731 0.182  52);
   --gb-bright-green:  oklch(0.765 0.158 111);
   --gb-bright-purple: oklch(0.705 0.098   2);
+  --gb-bright-yellow: oklch(0.832 0.159  83);
 
   /* Typography & Text */
   --color-primary: var(--gb-light4);
@@ -754,6 +772,9 @@
   /* Links */
   --link: var(--gb-bright-aqua);
   --link-hover: var(--gb-aqua);
+  /* Brand gradient — the link accent into the ramp's yellow; cosmic and
+     everforest follow by repointing --gb-bright-yellow */
+  --brand-grad-to: var(--gb-bright-yellow);
 
   /* Backgrounds */
   --background-nav: var(--gb-dark-soft);
@@ -903,6 +924,7 @@
   --gb-bright-orange: var(--nord12);
   --gb-bright-green:  var(--nord14);
   --gb-bright-purple: var(--nord15);
+  --gb-bright-yellow: var(--nord13);
 
   /* Add stays green (the dark block points it at --link, frost cyan here) */
   --add: var(--gb-bright-green);
@@ -942,4 +964,5 @@
   --gb-bright-orange: var(--ef-orange);
   --gb-bright-green:  var(--ef-green);
   --gb-bright-purple: var(--ef-purple);
+  --gb-bright-yellow: var(--ef-yellow);
 }
