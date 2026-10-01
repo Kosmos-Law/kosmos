@@ -23,7 +23,8 @@ Webhook authenticity: AffiniPay documents no signature header and warns "anyone
 can send data to the URL." So `verify_and_parse_webhook` treats the payload as
 an untrusted *pointer* — it extracts the transaction id and **re-fetches the
 transaction from the API** (with our secret key) to get the authoritative
-status. IP-allowlisting is enforced at the view layer (Piece 3).
+status. That re-fetch is the only protection: the view does not check where a
+delivery came from, so a forged one can do no more than trigger a re-fetch.
 
 NOTE: the sandbox merchant has no test deposit accounts provisioned yet, so the
 charge/refund/webhook *network* paths below are written to the documented API

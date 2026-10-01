@@ -6,20 +6,24 @@ cache, no sliding average, no lockout. It exists to blunt scripted abuse of the
 tokenized pages, not to be an authorization control — the signed token is what
 actually gates access.
 
-Caveat worth knowing before you tune the numbers: `config/settings.py` declares
-no CACHES block, so Django falls back to a per-process LocMemCache. Limits are
-therefore per gunicorn worker (an N-worker deploy effectively allows N× the
-stated limit) and reset on restart. A shared cache backend would fix that
-globally for every caller here.
+Caveat worth knowing before you tune the numbers: the default cache in
+`config/settings.py` is a per-process LocMemCache. Limits are therefore per
+gunicorn worker (an N-worker deploy effectively allows N× the stated limit)
+and reset on restart. A shared cache backend would fix that globally for every
+caller here.
 """
 
 from django.core.cache import cache
 
 
 def client_ip(request):
+    """The address the reverse proxy saw. nginx appends it to whatever
+    X-Forwarded-For the client sent, so only the last entry is trustworthy:
+    keying on the first would let a caller pick a fresh identity per request
+    and never hit a limit."""
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
     if forwarded:
-        return forwarded.split(",")[0].strip()
+        return forwarded.split(",")[-1].strip()
     return request.META.get("REMOTE_ADDR", "") or "unknown"
 
 

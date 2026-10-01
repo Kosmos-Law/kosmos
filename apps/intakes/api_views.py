@@ -1,3 +1,4 @@
+import hmac
 import json
 import re
 from datetime import datetime
@@ -16,14 +17,16 @@ from apps.matters.models import PracticeArea
 
 
 def seam_protected(view):
-    """Requires X-Seam-Key when KOSMOS_SEAM_KEY is configured; when the
-    env var is unset, auth is not enforced so a one-sided deploy can't
-    brick the seam. Enforcement begins when both envs carry the secret."""
+    """Requires the X-Seam-Key header to match KOSMOS_SEAM_KEY. With no key
+    configured the endpoint refuses every request: these views create
+    intakes and return prospective clients' contact details, so a blank
+    setting must mean "off", not "open"."""
 
     @wraps(view)
     def wrapper(request, *args, **kwargs):
         key = settings.KOSMOS_SEAM_KEY
-        if key and request.headers.get("X-Seam-Key") != key:
+        sent = request.headers.get("X-Seam-Key", "")
+        if not key or not hmac.compare_digest(sent.encode(), key.encode()):
             return JsonResponse({"success": False, "error": "Unauthorized"}, status=403)
         return view(request, *args, **kwargs)
 

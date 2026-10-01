@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 
 from django.core.mail import send_mail
@@ -6,7 +6,7 @@ from django.core.mail import send_mail
 
 def generate_verification_code():
     """Generate a random 6-digit verification code."""
-    return "".join(random.choices(string.digits, k=6))
+    return "".join(secrets.choice(string.digits) for _ in range(6))
 
 
 def send_verification_email(user, code):
