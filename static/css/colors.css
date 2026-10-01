@@ -81,9 +81,10 @@
      second hue each theme picks from its own palette, across the word and
      again across the sparkle. Only that far end is a per-theme decision;
      a theme that sets --brand-grad-to to var(--brand-ink) keeps a flat
-     brand. Matcha: the link green into the accent-icon violet. */
+     brand. Matcha: the link green into violet, two steps lighter than
+     the accent-icon violet so the tail lifts rather than deepens. */
   --brand-grad-from: var(--brand-ink);
-  --brand-grad-to: var(--violet-700);
+  --brand-grad-to: var(--violet-500);
 
   /* Keyboard focus ring: each theme's accent pulled halfway toward a
      fixed mid-gray (OKLCH mix keeps the hue) — link colours are
