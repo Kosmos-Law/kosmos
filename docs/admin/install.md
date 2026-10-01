@@ -42,7 +42,7 @@ git curl ca-certificates python3
 postgresql postgresql-contrib postgresql-<major>-pgvector
 libpangocairo-1.0-0 tesseract-ocr ghostscript poppler-utils
 pandoc libreoffice-writer-nogui python3-uno
-nginx                                  (production only)
+nginx logrotate                        (production only)
 ```
 
 What each one is for is listed in [Install by hand](install-manual.md).
@@ -114,8 +114,9 @@ socket, and the worker is running. Continue with
     `--prod` writes production values only when it generates
     `config/.env`. If the file already exists, for example because you ran
     the development install in this checkout first, it is kept as it is,
-    development settings (`DEBUG=True`, `ENV=dev`) included. Edit it by
-    hand, or move it aside before running with `--prod`.
+    development settings (`DEBUG=True`, `ENV=dev`) included. The script
+    warns when it finds this. Edit the file by hand, or move it aside
+    before running with `--prod`.
 
 ## Options
 
@@ -174,11 +175,11 @@ With `--prod`, also:
 | `BILLING_FROM_EMAIL` | `Kosmos <billing@HOST>` |
 | `SERVER_EMAIL` | `kosmos@HOST` |
 | `INTAKE_INBOUND_RECIPIENT` | `kosmos-intakes` |
+| `PAYMENT_PROCESSOR` | `none` (online payment off until a processor is configured) |
 
 Everything else keeps its development default, in production too: email
 is printed to the log (`EMAIL_BACKEND=console`), uploads are stored on
-local disk (`STORAGE_BACKEND=local`), payments use the simulated
-processor (`PAYMENT_PROCESSOR=fake`), `ADMINS` is empty and every API key
+local disk (`STORAGE_BACKEND=local`), `ADMINS` is empty and every API key
 is blank. What each variable does is in the
 [environment variable reference](../reference/environment.md).
 
@@ -225,12 +226,14 @@ the script fills in the account, the checkout path and the hostname.
 | `/etc/systemd/system/law.socket` | The listening socket, `/run/law.sock`. |
 | `/etc/systemd/system/law.service` | The web application (gunicorn), running as your account in group `www-data`. |
 | `/etc/systemd/system/qcluster.service` | The [background worker](worker.md). |
+| `/etc/logrotate.d/kosmos` | Weekly rotation of the files in `logs/`, keeping twelve. |
 | `/etc/nginx/sites-available/kosmos` | The site, linked into `sites-enabled/`. HTTP only until certbot adds TLS. |
 | `/etc/nginx/snippets/kosmos-security.conf` | Security headers, and a rule that refuses dotfiles. |
 | `/etc/nginx/snippets/limit-login.conf` | Rate limit applied to the login URLs. |
 | `/etc/nginx/conf.d/kosmos-ratelimit.conf` | The `general` and `login` rate-limit zones. Skipped if the host's nginx configuration already defines a zone named `login`. |
 
-The three units are enabled and started, nginx's configuration is tested
+The three units are enabled and started, and the web application and the
+worker are restarted on every run. nginx's configuration is tested
 with `nginx -t`, and nginx is enabled and reloaded. The script then checks
 that `law.service` and `qcluster.service` are active. If one is not, it
 prints the unit's last 20 journal lines and stops.
@@ -287,7 +290,7 @@ Things worth knowing about the shipped configuration:
     ```
 
 5. **Set up the things the installer does not:** backups
-   ([Backup and restore](backup.md)), log rotation and an uptime check
+   ([Backup and restore](backup.md)), an uptime check
    ([Monitoring](monitoring.md)), and the integrations
    ([Google Workspace](integrations/google.md),
    [intakes from email](integrations/inbound-email.md)).
@@ -297,11 +300,13 @@ Things worth knowing about the shipped configuration:
 ```bash
 systemctl is-active law.socket law.service qcluster.service
 curl -fsS https://kosmos.example.com/health/ready/
+curl -fsS https://kosmos.example.com/health/worker/
 ```
 
-All three units report `active`, and the second command prints
-`{"status": "ok"}`. Before TLS is in place, use `http://`. Then sign in
-through the browser.
+All three units report `active`, and both `curl` commands print
+`{"status": "ok"}`. Before TLS is in place, use `http://` for these two
+checks. Signing in needs TLS: in production the session cookie is sent
+over HTTPS only.
 
 ## Running the script again
 
@@ -325,9 +330,8 @@ On a second run it:
   files are left alone. A file that differs stops the run and prints a
   diff, unless you pass `--force`. An nginx site that certbot has modified
   is left alone with a warning, unless you pass `--force`;
-- restarts `law.service` and `qcluster.service` **only when a unit file
-  was written**. If only the application code changed, the running
-  services keep running the old code until you restart them.
+- restarts `law.service` and `qcluster.service`, so that code pulled
+  since the last run takes effect.
 
 Run it with the same options as the first time. Without `--prod` the
 script takes the development path: it installs the development packages

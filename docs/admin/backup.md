@@ -244,11 +244,11 @@ Then sign in and check the things a database-only test would miss:
 - List document records whose file is missing from storage:
 
     ```bash
-    .venv/bin/python manage.py cleanup_orphan_documents --dry-run
+    .venv/bin/python manage.py cleanup_orphan_documents
     ```
 
-    Always pass `--dry-run` here. Without it the command deletes the
-    records it lists. For files that were mirrored from Google Drive,
+    The command only lists. It deletes nothing unless you pass `--apply`,
+    so do not pass it here. For files that were mirrored from Google Drive,
     `restore_drive_documents` can download missing ones again (it only
     reports, unless you pass `--apply`).
 

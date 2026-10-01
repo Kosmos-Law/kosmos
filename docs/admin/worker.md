@@ -142,9 +142,10 @@ Things an operator should know:
   job is fixed at 02:45 and is meant to run after the summaries, so a
   summary time later than that means plans are built from the previous
   night's summaries.
-- **Times are in the application's time zone**, which is set in code
-  (`TIME_ZONE` in `config/settings.py`, currently `America/New_York`) and
-  is not an environment variable.
+- **Times are in the firm's time zone**, the `TIME_ZONE` variable in
+  `config/.env` (default `America/New_York`). After changing it, restart
+  both services and run `setup_schedules` so every job's next run is
+  recalculated.
 - **A new or changed job waits for its next slot.** It does not fire the
   moment the worker starts.
 - **The AI jobs only run when `ENV=prod`.** The nightly summary, the
@@ -156,7 +157,7 @@ Things an operator should know:
 - **The other jobs are not gated by `ENV`.** The Google sync jobs do
   nothing until an account is connected, but the daily digest sends email
   and the weekly chat purge deletes AI chat history for matters closed
-  more than 180 days. Keep that in mind before starting a worker against
+  longer than `CHAT_RETENTION_DAYS`. Keep that in mind before starting a worker against
   a copy of a production database.
 
 ## Management commands an operator uses
@@ -195,14 +196,14 @@ order.
 
 | Command | When |
 |---|---|
-| `reconcile_pending` | An online payment or trust deposit is stuck as pending because the processor's webhook never arrived. Asks the processor for the current state of every in-flight payment and applies it. `--dry-run` reports without changing anything. It is not one of the scheduled jobs. |
+| `reconcile_pending` | An online payment or trust deposit is stuck as pending because the processor's webhook never arrived. Asks the processor for the current state of every in-flight payment and applies it. `--dry-run` reports without changing anything. The worker runs the same check every hour (the `payments-reconcile` job). |
 | `backfill_ocr` | Documents are stuck at pending or failed OCR, for example after their tasks used up all ten attempts. Queues them again. `--all` reprocesses every PDF. |
 | `build_semantic_index` | The semantic search index is behind, for example after worker downtime or when `SEMANTIC_AUTO_INDEX` was first switched on. Runs in the foreground, not through the worker, and skips anything unchanged. |
 | `backfill_note_summaries` | Library notes are missing their AI summaries. `--sync` runs in the foreground instead of queueing. |
 | `sync_calendar`, `sync_drive_notes`, `sync_gmail` | Run a Google sync now instead of waiting for the schedule, and see its output. The Drive and Gmail commands take `--full` and `--dry-run`. |
 | `run_auto_summaries`, `run_daily_plans` | Queue the nightly AI jobs now, in any environment. `run_auto_summaries` takes `--matter ID` and `--full`. The worker must be running. |
 | `restore_drive_documents` | Documents mirrored from Google Drive have a database record but no stored file. Downloads them again. Reports only, unless you pass `--apply`. |
-| `cleanup_orphan_documents` | Document records whose stored file is missing and cannot be recovered. **Deletes the records unless you pass `--dry-run`.** Always run it with `--dry-run` first. |
+| `cleanup_orphan_documents` | Document records whose stored file is missing and cannot be recovered. Reports only, unless you pass `--apply`. |
 | `dedupe_documents` | The same file was added to a matter more than once. Reports only, unless you pass `--apply`. |
 | `generate_invoice_pdfs` | Stored invoice PDFs are missing or wrong. Regenerates them. `--clear` deletes every stored invoice PDF. |
 | `update_search_vectors` | Recomputes the search columns on documents and highlights. |

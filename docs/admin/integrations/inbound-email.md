@@ -66,9 +66,8 @@ The examples use `mail.example.com` as the Mailgun domain and
    MAILGUN_WEBHOOK_SIGNING_KEY=key-...
    ```
 
-   While the variable is empty, signature verification is not enforced (so
-   the webhook can be deployed before the key is configured). Do not leave
-   it empty in production.
+   While the variable is empty the webhook refuses every request, so
+   forwarded mail is dropped until the key is set.
 
 5. Restart gunicorn and the qcluster worker.
 

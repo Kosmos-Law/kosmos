@@ -72,15 +72,16 @@ and little else.
 The models offered when a user starts a conversation are a fixed list in
 the code (`LLM_CHOICES` in
 [`apps/case/ai/models.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/ai/models.py)):
-three Claude models and two Gemini models. Gemini Pro is preselected. The
-list is not configurable and does not look at which keys are set.
+three Claude models and two Gemini models. The list itself is not
+configurable, but the new-conversation dialog offers only the models
+whose provider has a key set: with only `GEMINI_API_KEY`, users see the
+Gemini models and no others. Gemini Pro is preselected when it is
+available.
 
-This means a user can pick a model the server has no key for. Nothing
-stops them and nothing warns them. The conversation is created, the
-request is sent, the provider rejects it, and the reply in the chat reads
-"Error: Unable to get response." followed by the provider's error text.
-If you configure only one provider, tell your users which models to
-choose.
+If no key is set at all, the dialog lists every model so that it is not
+empty. A conversation started then gets the reply "Error: Unable to get
+response." followed by the provider's error text. The same reply appears
+when a key is set but wrong.
 
 The features that run in the background fail more quietly. Without a
 Gemini key, summaries are not written, the nightly jobs keep whatever
@@ -236,12 +237,12 @@ to `logs/django.log`.
 
 ## Chat retention
 
-AI chats on a matter are deleted once the matter has been closed for 180
-days. The `chat-purge-weekly` job does this every Sunday at 03:00, in
-every environment. It removes the conversations, their messages and the
+AI chats on a matter are deleted once the matter has been closed for
+`CHAT_RETENTION_DAYS` days (180 by default). The `chat-purge-weekly` job
+does this every Sunday at 03:00, in every environment. It removes the conversations, their messages and the
 change history kept for them. It counts from the most recent time the
 matter's status became Closed, so a matter that was reopened and closed
-again starts a new 180 days. Nothing else on the matter is touched.
+again starts the period afresh. Nothing else on the matter is touched.
 
 The deletion cannot be undone except from a database backup. To see what
 the next run would remove, or to use a different period for one run:
@@ -251,10 +252,9 @@ python manage.py purge_closed_chats --dry-run
 python manage.py purge_closed_chats --days 365
 ```
 
-The 180 days used by the scheduled job is fixed in the code
-([`apps/case/ai/purge.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/ai/purge.py)).
-If your firm's retention policy calls for something else, raise it before
-relying on the default.
+Set `CHAT_RETENTION_DAYS` in `config/.env` to match your firm's
+retention policy before relying on the default, and restart the worker.
+`0` switches the scheduled purge off, so chats are kept indefinitely.
 
 ## The legal system prompt and jurisdiction
 

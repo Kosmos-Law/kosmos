@@ -17,15 +17,18 @@ never reach the Kosmos server. Kosmos receives a one-time token, asks the
 processor to charge it, and records the result.
 
 The `PAYMENT_PROCESSOR` variable in `config/.env` selects the processor.
-The default is `fake`, which simulates payments and needs no credentials.
+A production install made by the installer starts with `none`: online
+payment is off. The emailed link still works, because it is also how a
+client downloads the invoice, but the page shows the amount due and the
+documents with a note to contact the firm, and nothing can be charged.
 
 !!! warning
 
-    There is no setting that removes the pay link from invoice emails.
-    While `PAYMENT_PROCESSOR=fake`, a client who opens the link sees a
-    simulation form, and submitting it records a payment and marks the
-    invoice paid although no money moved. Configure a real processor
-    before the instance sends invoices to real clients.
+    `fake` is for development. It shows a simulation form, and submitting
+    it records a payment and marks the invoice paid although no money
+    moved. It is the built-in default when the variable is missing, and
+    the value in the development template `config/.env.dev`. Never run it
+    where real clients receive invoices: set `none` or a real processor.
 
 ## Before you start
 
@@ -60,15 +63,16 @@ see a change without a restart.
 
 ## Choose a processor
 
-Set `PAYMENT_PROCESSOR` to one of `fake`, `lawpay`, `stripe` or `confido`.
-Any other value makes the payment pages fail.
+Set `PAYMENT_PROCESSOR` to `none`, `lawpay`, `stripe`, `confido` or (for
+development only) `fake`. With any other value the payment pages answer
+"Online payment is not available right now."
 
 | | `fake` | `lawpay` | `stripe` | `confido` |
 |---|---|---|---|---|
 | Service | None (simulation) | LawPay (AffiniPay) | Stripe | Confido Legal (Gravity Legal) |
 | Card payments | Simulated | Yes | Yes, except cards that require 3-D Secure | Yes, credit and debit |
 | eCheck (ACH) on the payment page | No | No | No | Yes |
-| Operating and trust kept apart | No | Yes, by deposit account id | No: one Stripe account receives everything | Yes, by bank account id (both required) |
+| Operating and trust kept apart | No | Yes, by deposit account id | No: one Stripe account receives everything, so trust deposits are refused | Yes, by bank account id (both required) |
 | Trust deposit confirmed automatically once it reaches the bank | No | No | No | Yes |
 | How a webhook is trusted | Not applicable | Unsigned. Kosmos fetches the transaction from LawPay with the secret key | `Stripe-Signature` header checked against the signing secret | `X-Signature` header checked against the signing secret, then the transaction is fetched from Confido |
 | Sandbox or live chosen by | Not applicable | Which keys you set | Which keys you set | The API and script URLs, plus the key |
@@ -80,18 +84,18 @@ Points the table cannot hold:
   (`LAWPAY_OPERATING_ECHECK_ACCOUNT_ID`, `LAWPAY_TRUST_ECHECK_ACCOUNT_ID`)
   but the payment page does not offer eCheck for LawPay, and no setting
   turns it on. Those two variables have no effect today.
-- **Stripe and trust money.** The Stripe adapter ignores whether a charge
-  is a trust deposit. A trust deposit request paid through Stripe lands in
-  the firm's single Stripe account, and Kosmos still records it in the
-  trust ledger. Decide whether that meets your trust accounting rules
-  before sending trust deposit requests with Stripe.
+- **Stripe and trust money.** The Stripe integration pays into a single
+  account, so it cannot keep a trust deposit apart from operating funds.
+  Kosmos therefore refuses trust deposits under Stripe. Staff who open the
+  trust deposit request form see an error and no request is sent, and
+  nothing is charged.
 - **Stripe and 3-D Secure.** A card that needs extra authentication is
   declined with "This card requires additional authentication; please try
   another."
 - **Trust confirmation.** A trust deposit made online is recorded as
   unconfirmed. Only the Confido adapter reports when the money has been
-  deposited in the bank, which flips the deposit to confirmed. With LawPay
-  and Stripe, staff confirm the deposit by hand in the trust ledger.
+  deposited in the bank, which flips the deposit to confirmed. With
+  LawPay, staff confirm the deposit by hand in the trust ledger.
 - **Refunds.** Kosmos has no refund action. Refund in the processor's own
   dashboard. When the processor reports the refund, Kosmos records the new
   status on the payment but leaves it applied to the invoice, so staff
@@ -134,10 +138,11 @@ Points the table cannot hold:
 
     !!! warning
 
-        If an id is blank, Kosmos sends the charge without an account and
-        the LawPay gateway picks its primary account. Set
-        `LAWPAY_TRUST_CARD_ACCOUNT_ID` before anyone sends a trust deposit
-        request, or the deposit may not land in the trust account.
+        An operating charge with a blank id is sent without an account,
+        and the LawPay gateway picks its primary account. A trust charge
+        is never left to that choice: until `LAWPAY_TRUST_CARD_ACCOUNT_ID`
+        is set, Kosmos will not send a trust deposit request and will not
+        charge one.
 
 4. Set `PAYMENT_PROCESSOR=lawpay` and restart both services.
 
@@ -238,7 +243,8 @@ Confido Legal was formerly Gravity Legal, which is why its URLs say
     ```
 
     Both are required. Confido has no default account, so a payment page
-    whose account id is missing fails with a server error.
+    whose account id is missing answers "Online payment is not available
+    right now."
 
 4. Run `python manage.py confido_check` again until it ends with
    `PRE-FLIGHT PASSED`. The check confirms the key authenticates, that
@@ -391,26 +397,19 @@ It checks operating payments that are still `pending`, and online trust
 deposits that are `pending` or not yet confirmed. It prints one line per
 row, or `Nothing to reconcile.` It is safe to run repeatedly.
 
-**Nothing runs this command for you.** It is not one of the
+The background worker runs the same check every hour: the
+`payments-reconcile` job, one of the
 [scheduled jobs](../../reference/schedules.md) that `setup_schedules`
-installs. Run it from cron, as the user that owns the checkout. For
-example, hourly (replace `/srv/kosmos` with your checkout):
-
-```
-15 * * * * cd /srv/kosmos && .venv/bin/python manage.py reconcile_pending >> logs/reconcile_pending.log 2>&1
-```
-
-Alternatively, add a Django-Q schedule (for example in the Django admin)
-that calls `apps.invoicing.pay.reconcile.poll_pending`. The worker then
-runs it, and `setup_schedules` neither creates nor removes it.
+installs. Run the command by hand when you do not want to wait for it, or
+to see its output.
 
 Things to expect in its output:
 
 - Each row is fetched with the processor that took the payment, not the
   one currently selected. If you change processors, keep the old one's
   credentials in `config/.env` until its in-flight payments have settled.
-- With LawPay and Stripe, an online trust deposit is listed on every run
-  until staff confirm it by hand.
+- With LawPay, an online trust deposit is listed on every run until staff
+  confirm it by hand.
 - Rows created with the `fake` processor always report `fetch failed:
   Unknown transaction`. The simulation keeps its transactions in the
   memory of the process that took the charge.
@@ -479,15 +478,23 @@ in the checkout, and to each service's journal
 `PAYMENT_PROCESSOR` is still `fake`, or the web service was not restarted
 after the change.
 
-**The payment page returns a server error.**
-The processor could not be set up. The log names the cause:
-`LAWPAY_SECRET_KEY is not configured.`,
+**The payment page says "Online payment is not available right now."**
+The processor could not be set up, or cannot take this kind of payment.
+The log names the cause on a line beginning `Payment page unavailable:`,
+for example `LAWPAY_SECRET_KEY is not configured.`,
 `STRIPE_SECRET_KEY is not configured.`,
 `CONFIDO_API_KEY is not configured.`,
 `CONFIDO_OPERATING_BANK_ACCOUNT_ID is not configured.` (or the trust
-one), or `Unknown PAYMENT_PROCESSOR`. Under Confido the page also fails
-when Confido refuses to start a payment session, because the session is
-created as the page loads. Run `python manage.py confido_check`.
+one), `LAWPAY_TRUST_CARD_ACCOUNT_ID is not configured.`, the Stripe trust
+refusal, or `Unknown PAYMENT_PROCESSOR`. Under Confido the same page
+appears when Confido refuses to start a payment session, because the
+session is created as the page loads. Run
+`python manage.py confido_check`.
+
+**The payment page says "Online payment is not available. Please contact
+us to arrange payment."**
+`PAYMENT_PROCESSOR` is `none`. That is the installer's production default
+until a processor is configured.
 
 **"Payment form failed to load. Please refresh."**
 The browser could not load the processor's script (see the last row of
@@ -548,9 +555,9 @@ server's access log (`logs/access.log` with the bundled gunicorn
 configuration). If there are none, check at the processor that the
 endpoint exists, is enabled, belongs to the same environment (sandbox or
 live) as your keys, and points at your public hostname with the trailing
-slash. Then run `python manage.py reconcile_pending`, and schedule it if
-you have not. Remember that with LawPay and Stripe a trust deposit is
-never confirmed automatically.
+slash. Then run `python manage.py reconcile_pending` (the hourly
+`payments-reconcile` job does the same). Remember that with LawPay a trust
+deposit is never confirmed automatically.
 
 **The processor reports `429` responses from the webhook URL.**
 Kosmos accepts at most 240 webhook deliveries a minute from one address.

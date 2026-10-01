@@ -168,8 +168,8 @@ other one, and has to be copied across by hand.
 5. In a private window, request a document path directly, for example
    `https://kosmos.example.com/media/documents/1/1.pdf`. It must not
    return the file.
-6. Run `python manage.py cleanup_orphan_documents --dry-run`. It checks
-   every document record against storage and deletes nothing. On a
+6. Run `python manage.py cleanup_orphan_documents`. Without `--apply` it
+   checks every document record against storage and deletes nothing. On a
    healthy install it prints "No orphan documents found."
 
 ## Repair commands
@@ -203,19 +203,19 @@ copy of those.
 
 ### cleanup_orphan_documents
 
-Deletes document records whose file is missing from storage, together
-with the highlights made on them.
+Lists document records whose file is missing from storage and, with
+`--apply`, deletes them together with the highlights made on them.
 
 ```bash
-python manage.py cleanup_orphan_documents --dry-run   # list only
-python manage.py cleanup_orphan_documents             # delete
+python manage.py cleanup_orphan_documents           # list only
+python manage.py cleanup_orphan_documents --apply   # delete
 ```
 
-Unlike the command above, this one deletes unless you pass `--dry-run`.
-It is the last step, not the first: use it only when the files are
+Like the command above, it reports by default and changes nothing without
+`--apply`. Deleting is the last step, not the first: use it only when the files are
 certainly gone, after restoring what can be restored from backups and
 from Drive. Run against the wrong backend, it would list every document
-as an orphan, so always read the dry-run output first.
+as an orphan, so always read the list before applying.
 
 ### fix_document_paths
 

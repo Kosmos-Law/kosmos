@@ -7,7 +7,8 @@ sent from, and how to check that delivery works.
 
 Signing in needs working mail. After a user enters a correct username and
 password, Kosmos emails a six-digit code to the address on their account and
-asks for it on the next screen. The code expires after five minutes. The
+asks for it on the next screen. The code expires after five minutes, and
+five wrong entries discard it, so the user starts again. The
 message is sent during the sign-in request itself, so if the mail server
 cannot be reached the user sees a server error page instead of the code
 screen. Once signed in, a session lasts eight weeks from its last request,

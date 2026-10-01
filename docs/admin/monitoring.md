@@ -4,13 +4,14 @@ For the person running a Kosmos server. This page covers the health
 check URLs, where each log is written, the error emails the application
 sends, how to see failed background tasks, and what to keep an eye on.
 
-Kosmos ships two health check URLs and writes logs. It does not ship
-dashboards, metrics, alerting or log rotation. Where something is
-missing, this page says so and gives the usual way to fill the gap.
+Kosmos ships three health check URLs, writes logs and installs log
+rotation. It does not ship dashboards, metrics or alerting. Where
+something is missing, this page says so and gives the usual way to fill
+the gap.
 
 ## Health checks
 
-Both URLs answer without a login, accept only `GET` and `HEAD`, return a
+All three URLs answer without a login, accept only `GET` and `HEAD`, return a
 small JSON body and ask not to be cached. They are defined in
 [`config/health.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/config/health.py).
 
@@ -18,11 +19,14 @@ small JSON body and ask not to be cached. They are defined in
 |---|---|---|---|
 | `/health/live/` | That the web application answers. It does not touch the database. | `200` `{"status": "ok"}` | No response, or an error from nginx (`502`, `504`). |
 | `/health/ready/` | That the web application can run a query (`SELECT 1`) against the database. | `200` `{"status": "ok"}` | `503` `{"status": "unavailable"}` |
+| `/health/worker/` | That the background worker is processing its schedules: no scheduled job has been left overdue for more than five minutes. | `200` `{"status": "ok"}` | `503` `{"status": "unavailable"}`, also when `setup_schedules` has never been run. |
 
-Point an uptime monitor at `/health/ready/`:
+Point an uptime monitor at `/health/ready/` and another at
+`/health/worker/`:
 
 ```bash
 curl -fsS https://kosmos.example.com/health/ready/
+curl -fsS https://kosmos.example.com/health/worker/
 ```
 
 To test the application without going through nginx, talk to its socket
@@ -39,9 +43,11 @@ Two limits to know about:
   check sent to `127.0.0.1` or to the server's IP address is answered
   with `400`. Use the public hostname, or send it as the `Host` header as
   above.
-- **Neither URL says anything about the background worker.** The web
-  application stays healthy while the worker is stopped. Check the worker
-  separately, as described under [What to watch](#what-to-watch).
+- **`/health/ready/` says nothing about the background worker.** The web
+  application stays healthy while the worker is stopped, which is why
+  `/health/worker/` exists. It is answered by the web application, from
+  what the worker leaves in the database, so it works while the worker is
+  down. After a restart of the worker it can take a minute to recover.
 
 ## Where the logs are
 
@@ -78,33 +84,20 @@ and gunicorn's is in your `gunicorn.conf.py`.
 
 ### Log rotation
 
-The repository ships no log rotation. `logs/django.log`,
-`logs/error.log` and `logs/access.log` are plain files that grow until
-the disk is full. The nginx logs are rotated by the logrotate
-configuration that your distribution's nginx package installs, and
-journald limits its own size.
+`scripts/install.sh --prod` installs `/etc/logrotate.d/kosmos` from
+[`deploy/logrotate/kosmos`](https://github.com/Kosmos-Law/kosmos/blob/dev/deploy/logrotate/kosmos).
+It rotates `logs/django.log`, `logs/error.log` and `logs/access.log`
+weekly, keeps twelve compressed copies, and uses `copytruncate`: the
+application and gunicorn keep these files open, so a rotation that renamed
+the file would leave them writing to the renamed one.
 
-Set rotation up yourself. The following is a standard logrotate
-configuration, not something the project ships or tests. Save it as
-`/etc/logrotate.d/kosmos`, with the path of your checkout and the account
-that owns it:
+On a server that was installed by hand, copy that template to
+`/etc/logrotate.d/kosmos` yourself and replace `@APP_DIR@` with the path
+of the checkout and `@USER@` with the account that owns it. Without it the
+three files grow until the disk is full.
 
-```
-/home/youraccount/kosmos/logs/*.log {
-    weekly
-    rotate 12
-    compress
-    delaycompress
-    missingok
-    notifempty
-    copytruncate
-    su youraccount youraccount
-}
-```
-
-`copytruncate` matters. The application and gunicorn keep these files
-open, so a rotation that renames the file would leave them writing to the
-renamed one.
+The nginx logs are rotated by the logrotate configuration that your
+distribution's nginx package installs, and journald limits its own size.
 
 ## Error emails
 
@@ -200,10 +193,10 @@ monitoring you already run.
 | Watch | How | Why |
 |---|---|---|
 | The site answers | An uptime monitor on `/health/ready/`. | Covers nginx, gunicorn and the database together. |
-| The worker is running | `systemctl is-active qcluster.service`, and the Queued tasks page. | A stopped worker does not affect the health checks. Documents stop being processed and syncs stop, silently. |
+| The worker is running | An uptime monitor on `/health/worker/`, or `systemctl is-active qcluster.service`. | A stopped worker does not affect `/health/ready/`. Documents stop being processed and syncs stop, silently. |
 | Failed tasks | The Failed tasks page, or search `logs/django.log` for `django-q: Failed`. | The only sign that OCR, a sync or an AI job is failing. |
 | Disk space: uploads | `du -sh media/` with local storage. | Every uploaded and mirrored document is stored here. |
-| Disk space: logs | `du -sh logs/` | Unbounded until you add rotation. |
+| Disk space: logs | `du -sh logs/` | Rotated weekly by the installed logrotate file. Unbounded on a hand-built install until you add it. |
 | Disk space: database | `sudo -u postgres psql -c '\l+'` | Extracted document text, synced email, AI conversations and the change history of every record all live in the database. |
 | TLS certificate | `sudo certbot certificates` | Certbot renews automatically. Check that it is doing so. |
 | Backups | That the last one finished, and that a restore works. | See [Backup and restore](backup.md). |

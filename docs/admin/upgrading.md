@@ -103,9 +103,9 @@ git branch --show-current
 7. Add any new variables to `config/.env` by hand. The installer never
    edits that file.
 
-8. Restart both services, whether or not the installer already started
-   them. This is harmless and guarantees that both run the new code with
-   the current settings:
+8. The installer restarts both services at the end of its run. If you
+   added variables in step 7, restart them once more so the new settings
+   are read:
 
     ```bash
     sudo systemctl restart law.service qcluster.service
@@ -143,14 +143,12 @@ Confirmed from the script. On a second run the installer:
 | First user | Skipped when a superuser exists. |
 | `gunicorn.conf.py` | Your copy is kept. Changes to the template are not applied. |
 | systemd units, nginx files | Each is compared with the freshly rendered template. Identical: left alone. Different: the run stops and prints a diff, unless `--force`. Modified by certbot: left alone with a warning, unless `--force`. |
-| Services | `systemctl enable --now` starts the three units if they are stopped. Running services are restarted **only if a unit file was written**. |
+| Services | The three units are enabled and started, then `law.service` and `qcluster.service` are restarted, on every run. |
 | nginx | Reloaded only if one of its files was written. |
 
 What it does not do:
 
 - It does not run `git pull`.
-- It does not restart running services when only the application code
-  changed. If you skip step 4 and step 8, the old code keeps running.
 - It does not back anything up, and it cannot undo a migration.
 
 If the script stops part way, fix the cause and run the same command
