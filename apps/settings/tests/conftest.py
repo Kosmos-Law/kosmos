@@ -28,6 +28,21 @@ def client(user):
 
 
 @pytest.fixture
+def admin_client(db):
+    """A signed-in user with the Admin role. The firm, users, permissions,
+    contacts, practice-area and task settings pages are admin-only."""
+    admin = CustomUser.objects.create(
+        username="boss", email="boss@example.com", role="ADMIN"
+    )
+    admin.set_password("pw")
+    admin.save()
+    c = Client()
+    c.login(username="boss", password="pw")
+    c.get("/dash/")  # Set daily dash session to avoid redirect
+    return c
+
+
+@pytest.fixture
 def folder():
     folder = Folder.objects.create(
         app="contacts",

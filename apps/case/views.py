@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 
-from apps.accounts.access import matter_access_required
+from apps.accounts.access import filter_matters_for_user, matter_access_required
 
 # Re-exported: the case tab view modules import get_session_key from here.
 from apps.management.selection import get_session_key  # noqa: F401
@@ -49,8 +49,6 @@ def redirect_to_tab(matter_id, tab):
 @login_required
 def case_index(request):
     """Redirect to the last viewed matter, or the first open matter."""
-    from apps.accounts.access import filter_matters_for_user
-
     # Check for last viewed matter in session
     last_matter_id = request.session.get("last_viewed_matter")
 
@@ -112,7 +110,9 @@ def mode_content(request, matter_id):
     if not request.headers.get("HX-Request"):
         return redirect_to_tab(matter_id, tab)
 
-    matters = Matter.objects.filter(status="Open").order_by("name")
+    matters = filter_matters_for_user(
+        Matter.objects.filter(status="Open").order_by("name"), request.user
+    )
 
     context = {
         "matter": matter,
@@ -134,7 +134,9 @@ def tab_content(request, matter_id, tab):
     from django.shortcuts import render
 
     matter = get_object_or_404(Matter, pk=matter_id)
-    matters = Matter.objects.filter(status="Open").order_by("name")
+    matters = filter_matters_for_user(
+        Matter.objects.filter(status="Open").order_by("name"), request.user
+    )
 
     # Update last viewed tab
     set_last_tab(request, matter_id, tab)
@@ -240,7 +242,9 @@ def get_matter_from_url(request, matter_id):
     Get matter from URL parameter and update last_viewed_matter in session.
     Returns (matter, matters) tuple where matters is queryset of all open matters.
     """
-    matters = Matter.objects.filter(status="Open").order_by("name")
+    matters = filter_matters_for_user(
+        Matter.objects.filter(status="Open").order_by("name"), request.user
+    )
     matter = get_object_or_404(Matter, pk=matter_id)
 
     # Update last viewed matter in session

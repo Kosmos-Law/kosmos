@@ -14,9 +14,9 @@ from apps.settings.models import Firm
 pytestmark = pytest.mark.django_db
 
 
-def test_firm_page_renders_single_form(client):
+def test_firm_page_renders_single_form(admin_client):
     Firm.objects.create(name="Firm")
-    response = client.get("/settings/firm/")
+    response = admin_client.get("/settings/firm/")
     assert response.status_code == 200
     assertTemplateUsed(response, "settings/firm/index.html")
     content = response.content.decode()
@@ -28,9 +28,9 @@ def test_firm_page_renders_single_form(client):
     assert content.count("Save Firm Details") == 1
 
 
-def test_firm_form_saves_jurisdiction_and_toasts(client):
+def test_firm_form_saves_jurisdiction_and_toasts(admin_client):
     Firm.objects.create(name="Firm")
-    response = client.post(
+    response = admin_client.post(
         "/settings/firm/",
         {"name": "Firm", "jurisdiction": "Montana"},
     )
@@ -39,9 +39,9 @@ def test_firm_form_saves_jurisdiction_and_toasts(client):
     assert Firm.objects.first().jurisdiction == "Montana"
 
 
-def test_firm_form_normalizes_phone(client):
+def test_firm_form_normalizes_phone(admin_client):
     Firm.objects.create(name="Firm")
-    response = client.post(
+    response = admin_client.post(
         "/settings/firm/",
         {"name": "Firm", "phone": "(406) 555-1234"},
     )
@@ -49,11 +49,11 @@ def test_firm_form_normalizes_phone(client):
     assert Firm.objects.first().phone == "4065551234"
 
 
-def test_firm_details_save_toasts_and_leaves_logo_alone(client):
+def test_firm_details_save_toasts_and_leaves_logo_alone(admin_client):
     """The logo is decoupled from the details form: saving details still fires
     the success toast and never touches an existing logo."""
     Firm.objects.create(name="Firm", logo="company/existing.png")
-    response = client.post("/settings/firm/", {"name": "Firm", "city": "Helena"})
+    response = admin_client.post("/settings/firm/", {"name": "Firm", "city": "Helena"})
     assert response.status_code == 200
     # The "Firm details updated" toast is preserved.
     assert "success" in response.headers.get("HX-Toast", "").lower()
@@ -62,13 +62,13 @@ def test_firm_details_save_toasts_and_leaves_logo_alone(client):
     assert firm.logo.name == "company/existing.png"
 
 
-def test_firm_logo_upload_rejects_non_image(client):
+def test_firm_logo_upload_rejects_non_image(admin_client):
     """A bad upload is rejected by the logo endpoint without saving anything."""
     from django.core.files.uploadedfile import SimpleUploadedFile
 
     Firm.objects.create(name="Firm")
     bad = SimpleUploadedFile("logo.txt", b"not an image", content_type="text/plain")
-    response = client.post("/settings/firm/logo/upload/", {"logo": bad})
+    response = admin_client.post("/settings/firm/logo/upload/", {"logo": bad})
     assert response.status_code == 200
     assert not Firm.objects.first().logo
     assert "errorlist" in response.content.decode()

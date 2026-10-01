@@ -1,8 +1,9 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
-from apps.accounts.models import CustomUser
+from apps.accounts.models import ROLE_OPTIONS, CustomUser
 from apps.matters.models import Matter
 from apps.settings.users.filters import UserFilter
 from apps.settings.users.forms import CreateUserForm, UserForm
@@ -61,13 +62,17 @@ def user_sort(request, order):
 
 
 @login_required
+@require_POST
 def change_role(request, user_id, role):
+    if role not in dict(ROLE_OPTIONS):
+        return HttpResponseBadRequest()
     CustomUser.objects.filter(id=user_id).update(role=role)
 
     return HttpResponse(status=204, headers={"HX-Trigger": "userListReload"})
 
 
 @login_required
+@require_POST
 def switch_status(request, user_id):
     user = CustomUser.objects.get(id=user_id)
 
@@ -119,6 +124,7 @@ def edit_user(request, user_id):
 
 
 @login_required
+@require_POST
 def toggle_permission(request, user_id, perm):
     if not request.user.is_admin:
         return HttpResponseForbidden()
@@ -164,6 +170,7 @@ def matter_assignments(request, user_id):
 
 
 @login_required
+@require_POST
 def toggle_matter_assignment(request, user_id, matter_id):
     """Toggle a matter assignment for a user, then re-render modal body."""
     if not request.user.is_admin:
