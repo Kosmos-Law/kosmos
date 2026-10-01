@@ -8,16 +8,24 @@ from apps.intakes.models import Intake, Note
 pytestmark = pytest.mark.django_db
 
 
+SEAM_KEY = "test-seam-key"
+
+
 @pytest.fixture(autouse=True)
-def _unenforced_seam(settings):
-    """Pin the no-key default regardless of the developer's .env; the
-    auth-mode tests opt back in with @override_settings."""
-    settings.KOSMOS_SEAM_KEY = ""
+def _seam_key(settings):
+    """Pin a known key regardless of the developer's .env. The endpoints
+    refuse every request while no key is configured, so the behavioural
+    tests below send this one."""
+    settings.KOSMOS_SEAM_KEY = SEAM_KEY
+
+
+def seam_client():
+    return Client(headers={"X-Seam-Key": SEAM_KEY})
 
 
 def post_intake(payload):
     # The endpoint is public ingress: no login, csrf exempt
-    return Client().post(
+    return seam_client().post(
         "/api/receive-intake/",
         data=json.dumps(payload),
         content_type="application/json",
@@ -121,14 +129,14 @@ def test_receive_intake_missing_fields_400():
 
 
 def test_receive_intake_bad_json_400():
-    response = Client().post(
+    response = seam_client().post(
         "/api/receive-intake/", data="not json", content_type="application/json"
     )
     assert response.status_code == 400
 
 
 def post_inquiry(payload):
-    return Client().post(
+    return seam_client().post(
         "/api/receive-inquiry/",
         data=json.dumps(payload),
         content_type="application/json",
@@ -169,7 +177,7 @@ def test_receive_inquiry_missing_fields_400():
 
 
 def test_receive_inquiry_bad_json_400():
-    response = Client().post(
+    response = seam_client().post(
         "/api/receive-inquiry/",
         data="{not json",
         content_type="application/json",
@@ -213,9 +221,8 @@ def test_receive_intake_stale_note_id_files_fresh_note():
 
 
 # ---------------------------------------------------------------------------
-# The seam key: when KOSMOS_SEAM_KEY is configured, every seam endpoint
-# requires the matching X-Seam-Key header. The tests above run with the
-# default empty key and double as the unenforced-mode pins.
+# The seam key: every seam endpoint requires the X-Seam-Key header to match
+# KOSMOS_SEAM_KEY, and refuses everything while no key is configured.
 # ---------------------------------------------------------------------------
 
 
@@ -280,7 +287,7 @@ def test_search_requires_seam_key():
 
 
 def search(q):
-    return Client().get("/api/intakes/search/", {"q": q})
+    return seam_client().get("/api/intakes/search/", {"q": q})
 
 
 def make_intake(**kwargs):
@@ -433,3 +440,16 @@ def test_repeat_inquiry_leaves_pending_alone():
     )
     post_inquiry(INQUIRY)
     assert Intake.objects.get().status == "Pending"
+
+
+@override_settings(KOSMOS_SEAM_KEY="")
+def test_seam_endpoints_are_closed_while_no_key_is_configured():
+    """A blank key must not mean an open door: these endpoints create
+    intakes and list prospective clients' contact details."""
+    payload = json.dumps({"full_name": "J", "report": "R"})
+    for client in (Client(), Client(headers={"X-Seam-Key": ""})):
+        for path in ("/api/receive-intake/", "/api/receive-inquiry/"):
+            response = client.post(path, data=payload, content_type="application/json")
+            assert response.status_code == 403, path
+        assert client.get("/api/intakes/search/", {"q": "J"}).status_code == 403
+    assert Intake.objects.count() == 0

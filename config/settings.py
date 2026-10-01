@@ -278,6 +278,16 @@ INTERNAL_IPS = [
 
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
+if not DEBUG:
+    # The reverse proxy terminates TLS and passes requests on as plain HTTP.
+    # This header (nginx's proxy_params sets it, overwriting anything the
+    # client sent) tells Django the original scheme, so is_secure() and the
+    # absolute links built from a request are right.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # The session and CSRF cookies travel over HTTPS only.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 EMAIL_BACKEND_MODE = env(
     "EMAIL_BACKEND", default="console" if DEBUG else "smtp"
 ).strip()
@@ -379,14 +389,13 @@ class CustomFormRendererCompact(TemplatesSetting):
 FORM_RENDERER = "config.settings.CustomFormRendererSpacious"
 FORM_SETTINGS = {"label_suffix": ""}
 
-# Shared secret protecting the cl <-> Kosmos intake seam. Empty means
-# auth is not enforced, so a one-sided deploy can't brick the seam;
-# enforcement begins once both apps' envs carry the same key.
+# Shared secret for the intake API a connected website or intake app calls
+# (the X-Seam-Key header). While it is empty that API refuses every request.
 KOSMOS_SEAM_KEY = env("KOSMOS_SEAM_KEY", default="")
 
-# Mailgun inbound-route webhook (intake-from-email). Empty means signature
-# verification is not enforced, so the webhook can be deployed before the
-# key is configured; enforcement begins once the key is set.
+# Mailgun inbound-route webhook (intake-from-email). Every post must carry a
+# valid signature made with this key. While it is empty the webhook refuses
+# every request.
 MAILGUN_WEBHOOK_SIGNING_KEY = env("MAILGUN_WEBHOOK_SIGNING_KEY", default="")
 # Local part of the intake address this instance owns. The shared Mailgun
 # route posts every message to prod AND dev; prod processes kosmos-intakes@,
