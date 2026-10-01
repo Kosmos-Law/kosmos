@@ -18,7 +18,10 @@ from apps.intakes.client_forms.schema import LAYOUT_TYPES, SchemaError, normaliz
 
 
 class Command(BaseCommand):
-    help = "Create the starter intake form templates (Craig Legal questionnaires)"
+    help = (
+        "Create the starter intake form templates: example questionnaires "
+        "from one firm's practice. Review and edit them before use."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(

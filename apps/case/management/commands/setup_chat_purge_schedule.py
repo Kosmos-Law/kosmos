@@ -7,8 +7,8 @@ class Command(BaseCommand):
     help = (
         "Create or update the weekly chat-purge schedule (Sunday 03:00 "
         "local): deletes AI chat history for matters closed past the "
-        "retention window. Run once on prod after deploy (same pattern as "
-        "setup_auto_summary_schedule)."
+        "retention window. Superseded by setup_schedules, which installs "
+        "this with every other schedule."
     )
 
     def handle(self, *args, **options):

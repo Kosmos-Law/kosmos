@@ -73,8 +73,8 @@ variable belongs to stays off or falls back until it is set.
 
 | Variable | Default | Description |
 |---|---|---|
-| `SOFFICE_BIN` | `soffice` | Headless LibreOffice binary, used to apply AI-proposed edits to drafts as tracked changes. |
-| `UNO_PYTHON` | `/usr/bin/python3` | A Python interpreter that has the UNO bindings (the system python3 with the python3-uno package), not the project virtualenv. |
+| `SOFFICE_BIN` | `soffice` | Headless LibreOffice binary for the server-side redline module (apps/drive/redline.py). Drafting does not currently use that module: edits are applied by the companion extension in the user's LibreOffice. |
+| `UNO_PYTHON` | `/usr/bin/python3` | A Python interpreter that has the UNO bindings (the system python3 with the python3-uno package), not the project virtualenv. Used only by the same server-side redline module. |
 
 ## AI and research
 
@@ -82,7 +82,7 @@ variable belongs to stays off or falls back until it is set.
 |---|---|---|
 | `ANTHROPIC_API_KEY` | empty | Anthropic API key, for the Claude models in AI chat. |
 | `GEMINI_API_KEY` | empty | Google Gemini API key, for the Gemini models and for the embeddings behind semantic search. |
-| `SEMANTIC_AUTO_INDEX` | `True` | Re-embed a record for semantic search whenever it is saved. The built-in default is True. Keep it False until GEMINI_API_KEY is set, or the worker keeps retrying embedding tasks that cannot succeed; then set it to True and run manage.py build_semantic_index once. (boolean) |
+| `SEMANTIC_AUTO_INDEX` | `True` | Re-embed a record for semantic search whenever it is saved. The built-in default is True. Keep it False until GEMINI_API_KEY is set, or every save queues an embedding task that fails and logs an error; then set it to True and run manage.py build_semantic_index once. (boolean) |
 | `COURTLISTENER_API_KEY` | empty | CourtListener API token, for case law search and citation checking. |
 
 ## Intakes

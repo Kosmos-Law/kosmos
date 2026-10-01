@@ -15,14 +15,29 @@ nav = [
   { "Home" = "index.md" },
   { "Run Kosmos" = [
     "admin/index.md",
-    { "Install by hand" = "admin/install-manual.md" },
-    { "Configuration" = "admin/configuration.md" },
+    { "Install" = [
+      { "Install with the script" = "admin/install.md" },
+      { "Install by hand" = "admin/install-manual.md" },
+      { "Configuration" = "admin/configuration.md" },
+    ] },
     { "Integrations" = [
+      { "Outgoing email" = "admin/integrations/email.md" },
+      { "File storage" = "admin/integrations/storage.md" },
+      { "AI providers and research" = "admin/integrations/ai.md" },
+      { "Online payments" = "admin/integrations/payments.md" },
       { "Google Workspace" = "admin/integrations/google.md" },
+      { "Gmail sync" = "admin/integrations/gmail.md" },
       { "Intakes from email" = "admin/integrations/inbound-email.md" },
+      { "Drafting with LibreOffice" = "admin/integrations/libreoffice.md" },
       { "Claude Desktop" = "admin/integrations/claude-desktop.md" },
     ] },
-    { "Troubleshooting" = "admin/troubleshooting.md" },
+    { "Operate" = [
+      { "Background worker" = "admin/worker.md" },
+      { "Monitoring" = "admin/monitoring.md" },
+      { "Backup and restore" = "admin/backup.md" },
+      { "Upgrading" = "admin/upgrading.md" },
+      { "Troubleshooting" = "admin/troubleshooting.md" },
+    ] },
   ] },
   { "Use Kosmos" = [
     "guide/index.md",

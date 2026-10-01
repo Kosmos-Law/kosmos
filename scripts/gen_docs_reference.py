@@ -280,8 +280,8 @@ def render_commands():
         "them. Run one with `python manage.py <command>`, and add `--help` to",
         "see its arguments.",
         "",
-        "Which of these an operator needs, and when, is covered in the",
-        "[operator guide](../admin/index.md).",
+        "Which of these an operator needs, and when, is covered in",
+        "[Background worker](../admin/worker.md#management-commands-an-operator-uses).",
         "",
     ]
     for app in sorted(by_app):

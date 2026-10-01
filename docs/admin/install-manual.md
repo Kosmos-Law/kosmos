@@ -26,16 +26,14 @@ sudo apt-get install -y libpangocairo-1.0-0 tesseract-ocr ghostscript poppler-ut
 - **Ghostscript** (`ghostscript`) - Required by ocrmypdf for PDF processing
 - **Poppler** (`poppler-utils`) - Required by pdf2image for PDF to image
   conversion
-- **Pandoc** (`pandoc`) - Converts Google Drive case notes (`.docx`/`.odt`) to
-  Markdown for the case-notes sync (`manage.py sync_drive_notes`). Spreadsheets
-  (Google Sheets / `.xlsx` / `.ods` / `.csv`) in the same `Notes` folder are also
-  synced, rendered as Markdown tables (one per sheet) via the `openpyxl` and
-  `odfpy` Python packages, no extra system binary required.
-- **LibreOffice Writer** (`libreoffice-writer-nogui` + `python3-uno`) - Applies
-  AI-proposed edits to `.odt` drafts as native tracked changes
-  (`apps/drive/redline.py`). The driver runs under the system python3 (which
-  has the UNO bindings), not the project venv; override the binaries with the
-  `SOFFICE_BIN` / `UNO_PYTHON` env vars if they live elsewhere.
+- **Pandoc** (`pandoc`) - Converts LibreOffice drafts (`.odt`) to Markdown
+  so the AI can read the document being drafted (`apps/drive/convert.py`).
+- **LibreOffice Writer** (`libreoffice-writer-nogui` + `python3-uno`) - Used
+  by a server-side module that applies edits to `.odt` files as tracked
+  changes (`apps/drive/redline.py`). Drafting does not currently go through
+  it: edits are applied by the companion extension in each user's own
+  LibreOffice, so the application runs without these two packages. See
+  [Drafting with LibreOffice](integrations/libreoffice.md).
 
 ## Setting up PostgreSQL
 

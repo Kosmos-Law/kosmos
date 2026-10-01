@@ -39,5 +39,5 @@ are only required when that mode is selected. Never expose a production local
 client documents.
 
 Leave `SEMANTIC_AUTO_INDEX=False` until `GEMINI_API_KEY` is set. Saving a
-record with it on queues embedding tasks that need Gemini, and without a key
-the worker keeps retrying tasks that cannot succeed.
+record with it on queues an embedding task that needs Gemini, and without a
+key every one of those tasks fails and writes an error to the log.

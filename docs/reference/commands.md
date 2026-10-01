@@ -6,8 +6,8 @@ Kosmos's own `manage.py` commands, grouped by the app that defines
 them. Run one with `python manage.py <command>`, and add `--help` to
 see its arguments.
 
-Which of these an operator needs, and when, is covered in the
-[operator guide](../admin/index.md).
+Which of these an operator needs, and when, is covered in
+[Background worker](../admin/worker.md#management-commands-an-operator-uses).
 
 ## calendar
 
@@ -27,8 +27,8 @@ Which of these an operator needs, and when, is covered in the
 | `fix_document_paths` | Fix document file paths from old naming format to current convention |
 | `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in Drive and Gmail. Scheduled weekly via setup_chat_purge_schedule. |
 | `run_auto_summaries` | Queue auto-summary and auto-agenda refreshes on demand (any environment; qcluster must be running to process them). |
-| `setup_auto_summary_schedule` | Create or update the auto-thread schedules: incremental refreshes six nights a week, a full rebuild early Monday (Sunday night). Times are America/New_York; nights when qcluster is down are skipped (catch_up is off). The default 1:30am finishes well before the 08:30 UTC prod-to-dev copy in both EDT and EST, so dev wakes up with the fresh auto chats. |
-| `setup_chat_purge_schedule` | Create or update the weekly chat-purge schedule (Sunday 03:00 local): deletes AI chat history for matters closed past the retention window. Run once on prod after deploy (same pattern as setup_auto_summary_schedule). |
+| `setup_auto_summary_schedule` | Create or update the auto-thread schedules: incremental refreshes six nights a week, a full rebuild early Monday (Sunday night). Nights when qcluster is down are skipped (catch_up is off). Superseded by setup_schedules, which installs these with every other schedule. |
+| `setup_chat_purge_schedule` | Create or update the weekly chat-purge schedule (Sunday 03:00 local): deletes AI chat history for matters closed past the retention window. Superseded by setup_schedules, which installs this with every other schedule. |
 | `update_search_vectors` | Update search vectors for all documents and highlights |
 
 ## dash
@@ -49,7 +49,7 @@ Which of these an operator needs, and when, is covered in the
 
 | Command | What it does |
 |---|---|
-| `seed_intake_forms` | Create the starter intake form templates (Craig Legal questionnaires) |
+| `seed_intake_forms` | Create the starter intake form templates: example questionnaires from one firm's practice. Review and edit them before use. |
 
 ## invoicing
 
@@ -67,7 +67,7 @@ Which of these an operator needs, and when, is covered in the
 | `adopt_gmail_account` | One-time multi-account migration: turn the legacy shared token file (GOOGLE_DATA_DIR/email_tokens.json) into the given user's GmailAccount, move the sync cursor onto it, claim all existing Email rows, and backfill Email.message_id (the cross-mailbox dedupe key) from Gmail. Run BEFORE anyone else connects a mailbox. |
 | `link_gmail_labels` | Link Gmail labels to Matter records by setting Matter.gmail_label_name (the cross-mailbox contract). Interactive; suggests matches by name. Labels are read from the first connected mailbox. |
 | `refresh_email_bodies` | Refetch synced emails that have no stored HTML body (one-off backfill after the body_html field was added). Rows whose message genuinely has no HTML part are refetched each run; use --matter to limit scope. |
-| `setup_gmail_sync_schedule` | Create or update the Gmail sync schedules: an incremental history sync every 2 minutes and a weekly full re-list (early Monday) to reconcile drift the history feed can't repair. No env gate: the sync is read-only and no-ops when no Gmail account is connected, so dev inheriting these rows via the nightly prod-to-dev copy is harmless. |
+| `setup_gmail_sync_schedule` | Create or update the Gmail sync schedules: an incremental history sync every 2 minutes and a weekly full re-list (early Monday) to reconcile drift the history feed can't repair. No env gate: the sync is read-only and no-ops when no Gmail account is connected. Superseded by setup_schedules, which installs these with every other schedule. |
 | `sync_gmail` | Sync labeled Gmail messages onto their mapped matters |
 
 ## management
@@ -87,4 +87,4 @@ Which of these an operator needs, and when, is covered in the
 
 | Command | What it does |
 |---|---|
-| `setup_digest_schedule` | Create or update the daily digest email schedule |
+| `setup_digest_schedule` | Create or update the daily digest email schedule. Superseded by setup_schedules, which installs this with every other schedule. |
