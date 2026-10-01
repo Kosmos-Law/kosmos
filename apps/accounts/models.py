@@ -96,4 +96,6 @@ class EmailVerificationCode(models.Model):
         db_table = "app_accounts_email_verification_code"
 
     def is_expired(self):
-        return (timezone.now() - self.created_at).seconds > 300  # 5 minutes
+        # total_seconds(), not .seconds: the latter wraps every 24 hours, so
+        # an old code would read as fresh again once a day.
+        return (timezone.now() - self.created_at).total_seconds() > 300  # 5 minutes

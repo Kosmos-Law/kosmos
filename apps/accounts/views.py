@@ -1,13 +1,42 @@
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import redirect_to_login
 from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import CreateView
 
 from .forms import CustomUserCreationForm, VerificationCodeForm
 from .models import CustomUser, EmailVerificationCode
 from .utils import generate_verification_code, send_verification_email
+
+# Wrong codes allowed before the emailed code is thrown away and the user
+# has to sign in again. A six-digit code cannot survive unlimited guesses.
+MAX_CODE_ATTEMPTS = 5
+
+
+def _safe_next_url(request, url):
+    """Return ``url`` only if it stays on this site; otherwise ''. The value
+    comes from the query string, so an unchecked redirect would let a crafted
+    sign-in link bounce the user to another site."""
+    if url and url_has_allowed_host_and_scheme(
+        url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return url
+    return ""
+
+
+def admin_login(request):
+    """Replace Django admin's own sign-in form, which takes a password alone,
+    with the emailed-code sign-in every other page uses."""
+    next_url = _safe_next_url(request, request.GET.get("next", ""))
+    return redirect_to_login(
+        next_url or reverse("admin:index"), login_url=reverse("accounts:login")
+    )
 
 
 class SignUpView(CreateView):
@@ -42,7 +71,10 @@ class LoginView(View):
             EmailVerificationCode.objects.create(user=user, code=code)
             send_verification_email(user, code)
             request.session["pending_user_id"] = user.id
-            next_url = request.POST.get("next") or request.GET.get("next", "")
+            request.session["code_attempts"] = 0
+            next_url = _safe_next_url(
+                request, request.POST.get("next") or request.GET.get("next", "")
+            )
             if next_url:
                 request.session["login_next_url"] = next_url
             return redirect("accounts:login-verify")
@@ -98,11 +130,31 @@ class VerifyCodeView(View):
                 # Success - clean up and log in
                 verification.delete()
                 del request.session["pending_user_id"]
+                request.session.pop("code_attempts", None)
                 next_url = request.session.pop("login_next_url", None)
                 login(request, user)
                 return redirect(next_url or settings.LOGIN_REDIRECT_URL)
 
             except (CustomUser.DoesNotExist, EmailVerificationCode.DoesNotExist):
+                # The count lives in the session beside pending_user_id. A
+                # fresh session has to pass step 1 again, which issues a new
+                # code, so the limit holds per code.
+                attempts = request.session.get("code_attempts", 0) + 1
+                if attempts >= MAX_CODE_ATTEMPTS:
+                    EmailVerificationCode.objects.filter(
+                        user_id=pending_user_id
+                    ).delete()
+                    del request.session["pending_user_id"]
+                    request.session.pop("code_attempts", None)
+                    return render(
+                        request,
+                        self.template_name,
+                        {
+                            "form": form,
+                            "error": "Too many incorrect codes. Please log in again.",
+                        },
+                    )
+                request.session["code_attempts"] = attempts
                 return render(
                     request,
                     self.template_name,

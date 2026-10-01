@@ -7,17 +7,17 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path, re_path
 from django.views.static import serve
 
+from apps.accounts.views import admin_login
 from apps.tasks.views import tasks_index
 from config import health
-
-# Override admin login to use 2FA
-admin.site.login_url = "/accounts/login/"
 
 urlpatterns = [
     path("health/live/", health.live, name="health-live"),
     path("health/ready/", health.ready, name="health-ready"),
     path("", tasks_index, name="tasks-index"),
-    # Admin
+    # Admin. Its sign-in form is replaced first: Django's own takes a
+    # password alone and would skip the emailed code.
+    path("admin/login/", admin_login),
     path("admin/", admin.site.urls),
     # Accounts App
     path("accounts/", include("apps.accounts.urls")),
