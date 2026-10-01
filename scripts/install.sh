@@ -545,8 +545,11 @@ if [ "$PROD" -eq 1 ]; then
   fi
   if [ "$DRY_RUN" -eq 0 ]; then
     sudo -n nginx -t
-    if [ "$NGINX_CHANGED" -eq 1 ]; then run sudo -n systemctl reload nginx; fi
   fi
+  # A freshly installed nginx may be enabled but not running (reload would
+  # fail); enable --now is a no-op when it already runs.
+  run sudo -n systemctl enable --now nginx
+  if [ "$NGINX_CHANGED" -eq 1 ]; then run sudo -n systemctl reload nginx; fi
 
   if [ "$DRY_RUN" -eq 0 ] && ! sudo -n -u www-data test -r "$APP_DIR/static/js/main.js"; then
     note "nginx (www-data) cannot read $APP_DIR/static. Grant traverse access to the parent directories, e.g. chmod o+x $HOME, or setfacl -m u:www-data:x $HOME."
