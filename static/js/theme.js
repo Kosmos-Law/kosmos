@@ -51,15 +51,20 @@
   // The favicon is its own document: it can see prefers-color-scheme but not
   // data-theme or the page's tokens. So themed icons are repainted here from
   // the resolved theme and handed over as a data URI. Only icons marked
-  // data-favicon opt in: "brand" is the Kosmos mark (ground = --brand-ink,
-  // what the sidebar mark wears; glyph = --background-body) and "ai" is the
-  // sparkles the AI chat windows carry, stroked in --brand-ink. The dev mark
-  // and the other per-app icons (notes, viewer) keep their fixed colours.
-  function faviconSvg(kind, ink, ground) {
+  // data-favicon opt in: "brand" is the Kosmos mark (ground = the brand
+  // gradient the sidebar mark wears, --brand-grad-from to --brand-grad-to on
+  // the diagonal; glyph = --background-body) and "ai" is the sparkles the AI
+  // chat windows carry, stroked in --brand-ink. The dev mark and the other
+  // per-app icons (notes, viewer) keep their fixed colours.
+  function faviconSvg(kind, ink, ground, from, to) {
     if (kind === 'brand') {
       return (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
-        '<rect width="100" height="100" rx="18" style="fill:' + ink + '"/>' +
+        '<linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0.15" style="stop-color:' + from + '"/>' +
+        '<stop offset="0.85" style="stop-color:' + to + '"/>' +
+        '</linearGradient>' +
+        '<rect width="100" height="100" rx="18" fill="url(#g)"/>' +
         '<path d="' + MARK_PATH + '" style="fill:' + ground + '"/></svg>'
       );
     }
@@ -81,7 +86,10 @@
     var ink = style.getPropertyValue('--brand-ink').trim();
     var ground = style.getPropertyValue('--background-body').trim();
     if (!ink || !ground) return;
-    var svg = faviconSvg(link.getAttribute('data-favicon'), ink, ground);
+    // A stylesheet that predates the gradient tokens paints the flat ink.
+    var from = style.getPropertyValue('--brand-grad-from').trim() || ink;
+    var to = style.getPropertyValue('--brand-grad-to').trim() || ink;
+    var svg = faviconSvg(link.getAttribute('data-favicon'), ink, ground, from, to);
     if (!svg) return;
     link.setAttribute('href', 'data:image/svg+xml,' + encodeURIComponent(svg));
   }

@@ -1,14 +1,17 @@
 {% comment %}The inline kappa mark (sparkle cut): transparent ground,
-  currentColor ink, 1em-scaled — drops in like a Lucide icon and follows the
-  surrounding text colour. Must be inlined (this include) rather than an <img>,
-  because currentColor does not cascade through img. Set font-size/color on a
-wrapper to size and paint it. Source: brand kit kosmos-k-mark.svg.{% endcomment %}
+  1em-scaled — drops in like a Lucide icon, filled with the brand gradients
+  from kosmos-brand-gradients.html (one across the kappa, one across the
+  sparkle). Each fill falls back to currentColor where that include is
+  absent, so set font-size/color on a wrapper to size and paint it. Must be
+  inlined (this include) rather than an <img>, because neither the gradient
+  reference nor currentColor cascades through img. Source: brand kit
+kosmos-k-mark.svg.{% endcomment %}
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="13.00 15.00 94.79 70.01"
      width="1.3540em"
      height="1em"
      fill="currentColor"
      aria-hidden="true">
-  <path d="M87.50 27.60Q90.74 44.65 107.79 47.90Q90.74 51.15 87.50 68.20Q84.25 51.15 67.20 47.90Q84.25 44.65 87.50 27.60Z" />
-  <path d="M29.66 15.00Q28.32 20.25 28.32 48.55Q35.14 41.39 41.18 35.35Q51.14 25.40 53.04 23.16Q56.95 18.57 57.18 15.00H78.98Q75.74 17.57 68.36 25.28Q61.31 32.44 57.73 36.19Q54.16 39.93 53.82 40.27Q52.37 41.72 50.30 43.74Q48.23 45.75 45.66 48.32Q52.81 54.25 57.40 58.39Q73.73 73.71 80.89 85.00H60.87Q59.30 80.42 55.72 75.83Q54.16 73.93 51.25 70.97Q48.34 68.01 44.09 63.76Q34.36 54.14 28.32 50.11V70.47Q28.43 75.72 28.71 79.30Q28.99 82.88 29.55 85.00H13.00Q14.23 80.76 14.34 70.69Q14.34 49.89 14.34 38.37Q14.34 26.85 14.23 24.28Q14.12 21.71 13.84 19.41Q13.56 17.12 13.00 15.00Z" />
+  <path fill="url(#kosmos-grad-mark-sparkle) currentColor" d="M87.50 27.60Q90.74 44.65 107.79 47.90Q90.74 51.15 87.50 68.20Q84.25 51.15 67.20 47.90Q84.25 44.65 87.50 27.60Z" />
+  <path fill="url(#kosmos-grad-mark) currentColor" d="M29.66 15.00Q28.32 20.25 28.32 48.55Q35.14 41.39 41.18 35.35Q51.14 25.40 53.04 23.16Q56.95 18.57 57.18 15.00H78.98Q75.74 17.57 68.36 25.28Q61.31 32.44 57.73 36.19Q54.16 39.93 53.82 40.27Q52.37 41.72 50.30 43.74Q48.23 45.75 45.66 48.32Q52.81 54.25 57.40 58.39Q73.73 73.71 80.89 85.00H60.87Q59.30 80.42 55.72 75.83Q54.16 73.93 51.25 70.97Q48.34 68.01 44.09 63.76Q34.36 54.14 28.32 50.11V70.47Q28.43 75.72 28.71 79.30Q28.99 82.88 29.55 85.00H13.00Q14.23 80.76 14.34 70.69Q14.34 49.89 14.34 38.37Q14.34 26.85 14.23 24.28Q14.12 21.71 13.84 19.41Q13.56 17.12 13.00 15.00Z" />
 </svg>

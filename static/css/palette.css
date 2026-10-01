@@ -424,6 +424,7 @@
   --ef-red: oklch(0.709 0.128 20);
   --ef-orange: oklch(0.75 0.106 45);
   --ef-purple: oklch(0.75 0.082 349);
+  --ef-yellow: oklch(0.808 0.086 84);        /* dark: brand gradient's warm end */
 
   /* Letterhead (Craig Legal, ~/cl minimal.css) — one warm stone axis,
      hue 68–100, lightness the only real dial; fountain-pen blue as the

@@ -1,0 +1,36 @@
+{% comment %}The brand gradients the inline kosmos-wordmark and kosmos-mark
+  cuts fill with (after the landing page's wordmark): --brand-grad-from to
+  --brand-grad-to, once across the letters and once more on the diagonal
+  across the sparkle, weighted toward the far end. Included once per page
+  (base.html), outside any swapped region. One shared, zero-size SVG rather
+  than defs inside each cut, because the cuts repeat on a page and one copy
+  is always display:none — duplicate ids, and gradients inside hidden
+  subtrees are not reliably referenceable. Coordinates are userSpaceOnUse in
+  each cut's own viewBox, so one gradient spans the whole word instead of
+  restarting per letter. The stops take their colour from the tokens via
+.brand-grad-from/-to in sidebar.css.{% endcomment %}
+<svg xmlns="http://www.w3.org/2000/svg"
+     class="brand-gradients"
+     width="0"
+     height="0"
+     aria-hidden="true"
+     focusable="false">
+  <defs>
+  <linearGradient id="kosmos-grad-word" gradientUnits="userSpaceOnUse" x1="16.6" y1="21.6" x2="485.7" y2="104.4">
+  <stop class="brand-grad-from" offset="0.1" />
+  <stop class="brand-grad-to" offset="0.9" />
+  </linearGradient>
+  <linearGradient id="kosmos-grad-word-sparkle" gradientUnits="userSpaceOnUse" x1="479" y1="17" x2="571" y2="109">
+  <stop class="brand-grad-from" offset="0.15" />
+  <stop class="brand-grad-to" offset="0.62" />
+  </linearGradient>
+  <linearGradient id="kosmos-grad-mark" gradientUnits="userSpaceOnUse" x1="8" y1="43.1" x2="85.9" y2="56.9">
+  <stop class="brand-grad-from" offset="0.1" />
+  <stop class="brand-grad-to" offset="0.9" />
+  </linearGradient>
+  <linearGradient id="kosmos-grad-mark-sparkle" gradientUnits="userSpaceOnUse" x1="67.2" y1="27.6" x2="107.79" y2="68.2">
+  <stop class="brand-grad-from" offset="0.15" />
+  <stop class="brand-grad-to" offset="0.62" />
+  </linearGradient>
+  </defs>
+</svg>

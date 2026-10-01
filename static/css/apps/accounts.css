@@ -44,14 +44,22 @@ body {
 }
 
 /* Brand — the wordmark itself (display cut, the sparkle after the word), drawn as a mask filled
-   with the theme's link colour so it matches the sidebar in every theme (a
+   with the theme's brand gradient so it matches the sidebar in every theme (a
    background image can't take currentColor, and the inverted favicon badge
-   belongs to the taskbar, not the card). Fallback only: when the firm has
-   an uploaded logo, auth-brand.html adds has-logo and the image replaces
-   the wordmark. NOTE: a CSS url can't ride static_v — bump the literal ?v
-   below whenever the SVG is regenerated. */
+   belongs to the taskbar, not the card). Two layers, as in the sidebar
+   cuts: one gradient across the word and one on the diagonal across the
+   sparkle, which sits in the last 13.4% of the mask's width; both are held
+   to the ink's height (the mask is 5.2984:1, centred in the taller box).
+   Fallback only: when the firm has an uploaded logo, auth-brand.html adds
+   has-logo and the image replaces the wordmark. NOTE: a CSS url can't ride
+   static_v — bump the literal ?v below whenever the SVG is regenerated. */
 .auth-title:not(.has-logo)::before {
-  background: var(--brand-ink);
+  --wordmark-ink-height: calc(12rem / 5.2984);
+  background:
+    linear-gradient(135deg, var(--brand-grad-from) 15%, var(--brand-grad-to) 62%)
+      right center / 13.4% var(--wordmark-ink-height) no-repeat,
+    linear-gradient(100deg, var(--brand-grad-from) 10%, var(--brand-grad-to) 90%)
+      left center / 86.6% var(--wordmark-ink-height) no-repeat;
   content: "";
   display: inline-block;
   height: 3.8rem;

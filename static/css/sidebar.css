@@ -38,11 +38,24 @@
   text-decoration: none;
 }
 
-/* Brand — both cuts are the kit's inline currentColor SVGs, painted by the
-   anchor's link colour so the brand themes with the app. Expanded shows the
+/* Brand — both cuts are the kit's inline SVGs, filled with the brand
+   gradient (kosmos-brand-gradients.html) so the brand themes with the app;
+   the anchor's --brand-ink colour is their flat fallback. Expanded shows the
    sparkle wordmark; the collapsed rail and the horizontal bar swap to the
    kappa. The inline contract is 1em-tall/em-wide, so font-size is the size
    knob. */
+.brand-gradients {
+  position: absolute;
+}
+
+.brand-grad-from {
+  stop-color: var(--brand-grad-from);
+}
+
+.brand-grad-to {
+  stop-color: var(--brand-grad-to);
+}
+
 .sidebar-brand-wordmark {
   display: block;
   font-size: 1.25rem;
