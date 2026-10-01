@@ -1258,7 +1258,7 @@ def create_prompt(request, matter_id):
     """Generate a prompt stuffing document for external AI chat clients."""
     matter, _ = get_matter_from_url(request, matter_id)
 
-    # Load ai-prompt.md content with jurisdiction substitution
+    # Load prompts/legal.md content with jurisdiction substitution
     company = Firm.objects.first()
     jurisdiction = (
         matter.jurisdiction

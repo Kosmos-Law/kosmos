@@ -27,7 +27,6 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Count, Max, Q
 from django.utils import timezone
@@ -50,7 +49,7 @@ from .models import Conversation
 logger = logging.getLogger(__name__)
 
 # Path to the legal AI instructions file
-LEGAL_PROMPT_FILE = Path(settings.BASE_DIR) / "docs" / "ai-prompt.md"
+LEGAL_PROMPT_FILE = Path(__file__).resolve().parent / "prompts" / "legal.md"
 
 
 class ImportanceTier(Enum):
@@ -568,7 +567,7 @@ Items marked [REFERENCE] are background information.
 
 def load_legal_prompt(jurisdiction: str = "") -> str:
     """
-    Load the legal AI instructions from docs/ai-prompt.md.
+    Load the legal AI instructions from apps/case/ai/prompts/legal.md.
 
     This file is read fresh on each call so edits take effect immediately.
     If *jurisdiction* is provided, ``[JURISDICTION]`` placeholders are replaced.

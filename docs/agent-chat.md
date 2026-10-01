@@ -48,7 +48,7 @@ unwatched is still collected.
 Segment A, byte-stable across turns while the matter is unchanged (so the
 provider cache keeps hitting):
 
-1. `docs/ai-prompt.md` (the legal instructions, jurisdiction substituted)
+1. `apps/case/ai/prompts/legal.md` (the legal instructions, jurisdiction substituted)
 2. the working method (orient from the index, read before relying, pinned
    first, batch independent reads, budget, one-sentence narration before
    each batch, answer rules), then the legal research method
