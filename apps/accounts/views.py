@@ -1,7 +1,10 @@
+import hmac
+
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import redirect_to_login
+from django.db.models import F
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -71,7 +74,6 @@ class LoginView(View):
             EmailVerificationCode.objects.create(user=user, code=code)
             send_verification_email(user, code)
             request.session["pending_user_id"] = user.id
-            request.session["code_attempts"] = 0
             next_url = _safe_next_url(
                 request, request.POST.get("next") or request.GET.get("next", "")
             )
@@ -110,55 +112,46 @@ class VerifyCodeView(View):
 
         if form.is_valid():
             code = form.cleaned_data["code"]
+            user = CustomUser.objects.filter(id=pending_user_id).first()
+            verification = EmailVerificationCode.objects.filter(
+                user_id=pending_user_id
+            ).first()
 
-            try:
-                user = CustomUser.objects.get(id=pending_user_id)
-                verification = EmailVerificationCode.objects.get(user=user, code=code)
-
-                if verification.is_expired():
-                    # Code expired
-                    verification.delete()
-                    return render(
-                        request,
-                        self.template_name,
-                        {
-                            "form": form,
-                            "error": "Code has expired. Please log in again.",
-                        },
-                    )
-
-                # Success - clean up and log in
-                verification.delete()
+            if user is None or verification is None:
+                # The code was used, or discarded after too many wrong tries.
                 del request.session["pending_user_id"]
-                request.session.pop("code_attempts", None)
-                next_url = request.session.pop("login_next_url", None)
-                login(request, user)
-                return redirect(next_url or settings.LOGIN_REDIRECT_URL)
+                return self._error(request, form, "Please log in again.")
 
-            except (CustomUser.DoesNotExist, EmailVerificationCode.DoesNotExist):
-                # The count lives in the session beside pending_user_id. A
-                # fresh session has to pass step 1 again, which issues a new
-                # code, so the limit holds per code.
-                attempts = request.session.get("code_attempts", 0) + 1
-                if attempts >= MAX_CODE_ATTEMPTS:
-                    EmailVerificationCode.objects.filter(
-                        user_id=pending_user_id
-                    ).delete()
-                    del request.session["pending_user_id"]
-                    request.session.pop("code_attempts", None)
-                    return render(
-                        request,
-                        self.template_name,
-                        {
-                            "form": form,
-                            "error": "Too many incorrect codes. Please log in again.",
-                        },
-                    )
-                request.session["code_attempts"] = attempts
-                return render(
-                    request,
-                    self.template_name,
-                    {"form": form, "error": "Invalid verification code."},
+            if verification.is_expired():
+                verification.delete()
+                return self._error(
+                    request, form, "Code has expired. Please log in again."
                 )
 
+            if not hmac.compare_digest(code.encode(), verification.code.encode()):
+                # Counted on the code itself, not in the session: however many
+                # browser sessions are waiting on this sign-in, the code gets
+                # MAX_CODE_ATTEMPTS guesses in total.
+                EmailVerificationCode.objects.filter(pk=verification.pk).update(
+                    attempts=F("attempts") + 1
+                )
+                verification.refresh_from_db()
+                if verification.attempts >= MAX_CODE_ATTEMPTS:
+                    verification.delete()
+                    del request.session["pending_user_id"]
+                    return self._error(
+                        request, form, "Too many incorrect codes. Please log in again."
+                    )
+                return self._error(request, form, "Invalid verification code.")
+
+            # Success - clean up and log in
+            verification.delete()
+            del request.session["pending_user_id"]
+            next_url = request.session.pop("login_next_url", None)
+            login(request, user)
+            return redirect(next_url or settings.LOGIN_REDIRECT_URL)
+
         return render(request, self.template_name, {"form": form})
+
+    def _error(self, request, form, message):
+        return render(request, self.template_name, {"form": form, "error": message})

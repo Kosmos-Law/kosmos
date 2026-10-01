@@ -39,7 +39,7 @@ class PermissionMiddleware:
     # the tab in the navigation is not a gate: the URL has to refuse too.
     PERMISSION_PATTERNS = [
         (re.compile(r"^/matters/\d+/(rates|ledger)(/|$)"), "perm_financial"),
-        (re.compile(r"^/case/(\d+/)?research/"), "perm_research"),
+        (re.compile(r"^/case/(\d+/)?(tab/)?research/"), "perm_research"),
     ]
 
     # Where matter membership is enforced from the URL alone. /matters/ and

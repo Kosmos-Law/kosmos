@@ -103,6 +103,28 @@ def test_a_few_wrong_attempts_do_not_lock_out_the_right_code(user):
     assert client.session["_auth_user_id"] == str(user.pk)
 
 
+def test_wrong_attempts_are_counted_per_code_across_sessions(user):
+    """Someone holding the password can open many sessions. The guesses they
+    get against the one live code must not multiply with them."""
+    first, second = Client(), Client()
+    _pass_step_one(first, user)
+    # A second sign-in replaces the code; both sessions now wait on it.
+    verification = _pass_step_one(second, user)
+    wrong = _wrong_code(verification)
+
+    for _ in range(MAX_CODE_ATTEMPTS - 1):
+        first.post("/accounts/login/verify/", {"code": wrong})
+    assert EmailVerificationCode.objects.filter(user=user).exists()
+
+    # The other session's first wrong guess is the code's last.
+    second.post("/accounts/login/verify/", {"code": wrong})
+
+    assert not EmailVerificationCode.objects.filter(user=user).exists()
+    for client in (first, second):
+        client.post("/accounts/login/verify/", {"code": verification.code})
+        assert "_auth_user_id" not in client.session
+
+
 @pytest.mark.parametrize("age", [timedelta(minutes=6), timedelta(days=1, minutes=1)])
 def test_code_expires_and_stays_expired(user, age):
     verification = EmailVerificationCode.objects.create(user=user, code="123456")

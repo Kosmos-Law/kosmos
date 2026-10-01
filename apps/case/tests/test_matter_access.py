@@ -144,6 +144,9 @@ def limited_client(user):
 def test_research_is_refused_without_the_research_permission(limited_client, matter):
     assert limited_client.get(f"/case/{matter.id}/research/").status_code == 403
     assert limited_client.get("/case/research/query/1/status/").status_code == 403
+    # The tab-switch route reaches the same page by another address.
+    assert limited_client.get(f"/case/{matter.id}/tab/research/").status_code == 403
+    assert limited_client.get(f"/case/{matter.id}/tab/documents/").status_code == 200
 
 
 def test_rates_and_ledger_are_refused_without_the_financial_permission(
