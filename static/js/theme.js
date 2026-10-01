@@ -53,9 +53,11 @@
   // the resolved theme and handed over as a data URI. Only icons marked
   // data-favicon opt in: "brand" is the Kosmos mark (ground = the brand
   // gradient the sidebar mark wears, --brand-grad-from to --brand-grad-to on
-  // the diagonal; glyph = --background-body) and "ai" is the sparkles the AI
-  // chat windows carry, stroked in --brand-ink. The dev mark and the other
-  // per-app icons (notes, viewer) keep their fixed colours.
+  // the diagonal; glyph = --background-body), "brand-dev" is the same mark
+  // for dev tabs (the dev red leads the gradient in place of the brand ink,
+  // so the tab still reads red first; the far end stays the theme's) and
+  // "ai" is the sparkles the AI chat windows carry, stroked in --brand-ink.
+  // The other per-app icons (notes, viewer) keep their fixed colours.
   function faviconSvg(kind, ink, ground, from, to) {
     if (kind === 'brand') {
       return (
@@ -89,7 +91,13 @@
     // A stylesheet that predates the gradient tokens paints the flat ink.
     var from = style.getPropertyValue('--brand-grad-from').trim() || ink;
     var to = style.getPropertyValue('--brand-grad-to').trim() || ink;
-    var svg = faviconSvg(link.getAttribute('data-favicon'), ink, ground, from, to);
+    var kind = link.getAttribute('data-favicon');
+    if (kind === 'brand-dev') {
+      // The red baked into kosmos-mark-dev.svg, the unpainted fallback.
+      kind = 'brand';
+      from = style.getPropertyValue('--nord11').trim() || from;
+    }
+    var svg = faviconSvg(kind, ink, ground, from, to);
     if (!svg) return;
     link.setAttribute('href', 'data:image/svg+xml,' + encodeURIComponent(svg));
   }
