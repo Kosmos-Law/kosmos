@@ -42,6 +42,9 @@ nav = [
   ] },
   { "Reference" = [
     "reference/index.md",
+    { "Environment variables" = "reference/environment.md" },
+    { "Management commands" = "reference/commands.md" },
+    { "Scheduled jobs" = "reference/schedules.md" },
   ] },
   { "Decisions" = [
     "decisions/index.md",

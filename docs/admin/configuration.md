@@ -25,9 +25,11 @@ user `kosmos`, and password `kosmos` on `localhost:5432`. Replace
 For staging or production, start from `config/.env.dev` as well and change
 `DEBUG`, `ENV`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `PUBLIC_BASE_URL`, the
 database values and the email settings, using `config/.env.example` as the
-reference for every optional integration. The `[string]` placeholders in
-`.env.example` are not blank, so do not copy that file as-is: a placeholder
-API key enables the integration it belongs to.
+reference for every optional integration. Do not copy `.env.example` as-is:
+its `[string]` placeholders mark required values and are not usable ones.
+
+Every variable, with its default, is listed in the
+[environment variable reference](../reference/environment.md).
 
 For a credential-free local setup, keep `STORAGE_BACKEND=local` and
 `EMAIL_BACKEND=console`. Set `STORAGE_BACKEND=s3` to use DigitalOcean Spaces,

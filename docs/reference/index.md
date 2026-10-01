@@ -1,12 +1,14 @@
 # Reference
 
-Lookup tables. Most of these pages will be generated from the code so they
-cannot drift from it.
+Lookup tables. The first three pages are generated from the code by
+`scripts/gen_docs_reference.py`, and a test fails when they fall behind
+it, so they can be trusted to match the version they ship with.
 
-Not written yet: environment variables, management commands, scheduled
-jobs, and the permissions matrix.
+- [Environment variables](environment.md): everything `config/.env` can
+  set, with defaults.
+- [Management commands](commands.md): every `manage.py` command Kosmos
+  adds.
+- [Scheduled jobs](schedules.md): what the background worker runs, and
+  when.
 
-Until the environment variable page exists, the authoritative list is
-[`config/.env.example`](https://github.com/Kosmos-Law/kosmos/blob/dev/config/.env.example),
-and every management command describes itself with
-`python manage.py <command> --help`.
+Not written yet: the permissions matrix.
