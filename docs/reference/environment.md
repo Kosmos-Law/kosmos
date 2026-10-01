@@ -21,6 +21,7 @@ variable belongs to stays off or falls back until it is set.
 | `CSRF_TRUSTED_ORIGINS` | empty | Comma-separated full origins (scheme, host and port when not the default) trusted for form posts. Needed behind a reverse proxy. (comma-separated list) |
 | `PUBLIC_BASE_URL` | empty | Scheme and host used to build absolute links outside a web request, such as payment links in emails sent by the background worker. Blank falls back to the host of the request that triggered the send, when there is one. |
 | `SITE_NAME` | empty | A display name for this instance. Passed to templates as site_handle; no template currently shows it. |
+| `TIME_ZONE` | `America/New_York` | The firm's time zone, as a tz database name (for example America/Chicago). Dates shown in the app, the times scheduled jobs run, and the zone events are written to Google Calendar in all follow it. |
 
 ## Database
 
@@ -84,13 +85,14 @@ variable belongs to stays off or falls back until it is set.
 | `GEMINI_API_KEY` | empty | Google Gemini API key, for the Gemini models and for the embeddings behind semantic search. |
 | `SEMANTIC_AUTO_INDEX` | `True` | Re-embed a record for semantic search whenever it is saved. The built-in default is True. Keep it False until GEMINI_API_KEY is set, or every save queues an embedding task that fails and logs an error; then set it to True and run manage.py build_semantic_index once. (boolean) |
 | `COURTLISTENER_API_KEY` | empty | CourtListener API token, for case law search and citation checking. |
+| `CHAT_RETENTION_DAYS` | `180` | Days after a matter closes before the weekly purge deletes its AI chats. 0 keeps them indefinitely. (integer) |
 
 ## Intakes
 
 | Variable | Default | Description |
 |---|---|---|
-| `KOSMOS_SEAM_KEY` | empty | Shared secret for the intake API used by a connected website or intake application (the X-Seam-Key header). While blank, that API accepts requests without a key. |
-| `MAILGUN_WEBHOOK_SIGNING_KEY` | empty | Mailgun HTTP webhook signing key, verifying inbound mail posted to /api/inbound-email/. While blank, signatures are not checked. |
+| `KOSMOS_SEAM_KEY` | empty | Shared secret for the intake API used by a connected website or intake application (the X-Seam-Key header). While blank, that API refuses every request. |
+| `MAILGUN_WEBHOOK_SIGNING_KEY` | empty | Mailgun HTTP webhook signing key, verifying inbound mail posted to /api/inbound-email/. While blank, that webhook refuses every request. |
 | `INTAKE_INBOUND_RECIPIENT` | `kosmos-intakes` | The part before the @ of the address this instance accepts forwarded intake mail on. Mail for any other address is dropped, which lets several instances share one Mailgun route. |
 | `INTAKE_FORM_LINK_MAX_AGE` | `2592000` | Seconds a client intake-form link stays valid. Defaults to 30 days. (integer) |
 
@@ -99,13 +101,13 @@ variable belongs to stays off or falls back until it is set.
 | Variable | Default | Description |
 |---|---|---|
 | `LAW_FIRM_ID` | empty | The firm's id in LEDES invoice exports. |
-| `PAYMENT_PROCESSOR` | `fake` | Which processor collects online payments: fake (simulates payments, no credentials), lawpay, stripe or confido. |
+| `PAYMENT_PROCESSOR` | `fake` | Which processor collects online payments: none (online payment off; the emailed link still shows the invoice), lawpay, stripe, confido, or fake. fake is for development: it records a payment although no money moves, so never run it where real clients receive invoices. The built-in default is fake; the installer sets none for a production install. |
 | `INVOICE_PAY_LINK_MAX_AGE` | `7776000` | Seconds an emailed payment link stays valid. Defaults to 90 days. Resending the invoice issues a fresh link. (integer) |
 | `LAWPAY_PUBLIC_KEY` | empty | LawPay (AffiniPay) public key, used in the browser by the hosted card fields. Test keys reach only test accounts. |
 | `LAWPAY_SECRET_KEY` | empty | LawPay secret key, used by the server. |
 | `LAWPAY_OPERATING_CARD_ACCOUNT_ID` | empty | LawPay deposit account for card payments to the operating account. List the account ids with manage.py lawpay_accounts. Blank lets the gateway pick its primary account; the same applies to the three settings below. |
 | `LAWPAY_OPERATING_ECHECK_ACCOUNT_ID` | empty | LawPay deposit account for eCheck payments to the operating account. |
-| `LAWPAY_TRUST_CARD_ACCOUNT_ID` | empty | LawPay deposit account for card payments to the trust account. |
+| `LAWPAY_TRUST_CARD_ACCOUNT_ID` | empty | LawPay deposit account for card payments to the trust account. Required before a trust deposit request can be sent: a trust charge is never left to the gateway's choice of account. |
 | `LAWPAY_TRUST_ECHECK_ACCOUNT_ID` | empty | LawPay deposit account for eCheck payments to the trust account. |
 | `LAWPAY_API_BASE` | `https://api.8am.com` | LawPay API host. Change only if AffiniPay moves it. |
 | `STRIPE_PUBLISHABLE_KEY` | empty | Stripe publishable key, used in the browser. The firm supplies keys for its own Stripe account. |

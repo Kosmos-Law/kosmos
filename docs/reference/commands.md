@@ -21,11 +21,11 @@ Which of these an operator needs, and when, is covered in
 |---|---|
 | `backfill_ocr` | Queue OCR processing for all existing PDF documents that have not been processed |
 | `build_semantic_index` | Embed matter materials for semantic search |
-| `cleanup_orphan_documents` | Delete document records whose files are missing from storage |
+| `cleanup_orphan_documents` | List document records whose files are missing from storage, and with --apply delete them (and their highlights). Reports only by default. |
 | `dedupe_documents` | Delete duplicate documents (same matter) that have no highlights or references |
 | `fingerprint_documents` | Compute content fingerprints for documents that lack them |
 | `fix_document_paths` | Fix document file paths from old naming format to current convention |
-| `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in Drive and Gmail. Scheduled weekly via setup_chat_purge_schedule. |
+| `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in Drive and Gmail. Scheduled weekly by setup_schedules. |
 | `run_auto_summaries` | Queue auto-summary and auto-agenda refreshes on demand (any environment; qcluster must be running to process them). |
 | `setup_auto_summary_schedule` | Create or update the auto-thread schedules: incremental refreshes six nights a week, a full rebuild early Monday (Sunday night). Nights when qcluster is down are skipped (catch_up is off). Superseded by setup_schedules, which installs these with every other schedule. |
 | `setup_chat_purge_schedule` | Create or update the weekly chat-purge schedule (Sunday 03:00 local): deletes AI chat history for matters closed past the retention window. Superseded by setup_schedules, which installs this with every other schedule. |

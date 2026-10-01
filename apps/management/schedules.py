@@ -115,7 +115,19 @@ def schedule_specs(auto_summary_time="30 1"):
             "0 3 * * 0",
             description=(
                 "Deletes AI chat history for matters that have been closed "
-                "for more than 180 days."
+                "for longer than CHAT_RETENTION_DAYS (180 by default; 0 keeps "
+                "chats indefinitely)."
+            ),
+        ),
+        ScheduleSpec(
+            "payments-reconcile",
+            "apps.invoicing.pay.reconcile.poll_pending",
+            "15 * * * *",
+            description=(
+                "Asks the payment processor for the current state of every "
+                "online payment and trust deposit still in flight, and "
+                "settles, confirms or reverses it. The backstop for a webhook "
+                "that never arrived."
             ),
         ),
     )

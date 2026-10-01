@@ -14,6 +14,7 @@ docket records are never in scope here.
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.utils import timezone
 
 from apps.case.ai.models import Conversation, Message
@@ -87,5 +88,10 @@ def purge_closed_chats(days=DEFAULT_RETENTION_DAYS, dry_run=False):
 
 
 def scheduled_purge_closed_chats():
-    """django-q entry point (chat-purge-weekly schedule)."""
-    return purge_closed_chats()
+    """django-q entry point (chat-purge-weekly schedule). The window is the
+    firm's CHAT_RETENTION_DAYS; 0 or less means chats are kept."""
+    days = settings.CHAT_RETENTION_DAYS
+    if days <= 0:
+        logger.info("Chat purge skipped: CHAT_RETENTION_DAYS=%s", days)
+        return None
+    return purge_closed_chats(days=days)

@@ -585,6 +585,47 @@ class TestAgentKind:
         assert "selected" not in mode_select
         assert mode_select.index('value="classic"') < mode_select.index('value="agent"')
 
+    def _model_select(self, client, matter):
+        import re
+
+        from django.urls import reverse
+
+        html = client.get(
+            reverse("case:ai-new-conversation-prompt", args=[matter.id])
+        ).content.decode()
+        return re.search(
+            r'<select id="new-conversation-llm">(.*?)</select>', html, re.DOTALL
+        ).group(1)
+
+    def test_modal_offers_only_models_with_a_key(self, client, matter, settings):
+        settings.ANTHROPIC_API_KEY = "sk-ant-test"
+        settings.GEMINI_API_KEY = ""
+
+        models = self._model_select(client, matter)
+
+        assert 'value="claude-' in models
+        assert 'value="gemini-' not in models
+        # The usual default (Gemini Pro) has no key, so another is preselected.
+        assert "selected" in models
+
+    def test_modal_offers_gemini_only_with_a_gemini_key(self, client, matter, settings):
+        settings.ANTHROPIC_API_KEY = ""
+        settings.GEMINI_API_KEY = "gm-test"
+
+        models = self._model_select(client, matter)
+
+        assert 'value="gemini-' in models
+        assert 'value="claude-' not in models
+
+    def test_modal_lists_every_model_when_no_key_is_set(self, client, matter, settings):
+        settings.ANTHROPIC_API_KEY = ""
+        settings.GEMINI_API_KEY = ""
+
+        models = self._model_select(client, matter)
+
+        assert 'value="gemini-' in models
+        assert 'value="claude-' in models
+
     def test_create_conversation_honors_kind(self, client, matter):
         from django.urls import reverse
 

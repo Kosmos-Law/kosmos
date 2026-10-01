@@ -127,6 +127,13 @@ class PaymentProcessor(ABC):
     def client_config(self, invoice) -> ClientConfig:
         """Config for the client-side hosted-fields form for `invoice`."""
 
+    def trust_unavailable_reason(self) -> str:
+        """Why this processor cannot take a trust deposit as configured, or
+        '' if it can. Trust money must reach the trust account and nowhere
+        else, so a processor that cannot guarantee that says so here and
+        refuses the charge."""
+        return ""
+
     @abstractmethod
     def charge(
         self,

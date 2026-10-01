@@ -119,6 +119,9 @@ jobs:
         run: |
           grep -q '^DEBUG=False$' config/.env
           grep -q '^ENV=prod$' config/.env
+          grep -q '^PAYMENT_PROCESSOR=none$' config/.env
+          test -f /etc/logrotate.d/kosmos
+          sudo logrotate --debug /etc/logrotate.d/kosmos
           grep -q '^ALLOWED_HOSTS=localhost$' config/.env
           test -f gunicorn.conf.py
 

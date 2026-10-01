@@ -320,6 +320,8 @@ def describe_cron(cron):
             return "Every minute"
         if re.fullmatch(r"\*/\d+", minute):
             return f"Every {minute[2:]} minutes"
+        if minute.isdigit():
+            return f"Hourly at {int(minute):02d} minutes past"
         return cron
     if not (minute.isdigit() and hour.isdigit()):
         return cron

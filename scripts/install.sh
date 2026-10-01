@@ -244,7 +244,7 @@ apt_install_missing() {
 }
 
 apt_pkgs=("${APT_BASE[@]}")
-if [ "$PROD" -eq 1 ]; then apt_pkgs+=(nginx); fi
+if [ "$PROD" -eq 1 ]; then apt_pkgs+=(nginx logrotate); fi
 apt_install_missing "${apt_pkgs[@]}"
 
 # pgvector is packaged per PostgreSQL major version.
@@ -321,6 +321,16 @@ env_set() {
 
 if [ -f "$ENV_FILE" ]; then
   log "keeping existing config/.env"
+  if [ "$PROD" -eq 1 ]; then
+    # An existing file is never edited, so a checkout that was first installed
+    # in development mode would go to production with DEBUG on. Say so.
+    env_debug=$(env_get DEBUG | tr -d "\"'" | tr '[:upper:]' '[:lower:]')
+    env_name=$(env_get ENV | tr -d "\"'")
+    if [ "$env_debug" = "true" ] || [ "$env_name" != "prod" ]; then
+      warn "config/.env holds development settings (DEBUG=$(env_get DEBUG), ENV=$(env_get ENV))"
+      note "config/.env was kept as it is and holds development settings. A production server needs DEBUG=False and ENV=prod: edit the file, then restart law.service and qcluster.service."
+    fi
+  fi
 else
   tmp="$SCRATCH/env"
   {
@@ -345,6 +355,8 @@ else
     env_set "$tmp" BILLING_FROM_EMAIL "Kosmos <billing@$DOMAIN>"
     env_set "$tmp" SERVER_EMAIL "kosmos@$DOMAIN"
     env_set "$tmp" INTAKE_INBOUND_RECIPIENT kosmos-intakes
+    # .env.dev's "fake" processor records payments although no money moves.
+    env_set "$tmp" PAYMENT_PROCESSOR none
   fi
   if [ "$DRY_RUN" -eq 1 ]; then
     info "would write config/.env (rendered copy: $tmp)"
@@ -505,9 +517,9 @@ if [ "$PROD" -eq 1 ]; then
   done
   if [ "$UNITS_CHANGED" -eq 1 ]; then run sudo -n systemctl daemon-reload; fi
   run sudo -n systemctl enable --now law.socket law.service qcluster.service
-  if [ "$UNITS_CHANGED" -eq 1 ]; then
-    run sudo -n systemctl restart law.service qcluster.service
-  fi
+  # Restart on every run, not only when a unit file changed: a re-run after
+  # pulling new code must not leave the old code serving requests.
+  run sudo -n systemctl restart law.service qcluster.service
   if [ "$DRY_RUN" -eq 0 ]; then
     for svc in law.service qcluster.service; do
       if systemctl is-active --quiet "$svc"; then
@@ -518,6 +530,10 @@ if [ "$PROD" -eq 1 ]; then
       fi
     done
   fi
+
+  # logs/django.log and gunicorn's access and error logs grow without bound
+  # unless something rotates them.
+  install_if_changed "$(render "$APP_DIR/deploy/logrotate/kosmos")" /etc/logrotate.d/kosmos || true
 
   nginx_file() {
     if install_if_changed "$(render "$APP_DIR/deploy/nginx/$1")" "$2"; then NGINX_CHANGED=1; fi

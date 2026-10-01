@@ -95,9 +95,17 @@ class StripeProcessor(PaymentProcessor):
             reference=f"Invoice {invoice.id}",
         )
 
+    def trust_unavailable_reason(self) -> str:
+        return (
+            "the Stripe integration pays into a single account, so a trust "
+            "deposit cannot be kept apart from operating funds."
+        )
+
     def client_config_for(
         self, *, amount_cents, reference, trust=False
     ) -> ClientConfig:
+        if trust:
+            raise ProcessorConfigError(self.trust_unavailable_reason())
         return ClientConfig(
             processor=self.name,
             public_key=self.publishable_key,
@@ -119,6 +127,8 @@ class StripeProcessor(PaymentProcessor):
         client=None,
         matter=None,
     ) -> ChargeResult:
+        if trust:
+            raise ProcessorConfigError(self.trust_unavailable_reason())
         params = {
             "amount": int(amount_cents),
             "currency": "usd",

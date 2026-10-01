@@ -6,6 +6,7 @@ import logging
 import threading
 import time
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Max
 from django.db.models.functions import Coalesce
@@ -55,6 +56,25 @@ RETIRED_LLMS = (
     "gemini-pro",
 )
 VALID_LLMS = {key for key, _ in Conversation.LLM_CHOICES} | set(RETIRED_LLMS)
+
+
+def available_llm_choices():
+    """The models a new conversation can use on this server: those whose
+    provider has an API key configured. Offering the rest only leads to a
+    chat that answers with the provider's authentication error. With no key
+    at all the full list is returned, so the picker is never empty and the
+    chat itself reports what is missing."""
+    choices = [
+        (key, label)
+        for key, label in Conversation.LLM_CHOICES
+        if (
+            settings.ANTHROPIC_API_KEY
+            if key.startswith("claude")
+            else settings.GEMINI_API_KEY
+        )
+    ]
+    return choices or list(Conversation.LLM_CHOICES)
+
 
 # Modes a new conversation may be created in. "research" is retired and
 # survives only on old rows; anything unknown falls back to classic. The
@@ -355,6 +375,10 @@ def new_conversation_prompt(request, matter_id):
     llm = request.GET.get("llm", "gemini-pro-latest")
     if llm not in VALID_LLMS:
         llm = "gemini-pro-latest"
+    llm_choices = available_llm_choices()
+    if llm not in dict(llm_choices):
+        # The usual default belongs to a provider this server has no key for.
+        llm = llm_choices[0][0]
 
     return render(
         request,
@@ -362,7 +386,7 @@ def new_conversation_prompt(request, matter_id):
         {
             "matter": matter,
             "llm": llm,
-            "llm_choices": Conversation.LLM_CHOICES,
+            "llm_choices": llm_choices,
         },
     )
 
