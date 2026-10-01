@@ -11,4 +11,5 @@ it, so they can be trusted to match the version they ship with.
 - [Scheduled jobs](schedules.md): what the background worker runs, and
   when.
 
-Not written yet: the permissions matrix.
+- [Permissions](permissions.md): what each role and permission gates,
+  which routes need no sign-in, and how each is protected instead.

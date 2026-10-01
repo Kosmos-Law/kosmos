@@ -55,12 +55,17 @@ Each integration stays off until it is configured.
 - [Troubleshooting](troubleshooting.md): dependency and migration
   problems.
 
-## Not written yet
+## Access and security
 
-Users and permissions, and a security checklist for production.
+- [Users and permissions](users.md): sign-in, roles, the permission
+  switches and what each one gates.
+- [Security checklist](security.md): what to check before the server
+  holds real client data, and what the code does and does not do for you.
 
 ## Reference
 
 [Environment variables](../reference/environment.md),
 [management commands](../reference/commands.md) and
 [scheduled jobs](../reference/schedules.md) are generated from the code.
+The [permissions matrix](../reference/permissions.md) lists every access
+check and where it lives.

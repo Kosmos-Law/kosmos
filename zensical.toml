@@ -38,6 +38,10 @@ nav = [
       { "Upgrading" = "admin/upgrading.md" },
       { "Troubleshooting" = "admin/troubleshooting.md" },
     ] },
+    { "Access and security" = [
+      { "Users and permissions" = "admin/users.md" },
+      { "Security checklist" = "admin/security.md" },
+    ] },
   ] },
   { "Use Kosmos" = [
     "guide/index.md",
@@ -60,6 +64,7 @@ nav = [
     { "Environment variables" = "reference/environment.md" },
     { "Management commands" = "reference/commands.md" },
     { "Scheduled jobs" = "reference/schedules.md" },
+    { "Permissions" = "reference/permissions.md" },
   ] },
   { "Decisions" = [
     "decisions/index.md",
