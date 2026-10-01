@@ -1,0 +1,14 @@
+[Unit]
+Description=Kosmos background worker (Django-Q cluster)
+After=network.target postgresql.service
+
+[Service]
+User=@USER@
+Group=@USER@
+WorkingDirectory=@APP_DIR@
+ExecStart=@APP_DIR@/.venv/bin/python manage.py qcluster
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

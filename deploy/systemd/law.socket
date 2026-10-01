@@ -1,0 +1,8 @@
+[Unit]
+Description=Kosmos web socket
+
+[Socket]
+ListenStream=/run/law.sock
+
+[Install]
+WantedBy=sockets.target

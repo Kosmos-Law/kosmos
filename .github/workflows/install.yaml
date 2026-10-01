@@ -1,0 +1,138 @@
+name: Installer
+
+# Runs scripts/install.sh for real on a clean GitHub-hosted Ubuntu runner, in
+# both modes. The runner has passwordless sudo, a live systemd, apt and no
+# pgvector, so this exercises every branch a developer's own machine would
+# have skipped as "already installed": the apt list, the postgres role and
+# extension creation as the postgres superuser, the systemd units, the nginx
+# site, certbot-free TLS-less serving, and the idempotent re-run.
+
+on:
+  pull_request:
+    branches: [ "dev" ]
+    paths:
+      - "scripts/install.sh"
+      - "deploy/**"
+      - "config/.env.dev"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "**/migrations/**"
+      - ".github/workflows/install.yaml"
+  workflow_dispatch:
+
+jobs:
+  dev:
+    name: Development install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run the installer
+        run: scripts/install.sh --yes --no-superuser
+
+      - name: Schema is complete
+        run: |
+          pending=$(.venv/bin/python manage.py showmigrations --plan | grep -c '^\[ \]' || true)
+          test "$pending" -eq 0
+          PGPASSWORD=kosmos psql -h localhost -U kosmos -d kosmos -tAc "select extname from pg_extension" | grep -qx vector
+          PGPASSWORD=kosmos psql -h localhost -U kosmos -d kosmos -tAc "select extname from pg_extension" | grep -qx pg_trgm
+          PGPASSWORD=kosmos psql -h localhost -U kosmos -d kosmos -tAc "select count(*) from ai_status_cache"
+          test "$(PGPASSWORD=kosmos psql -h localhost -U kosmos -d kosmos -tAc 'select count(*) from django_q_schedule')" -ge 10
+
+      - name: Login page answers over runserver
+        run: |
+          .venv/bin/python manage.py runserver 127.0.0.1:8000 > runserver.log 2>&1 &
+          server=$!
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:8000/accounts/login/ && break
+            sleep 1
+          done
+          curl -sS -o /dev/null -w 'login page HTTP %{http_code}\n' -f http://127.0.0.1:8000/accounts/login/
+          kill "$server"
+
+      - name: Worker stays up
+        # qcluster has no exit condition; surviving 20 seconds means it
+        # connected to the broker and started its workers (timeout exits 124).
+        run: |
+          timeout 20 .venv/bin/python manage.py qcluster > qcluster.log 2>&1 && exit 1 || test $? -eq 124
+
+      - name: Re-run is a no-op and keeps config/.env
+        run: |
+          before=$(sha256sum config/.env)
+          scripts/install.sh --yes --no-superuser | tee rerun.log
+          test "$before" = "$(sha256sum config/.env)"
+          grep -q "keeping existing config/.env" rerun.log
+          grep -q "role kosmos exists" rerun.log
+          grep -q "database kosmos exists" rerun.log
+
+      - name: Non-interactive superuser, then skip when present
+        env:
+          DJANGO_SUPERUSER_USERNAME: admin
+          DJANGO_SUPERUSER_EMAIL: admin@example.com
+          DJANGO_SUPERUSER_PASSWORD: ci-only-password
+        run: |
+          scripts/install.sh --yes | grep -q "created from DJANGO_SUPERUSER_"
+          scripts/install.sh --yes | grep -q "a superuser already exists"
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          cat runserver.log qcluster.log rerun.log 2>/dev/null || true
+          tail -n 100 logs/django.log 2>/dev/null || true
+
+  prod:
+    name: Production install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Let nginx reach the checkout
+        # The runner's home directory is 0750, so www-data cannot traverse it
+        # to serve static/. The installer reports this rather than changing
+        # the operator's home directory; here we do what its note says.
+        run: chmod o+x "$HOME"
+
+      - name: Run the installer
+        # --force removes nginx's default site so http://localhost reaches
+        # the Kosmos site; on a real host that choice belongs to the operator.
+        run: scripts/install.sh --prod --domain localhost --yes --no-superuser --force
+
+      - name: Services are running
+        run: |
+          systemctl is-active law.socket law.service qcluster.service
+          sudo nginx -t
+          test -S /run/law.sock
+
+      - name: Site answers through nginx
+        run: |
+          curl -sS -o /dev/null -w 'login page HTTP %{http_code}\n' -f http://localhost/accounts/login/
+          curl -sS -o /dev/null -w 'static css HTTP %{http_code}\n' -f http://localhost/static/css/colors.css
+          curl -sS -o /dev/null -w 'admin css HTTP %{http_code}\n' -f http://localhost/static/admin/css/base.css
+
+      - name: Production env
+        run: |
+          grep -q '^DEBUG=False$' config/.env
+          grep -q '^ENV=prod$' config/.env
+          grep -q '^ALLOWED_HOSTS=localhost$' config/.env
+          test -f gunicorn.conf.py
+
+      - name: Re-run leaves system files alone
+        run: |
+          scripts/install.sh --prod --domain localhost --yes --no-superuser | tee rerun.log
+          grep -q "unchanged /etc/systemd/system/law.service" rerun.log
+          grep -q "unchanged /etc/nginx/sites-available/kosmos" rerun.log
+          systemctl is-active law.service qcluster.service
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          sudo journalctl -u law.service -u qcluster.service -n 100 --no-pager || true
+          sudo tail -n 50 /var/log/nginx/error.log || true
+          tail -n 50 logs/error.log logs/django.log 2>/dev/null || true
+          cat rerun.log 2>/dev/null || true

@@ -59,7 +59,9 @@ jobs:
 
     services:
       database:
-        image: postgres:14
+        # pgvector ships the vector extension that migration case.0087 needs;
+        # plain postgres images do not include it. pg16 matches dev and prod.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: ${{ secrets.DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}

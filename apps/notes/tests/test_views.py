@@ -1649,7 +1649,13 @@ class TestNotesTabFolders:
         client.post(reverse("notes:folder-toggle", args=[a.id]))
         assert client.session["note_folders_expanded"] == []
         client.post(reverse("notes:folder-toggle-all") + "?expand=true")
-        assert set(client.session["note_folders_expanded"]) == {a.id, b.id}
+        # Expand-all covers every general folder, including the ones the
+        # notes data migrations seed, not just the two created here.
+        general_ids = set(
+            NoteFolder.objects.filter(matter__isnull=True).values_list("id", flat=True)
+        )
+        assert {a.id, b.id} <= general_ids
+        assert set(client.session["note_folders_expanded"]) == general_ids
         client.post(reverse("notes:folder-toggle-all") + "?expand=false")
         assert client.session["note_folders_expanded"] == []
 

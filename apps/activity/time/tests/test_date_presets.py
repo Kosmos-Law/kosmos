@@ -34,8 +34,18 @@ def stale_filter(user, label, days_old=7):
 
 def test_detect_filter_label_round_trips_presets():
     today = timezone.localdate()
-    for label, preset in activity_date_filters(today).items():
-        assert detect_filter_label(preset, today) == label
+    presets = activity_date_filters(today)
+    for label, preset in presets.items():
+        detected = detect_filter_label(preset, today)
+        if detected == label:
+            continue
+        # Windows can coincide (this_month on the 1st, this_week on a Monday)
+        # and the first match wins, so only the dates need to round-trip.
+        assert preset["date_min"]
+        assert (presets[detected]["date_min"], presets[detected]["date_max"]) == (
+            preset["date_min"],
+            preset["date_max"],
+        )
 
 
 def test_stale_today_preset_shows_todays_entries(client, user, matter):

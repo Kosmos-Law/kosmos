@@ -8,7 +8,7 @@ practice management codebase.
 A Django 4.2 web application for law practice management. Manages matters, contacts,
 deadlines, time entries, expenses, trust accounting, and intakes.
 
-- **Python**: 3.10+ (3.13 in Nix dev environment)
+- **Python**: 3.13 (`.python-version`; uv downloads it)
 - **Database**: PostgreSQL
 - **Package Manager**: uv
 - **Framework**: Django 4.2 with HTMX for frontend interactivity
@@ -18,22 +18,20 @@ deadlines, time entries, expenses, trust accounting, and intakes.
 ### Environment Setup
 
 ```bash
-# Create and activate virtual environment
-uv venv
+# One command on Ubuntu/Debian: packages, PostgreSQL (+ pgvector, pg_trgm),
+# uv, .venv, config/.env, migrations, post-migration commands, superuser.
+scripts/install.sh            # add --prod --domain HOST for a server
+
+# The same steps by hand:
+uv sync                                  # creates .venv (Python 3.13) and installs deps
 source .venv/bin/activate
-
-# Install dependencies (including dev dependencies)
-uv sync
-
-# Set up environment variables
-cp config/.env.dev config/.env
-# The copied file has safe local defaults; adjust PostgreSQL values if needed
-
-# Run migrations
+cp config/.env.dev config/.env           # safe local defaults; needs a DB named kosmos
+#   the DB needs CREATE EXTENSION pg_trgm + vector, run as the postgres superuser
 python manage.py migrate
-
-# Build search index (run once after migrations)
-python manage.py buildwatson
+python manage.py createcachetable        # ai_status_cache table (not a migration)
+python manage.py installwatson           # watson search column + trigger
+python manage.py buildwatson             # build the search index once
+python manage.py setup_schedules         # recurring Django-Q jobs
 ```
 
 ### Running the Application

@@ -4,587 +4,145 @@
 
 # Kosmos
 
-A web-based law practice management application with integrated case
-building and AI-powered legal analysis.
+Kosmos is a web-based practice management application for small law firms,
+with case building and AI-assisted legal analysis built in. It is a Django
+application backed by PostgreSQL, with HTMX for interactivity and a
+background worker for syncs, OCR and AI jobs. The emphasis is a clean,
+simple interface and the efficient execution of core functionality.
 
-**Practice Management** — Manage matters, contacts, deadlines, time entries,
-expenses, invoicing, trust accounting, and intakes. Supports multiple
-users and time-keepers.
+## What it does
 
-**Case Building** — Organize case materials including documents with OCR
-text extraction, highlights and citations, chronological fact timelines,
-case law research via CourtListener integration, witness tracking, and
-categorized labels.
+**Practice management.** Matters, contacts, tasks and deadlines, a calendar,
+time entries and expenses, invoicing (including LEDES export), trust
+accounting, and client intakes. Multiple users and time-keepers, each with
+their own rates and permissions.
 
-**AI Integration** — Per-matter AI chat with an intelligent context system
-that assembles relevant case materials into the conversation. An automated
-selector evaluates which documents, case law, and prior conversations are
-relevant to each question, staying within the model's context budget.
-Supports Claude and Gemini models.
+**Billing and collection.** Hourly and flat-fee matters, invoices sent by
+email with online payment links, and card payments collected through
+LawPay/AffiniPay or Stripe with trust and operating accounts routed
+separately. Clients can be asked for trust deposits the same way.
 
-**Google Drive Notes** — Case notes kept in Google Drive are mirrored into each
-matter as read-only notes and made available to the AI context, kept current
-automatically.
+**Case building.** Documents with OCR text extraction, highlights and
+citations, a chronological fact timeline, witness tracking, case law pulled
+from CourtListener, and a Research tab that assembles full-opinion briefs
+with citation chasing.
 
-Emphasis on a clean, simple UI and the efficient execution of core
-functionality.
+**AI assistance.** Per-matter chat with a context system that selects the
+relevant documents, notes, case law and prior conversations for each question
+within the model's budget. An agentic mode can search the matter and
+CourtListener itself, and chat can write back into the record: facts,
+witnesses, notes and saved case law. Nightly summaries and a daily plan are
+generated automatically. Claude and Gemini are supported.
 
-## Table of Contents
+**Notes and drafting.** A rich-text notes editor with folders, matter-scoped
+and general libraries that feed the AI, and AI-proposed edits applied to
+LibreOffice drafts as native tracked changes.
 
-- [Getting Started](#getting-started)
-  - [Setting up PostgreSQL](#setting-up-postgresql)
-  - [Virtual Environment](#virtual-environment)
-  - [Installing Dependencies](#installing-dependencies)
-  - [Installing Code Quality Tools](#installing-code-quality-tools)
-  - [Environment Variables](#environment-variables)
-  - [Running Migrations](#running-migrations)
-  - [Building the Search Index](#building-the-search-index)
-  - [Running the Application](#running-the-application)
-  - [Running Background Tasks](#running-background-tasks)
-  - [Creating the first Superuser](#creating-the-first-superuser)
-- [Troubleshooting](#troubleshooting)
-  - [Troubleshoot Dependency Installation](#troubleshoot-dependency-installation)
-  - [Troubleshoot Running Migrations](#troubleshoot-running-migrations)
-- [Steps After Squashing Migrations](#steps-after-squashing-migrations)
-  - [Step 1: Ensure squashing was done correctly](#step-1-ensure-squashing-was-done-correctly)
-  - [Step 2: Removing the old migration history](#step-2-removing-the-old-migration-history)
-  - [Step 3: Faking Django content type migrations](#step-3-faking-django-content-type-migrations)
-  - [Step 4: Faking the squashed migrations](#step-4-faking-the-squashed-migrations)
-- [Google Calendar/Contact Integration](#google-calendarcontact-integration)
-  - [Step 1: Create a Google Cloud Project](#step-1-create-a-google-cloud-project)
-  - [Step 2: Add the credentials file to the project](#step-2-add-the-credentials-file-to-the-project)
-  - [Step 3: Set up the environment variables](#step-3-set-up-the-environment-variables)
-- [Google Drive Case Notes](#google-drive-case-notes)
-  - [Prerequisites](#prerequisites)
-  - [Connecting Drive and linking matters](#connecting-drive-and-linking-matters)
-  - [Configuration](#configuration)
-  - [Keeping notes in sync (Django-Q)](#keeping-notes-in-sync-django-q)
+**Google Workspace.** Calendar and Contacts sync, Gmail labels mapped to
+matters with a per-matter email view, and Drive folders mapped to document
+categories so PDFs flow into the matter automatically.
 
-## Getting Started
+**Claude Desktop.** An MCP server exposes notes, matters, conversations and
+financial data to Claude Desktop (see [docs/claude-desktop-notes.md](docs/claude-desktop-notes.md)).
 
-Make sure to have the following installed on your machine:
+## Installation
 
-- Python 3.10 or higher
-- PostgreSQL
-- [uv](https://docs.astral.sh/uv/)
-
-### Additional Machine Requirements
-
-The application needs additional software to be installed on the machine
-where the application will be running:
+On a fresh Ubuntu or Debian machine, one command stands up a working
+development instance:
 
 ```bash
-sudo apt-get install -y libpangocairo-1.0-0 tesseract-ocr ghostscript poppler-utils pandoc libreoffice-writer-nogui python3-uno
+git clone https://github.com/Kosmos-Law/kosmos.git
+cd kosmos
+scripts/install.sh
 ```
 
-- **Pango** (`libpangocairo-1.0-0`) - Required by WeasyPrint for PDF
-  generation
-- **Tesseract** (`tesseract-ocr`) - OCR engine for text extraction from
-  scanned PDFs
-- **Ghostscript** (`ghostscript`) - Required by ocrmypdf for PDF processing
-- **Poppler** (`poppler-utils`) - Required by pdf2image for PDF to image
-  conversion
-- **Pandoc** (`pandoc`) - Converts Google Drive case notes (`.docx`/`.odt`) to
-  Markdown for the case-notes sync (`manage.py sync_drive_notes`). Spreadsheets
-  (Google Sheets / `.xlsx` / `.ods` / `.csv`) in the same `Notes` folder are also
-  synced, rendered as Markdown tables (one per sheet) via the `openpyxl` and
-  `odfpy` Python packages — no extra system binary required.
-- **LibreOffice Writer** (`libreoffice-writer-nogui` + `python3-uno`) - Applies
-  AI-proposed edits to `.odt` drafts as native tracked changes
-  (`apps/drive/redline.py`). The driver runs under the system python3 (which
-  has the UNO bindings), not the project venv; override the binaries with the
-  `SOFFICE_BIN` / `UNO_PYTHON` env vars if they live elsewhere.
+The script installs the system packages, PostgreSQL with the `pgvector` and
+`pg_trgm` extensions, [uv](https://docs.astral.sh/uv/) and the Python
+environment, generates `config/.env` with a fresh secret key, runs
+migrations and the post-migration commands, and asks for the first
+superuser. It uses `sudo` where it has to and never runs as root. It is
+idempotent: re-run it after pulling new code or after a failure and it only
+does what is still missing. An existing `config/.env` is always kept.
 
-### Setting up PostgreSQL
-
-After installing PostgreSQL on your machine, create a new database, user
-and set up privileges and permissions for the user.
-
-**NOTE:** Replace all instances inside `< >` with your own values.
-
-```postgresql
-CREATE DATABASE <database_name>;
-CREATE USER <database_user> WITH ENCRYPTED PASSWORD '<user_password>';
-GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <database_user>;
-ALTER DATABASE <database_name> OWNER TO <database_user>;
-```
-
-The upper commands will create a new database, user with an encrypted
-password and grant all privileges to the user while also making the user
-the owner of the database.
-
-**IMPORTANT:** Remember all the values you used as variables as they will
-be needed in the next steps.
-
-### Virtual Environment
-
-If running the application outside a container, it is recommended to create
-a virtual environment to manage all project dependencies.
-
-To create a virtual environment, navigate to the project root directory
-and run the following command:
+Then start the app in two terminals:
 
 ```bash
-uv venv
+.venv/bin/python manage.py runserver
+.venv/bin/python manage.py qcluster
 ```
 
-This creates a `.venv` directory with the virtual environment.
+| Option | Effect |
+| --- | --- |
+| `--db-name`, `--db-user`, `--db-password` | database settings (default `kosmos` / `kosmos` / `kosmos`); values in an existing `config/.env` win |
+| `--no-superuser` | skip the superuser prompt |
+| `--seed-intake-forms` | also run `manage.py seed_intake_forms` |
+| `--auto-summary-time "30 1"` | passed to `setup_schedules` |
+| `--yes` | skip the confirmation prompt |
+| `--dry-run` | print every command instead of running it; rendered files are left in a temp dir for inspection |
+| `--force` | production only: overwrite system files that differ from the templates and remove nginx's default site |
 
----
+For a non-interactive superuser, export `DJANGO_SUPERUSER_USERNAME`,
+`DJANGO_SUPERUSER_EMAIL` and `DJANGO_SUPERUSER_PASSWORD` before running.
 
-After creating the virtual environment, activate it by running:
-
-**Windows:**
+### Production
 
 ```bash
-.\.venv\Scripts\activate
+scripts/install.sh --prod --domain kosmos.example.com
+sudo certbot --nginx -d kosmos.example.com
 ```
 
-**Linux/MacOS:**
+`--prod` generates a production `config/.env` (`DEBUG=False`, a generated
+database password, the hostname in `ALLOWED_HOSTS` and friends), installs
+nginx, renders the systemd units and nginx site from
+[`deploy/`](deploy/README.md), runs `collectstatic`, and starts
+`law.socket`, `law.service` and `qcluster.service`. Certbot adds TLS; later
+runs of the installer leave a certbot-managed file alone. Then fill in the
+blanks in `config/.env` (SMTP, `ADMINS`, API keys, object storage) and
+restart the two services.
+
+### Manual installation and configuration
+
+Every step the script performs, written out for other platforms or for
+debugging, plus troubleshooting and the Google Calendar, Contacts and Drive
+setup that happens after the app is running:
+**[docs/install.md](docs/install.md)**.
+
+Nix users: `flake.nix` and `process-compose.yaml` provide a development shell
+instead; note their database defaults (`aletheia` on port 5433) differ from
+`config/.env.dev` (`kosmos` on 5432).
+
+## Configuration
+
+The application reads only `config/.env`. Two templates live beside it:
+`config/.env.dev` holds safe, credential-free development defaults, and
+`config/.env.example` documents every variable, including the optional
+integrations (Google, AI providers, CourtListener, payments, Mailgun inbound
+email, DigitalOcean Spaces). Each integration stays off until its keys are
+set.
+
+## Development
 
 ```bash
-source .venv/bin/activate
+.venv/bin/python -m pytest -n auto        # run the test suite
+pre-commit run --all-files                # ruff + djlint, as CI runs them
 ```
 
-**NOTE:** We will be installing all dependencies, running migrations,
-running all Django commands and tests and running the application
-inside the virtual environment. For all the following steps, make sure
-the virtual environment is activated.
-
-### Installing Dependencies
-
-All the project dependencies are defined in `pyproject.toml` located in the
-project root directory.
-
-To install all dependencies (including dev dependencies), run:
-
-```bash
-uv sync
-```
-
-If any problems occur during the installation of dependencies, please
-refer to the [Troubleshooting - Troubleshoot Dependency Installation](#troubleshoot-dependency-installation)
-section.
-
-### Installing Code Quality Tools
-
-The project uses [Ruff](https://docs.astral.sh/ruff/) for code formatting
-and linting. Ruff should be installed system-wide (not as a project
-dependency) to ensure compatibility across different development
-environments.
-
-**Install ruff using one of the following methods:**
-
-#### Option 1: Using pipx (Recommended)
-
-```bash
-pipx install ruff
-```
-
-#### Option 2: Using Homebrew (macOS/Linux)
-
-```bash
-brew install ruff
-```
-
-#### Option 3: Using uv tool
-
-```bash
-uv tool install ruff
-```
-
-#### Option 4: Using pip
-
-```bash
-pip install ruff
-```
-
-After installation, verify ruff is available:
-
-```bash
-ruff --version
-```
-
-**Note:** On NixOS, ruff is automatically provided by the development
-shell and doesn't need separate installation.
-
-### Environment Variables
-
-The project uses a number of environment variables to store either
-sensitive information or instance-specific configuration.
-
-Two `.env` templates are provided in the configuration directory:
-
-- `config/.env.dev` contains safe, working development defaults. It uses local
-  file storage, console email, fake payments, and no external API credentials.
-- `config/.env.example` is the comprehensive reference for configuring other
-  environments and optional integrations.
-
-For local development, create the private environment file with:
-
-```bash
-cp config/.env.dev config/.env
-```
-
-The application only reads `config/.env`; `.env.dev` is a copy-ready template
-and is never loaded directly. Its PostgreSQL defaults are database `kosmos`,
-user `kosmos`, and password `kosmos` on `localhost:5432`.
-
-For staging or production, start from `config/.env.example` instead and supply
-real secrets and service configuration.
-
-For a credential-free local setup, keep `STORAGE_BACKEND=local` and
-`EMAIL_BACKEND=console`. Set `STORAGE_BACKEND=s3` to use DigitalOcean Spaces,
-or `EMAIL_BACKEND=smtp` for real email delivery; credentials for each service
-are only required when that mode is selected. Never expose a production local
-`MEDIA_ROOT` directly through a web server because it contains confidential
-client documents.
-
-### Running Migrations
-
-Migrations in this project are versioned and stored in the `migrations`
-directory located in each Django app. To run all migrations and create
-the necessary database schema, run the following command:
-
-**NOTE:** Make sure the virtual environment is activated.
-
-```bash
-python manage.py migrate
-```
-
-If any problems occur during the migration process, please refer to the
-[Troubleshooting - Running Migrations](#troubleshoot-running-migrations)
-section
-
-### Building the Search Index
-
-The application uses django-watson for full-text search across documents,
-highlights, and facts. After running migrations for the first time (or
-after restoring a database), build the search index:
-
-```bash
-python manage.py buildwatson
-```
-
-**Note:** You only need to run this once. Watson automatically keeps the
-index updated as you create, edit, or delete records. You'll need to
-rebuild if you:
-
-- Restore a database from backup
-- Add new models to the search configuration
-- Change which fields are indexed for existing models
-
-### Running the Application
-
-To run the application locally, run the following command:
-
-**NOTE:** Make sure the virtual environment is activated.
-
-```bash
-python manage.py runserver
-```
-
-After running the command, the application should be accessible at
-[http://localhost:8000](http://localhost:8000).
-
-### Running Background Tasks
-
-The application uses Django-Q for background task processing (OCR, etc.).
-To process background tasks, run the following command in a separate terminal:
-
-**NOTE:** Make sure the virtual environment is activated.
-
-```bash
-python manage.py qcluster
-```
-
-Recurring jobs are installed explicitly and idempotently after migrations:
-
-```bash
-python manage.py setup_schedules
-```
-
-This one command configures the digest, Google Calendar, Google Drive, Gmail,
-AI-summary, daily-plan, and chat-retention schedules. It is safe to run again
-after a deployment; migrations and schedule setup are never run automatically
-when the application starts.
-
-#### Production Setup (systemd)
-
-For production deployments, create a systemd service to run the task worker.
-
-Create `/etc/systemd/system/qcluster.service`:
-
-```ini
-[Unit]
-Description=Django-Q Cluster
-After=network.target
-
-[Service]
-User=<your_user>
-Group=<your_group>
-WorkingDirectory=/path/to/law
-ExecStart=/path/to/law/.venv/bin/python manage.py qcluster
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Then enable and start the service:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable qcluster
-sudo systemctl start qcluster
-```
-
-### Creating the first Superuser
-
-The object manager for the `CustomUser` model has a custom method
-for creating a superuser allowing the creation of the superuser
-through the Django built-in `createsuperuser` command.
-
-To create the first superuser, run the following command:
-
-**NOTE:** Make sure the virtual environment is activated.
-
-```bash
-python manage.py createsuperuser
-```
-
-After running the command, follow the instructions in the terminal
-to create the superuser.
-
-## Troubleshooting
-
-### Troubleshoot Dependency Installation
-
-If any problems occur during the installation of dependencies, make sure
-to check the following:
-
-- Python version is 3.10 or higher
-- You are running the command inside the virtual environment created in
-  [Virtual Environment](#virtual-environment)
-- The `pyproject.toml` file is located in the project root directory
-- The `uv` command is installed and working correctly (`uv --version`)
-- The `uv` command is not blocked by any firewall or antivirus software
-- The internet connection is stable and working correctly
-
-### Troubleshoot Running Migrations
-
-If any problems occur during the migration process, make sure to check
-the following:
-
-- The database is set up correctly and the user has all the necessary
-  privileges
-- The database connection is set up correctly in the `.env` file
-- Each django app has a `migrations` directory with the `__init__.py` file
-  and the migration files
-- The database connection is working correctly
-- The database is running and accessible
-- The database is not blocked by any firewall or antivirus software
-- The database is not corrupted or missing any necessary extensions
-- The database is not missing any necessary configuration
-
-### Steps After Squashing Migrations
-
-Squashing migration files is a process that takes all the migration
-files from all the apps and squashes them into a single migration file:
-`0001_initial.py`.
-
-This is usually done when there are too many migration files or
-there is an issue with the migration files that cannot be resolved
-in any other way.
-
-However, after squashing the migration files, some additional
-actions are needed to ensure the database is in a consistent and
-synchronized state with the new migration files and to ensure
-the migration file sequence is correct (some migration files
-have dependencies on other migration files).
-
-**WARNING:** Do not proceed with the following steps without
-backing up the database and the migration files.
-
----
-
-#### Step 1: Ensure squashing was done correctly
-
-Make sure the squashing process was done correctly and there are no
-known issues with the migrations. This should be tested locally
-by running the migrations and loading a dump of the production
-database to ensure the migrations work correctly.
-
-Additionally, it is recommended to test out creating new migrations
-to ensure the squashing process did not break the migration sequence.
-
-#### Step 2: Removing the old migration history
-
-Django keeps track of the migration history in the `django_migrations`
-table in the database. After squashing the migration files, the old
-migration history should be removed, since those files no longer
-exist and are not needed.
-
-At this point, it is safe to delete all rows from the `django_migrations`
-table.
-
-**NOTE:** Do not delete the _TABLE_, only the records inside the table.
-
-#### Step 3: Faking Django content type migrations
-
-Django has a built-in content type framework that is used to store
-information about all the models and their content types. This is
-used for the `ContentType` model and is used in the admin panel
-and other parts of Django.
-
-The reason for faking the content type migrations lies in the
-fact that in Django 1.8, the `ContentType` model was altered,
-having the `name` field removed from it. Because of this,
-there are 2 migration files that are automatically created
-when running the `makemigrations` command. These 2 files need
-to be faked before faking any other migrations.
-
-To fake the content type migrations, run the following command:
-
-```bash
-python manage.py migrate --fake contenttypes
-```
-
-You can check if the content type migrations were faked correctly
-by running the following command:
-
-```bash
-python manage.py showmigrations
-```
-
-#### Step 4: Faking the squashed migrations
-
-All that is left is to fake the squashed migrations from all
-the other apps. This should be a simple process, since all
-the migration files have a proper sequence and are squashed.
-
-To fake all the squashed migrations, run the following command:
-
-```bash
-python manage.py migrate --fake
-```
-
-After running the command, check if all the migrations were
-faked correctly by running the following command:
-
-```bash
-python manage.py showmigrations
-```
-
----
-
-If all the migrations are marked as applied, the process
-was successful and the database is in a consistent state.
-
-You should have no further issues with the migrations and new
-changes to the models can be made, as before, by running the
-`makemigrations` and `migrate` commands.
-
-### Google Calendar/Contact Integration
-
-To integrate Google Calendar and Contacts into the application,
-you will need to finish a few additional steps.
-
-#### Step 1: Create a Google Cloud Project
-
-Create a new project in the Google Cloud Console and enable the
-Google Calendar and Google Contacts APIs.
-
-After finishing a project, you will be able to download
-the credentials file in JSON format.
-
-#### Step 2: Add the credentials file to the project
-
-Google integration files live in `GOOGLE_DATA_DIR`, which defaults to the
-`google` directory in the project root.
-
-Add the credentials file to that directory and
-rename it to `google_tokens.json`.
-
-#### Step 3: Set up the environment variables
-
-In the `.env` file, there is an additional environment variable
-that needs to be set up for the Calendar integration.
-
-The variable is `CALENDAR_ID` and it should be set to the
-string value of the Google Calendar ID found in the Calendar
-settings.
-
----
-
-After finishing these steps, the Google Calendar and Contacts
-integration should be set up and working correctly.
-
-## Google Drive Case Notes
-
-The application can mirror case notes kept in Google Drive into each matter.
-Notes stored under `Matters - Open/<Matter>/Notes/` (as `.docx`, `.odt`, or
-`.md`) are converted to Markdown and stored as **read-only** notes on the
-matter, where they appear in the Notes tab and feed the AI context builder.
-
-Drive is the source of truth: edits are made in Drive and synced one way. Each
-user's Google Drive desktop client keeps Drive current, and the server pulls
-changes through the Drive Changes API.
-
-### Prerequisites
-
-- **pandoc** installed on the server (see
-  [Additional Machine Requirements](#additional-machine-requirements)) —
-  required to convert `.docx`/`.odt` notes to Markdown.
-- A Google Cloud project (the same one used for Calendar/Contacts) with:
-  - the **Google Drive API** enabled,
-  - `https://<your-host>/settings/google/store` registered as an **Authorized
-    redirect URI** on the OAuth client, and
-  - the `https://www.googleapis.com/auth/drive.readonly` scope (already
-    requested by the app — adding it requires re-consenting on next connect).
-
-### Connecting Drive and linking matters
-
-1. As an admin, go to **Settings → Integrations** and click **Connect** on
-   _Google Drive_ — the same OAuth flow used for Calendar/Contacts.
-2. Open a matter's **Documents** tab and click **Link Drive Folder**. Pick
-   the matter's folder under the Drive root, then map its top-level
-   subfolders to document categories (Correspondence, Discovery, Evidence,
-   Record) and, for Record or Discovery, to a proceeding. Folder names such
-   as `Corr`, `Discovery`, `Record`, `Record - Appeal` or `Discovery - Appeal`
-   are suggested automatically; Evidence is never suggested (map it by hand,
-   only for curated folders). Nothing syncs until you save.
-3. PDFs anywhere under a mapped folder sync in with that category and
-   proceeding (append-only: deleting or moving a file in Drive never removes
-   a document). Re-mapping a folder later updates the documents already
-   synced from it. The button shows a count when new subfolders appear or a
-   proceeding has no record folder; reopen the modal to map them.
-
-### Configuration
-
-These optional variables (in `.env`, documented in `config/.env.example`)
-control the sync:
-
-- `DRIVE_NOTES_ROOT` — the parent Drive folder to scan (default
-  `Matters - Open`).
-- `DRIVE_SHARED_DRIVE_ID` — set only if the root folder lives in a Shared Drive.
-
-### Keeping documents in sync (Django-Q)
-
-Saving a mapping syncs that folder once. `python manage.py setup_schedules` adds an
-incremental Drive sync every minute and a nightly full reconciliation to the
-same Django-Q cluster used by the rest of the app. No separate host timer is
-required. The jobs safely no-op until an admin connects Google Drive.
-
-The first run performs a one-time crawl of all linked matters and stores a
-Changes-API cursor; later runs process only the delta. You can also sync
-manually at any time:
-
-```bash
-python manage.py sync_drive_notes          # incremental
-python manage.py sync_drive_notes --full   # force a full re-crawl
-```
-
-`python manage.py link_drive_folders` is a headless alternative to the in-app
-folder picker for linking matters to Drive folders.
+Pull requests into `dev` run two workflows: lint and tests, and the
+installer itself on a clean Ubuntu runner in both modes. Conventions for
+contributors and coding agents are in [AGENTS.md](AGENTS.md).
+
+## Further reading
+
+- [docs/install.md](docs/install.md): manual installation, troubleshooting, Google integrations
+- [deploy/README.md](deploy/README.md): the gunicorn, systemd and nginx templates
+- [docs/agent-chat.md](docs/agent-chat.md): the agentic chat tool loop
+- [docs/research-tab.md](docs/research-tab.md): the research pipeline
+- [docs/mailgun-inbound.md](docs/mailgun-inbound.md): intakes from forwarded email
+- [docs/claude-desktop-notes.md](docs/claude-desktop-notes.md): the MCP server for Claude Desktop
+
+## License
+
+Kosmos is released under the GNU Affero General Public License v3
+(see [LICENSE](LICENSE)). Contributions are welcome under the
+[Code of Conduct](CODE_OF_CONDUCT.md); security issues go through
+[SECURITY.md](SECURITY.md).
