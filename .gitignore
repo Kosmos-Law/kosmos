@@ -5,8 +5,8 @@ tags*
 .coverage
 .env
 config/.env
-gunicorn.conf.py
-gunicorn_cl.conf.py
+/gunicorn.conf.py
+/gunicorn_cl.conf.py
 .idea
 logs
 venv/
