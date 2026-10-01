@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -84,7 +86,7 @@ def public_branding_media_urlpatterns():
             re_path(
                 rf"^{media_prefix}company/(?P<path>.*)$",
                 serve,
-                {"document_root": settings.MEDIA_ROOT / "company"},
+                {"document_root": Path(settings.MEDIA_ROOT) / "company"},
             )
         ]
 
