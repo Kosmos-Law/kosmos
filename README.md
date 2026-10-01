@@ -43,7 +43,7 @@ matters with a per-matter email view, and Drive folders mapped to document
 categories so PDFs flow into the matter automatically.
 
 **Claude Desktop.** An MCP server exposes notes, matters, conversations and
-financial data to Claude Desktop (see [docs/claude-desktop-notes.md](docs/claude-desktop-notes.md)).
+financial data to Claude Desktop (see [Claude Desktop access](docs/admin/integrations/claude-desktop.md)).
 
 ## Installation
 
@@ -105,7 +105,10 @@ restart the two services.
 Every step the script performs, written out for other platforms or for
 debugging, plus troubleshooting and the Google Calendar, Contacts and Drive
 setup that happens after the app is running:
-**[docs/install.md](docs/install.md)**.
+**[docs/admin/install-manual.md](docs/admin/install-manual.md)**, with
+[configuration](docs/admin/configuration.md),
+[troubleshooting](docs/admin/troubleshooting.md) and
+[Google Workspace setup](docs/admin/integrations/google.md) beside it.
 
 Nix users: `flake.nix` and `process-compose.yaml` provide a development shell
 instead; note their database defaults (`aletheia` on port 5433) differ from
@@ -131,14 +134,22 @@ Pull requests into `dev` run two workflows: lint and tests, and the
 installer itself on a clean Ubuntu runner in both modes. Conventions for
 contributors and coding agents are in [AGENTS.md](AGENTS.md).
 
-## Further reading
+## Documentation
 
-- [docs/install.md](docs/install.md): manual installation, troubleshooting, Google integrations
-- [deploy/README.md](deploy/README.md): the gunicorn, systemd and nginx templates
-- [docs/agent-chat.md](docs/agent-chat.md): the agentic chat tool loop
-- [docs/research-tab.md](docs/research-tab.md): the research pipeline
-- [docs/mailgun-inbound.md](docs/mailgun-inbound.md): intakes from forwarded email
-- [docs/claude-desktop-notes.md](docs/claude-desktop-notes.md): the MCP server for Claude Desktop
+The documentation lives in [`docs/`](docs/index.md) and is built into a site
+with Zensical (see [Writing documentation](docs/dev/writing-docs.md)). It
+has a section for each reader:
+
+- [Operator guide](docs/admin/index.md): install, configure, connect
+  integrations, troubleshoot
+- [User guide](docs/guide/index.md): working in the application
+- [Developer guide](docs/dev/index.md): conventions and how the subsystems
+  work
+- [Reference](docs/reference/index.md) and
+  [Decisions](docs/decisions/index.md)
+
+The gunicorn, systemd and nginx templates are documented in
+[deploy/README.md](deploy/README.md).
 
 ## License
 

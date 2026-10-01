@@ -1,7 +1,7 @@
 # Research Tab Pipeline
 
 The matter Research tab is THE research surface (the AI-chat research mode
-is retired; see research-chat.md). Its architecture: one user-approved
+is retired; see [Research chat (retired)](../../../decisions/research-chat-retired.md)). Its architecture: one user-approved
 search, then a deterministic pipeline in which the model makes only
 bounded judgments. Upgraded 2026-08-17 on feat/retire-research-chat to
 close the quality gap with the retired chat — the failure being chased:

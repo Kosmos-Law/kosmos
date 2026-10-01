@@ -178,7 +178,7 @@ class Message(AuditMixin, models.Model):
     # Agent-kind assistant messages: the run record (typed steps, per-turn
     # token usage, elapsed time, stop reason) rendered as a collapsible
     # trail above the answer, and mined by later turns for the materials
-    # already read. Shape documented in docs/agent-chat.md.
+    # already read. Shape documented in docs/dev/subsystems/ai/agent-chat.md.
     agent_run = models.JSONField(default=dict, blank=True)
 
     history = HistoricalRecords()
