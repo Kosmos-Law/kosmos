@@ -1485,10 +1485,13 @@ def _review_result(result_id):
             ResearchResult.objects.filter(pk=result_id).update(verify_status="error")
             return
 
-        # Generate 150-word case summary
-        opinion = fetch_opinion(opinion_id)
-        if opinion.found:
-            _generate_review_summary(result_id, result, opinion.plain_text)
+        # Generate 150-word case summary, once: validating again reuses
+        # the stored one (the opinion has not changed, and each one costs
+        # an opinion fetch and a model call).
+        if not result.review_summary:
+            opinion = fetch_opinion(opinion_id)
+            if opinion.found:
+                _generate_review_summary(result_id, result, opinion.plain_text)
 
         # Fetch forward citations (top 20 by depth)
         forward_cites = get_forward_citations(opinion_id, limit=20)
