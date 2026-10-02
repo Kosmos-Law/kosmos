@@ -2,6 +2,7 @@ import re
 
 import markdown
 from django import template
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
@@ -128,3 +129,17 @@ def render_markdown(text):
         },
     )
     return mark_safe(restore_breaks(md.convert(text)))
+
+
+@register.filter
+def marked_excerpt(text):
+    """A search excerpt from the case-law service, with its ``<mark>`` tags
+    kept and everything else shown as text. The excerpt is someone else's
+    HTML, so it is escaped whole and only the marks are put back."""
+    if not text:
+        return ""
+    escaped = escape(text)
+    escaped = escaped.replace("&lt;mark&gt;", "<mark>").replace(
+        "&lt;/mark&gt;", "</mark>"
+    )
+    return mark_safe(escaped)

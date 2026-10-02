@@ -4,7 +4,6 @@ Views for case law management.
 Allows users to look up case citations via CourtListener and save them to matters.
 """
 
-import json
 import logging
 
 from django.contrib.auth.decorators import login_required
@@ -17,6 +16,7 @@ from apps.case.courtlistener import fetch_case_by_citation
 from apps.case.models import CaseLaw, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.matters.models import Matter
+from utils.safe_json import json_for_script
 
 logger = logging.getLogger(__name__)
 
@@ -371,7 +371,7 @@ def caselaw_viewer(request, caselaw_id):
         fetch_error = "No CourtListener ID available for this case."
 
     # Serialize highlights for JavaScript
-    highlights_json = json.dumps(
+    highlights_json = json_for_script(
         [
             {
                 "id": h.id,

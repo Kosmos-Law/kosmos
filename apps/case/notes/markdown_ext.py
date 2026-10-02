@@ -3,6 +3,7 @@
 import re
 from html import escape
 
+from django.urls import reverse
 from markdown import Extension
 from markdown.preprocessors import Preprocessor
 
@@ -36,7 +37,7 @@ class NoteReferencePreprocessor(Preprocessor):
             document = Document.objects.get(pk=doc_id)
             citation = document.citation
             return self._stash(
-                f'<a href="/case/documents/view/{doc_id}/" '
+                f'<a href="{reverse("case:viewer", args=[doc_id])}" '
                 f'target="_blank" class="note-ref note-ref-document" '
                 f'title="{escape(document.name or "")}">'
                 f"{escape(label)} {escape(citation)}</a>"
@@ -53,8 +54,14 @@ class NoteReferencePreprocessor(Preprocessor):
         try:
             highlight = Highlight.objects.select_related("document").get(pk=hl_id)
             citation = highlight.citation
+            # A highlight opens in its document's viewer, at the highlight.
+            if highlight.document_id:
+                viewer = reverse("case:viewer", args=[highlight.document_id])
+                href = f"{viewer}?highlight={hl_id}"
+            else:
+                href = reverse("case:highlight-detail", args=[hl_id])
             return self._stash(
-                f'<a href="/case/highlights/{hl_id}/" '
+                f'<a href="{href}" '
                 f'target="_blank" class="note-ref note-ref-highlight" '
                 f'title="{escape((highlight.text or "")[:100])}...">'
                 f"{escape(label)} {escape(citation)}</a>"

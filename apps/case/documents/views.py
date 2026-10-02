@@ -1,4 +1,3 @@
-import json
 import logging
 
 from django.contrib.auth.decorators import login_required
@@ -19,6 +18,7 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
+from utils.safe_json import json_for_script
 
 from .filters import FilesFilter
 from .fingerprint import find_duplicates, fingerprint_file
@@ -849,7 +849,7 @@ def document_viewer(request, document_id):
         initial_highlight = None
 
     # Serialize highlights for JavaScript
-    highlights_json = json.dumps(
+    highlights_json = json_for_script(
         [
             {
                 "id": h.id,

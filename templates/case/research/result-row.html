@@ -75,7 +75,7 @@
   {% elif result.gemini_summary %}
     <div class="research-summary">{{ result.gemini_summary|render_markdown }}</div>
   {% elif result.snippet %}
-    <div class="research-snippet">{{ result.snippet|safe }}</div>
+    <div class="research-snippet">{{ result.snippet|marked_excerpt }}</div>
   {% endif %}
   <div class="research-card-actions">
     {% if result.brief or result.gemini_summary %}
