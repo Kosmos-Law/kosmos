@@ -473,7 +473,7 @@ class TestMoney:
         response = restricted_api.get(f"/case/api/invoices/{sent_invoice.id}/")
         assert response.status_code == 404
 
-    @pytest.mark.parametrize("section", ["ledger", "trust"])
+    @pytest.mark.parametrize("section", ["rates", "activity", "ledger", "trust"])
     def test_money_sections_need_financial_perm(
         self, no_financial_api, matter, section
     ):

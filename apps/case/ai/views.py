@@ -26,9 +26,13 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
-from apps.matters.models import Matter
 from apps.settings.models import Firm
 
+from .access import (
+    accessible_matters,
+    conversation_for_user,
+    matter_conversation_for_user,
+)
 from .context import (
     assemble_matter_context,
     build_request_info,
@@ -87,9 +91,9 @@ def _kind_param(source, default="classic"):
     return kind if kind in VALID_KINDS else "classic"
 
 
-def get_accessible_matters():
-    """Get all matters accessible to logged-in users."""
-    return Matter.objects.all()
+def get_accessible_matters(user):
+    """The matters this user may open (see access.accessible_matters)."""
+    return accessible_matters(user)
 
 
 def annotate_last_activity(queryset):
@@ -268,7 +272,7 @@ def ai_filter(request, matter_id):
 def conversation_view(request, conv_id):
     """Standalone full-height view for a single conversation."""
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
     matter = conversation.matter
 
@@ -403,9 +407,9 @@ def message_list(request, matter_id):
         conv_pk = None
 
     if conv_pk:
-        conversation = get_object_or_404(
-            Conversation, pk=conv_pk, matter__in=get_accessible_matters()
-        )
+        # The id comes from the query string, which the central matter check
+        # never sees: it must be a conversation on the matter in the URL.
+        conversation = matter_conversation_for_user(conv_pk, matter, request.user)
     else:
         conversation = Conversation.objects.filter(matter=matter).first()
 
@@ -471,9 +475,13 @@ def send_message(request, matter_id):
     # Get or create conversation
     is_new = False
     if conversation_id:
-        conversation = get_object_or_404(
-            Conversation, pk=conversation_id, matter__in=get_accessible_matters()
-        )
+        # The id comes from the form body, which the central matter check
+        # never sees: it must be a conversation on the matter in the URL.
+        try:
+            conv_pk = int(conversation_id)
+        except (TypeError, ValueError):
+            return HttpResponse(status=400)
+        conversation = matter_conversation_for_user(conv_pk, matter, request.user)
     else:
         # Create conversation on first message. Prefer the title the user
         # entered in the new-conversation prompt; otherwise fall back to the
@@ -625,6 +633,15 @@ def _statusbar_html(conversation, live, ctx=None):
     return render_to_string("case/ai/chat-statusbar.html", context)
 
 
+def _error_reply(message):
+    """The chat message shown for a failed run. Some workers already lead
+    their message with "Error:"; it is said once."""
+    detail = str(message or "").strip()
+    if detail.lower().startswith("error:"):
+        detail = detail[len("error:") :].strip()
+    return f"Error: Unable to get response. {detail}".strip()
+
+
 def _terminal(response):
     """Mark a status-poll response as the poller's last.
 
@@ -656,9 +673,9 @@ def _poll_ended(conversation=None):
 @login_required
 def ai_status(request, conv_id):
     """Return current AI processing status for polling."""
-    # Plain pk lookup: conversations belong to a matter OR an intake, and
-    # the old matter__in filter was Matter.objects.all() anyway
-    conversation = get_object_or_404(Conversation, pk=conv_id)
+    # Shared by the case, intake and agenda chats. Only a matter chat is
+    # covered by the central matter check, so each kind is checked here.
+    conversation = conversation_for_user(conv_id, request.user)
 
     cache_key = f"ai_status_{conv_id}"
     status_data = status_cache.get(cache_key)
@@ -770,7 +787,7 @@ def ai_status(request, conv_id):
         error_message = Message.objects.create(
             conversation=conversation,
             role="assistant",
-            content=f"Error: Unable to get response. {status_data['message']}",
+            content=_error_reply(status_data["message"]),
             activity_log=status_data.get("activity_log", []),
             # An agent run that failed keeps its partial trail inspectable.
             agent_run=status_data.get("agent_run", {}),
@@ -837,9 +854,8 @@ def ai_status(request, conv_id):
 @login_required
 def cancel_request(request, conv_id):
     """Cancel an in-progress AI request."""
-    # Plain pk lookup, same reasoning as ai_status: intake conversations
-    # have no matter
-    conversation = get_object_or_404(Conversation, pk=conv_id)
+    # Same check as ai_status: cancelling deletes the pending question.
+    conversation = conversation_for_user(conv_id, request.user)
 
     if request.method != "POST":
         return HttpResponse(status=405)
@@ -880,7 +896,9 @@ def cancel_request(request, conv_id):
 def delete_message(request, message_id):
     """Delete a message pair (user question + assistant response)."""
     message = get_object_or_404(
-        Message, pk=message_id, conversation__matter__in=get_accessible_matters()
+        Message,
+        pk=message_id,
+        conversation__matter__in=get_accessible_matters(request.user),
     )
     conversation = message.conversation
 
@@ -925,7 +943,7 @@ def conversation_list(request, matter_id):
 def select_conversation(request, conv_id):
     """Switch to a different conversation."""
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
     matter = conversation.matter
 
@@ -943,10 +961,11 @@ def select_conversation(request, conv_id):
 
 
 @login_required
+@require_POST
 def delete_conversation(request, conv_id):
     """Delete a conversation."""
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     conversation.delete()
@@ -958,10 +977,11 @@ def delete_conversation(request, conv_id):
 
 
 @login_required
+@require_POST
 def clone_conversation(request, conv_id):
     """Clone a conversation with all its messages."""
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     # Create new conversation
@@ -1000,7 +1020,7 @@ def clone_conversation(request, conv_id):
 def append_conversation_form(request, conv_id):
     """Show modal to select target conversation for append."""
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     # Get other conversations in the same matter
@@ -1024,7 +1044,7 @@ def append_conversation_form(request, conv_id):
 def append_conversation(request, conv_id):
     """Append messages from source conversation to target conversation."""
     source = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     if request.method != "POST":
@@ -1064,7 +1084,9 @@ def append_conversation(request, conv_id):
 def split_conversation(request, message_id):
     """Split conversation from a message, moving it and subsequent messages to a new conversation."""
     message = get_object_or_404(
-        Message, pk=message_id, conversation__matter__in=get_accessible_matters()
+        Message,
+        pk=message_id,
+        conversation__matter__in=get_accessible_matters(request.user),
     )
 
     if request.method != "POST":
@@ -1114,13 +1136,14 @@ def split_conversation(request, message_id):
 
 
 @login_required
+@require_POST
 def set_ai_context(request, conv_id, state):
     """Set the ai_context state on a conversation."""
     if state not in ("auto", "always", "never"):
         return HttpResponse(status=400)
 
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     conversation.ai_context = state
@@ -1141,7 +1164,7 @@ def set_vet_citations(request, conv_id, state):
         return HttpResponse(status=400)
 
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     conversation.vet_citations = state == "on"
@@ -1160,7 +1183,7 @@ def citation_vetting_detail(request, message_id, citation_index):
     message = get_object_or_404(
         Message,
         pk=message_id,
-        conversation__matter__in=get_accessible_matters(),
+        conversation__matter__in=get_accessible_matters(request.user),
     )
 
     citations = message.verified_citations or []
@@ -1190,7 +1213,7 @@ def message_vetting_status(request, message_id):
     message = get_object_or_404(
         Message,
         pk=message_id,
-        conversation__matter__in=get_accessible_matters(),
+        conversation__matter__in=get_accessible_matters(request.user),
     )
 
     response = render(
@@ -1207,7 +1230,7 @@ def message_vetting_status(request, message_id):
 def rename_conversation(request, conv_id):
     """Rename a conversation - POST saves and closes modal."""
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     if request.method == "POST":
@@ -1244,7 +1267,7 @@ def rename_conversation(request, conv_id):
 def rename_form(request, conv_id):
     """Return rename modal for conversation."""
     conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters()
+        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
     )
 
     return render(
@@ -1272,6 +1295,9 @@ def prompt_editor_modal(request, matter_id):
             "matter": matter,
             "conversation_id": conversation_id,
             "llm": llm,
+            # The first message sent from this form creates the conversation,
+            # so it has to carry the mode the window was opened in.
+            "kind": _kind_param(request.GET),
             "title": title,
         },
     )
@@ -1370,6 +1396,7 @@ def context_preview(request, matter_id):
 
     from apps.case.models import CaseLaw, Document
 
+    from .access import has_financial_access
     from .context import (
         collect_context_items,
         format_contacts,
@@ -1470,7 +1497,9 @@ def context_preview(request, matter_id):
             )
 
     # --- Auto selection pool ---
-    manifest_items, content_map = build_manifest(matter)
+    manifest_items, content_map = build_manifest(
+        matter, include_invoices=has_financial_access(request.user)
+    )
 
     # --- Excluded items (ai_context="never") ---
     excluded_items = []
@@ -1558,7 +1587,9 @@ CONVERSATIONS_TRIGGER = "conversationsChanged"
 @login_required
 @require_POST
 def ai_toggle_select(request, matter_id, conv_id):
-    get_object_or_404(Conversation, pk=conv_id)
+    # Only this matter's conversations may enter its selection: the bulk
+    # actions below act on whatever ids the selection holds.
+    get_object_or_404(Conversation, pk=conv_id, matter_id=matter_id)
     session_key = get_session_key("selected_conversations", matter_id)
     toggle_id(request, session_key, conv_id)
     return selection_response(CONVERSATIONS_TRIGGER)
@@ -1595,7 +1626,9 @@ def ai_bulk_set_context(request, matter_id, state):
     if not selected:
         return HttpResponse(status=400)
 
-    Conversation.objects.filter(id__in=selected).update(ai_context=state)
+    Conversation.objects.filter(id__in=selected, matter_id=matter_id).update(
+        ai_context=state
+    )
     clear_selected_ids(request, session_key)
     return selection_response(CONVERSATIONS_TRIGGER)
 
@@ -1609,6 +1642,6 @@ def ai_bulk_delete(request, matter_id):
     if not selected:
         return HttpResponse(status=400)
 
-    Conversation.objects.filter(id__in=selected).delete()
+    Conversation.objects.filter(id__in=selected, matter_id=matter_id).delete()
     clear_selected_ids(request, session_key)
     return selection_response(CONVERSATIONS_TRIGGER)

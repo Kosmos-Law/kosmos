@@ -91,6 +91,27 @@ def test_edit_replace_rewrites(user, matter):
     assert note.content == "New."
 
 
+def test_edit_records_the_user_who_asked(user, matter):
+    """The edit runs on the chat's worker thread, where no request user is
+    set: the note has to be told who asked, or the rewrite keeps the last
+    editor's name and its history row has no user."""
+    from apps.accounts.models import CustomUser
+    from utils.middleware import get_current_user
+
+    author = CustomUser.objects.create(username="author", email="author@example.com")
+    note = Note.objects.create(
+        matter=matter, title="Research", content="Old.", updated_by=author
+    )
+    assert get_current_user() is None
+
+    apply_note_blocks(
+        edit_block({"id": note.id, "mode": "replace", "content": "New."}), matter, user
+    )
+    note.refresh_from_db()
+    assert note.updated_by_id == user.id
+    assert note.history.first().history_user_id == user.id
+
+
 def test_edit_reaches_library_note(user, matter):
     folder = NoteFolder.objects.create(name="Library")
     note = Note.objects.create(folder=folder, title="Service guide", content="Old.")
@@ -145,7 +166,9 @@ def test_fake_confirmation_without_block_becomes_notice(user, matter):
     raw = "[Aug 09, 2026 03:04 PM] - Created note: **Matter Summary 3** [Analysis]"
     text = strip_fake_note_confirmations(raw)
     assert "Matter Summary 3" not in text
-    assert "no note was changed" in text
+    assert "No note was changed" in text
+    # Shown to the user in the chat: two sentences, no em dash.
+    assert "\u2014" not in text
 
 
 def test_fake_confirmation_beside_real_block_is_deleted(user, matter):

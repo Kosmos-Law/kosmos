@@ -28,7 +28,7 @@ from enum import Enum
 from pathlib import Path
 
 from django.core.cache import cache
-from django.db.models import Count, Max, Q
+from django.db.models import Count, F, Max, Q
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
@@ -44,6 +44,7 @@ from apps.notes.models import Note
 from apps.settings.models import Firm
 from apps.tasks.models import Task
 
+from .access import has_financial_access
 from .models import Conversation
 
 logger = logging.getLogger(__name__)
@@ -594,7 +595,9 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
 
     Args:
         matter: The Matter object to assemble context for
-        user: The requesting user (for request info section)
+        user: The requesting user (for request info section, and for what
+            the context may carry: rates and fees need the Financial
+            permission)
         conversation: Optional Conversation object (excluded from reference conversations)
 
     Structure:
@@ -635,7 +638,9 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
     sections["events"] = format_events(matter)
 
     # Time Entries
-    sections["time_entries"] = format_time_entries(matter)
+    sections["time_entries"] = format_time_entries(
+        matter, include_financial=has_financial_access(user)
+    )
 
     # Settlement
     sections["settlement"] = format_settlement(matter)
@@ -663,8 +668,12 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
 CONTEXT_REUSE_SECONDS = 600
 
 
-def _context_fingerprint(matter, include_library, llm, user):
+def _context_fingerprint(matter, include_library, llm, user, include_financial):
     """Cheap change marker for the matter's AI-visible material.
+
+    The requesting user and what they may see are part of it: a context
+    assembled for one user is never reused for another, nor for the same
+    user once their Financial permission has changed.
 
     Count + latest-updated_at per source table. Any write to the material
     the context is built from (including the AI's own note/fact/witness
@@ -688,7 +697,12 @@ def _context_fingerprint(matter, include_library, llm, user):
     if include_library:
         querysets["lib"] = get_library_notes()
 
-    parts = [llm, str(include_library), str(user.id if user else "")]
+    parts = [
+        llm,
+        str(include_library),
+        str(user.id if user else ""),
+        f"fin:{int(include_financial)}",
+    ]
     for label, qs in querysets.items():
         agg = qs.aggregate(n=Count("id"), latest=Max("updated_at"))
         parts.append(f"{label}:{agg['n']}:{agg['latest']}")
@@ -717,7 +731,10 @@ def assemble_matter_context_with_selection(
         matter: The Matter object
         user_message: The user's question (used by the selector)
         llm: The LLM key (for token budget)
-        user: The requesting user
+        user: The requesting user. The context is built for them: without
+            the Financial permission (or with no user, as in the nightly
+            auto-summary, whose output every member of the matter reads)
+            time entries carry no rate or fee and invoices are not offered.
         conversation: Optional Conversation (excluded from reference conversations)
         include_library: Offer firm-library notes (standalone notes in
             AI-library folders) to the selector, and inject "always" library
@@ -751,10 +768,14 @@ def assemble_matter_context_with_selection(
     # (skipping the expensive Flash selection) as long as nothing the
     # context is built from has changed. A stable context also keeps the
     # provider-side prompt caches warm between turns.
+    include_financial = has_financial_access(user)
+
     ctx_cache_key = f"ai_ctx_{conversation.id}" if conversation else None
     fingerprint = None
     if ctx_cache_key:
-        fingerprint = _context_fingerprint(matter, include_library, llm, user)
+        fingerprint = _context_fingerprint(
+            matter, include_library, llm, user, include_financial
+        )
         entry = cache.get(ctx_cache_key)
         if entry and entry.get("fingerprint") == fingerprint:
             logger.info(
@@ -772,7 +793,9 @@ def assemble_matter_context_with_selection(
 
     sections["tasks"] = format_tasks(matter)
     sections["events"] = format_events(matter)
-    sections["time_entries"] = format_time_entries(matter)
+    sections["time_entries"] = format_time_entries(
+        matter, include_financial=include_financial
+    )
     sections["settlement"] = format_settlement(matter)
 
     # Collect "always" items (Documents/CaseLaw with ai_context="always",
@@ -831,7 +854,10 @@ def assemble_matter_context_with_selection(
 
     # Build manifest and run selector for "auto" items
     manifest_items, content_map = build_manifest(
-        matter, current_conversation=conversation, include_library=include_library
+        matter,
+        current_conversation=conversation,
+        include_library=include_library,
+        include_invoices=include_financial,
     )
     if manifest_items:
         emit(
@@ -1118,8 +1144,14 @@ def format_proceedings(matter) -> str:
 
 def format_tasks(matter) -> str:
     """Format tasks, pending first."""
+    # Pending tasks have no completion date, and PostgreSQL sorts NULLs last
+    # in ascending order: say so explicitly, or the 20-row cut is filled with
+    # finished work. Within each group the most important come first (7 is
+    # the top of the scale), then the soonest due.
     tasks = Task.objects.filter(matter=matter).order_by(
-        "date_completed", "importance", "date_due"
+        F("date_completed").desc(nulls_first=True),
+        "-importance",
+        F("date_due").asc(nulls_last=True),
     )[:20]
 
     if not tasks:
@@ -1165,8 +1197,12 @@ def format_events(matter) -> str:
     return "\n".join(lines)
 
 
-def format_time_entries(matter) -> str:
-    """Format time entries with invoice relationships."""
+def format_time_entries(matter, include_financial=False) -> str:
+    """Format time entries: the work done, by whom and for how long.
+
+    Rates, fees, comp status and the invoice each entry sits on are added
+    only for a reader with the Financial permission.
+    """
     entries = (
         TimeEntry.objects.filter(matter=matter)
         .select_related("user", "invoice")
@@ -1179,6 +1215,11 @@ def format_time_entries(matter) -> str:
     lines = []
     for entry in entries:
         user_name = entry.user.get_full_name() if entry.user else "Unknown"
+        if not include_financial:
+            lines.append(
+                f"- [{entry.date}] {entry.actions} — {entry.hours}h by {user_name}"
+            )
+            continue
         fee = entry.hours * entry.rate if entry.rate else 0
         line = f"- [{entry.date}] {entry.actions} — {entry.hours}h @ ${entry.rate}/hr (${fee:,.2f})"
         line += f" by {user_name}"

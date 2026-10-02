@@ -100,9 +100,27 @@ def _matter_label(matter):
     return matter.name or f"Matter {matter.id}"
 
 
+def _may_see_intakes(user):
+    """The Intakes permission, as the /intakes/ pages require it."""
+    return user.is_admin or user.perm_intakes
+
+
+def _on_visible_matter(queryset, user):
+    """Rows on a matter the user may open, or on no matter (the firm's own
+    tasks and events, which every user sees). The matter's name rides along
+    with each row, so the row is the user's to see only if the matter is."""
+    if user.is_admin or user.perm_all_matters:
+        return queryset
+    return queryset.filter(
+        Q(matter__isnull=True) | Q(matter__in=user.assigned_matters.all())
+    )
+
+
 def _agenda_context(user):
-    """The workload data sections. Admins see everyone; others see their
-    own tasks and time (plus unassigned items) against the firm's matters."""
+    """The workload data sections, limited to what the user could open in
+    the application. Admins see everyone's work; others see their own tasks
+    and time (plus unassigned items), on the matters they can access.
+    Intakes need the Intakes permission."""
     today = timezone.localdate()
     parts = []
 
@@ -129,6 +147,7 @@ def _agenda_context(user):
     )
     if not user.is_admin:
         tasks = tasks.filter(Q(user=user) | Q(user__isnull=True))
+    tasks = _on_visible_matter(tasks, user)
     parts.append("\nACTIVE TASKS (due dates are generally soft)")
     for t in tasks.order_by("date_due", "-importance"):
         parts.append(
@@ -146,6 +165,7 @@ def _agenda_context(user):
     ).select_related("assigned_to", "matter")
     if not user.is_admin:
         events = events.filter(Q(assigned_to=user) | Q(assigned_to__isnull=True))
+    events = _on_visible_matter(events, user)
     parts.append("\nEVENTS (pending; overdue and next 30 days; hard dates)")
     for e in events.order_by("date", "start_time"):
         overdue = " OVERDUE" if e.date and e.date < today else ""
@@ -161,6 +181,7 @@ def _agenda_context(user):
     ).select_related("user", "matter")
     if not user.is_admin:
         entries = entries.filter(user=user)
+    entries = _on_visible_matter(entries, user)
     parts.append(
         f"\nRECENT TIME ENTRIES (last {TIME_ENTRY_DAYS} days; what was actually worked)"
     )
@@ -174,6 +195,10 @@ def _agenda_context(user):
     intakes = Intake.objects.filter(status__in=["Open", "Pending"]).select_related(
         "practice_area"
     )
+    if not _may_see_intakes(user):
+        # No section at all, so the model neither names an intake nor
+        # offers a link to a chat the user cannot open.
+        return "\n".join(parts)[:AGENDA_CONTEXT_LIMIT]
     parts.append(
         "\nOPEN INTAKES (prospective clients; flag stale ones;"
         " chat links go to each intake's chat)"

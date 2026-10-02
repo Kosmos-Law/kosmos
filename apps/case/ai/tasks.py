@@ -182,7 +182,7 @@ def _too_large_message(tokens, hard_limit):
     )
 
 
-def armed_write_protocols(conversation, user_message):
+def armed_write_protocols(conversation, user_message, include_caselaw=True):
     """The write protocols the recent user messages call for.
 
     The AI can record timeline facts, witnesses and notes when directed;
@@ -191,7 +191,10 @@ def armed_write_protocols(conversation, user_message):
     point at that kind of work, so unrelated conversations carry no
     standing write instructions. Returns (protocol_text, names) where
     protocol_text is ready to append to the system context ("" when
-    nothing is armed). Shared by the classic and agent turns.
+    nothing is armed). Shared by the classic and agent turns. The agent
+    turn passes ``include_caselaw`` False for a user without the Research
+    permission: the save protocol works on ids only the research tools
+    produce.
     """
     from .caselaw_blocks import CASELAW_PROTOCOL, CASELAW_TRIGGER_RE
     from .fact_blocks import FACTS_PROTOCOL, FACTS_TRIGGER_RE
@@ -222,8 +225,10 @@ def armed_write_protocols(conversation, user_message):
         names.append("notes")
     # Only the agent turn has the research tools that produce cluster
     # ids, so the save protocol stays out of classic conversations.
-    if getattr(conversation, "kind", "") == "agent" and CASELAW_TRIGGER_RE.search(
-        recent_user_text
+    if (
+        include_caselaw
+        and getattr(conversation, "kind", "") == "agent"
+        and CASELAW_TRIGGER_RE.search(recent_user_text)
     ):
         text += "\n\n" + CASELAW_PROTOCOL
         names.append("caselaw")

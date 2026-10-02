@@ -1,6 +1,6 @@
 {% comment %}
 The draft-link control in the chat composer. Swapped via #draftChip after
-link/unlink. In an unsaved conversation (no id yet) the paperclip first
+link/unlink. In an unsaved conversation (no id yet) the button first
 materializes the row via linkDraftForNewChat() (standalone window only),
 so a draft can be linked before the first prompt. Case chat is the only
 surface with drafts (the Research tab has its own), so no kind branch
@@ -26,6 +26,8 @@ here.
             hx-target="#draftChip"
             hx-swap="innerHTML"
             hx-confirm="Unlink this draft from the conversation? The document itself is untouched."
+            data-confirm-title="Unlink Draft"
+            data-confirm-text="Unlink"
             title="Unlink draft">
       <i class="icon-x"></i>
     </button>
