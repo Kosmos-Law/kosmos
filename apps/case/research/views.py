@@ -36,20 +36,26 @@ from .tasks import (
 )
 
 
-def _active_query(request, matter):
-    """The user's latest query on the matter, for the Search sub-tab: a run
-    still in progress picks up where it was. Stranded runs are flagged
-    first, so what is shown is never a spinner that cannot end."""
-    reap_stale_queries(matter, request.user)
+def _user_searches(matter, user):
+    """The user's searches on the matter, newest first.
+
+    Validating a typed citation files its case under a placeholder query
+    (complete, never searched). It is not a search: listed in History it
+    reads as one with "1 result", and opened it shows "No results found".
+    The validated case itself stays on the Validate sub-tab."""
     return (
-        ResearchQuery.objects.filter(matter=matter, created_by=request.user)
-        # Validating a typed citation files its case under a placeholder
-        # query (complete, never searched). It is not a search to resume
-        # and would show here as an empty "No results found" run.
+        ResearchQuery.objects.filter(matter=matter, created_by=user)
         .exclude(status="complete", structured_query="")
         .order_by("-created_at")
-        .first()
     )
+
+
+def _active_query(request, matter):
+    """The user's latest search on the matter, for the Search sub-tab: a
+    run still in progress picks up where it was. Stranded runs are flagged
+    first, so what is shown is never a spinner that cannot end."""
+    reap_stale_queries(matter, request.user)
+    return _user_searches(matter, request.user).first()
 
 
 def get_research_data(request, matter, matter_id):
@@ -172,7 +178,7 @@ def research_history_tab(request, matter_id):
     """HTMX partial for the History sub-tab content."""
     matter, _ = get_matter_from_url(request, matter_id)
 
-    queries = ResearchQuery.objects.filter(matter=matter, created_by=request.user)[:50]
+    queries = _user_searches(matter, request.user)[:50]
 
     context = {
         "matter": matter,
@@ -511,9 +517,7 @@ def research_delete(request, matter_id, query_id):
     query.delete()
 
     if request.headers.get("HX-Target") == "research":
-        queries = ResearchQuery.objects.filter(matter=matter, created_by=request.user)[
-            :50
-        ]
+        queries = _user_searches(matter, request.user)[:50]
         return render(
             request,
             "case/research/list.html",

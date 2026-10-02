@@ -177,3 +177,33 @@ def test_a_citation_lookup_is_not_shown_as_a_search(client, matter, user):
     response = client.get(f"/case/{matter.id}/research/search-tab/")
 
     assert response.context["active_query"] == real
+
+
+def test_a_citation_lookup_is_not_listed_in_history(client, matter, user):
+    """It is not a search: listed, it read as one with "1 result" and
+    opened onto "No results found". Its case stays under Validate."""
+    real = _query(matter, user, status="complete", structured_query="fees")
+    placeholder = _query(matter, user, status="complete")
+    ResearchQuery.objects.filter(pk=placeholder.pk).update(query_text="410 U.S. 113")
+    _result(placeholder, 1, relevance="high", verify_status="complete")
+
+    response = client.get(f"/case/{matter.id}/research/history-tab/")
+
+    assert list(response.context["queries"]) == [real]
+    assert "410 U.S. 113" not in response.content.decode()
+
+    validated = client.get(f"/case/{matter.id}/research/review-tab/")
+    assert "Case 1" in validated.content.decode()
+
+
+def test_history_after_a_delete_leaves_placeholders_out_too(client, matter, user):
+    real = _query(matter, user, status="complete", structured_query="fees")
+    doomed = _query(matter, user, status="complete", structured_query="costs")
+    _query(matter, user, status="complete")
+
+    response = client.post(
+        reverse("case:research-delete", args=[matter.id, doomed.id]),
+        HTTP_HX_TARGET="research",
+    )
+
+    assert list(response.context["queries"]) == [real]
