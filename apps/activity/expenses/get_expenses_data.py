@@ -4,7 +4,7 @@ from apps.accounts.models import CustomUser
 from apps.activity.expenses.filter import ExpenseFilter
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.expenses.summary import calculate_summary
-from apps.activity.presets import activity_date_filters
+from apps.activity.presets import activity_date_filters, detect_filter_label
 from apps.management.pagination import CustomPaginator
 from apps.management.selection import (
     all_visible_selected,
@@ -116,7 +116,11 @@ def get_expenses_data(request):
         "chip_pinned_ids": request.user.task_user_chips or [],
         "selected_user": selected_user,
         "user_id": user_id,
-        "filter_label": filter_data.get("filter_label", None),
+        # The date button names what the list is showing. A list on its
+        # default filter (not entered, not invoiced) is Work in Progress,
+        # whether or not the session recorded a label for it.
+        "filter_label": (filter_data or {}).get("filter_label")
+        or detect_filter_label(filter_data or default_filter, timezone.localdate()),
         "custom_filter_active": custom_filter_active,
         "current_order": current_order,
         "selected_expenses": selected_expenses,

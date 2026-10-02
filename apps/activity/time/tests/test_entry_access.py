@@ -351,3 +351,28 @@ def test_rate_lookup_survives_two_rates_for_one_user(client, user, matter):
     response = client.get(reverse("activity:set-rate", args=[matter.id]))
 
     assert response.content == b"250"
+
+
+# --- the date button -------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "url_name", ["activity:expenses-index", "activity:flat-fees-index"]
+)
+def test_default_list_is_labelled_work_in_progress(client, url_name):
+    response = client.get(reverse(url_name))
+
+    assert response.context["filter_label"] == "unbilled"
+    assert b"Work in Progress" in response.content
+
+
+@pytest.mark.parametrize("preset", ["last_week", "last_month"])
+def test_flat_fees_offers_the_same_date_presets_as_time(client, preset):
+    client.post(reverse("activity:flat-fees-filter-quick", args=[preset]))
+
+    response = client.get(reverse("activity:flat-fees-index"))
+
+    assert response.context["filter_label"] == preset
+    assert f"flat-fees/filter/quick/{preset}".encode() in response.content or (
+        preset.replace("_", " ").title().encode() in response.content
+    )
