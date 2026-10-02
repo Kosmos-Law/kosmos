@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.access import filter_matters_for_user
 from apps.case.courtlistener import fetch_case_by_citation
+from apps.case.facts.sorting import sort_keys, stored_sort_key
 from apps.case.highlights.importance import DEFAULT_IMPORTANCE, parse_importance
 from apps.case.models import CaseLaw, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
@@ -22,6 +23,14 @@ from utils.safe_json import json_for_script
 from utils.toasts import toast_warning
 
 logger = logging.getLogger(__name__)
+
+# The Full Cases columns that sort. The header buttons send the bare
+# field; the list stores it with its direction.
+SORT_FIELDS = ("case_name", "date_filed", "created_at", "ai_context", "importance")
+SORT_KEYS = sort_keys(SORT_FIELDS)
+DEFAULT_SORT = "-created_at"
+
+HIGHLIGHT_COLORS = frozenset(value for value, _ in Highlight.COLOR_CHOICES)
 
 
 def get_accessible_matters(user):
@@ -41,10 +50,9 @@ def get_caselaws_data(request, matter, matter_id):
 
     case_laws = []
     if matter:
-        # Get sort order
-        current_order = filter_data.get("order_by", "-created_at")
-        if isinstance(current_order, list):
-            current_order = current_order[0] if current_order else "-created_at"
+        # The stored key goes straight to order_by(): one that is not a
+        # column of this list would make every load a server error.
+        current_order = stored_sort_key(filter_data, SORT_KEYS, DEFAULT_SORT)
 
         queryset = CaseLaw.objects.filter(matter=matter).order_by(current_order)
 
@@ -59,7 +67,7 @@ def get_caselaws_data(request, matter, matter_id):
 
         case_laws = queryset
     else:
-        current_order = "-created_at"
+        current_order = DEFAULT_SORT
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -125,6 +133,9 @@ def caselaws_list(request, matter_id):
 @login_required
 def caselaws_sort(request, matter_id, order):
     """Sort case laws by a field."""
+    if order not in SORT_FIELDS:
+        return HttpResponse(status=400, content="Invalid sort.")
+
     filter_session_key = get_session_key("caselaws_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 

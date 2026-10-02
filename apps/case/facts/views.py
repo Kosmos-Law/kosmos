@@ -26,6 +26,9 @@ from .filters import (
 )
 from .forms import FactForm
 from .generate_pdf import generate_facts_pdf
+from .sorting import filterset_sort_keys, stored_sort_key, with_valid_sort
+
+SORT_KEYS = filterset_sort_keys(FactsFilter)
 
 
 def labels_mode_from(filter_data):
@@ -58,7 +61,9 @@ def label_filter_options(matter, filter_data):
 def get_facts_data(request, matter, matter_id):
     """Get facts data with filters applied from session."""
     filter_session_key = get_session_key("facts_filter", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
+    filter_data = with_valid_sort(
+        request.session.get(filter_session_key, {}), SORT_KEYS
+    )
 
     facts = []
     if matter:
@@ -72,9 +77,7 @@ def get_facts_data(request, matter, matter_id):
             facts = queryset
 
     # Get current sort order
-    current_order = filter_data.get("order_by", "date")
-    if isinstance(current_order, list):
-        current_order = current_order[0] if current_order else "date"
+    current_order = stored_sort_key(filter_data, SORT_KEYS, "date")
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -629,6 +632,9 @@ def facts_filter_labels_mode(request, matter_id, mode):
 @login_required
 def facts_sort(request, matter_id, order):
     """Sort facts by field, toggling asc/desc."""
+    if order not in SORT_KEYS:
+        return HttpResponse(status=400, content="Invalid sort.")
+
     filter_session_key = get_session_key("facts_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 
