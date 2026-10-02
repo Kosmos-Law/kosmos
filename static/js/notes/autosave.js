@@ -10,8 +10,6 @@
 // few times on its own, so text typed just before the user stops typing
 // isn't left unsaved until the next keystroke.
 
-import { Extension, Plugin, PluginKey } from "../vendor/tiptap.bundle.js";
-
 import { state, getCSRFToken } from "./state.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { broadcast } from "./broadcast.js";
@@ -46,10 +44,7 @@ export function scheduleAutosave() {
 // After a failed save: try again shortly, a bounded number of times, each
 // wait longer than the last. The timer is the autosave timer, so an edit
 // or a note switch in the meantime replaces it.
-function scheduleRetry(noteId) {
-  // The user moved to another note while the request was out: the failed
-  // save was the old note's, and this buffer is not it
-  if (!window.NOTE_DATA || window.NOTE_DATA.id !== noteId) return;
+function scheduleRetry() {
   updateSaveStatus("unsaved");
   if (state.conflict || retries >= MAX_RETRIES) return;
   retries++;
@@ -68,7 +63,16 @@ export function performAutosave() {
   }
 
   updateSaveStatus("saving");
-  const noteId = window.NOTE_DATA.id;
+  // The note this save belongs to. Every content swap (a note switch, a
+  // reload of the same note) installs a fresh NOTE_DATA object, so if it
+  // is no longer this one when the response arrives, the answer is about
+  // a buffer the user has left: applying it would stamp the old note's
+  // version and saved text onto the note now open (whose next save then
+  // 409s into a false conflict), or pause, retry or bail out of a note
+  // the response says nothing about. Identity rather than id, so leaving
+  // a note and coming straight back does not count as never having left.
+  const sentFor = window.NOTE_DATA;
+  const stale = () => window.NOTE_DATA !== sentFor;
 
   const formData = new FormData();
   formData.append("content", content);
@@ -81,33 +85,37 @@ export function performAutosave() {
   })
     .then((r) => {
       if (r.status === 409) {
-        enterConflict();
+        if (!stale()) enterConflict();
         return null;
       }
       if (r.status === 404) {
         // The note was deleted from another tab (e.g. a folder-cascade
         // delete, which has no per-note broadcast); land on launch like
         // a direct delete would
-        openLaunchNote();
+        if (!stale()) openLaunchNote();
         return null;
       }
       return r.json();
     })
     .then((data) => {
-      if (data && data.saved) {
-        retries = 0;
-        state.lastSavedContent = content;
-        window.NOTE_DATA.updatedAt = data.updated_at;
-        updateSaveStatus("saved");
-        document.body.dispatchEvent(new Event("noteSaved"));
-        broadcast({
-          type: "note-saved",
-          noteId: window.NOTE_DATA.id,
-          updatedAt: data.updated_at,
-        });
-      }
+      if (!data || !data.saved) return;
+      // The save happened whichever note this tab shows now, so sibling
+      // tabs hear of it either way, under the id of the note it was for
+      broadcast({
+        type: "note-saved",
+        noteId: sentFor.id,
+        updatedAt: data.updated_at,
+      });
+      if (stale()) return;
+      retries = 0;
+      state.lastSavedContent = content;
+      window.NOTE_DATA.updatedAt = data.updated_at;
+      updateSaveStatus("saved");
+      document.body.dispatchEvent(new Event("noteSaved"));
     })
-    .catch(() => scheduleRetry(noteId));
+    .catch(() => {
+      if (!stale()) scheduleRetry();
+    });
 }
 
 // ─── Conflict state ──────────────────────────────────────────────────────────
@@ -116,25 +124,8 @@ export function performAutosave() {
 // this point could be saved, and "Reload latest" would throw it away. The
 // text stays selectable, so what was typed before the conflict can still
 // be copied out. Everything locked here lives in the content partial or is
-// reset by initEditor, so the reload's swap restores it.
-//
-// setEditable(false) only stops typing; TipTap still applies programmatic
-// commands (format buttons, table bar, replace, import) to a non-editable
-// editor. ConflictLock refuses every change to the document while the
-// conflict stands, whichever path it comes by.
-export const ConflictLock = Extension.create({
-  name: "conflictLock",
-
-  addProseMirrorPlugins() {
-    return [
-      new Plugin({
-        key: new PluginKey("conflictLock"),
-        filterTransaction: (tr) => !(state.conflict && tr.docChanged),
-      }),
-    ];
-  },
-});
-
+// reset by initEditor, so the reload's swap restores it. Changes that do
+// not come from typing are refused by ConflictLock (conflict-lock.js).
 export function enterConflict() {
   if (state.conflict) return;
   state.conflict = true;

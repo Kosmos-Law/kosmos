@@ -65,8 +65,8 @@ import {
   enterConflict,
   clearConflict,
   reloadNoteContent,
-  ConflictLock,
 } from "./notes/autosave.js";
+import { ConflictLock } from "./notes/conflict-lock.js";
 import { broadcast, setupBroadcast } from "./notes/broadcast.js";
 import {
   SearchHighlight,
