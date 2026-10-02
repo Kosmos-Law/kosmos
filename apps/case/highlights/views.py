@@ -2,10 +2,12 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.case.facts.access import label_for_matter
 from apps.case.models import Document, Highlight, Label, Witness
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.management.pagination import CustomPaginator
@@ -20,6 +22,7 @@ from apps.management.selection import (
 
 from .filters import HighlightsFilter
 from .forms import HighlightForm
+from .importance import DEFAULT_IMPORTANCE, parse_importance
 
 
 def get_highlights_data(request, matter, matter_id):
@@ -67,11 +70,13 @@ def get_highlights_data(request, matter, matter_id):
         if document_id:
             selected_document = documents.filter(id=document_id).first()
 
-        # Handle custom ordering with secondary sorts
+        # Handle custom ordering with secondary sorts. "Date" is the date
+        # the Date column shows: the document's, or the case's filing date.
+        source_date = Coalesce("document__date", "caselaw__date_filed")
         if order_by == "date":
-            highlights = highlights.order_by("created_at", "slug")
+            highlights = highlights.order_by(source_date.asc(nulls_last=True), "slug")
         elif order_by == "-date":
-            highlights = highlights.order_by("-created_at", "slug")
+            highlights = highlights.order_by(source_date.desc(nulls_last=True), "slug")
         elif order_by == "slug":
             highlights = highlights.order_by("slug", "created_at")
         elif order_by == "-slug":
@@ -318,11 +323,10 @@ def highlights_filter_sort(request, matter_id, order):
     filter_data = request.session.get(filter_session_key, {})
     current_order = filter_data.get("order_by", "")
 
-    # Toggle direction if same field
+    # A second click on the same column reverses it, whichever direction
+    # the column starts in (importance starts highest first).
     if current_order == order:
-        filter_data["order_by"] = f"-{order}"
-    elif current_order == f"-{order}":
-        filter_data["order_by"] = order
+        filter_data["order_by"] = order[1:] if order.startswith("-") else f"-{order}"
     else:
         filter_data["order_by"] = order
 
@@ -345,9 +349,13 @@ def highlights_filter_default(request, matter_id):
 
 
 @login_required
+@require_POST
 def highlight_importance(request, highlight_id, importance):
     """Set highlight importance."""
     highlight = get_object_or_404(Highlight, id=highlight_id)
+    importance = parse_importance(importance)
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
     highlight.importance = importance
     highlight.save()
 
@@ -381,6 +389,12 @@ def add_highlight(request, document_id):
 
         paragraph_number = request.POST.get("paragraph_number", "").strip() or None
 
+        importance = parse_importance(
+            request.POST.get("importance", DEFAULT_IMPORTANCE)
+        )
+        if importance is None:
+            return JsonResponse({"error": "Invalid importance."}, status=400)
+
         highlight = Highlight.objects.create(
             document=document,
             slug=slug,
@@ -389,7 +403,7 @@ def add_highlight(request, document_id):
             paragraph_number=paragraph_number,
             coordinates=coordinates,
             color=request.POST.get("color", "yellow"),
-            importance=5,
+            importance=importance,
             created_by=request.user,
         )
 
@@ -416,7 +430,18 @@ def delete_highlight(request, highlight_id):
     """Delete a highlight."""
     highlight = get_object_or_404(Highlight, id=highlight_id)
 
-    # Check permission (creator or allow all authenticated users for now)
+    # Prune the id from any current selection so the bulk count stays honest.
+    matter_id = (
+        highlight.document.matter_id
+        if highlight.document
+        else highlight.caselaw.matter_id
+    )
+    key = get_session_key("selected_highlights", matter_id)
+    selected = get_selected_ids(request, key)
+    if highlight.id in selected:
+        selected.remove(highlight.id)
+        request.session[key] = selected
+
     highlight.delete()
 
     # Return 204 with trigger for HTMX, JSON for JS (viewer context)
@@ -442,6 +467,17 @@ def highlight_detail(request, highlight_id):
         "case/highlights/detail.html",
         {"highlight": highlight, "matter": matter},
     )
+
+
+def _form_error_text(form):
+    """A form's errors as one line: "Slug: This field is required." """
+    parts = []
+    for name, errors in form.errors.items():
+        text = " ".join(errors)
+        if name in form.fields:
+            text = f"{form[name].label}: {text}"
+        parts.append(text)
+    return " ".join(parts)
 
 
 @login_required
@@ -474,6 +510,12 @@ def edit_highlight(request, highlight_id):
             return HttpResponse(
                 status=204,
                 headers={"HX-Trigger": "highlightsChanged"},
+            )
+        if is_viewer_context:
+            # The viewer's script reads JSON, so the reasons go back as
+            # JSON for it to show rather than as the re-rendered form.
+            return JsonResponse(
+                {"error": _form_error_text(form), "errors": form.errors}, status=400
             )
     else:
         form = HighlightForm(instance=highlight)
@@ -588,9 +630,10 @@ def bulk_highlights_importance(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No highlights selected.")
 
-    importance = request.POST.get("importance")
-    if importance:
-        _selected_highlights_qs(matter, selected).update(importance=int(importance))
+    importance = parse_importance(request.POST.get("importance"))
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
+    _selected_highlights_qs(matter, selected).update(importance=importance)
 
     clear_selected_ids(request, key)
     return selection_response("highlightsChanged")
@@ -666,7 +709,7 @@ def bulk_highlights_label_action(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No highlights selected.")
 
-    label = get_object_or_404(Label, id=request.POST.get("label_id"))
+    label = label_for_matter(matter, request.POST.get("label_id"))
     action = request.POST.get("action")
     highlights = _selected_highlights_qs(matter, selected)
 

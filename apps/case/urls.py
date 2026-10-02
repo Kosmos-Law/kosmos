@@ -345,7 +345,6 @@ urlpatterns = [
         facts.facts_sort,
         name="facts-sort",
     ),
-    path("case/<int:matter_id>/facts/print/", facts.facts_print, name="facts-print"),
     path("case/<int:matter_id>/facts/pdf/", facts.facts_pdf, name="facts-pdf"),
     path(
         "case/<int:matter_id>/facts/toggle-select/<int:fact_id>/",
@@ -1055,16 +1054,6 @@ urlpatterns = [
     # Fact operations
     path("case/facts/<int:fact_id>/edit/", facts.facts_edit, name="facts-edit"),
     path("case/facts/<int:fact_id>/delete/", facts.facts_delete, name="facts-delete"),
-    path(
-        "case/facts/<int:fact_id>/edit-description/",
-        facts.facts_edit_description,
-        name="facts-edit-description",
-    ),
-    path(
-        "case/facts/<int:fact_id>/update-description/",
-        facts.facts_update_description,
-        name="facts-update-description",
-    ),
     path(
         "case/facts/<int:fact_id>/sources/",
         facts.fact_sources_modal,

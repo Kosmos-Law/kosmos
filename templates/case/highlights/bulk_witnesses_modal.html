@@ -16,7 +16,7 @@
             {% for witness in available_witnesses %}
               <a href="#"
                  class="app-badge badge-gray bulk-label-action state-{{ witness.state }}"
-                 title="{% if witness.state == 'some' %}Linked to some — click to add to the rest{% else %}Add to all selected highlights{% endif %}"
+                 title="{% if witness.state == 'some' %}Linked to some. Click to add to the rest.{% else %}Add to all selected highlights{% endif %}"
                  hx-post="{% url 'case:highlights-bulk-witness-action' matter.id %}"
                  hx-vals='{"witness_id": "{{ witness.id }}", "action": "add"}'
                  hx-target="#htmx-modal-container">

@@ -12,18 +12,22 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.accounts.access import filter_matters_for_user
 from apps.case.courtlistener import fetch_case_by_citation
+from apps.case.highlights.importance import DEFAULT_IMPORTANCE, parse_importance
 from apps.case.models import CaseLaw, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.matters.models import Matter
 from utils.safe_json import json_for_script
+from utils.toasts import toast_warning
 
 logger = logging.getLogger(__name__)
 
 
-def get_accessible_matters():
-    """Get all matters accessible to logged-in users."""
-    return Matter.objects.filter(status="Open")
+def get_accessible_matters(user):
+    """The matters this user can reach, whatever their status: a saved case
+    on a Pending, Complete or Closed matter is still the user's to open."""
+    return filter_matters_for_user(Matter.objects.all(), user)
 
 
 def get_caselaws_data(request, matter, matter_id):
@@ -103,6 +107,14 @@ def caselaws_list(request, matter_id):
     """HTMX partial for case law list."""
     matter, _ = get_matter_from_url(request, matter_id)
 
+    # The "Search cases..." box sends its text here. It is kept with the
+    # rest of the list's filter so sorting and refreshes hold on to it.
+    if "keyword" in request.GET:
+        filter_session_key = get_session_key("caselaws_filter", matter_id)
+        filter_data = request.session.get(filter_session_key, {})
+        filter_data["keyword"] = request.GET["keyword"].strip()
+        request.session[filter_session_key] = filter_data
+
     context = {
         "matter": matter,
     } | get_caselaws_data(request, matter, matter_id)
@@ -145,6 +157,7 @@ def caselaws_add(request, matter_id):
 
 
 @login_required
+@require_POST
 def caselaws_lookup(request, matter_id):
     """HTMX endpoint to look up a citation."""
     matter, _ = get_matter_from_url(request, matter_id)
@@ -227,10 +240,12 @@ def caselaws_save(request, matter_id):
     if cluster_id:
         existing = CaseLaw.objects.filter(matter=matter, cluster_id=cluster_id).first()
         if existing:
-            # Already exists - redirect to view
-            response = HttpResponse(status=204)
-            response["HX-Redirect"] = f"/case/caselaws/{existing.id}/"
-            return response
+            # Already saved: close the dialog, show the list (which has
+            # the case) and say why nothing was added.
+            response = HttpResponse(
+                status=204, headers={"HX-Trigger": "caselawsChanged"}
+            )
+            return toast_warning(response, "This case is already saved to the matter.")
 
     # Create the case law
     case_law = CaseLaw.objects.create(
@@ -262,7 +277,7 @@ def caselaws_save(request, matter_id):
 def caselaw_edit(request, caselaw_id):
     """Edit case law notes."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
     if request.method == "POST":
@@ -284,7 +299,7 @@ def caselaw_edit(request, caselaw_id):
 def caselaw_delete(request, caselaw_id):
     """Delete a case law entry."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
     matter_id = case_law.matter_id
 
@@ -296,17 +311,19 @@ def caselaw_delete(request, caselaw_id):
 
 
 @login_required
+@require_POST
 def caselaw_importance(request, caselaw_id, value):
     """Update case law importance."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
-    # Validate value is 1-10
-    if 1 <= value <= 10:
-        case_law.importance = value
-        case_law.updated_by = request.user
-        case_law.save(update_fields=["importance", "updated_by", "updated_at"])
+    importance = parse_importance(value)
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
+    case_law.importance = importance
+    case_law.updated_by = request.user
+    case_law.save(update_fields=["importance", "updated_by", "updated_at"])
 
     return redirect("case:caselaws-list", matter_id=case_law.matter_id)
 
@@ -315,7 +332,7 @@ def caselaw_importance(request, caselaw_id, value):
 def caselaw_viewer(request, caselaw_id):
     """Case law viewer with highlight support."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
     highlights = case_law.highlights.all().order_by("char_offset", "created_at")
 
@@ -486,7 +503,7 @@ def caselaw_set_ai(request, caselaw_id, state):
         return HttpResponse(status=400)
 
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
     case_law.ai_context = state
@@ -504,7 +521,7 @@ def caselaw_set_ai(request, caselaw_id, state):
 def caselaw_add_highlight(request, caselaw_id):
     """Add highlight to case law."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
     slug = request.POST.get("slug", "").strip()
@@ -518,6 +535,12 @@ def caselaw_add_highlight(request, caselaw_id):
         page_number = request.POST.get("page_number")
         page_number = int(page_number) if page_number else None
 
+        importance = parse_importance(
+            request.POST.get("importance", DEFAULT_IMPORTANCE)
+        )
+        if importance is None:
+            return JsonResponse({"error": "Invalid importance."}, status=400)
+
         highlight = Highlight.objects.create(
             caselaw=case_law,
             slug=slug,
@@ -525,7 +548,7 @@ def caselaw_add_highlight(request, caselaw_id):
             char_offset=char_offset,
             page_number=page_number,
             color=request.POST.get("color", "yellow"),
-            importance=int(request.POST.get("importance", 5)),
+            importance=importance,
             created_by=request.user,
             updated_by=request.user,
         )
@@ -558,7 +581,10 @@ def toggle_caselaw_select(request, matter_id, caselaw_id):
     """Toggle selection of a case law in session."""
     # Verify case law exists and belongs to this matter
     get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter_id=matter_id, matter__in=get_accessible_matters()
+        CaseLaw,
+        pk=caselaw_id,
+        matter_id=matter_id,
+        matter__in=get_accessible_matters(request.user),
     )
 
     selected_session_key = get_session_key("selected_caselaws", matter_id)

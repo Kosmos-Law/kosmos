@@ -20,7 +20,7 @@
     <div class="modal-footer">
       <button type="button"
               class="btn btn-secondary"
-              hx-post="{% url 'management:clear-filters' session_key='witnesses_filter' trigger='witnessesChanged' %}">
+              hx-post="{% url 'management:clear-filters' session_key=filter_session_key trigger='witnessesChanged' %}">
         Restore Defaults
       </button>
       <button type="submit" form="witnesses-filter-form" class="btn btn-success">Apply</button>

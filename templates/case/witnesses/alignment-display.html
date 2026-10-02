@@ -16,19 +16,19 @@
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:witness-alignment' witness.id 'friendly' %}"
+         hx-post="{% url 'case:witness-alignment' witness.id 'friendly' %}"
          hx-target="#witnesses">Friendly</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:witness-alignment' witness.id 'neutral' %}"
+         hx-post="{% url 'case:witness-alignment' witness.id 'neutral' %}"
          hx-target="#witnesses">Neutral</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:witness-alignment' witness.id 'hostile' %}"
+         hx-post="{% url 'case:witness-alignment' witness.id 'hostile' %}"
          hx-target="#witnesses">Hostile</a>
     </li>
   </ul>

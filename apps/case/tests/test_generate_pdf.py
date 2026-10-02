@@ -101,3 +101,52 @@ class TestGenerateFactsPdf:
         call_args = mock_render.call_args
         template_name = call_args[0][0]
         assert template_name == "case/facts/pdf.html"
+
+
+class TestTimelinePdfContent:
+    """What the PDF prints, with only the PDF engine stubbed out."""
+
+    def _html(self, matter):
+        mock_request = MagicMock()
+        mock_request.build_absolute_uri.return_value = "http://testserver/"
+        with patch("apps.case.facts.generate_pdf.HTML") as mock_html:
+            mock_html.return_value = MagicMock()
+            generate_facts_pdf(matter.id, mock_request)
+        return mock_html.call_args.kwargs["string"]
+
+    def test_prints_each_facts_sources(self, matter, fact, document, highlight):
+        fact.documents.add(document)
+        fact.highlights.add(highlight)
+
+        html = self._html(matter)
+
+        assert document.citation in html
+        assert highlight.citation in html
+
+    def test_a_fact_without_sources_prints_none(self, matter, fact):
+        html = self._html(matter)
+
+        assert fact.description in html
+        assert "(" not in html.split(fact.description)[1].split("</td>")[0]
+
+    def test_orders_by_date_then_time_as_the_screen_does(self, matter, user):
+        from apps.case.models import Fact
+
+        for description, time in (("Afternoon", "15:00"), ("Morning", "09:00")):
+            Fact.objects.create(
+                user=user,
+                matter=matter,
+                date="2024-03-01",
+                time=time,
+                description=description,
+            )
+        Fact.objects.create(
+            user=user, matter=matter, date="2024-02-01", description="Earlier day"
+        )
+
+        html = self._html(matter)
+
+        positions = [
+            html.index(text) for text in ("Earlier day", "Morning", "Afternoon")
+        ]
+        assert positions == sorted(positions)

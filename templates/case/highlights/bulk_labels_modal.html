@@ -16,7 +16,7 @@
             {% for label in available_labels %}
               <a href="#"
                  class="app-badge label-{{ label.color }} bulk-label-action state-{{ label.state }}"
-                 title="{% if label.state == 'some' %}Applied to some — click to add to the rest{% else %}Add to all selected highlights{% endif %}"
+                 title="{% if label.state == 'some' %}Applied to some. Click to add to the rest.{% else %}Add to all selected highlights{% endif %}"
                  hx-post="{% url 'case:highlights-bulk-label-action' matter.id %}"
                  hx-vals='{"label_id": "{{ label.id }}", "action": "add"}'
                  hx-target="#htmx-modal-container">

@@ -122,7 +122,7 @@ class TestDeleteHighlight:
 
 class TestHighlightImportance:
     def test_set_importance(self, client_with_matter, highlight):
-        response = client_with_matter.get(
+        response = client_with_matter.post(
             f"/case/highlights/{highlight.id}/importance/4/"
         )
         assert response.status_code == 302

@@ -32,8 +32,9 @@
                 <tr class="{% if fact.color %}hl-{{ fact.color|lower }}{% endif %}">
                   <td class="date-time">{{ fact.date|date:'Y-m-d' }}</td>
                   <td class="description">
-                    {{ fact.description }}&nbsp;&nbsp;
-                    {% if fact.citations %}({{ fact.citations|slice:":25"|default_if_none:'' }}.){% endif %}
+                    {{ fact.description }}
+                    {% for highlight in fact.highlights.all %}&nbsp;&nbsp;{{ highlight.citation }}{% endfor %}
+                    {% for document in fact.documents.all %}&nbsp;&nbsp;{{ document.citation }}{% endfor %}
                   </td>
                 </tr>
               {% endfor %}

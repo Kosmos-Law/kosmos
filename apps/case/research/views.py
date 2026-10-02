@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
@@ -15,26 +15,94 @@ from .courtlistener import count_forward_citations
 from .jurisdictions import STATES
 from .models import CaseBrief, CitationVerification, ResearchQuery, ResearchResult
 from .tasks import (
+    ASSESS_INTERRUPTED,
     _rank_candidates,
-    assess_single_citation,
+    assessment_lost,
     generate_brief,
     generate_caselaw_summary,
     process_brief_phase,
     process_research_query,
+    reap_stale_briefs,
     reap_stale_queries,
+    reap_stale_result,
     refine_research_query,
     review_more_citations,
     review_result,
     sanitize_query,
-    summarize_result,
+    start_citation_assessment,
+    start_review,
+    start_single_brief,
 )
 
 
+def _active_query(request, matter):
+    """The user's latest query on the matter, for the Search sub-tab: a run
+    still in progress picks up where it was. Stranded runs are flagged
+    first, so what is shown is never a spinner that cannot end."""
+    reap_stale_queries(matter, request.user)
+    return (
+        ResearchQuery.objects.filter(matter=matter, created_by=request.user)
+        # Validating a typed citation files its case under a placeholder
+        # query (complete, never searched). It is not a search to resume
+        # and would show here as an empty "No results found" run.
+        .exclude(status="complete", structured_query="")
+        .order_by("-created_at")
+        .first()
+    )
+
+
 def get_research_data(request, matter, matter_id):
-    """Get research data for the case tab."""
+    """Get research data for the case tab.
+
+    Every way into the Research tab (the full page, the tab switch and the
+    list refresh) renders the Search sub-tab from this, so each of them
+    shows the run in progress."""
     return {
         "states": STATES,
+        "active_query": _active_query(request, matter) if matter else None,
     }
+
+
+def _user_briefs(matter, user):
+    return CaseBrief.objects.filter(matter=matter, created_by=user)
+
+
+def _mark_saved_state(results, matter, user):
+    """Note on each result what the user has already saved from it: the
+    bookmark (a saved case on the matter) and the user's own brief.
+
+    Briefs are per user (each is written against its author's own research
+    question), so only the user's own count as saved."""
+    cluster_ids = [r.cluster_id for r in results if r.cluster_id]
+    briefs = {}
+    bookmarked = set()
+    if cluster_ids:
+        # Newest first (the model's ordering), so a case keeps its newest.
+        for brief in _user_briefs(matter, user).filter(cluster_id__in=cluster_ids):
+            briefs.setdefault(brief.cluster_id, brief)
+        bookmarked = set(
+            CaseLaw.objects.filter(
+                matter=matter, cluster_id__in=cluster_ids
+            ).values_list("cluster_id", flat=True)
+        )
+    for r in results:
+        r.existing_brief = briefs.get(r.cluster_id) if r.cluster_id else None
+        r.brief_generating = bool(
+            r.existing_brief and r.existing_brief.status in ("pending", "generating")
+        )
+        r.is_bookmarked = bool(r.cluster_id) and r.cluster_id in bookmarked
+
+
+def _render_result_row(request, result, **extra):
+    """One result card. Every re-render of a card (a poll, a save, a brief)
+    comes through here so each carries the same saved state as the list."""
+    matter = result.query.matter
+    _mark_saved_state([result], matter, request.user)
+    return render(
+        request,
+        "case/research/result-row.html",
+        {"result": result, "matter": matter, **extra},
+    )
 
 
 @login_required
@@ -90,20 +158,10 @@ def research_search_tab(request, matter_id):
     """HTMX partial for the Search sub-tab content."""
     matter, _ = get_matter_from_url(request, matter_id)
 
-    reap_stale_queries(matter, request.user)
-
-    active_query = (
-        ResearchQuery.objects.filter(matter=matter, created_by=request.user)
-        .order_by("-created_at")
-        .first()
-    )
-
     context = {
         "matter": matter,
         "research_tab": "search",
-        "states": STATES,
-        "active_query": active_query,
-    }
+    } | get_research_data(request, matter, matter_id)
 
     return render(request, "case/research/list.html", context)
 
@@ -142,7 +200,7 @@ def research_review_tab(request, matter_id):
             query__matter=matter,
             query__created_by=request.user,
         )
-        context["result"] = result
+        context["result"] = reap_stale_result(result)
     else:
         reviewed_results = ResearchResult.objects.filter(
             query__matter=matter,
@@ -247,23 +305,8 @@ def research_results(request, matter_id, query_id):
     )
     results = pagination.get_object_list()
 
-    cluster_ids = [r.cluster_id for r in results if r.cluster_id]
-    brief_map = {}
-    bookmarked_clusters = set()
-    if cluster_ids:
-        brief_map = dict(
-            CaseBrief.objects.filter(
-                matter=matter, cluster_id__in=cluster_ids
-            ).values_list("cluster_id", "id")
-        )
-        bookmarked_clusters = set(
-            CaseLaw.objects.filter(
-                matter=matter, cluster_id__in=cluster_ids
-            ).values_list("cluster_id", flat=True)
-        )
-    for r in results:
-        r.existing_brief_id = brief_map.get(r.cluster_id)
-        r.is_bookmarked = r.cluster_id in bookmarked_clusters
+    results = list(results)
+    _mark_saved_state(results, matter, request.user)
 
     return render(
         request,
@@ -463,6 +506,9 @@ def research_delete(request, matter_id, query_id):
 def query_status(request, query_id):
     """Poll for query processing status — used by refinement polling."""
     query = get_object_or_404(ResearchQuery, pk=query_id, created_by=request.user)
+    # A refinement whose task was lost would otherwise keep this poll alive.
+    reap_stale_queries(query.matter, request.user)
+    query.refresh_from_db()
     return render(
         request,
         "case/research/refinement.html",
@@ -476,11 +522,7 @@ def result_status(request, result_id):
     result = get_object_or_404(
         ResearchResult, pk=result_id, query__created_by=request.user
     )
-    return render(
-        request,
-        "case/research/result-row.html",
-        {"result": result, "matter": result.query.matter},
-    )
+    return _render_result_row(request, reap_stale_result(result))
 
 
 # ── Review flow (object-specific) ────────────────────────────────────────
@@ -497,9 +539,9 @@ def research_review(request, result_id):
     )
     matter = result.query.matter
 
-    result.verify_status = "verifying"
-    result.save(update_fields=["verify_status"])
-    review_result(result.id)
+    result = reap_stale_result(result)
+    start_review(result.id, review_result)
+    result.refresh_from_db()
 
     context = {
         "matter": matter,
@@ -577,9 +619,14 @@ def research_review_lookup(request, matter_id):
 
     review_result(result.id)
 
-    return HttpResponseRedirect(
-        f"{reverse('case:research-review-tab', args=[matter_id])}?result={result.id}"
-    )
+    # Rendered into the tab like every other Validate, so the page keeps
+    # its frame and the status poll runs.
+    context = {
+        "matter": matter,
+        "research_tab": "review",
+        "result": result,
+    }
+    return render(request, "case/research/list.html", context)
 
 
 @login_required
@@ -588,6 +635,7 @@ def research_review_status(request, result_id):
     result = get_object_or_404(
         ResearchResult, pk=result_id, query__created_by=request.user
     )
+    result = reap_stale_result(result)
     return render(
         request,
         "case/research/review-content.html",
@@ -605,9 +653,9 @@ def research_review_more(request, result_id):
         ResearchResult, pk=result_id, query__created_by=request.user
     )
 
-    result.verify_status = "verifying"
-    result.save(update_fields=["verify_status"])
-    review_more_citations(result.id)
+    result = reap_stale_result(result)
+    start_review(result.id, review_more_citations)
+    result.refresh_from_db()
 
     return render(
         request,
@@ -628,7 +676,7 @@ def research_assess_citation(request, verification_id):
         result__query__created_by=request.user,
     )
 
-    assess_single_citation(verification.id)
+    start_citation_assessment(verification)
 
     return render(
         request,
@@ -645,10 +693,17 @@ def research_citation_status(request, verification_id):
         pk=verification_id,
         result__query__created_by=request.user,
     )
+    # A lost task never writes an outcome: past the stale window the row
+    # stops polling, says so, and offers Assess again.
+    lost = assessment_lost(verification)
     return render(
         request,
         "case/research/citation-item.html",
-        {"v": verification, "assessing": not verification.summary},
+        {
+            "v": verification,
+            "assessing": not verification.summary and not lost,
+            "assess_error": ASSESS_INTERRUPTED if lost else "",
+        },
     )
 
 
@@ -672,25 +727,15 @@ def research_save_to_caselaws(request, result_id):
             matter=matter, cluster_id=result.cluster_id
         ).first()
         if existing:
-            return render(
-                request,
-                "case/research/result-row.html",
-                {"result": result, "matter": matter, "saved_to_caselaws": True},
-            )
+            return _render_result_row(request, result)
 
     # Build the CaseLaw row from the cluster the result already points at.
     # The old path round-tripped through the citation-lookup API, which
     # cannot resolve a slip opinion (no reporter citation to parse).
     cluster = fetch_cluster(result.cluster_id) if result.cluster_id else {}
     if not cluster:
-        return render(
-            request,
-            "case/research/result-row.html",
-            {
-                "result": result,
-                "matter": matter,
-                "save_error": "Could not fetch case data from CourtListener.",
-            },
+        return _render_result_row(
+            request, result, save_error="Could not fetch case data from CourtListener."
         )
 
     date_filed = None
@@ -741,11 +786,7 @@ def research_save_to_caselaws(request, result_id):
 
     generate_caselaw_summary(case_law.id)
 
-    return render(
-        request,
-        "case/research/result-row.html",
-        {"result": result, "matter": matter, "saved_to_caselaws": True},
-    )
+    return _render_result_row(request, result)
 
 
 # ── Abstracts (Case Briefs) ──────────────────────────────────────────────
@@ -756,7 +797,8 @@ def research_abstracts_tab(request, matter_id):
     """HTMX partial for the Abstracts sub-tab content."""
     matter, _ = get_matter_from_url(request, matter_id)
 
-    briefs = CaseBrief.objects.filter(matter=matter, created_by=request.user)
+    briefs = _user_briefs(matter, request.user)
+    reap_stale_briefs(briefs)
 
     context = {
         "matter": matter,
@@ -770,6 +812,7 @@ def research_abstracts_tab(request, matter_id):
 @login_required
 def research_brief_detail(request, brief_id):
     """HTMX partial for viewing a single case brief."""
+    reap_stale_briefs(CaseBrief.objects.filter(pk=brief_id, created_by=request.user))
     brief = get_object_or_404(CaseBrief, pk=brief_id, created_by=request.user)
     return render(
         request,
@@ -789,22 +832,16 @@ def research_save_brief(request, result_id):
     )
     matter = result.query.matter
 
-    # Check for duplicate by cluster_id
+    # One brief per case per user: a colleague's brief of the same case
+    # answers a different question and is not this user's to open.
     if result.cluster_id:
-        existing = CaseBrief.objects.filter(
-            matter=matter, cluster_id=result.cluster_id
-        ).first()
+        existing = (
+            _user_briefs(matter, request.user)
+            .filter(cluster_id=result.cluster_id)
+            .exists()
+        )
         if existing:
-            return render(
-                request,
-                "case/research/result-row.html",
-                {
-                    "result": result,
-                    "matter": matter,
-                    "brief_saved": True,
-                    "brief_id": existing.id,
-                },
-            )
+            return _render_result_row(request, result)
 
     brief = CaseBrief.objects.create(
         matter=matter,
@@ -821,21 +858,13 @@ def research_save_brief(request, result_id):
 
     generate_brief(brief.id)
 
-    return render(
-        request,
-        "case/research/result-row.html",
-        {
-            "result": result,
-            "matter": matter,
-            "brief_generating": True,
-            "brief_id": brief.id,
-        },
-    )
+    return _render_result_row(request, result)
 
 
 @login_required
 def research_brief_status(request, brief_id):
     """Poll for brief generation status."""
+    reap_stale_briefs(CaseBrief.objects.filter(pk=brief_id, created_by=request.user))
     brief = get_object_or_404(CaseBrief, pk=brief_id, created_by=request.user)
     return render(
         request,
@@ -854,7 +883,7 @@ def research_delete_brief(request, brief_id):
     matter = brief.matter
     brief.delete()
 
-    briefs = CaseBrief.objects.filter(matter=matter, created_by=request.user)
+    briefs = _user_briefs(matter, request.user)
     return render(
         request,
         "case/research/list.html",
@@ -872,12 +901,9 @@ def research_summarize_result(request, result_id):
         ResearchResult, pk=result_id, query__created_by=request.user
     )
 
-    summarize_result(result_id)
+    reap_stale_result(result)
+    start_single_brief(result_id)
 
-    # Re-fetch to get the updated status
+    # Re-fetch: the card now shows the job (pending) and polls for it.
     result.refresh_from_db()
-    return render(
-        request,
-        "case/research/result-row.html",
-        {"result": result, "matter": result.query.matter},
-    )
+    return _render_result_row(request, result)
