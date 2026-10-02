@@ -20,10 +20,11 @@ Drafting has two halves, and it helps to know which half does what.
    downloaded from Kosmos.
 3. While connected, the extension checks in with the server every few
    seconds. When the user tells the AI to change the draft, the server
-   hands the proposed edits to the extension, and the extension applies
-   them to the open document as tracked changes attributed to
-   "Kosmos AI". It then sends a copy of the document back, so the AI
-   reads the text as it now stands, including the user's own edits.
+   hands the proposed edits to the extension. The extension asks the
+   server whether the chat is still waiting for them, applies them to the
+   open document as tracked changes attributed to "Kosmos AI", and
+   reports the outcome. It then sends a copy of the document back, so the
+   AI reads the text as it now stands, including the user's own edits.
 4. The user accepts or rejects the changes in Writer and saves the file.
 
 The edits are applied on the user's computer, by the user's LibreOffice.
@@ -85,19 +86,20 @@ Each user does this once on their own computer. They need LibreOffice
 Writer, and a way to open the files in the matter's Drive folder locally
 (a desktop client that syncs Google Drive to a folder).
 
-1. Open a matter's AI chat and click the **Link a draft** button in the
-   chat window.
+1. Open a matter's AI chat and click the pen button beside the message
+   box. It opens the **Link a Draft** dialog.
 2. In the dialog, follow the **LibreOffice companion extension** link.
-   The link is shown only when Drive is connected, the matter has a Drive
-   folder, and that folder contains at least one `.odt` file.
-3. Click **Download kosmos-companion.oxt**.
+   The link is there whatever the dialog shows, including when Drive is
+   not connected or the folder has no `.odt` file yet.
+3. Click **Download kosmos-companion.oxt**. The dialog names the current
+   version.
 4. In LibreOffice, open Tools, Extension Manager, Add, and choose the
    downloaded file (or double-click the file). Restart LibreOffice.
 5. Back in Kosmos, link the draft to the conversation by picking it in
    the **Link a Draft** dialog.
 6. Open the same `.odt` file in Writer and choose **Kosmos → Connect to
    drafting session**. A message confirms the connection and names the
-   matter.
+   matter and the conversation.
 
 A signed-in user can also fetch the extension directly, without going
 through the dialog:
@@ -111,16 +113,61 @@ Things users should know:
 - The extension matches the open document to its link **by file name**.
   The document must have been saved, and its name must be the same as
   the file that was linked in Kosmos.
+- A user who has linked files of the same name in more than one
+  conversation (a `motion.odt` on two matters, say) is asked which
+  matter and conversation the open document belongs to. With one match
+  there is no question. Choosing wrongly would send one matter's edits
+  to another matter's document, so the confirmation is worth reading.
+- If a linked file is renamed in Drive, Kosmos picks up the new name the
+  next time a message is sent in that conversation. Send one before
+  connecting the renamed file.
 - The **Kosmos** menu in Writer also has **Disconnect** and **Status**.
+  Status shows the installed version.
 - The document has to stay open and connected while they work with the
   AI. Kosmos treats the extension as connected for 15 seconds after it
-  last checked in, and waits up to 30 seconds for it to apply a set of
-  edits.
+  last checked in. It waits up to 30 seconds for the extension to
+  collect a set of edits, and up to 90 seconds more for it to apply them
+  and report back.
 - A set of edits is applied as a whole or not at all, and one undo
   removes it.
 - On Debian or Ubuntu desktops, if the extension will not install, the
   LibreOffice Python support is probably missing:
   `sudo apt-get install libreoffice-script-provider-python python3-uno`.
+
+## Versions and updating
+
+The current version of the extension is **0.4.0**. The server builds each
+user's download from its own copy of the source, so a download is always
+the version the server was deployed with. An installed copy does not
+update itself: it changes only when the user downloads the file again and
+installs it.
+
+What 0.4.0 adds over 0.3.0:
+
+- When the open file's name matches more than one of the user's draft
+  links, it asks which matter and conversation the document belongs to.
+  0.3.0 silently took the most recent link.
+- Before applying a set of edits it asks the server whether the chat is
+  still waiting for them. If the chat has already given up and told the
+  user the edits were not applied, the extension leaves the document
+  alone. 0.3.0 applied them regardless.
+- Its messages name things as Kosmos does now (the **Link a Draft**
+  dialog, the pen button beside the message box).
+
+To see which version is installed, choose **Kosmos → Status** in Writer.
+0.4.0 and later end the message with "Companion version 0.4.0". A copy
+whose Status message names no version is 0.3.0.
+
+To update: download the extension again from the **LibreOffice
+companion extension** link in the Link a Draft dialog, open Tools,
+Extension Manager, Add in LibreOffice, choose the new file, accept
+replacing the installed version, and restart LibreOffice.
+
+Users on 0.3.0 can keep working. The server still speaks to it as
+before, with two differences that come from the server: it now waits
+longer for a set of edits the extension has collected, and it records an
+outcome the extension reports late. They do not get the chooser or the
+check before applying until they update.
 
 ## The token
 
@@ -210,7 +257,15 @@ reinstall it.
 **"No draft link found for ..."** The open document's file name does not
 match any draft this user has linked. Link the document in the chat
 first, and check that the local file has exactly the name shown in
-Kosmos.
+Kosmos. If the file was renamed after it was linked, send a message in
+the linked conversation so Kosmos reads the new name, then connect
+again.
+
+**Writer asks which matter and conversation the document belongs to.**
+The user has linked files of this name in more than one conversation.
+Pick the one this document is for. To stop being asked, unlink the
+drafts that are no longer in use (the x beside the draft's name in each
+chat).
 
 **"This document has never been saved."** The extension can only pair a
 saved file. Save it into the matter's Drive folder, link it, then
@@ -220,10 +275,23 @@ connect.
 connected.** No extension has checked in for that document in the last
 15 seconds. The user connects from Writer and asks again.
 
-**The chat says the companion did not respond in time.** The extension
-was connected but did not report back within 30 seconds. Check
-**Kosmos → Status** in Writer, which shows the last error, and connect
-again.
+**The chat says the edits were not applied because the companion did
+not respond in time.** The extension was counted as connected but did
+not collect the edits within 30 seconds, so nothing was changed. Check
+**Kosmos → Status** in Writer, which shows the last error, connect
+again and ask again.
+
+**The chat says the edits could not be confirmed.** The extension
+collected the edits but did not report an outcome within 90 seconds.
+They may or may not be in the document: look for the tracked changes.
+If they are there, they were applied. If not, check **Kosmos → Status**,
+connect again and ask again. This usually means LibreOffice was busy
+(a dialog was open) or lost its connection part way through.
+
+**Status says the extension "skipped a set of edits that Kosmos had
+stopped waiting for".** The extension (0.4.0 or later) got to the edits
+only after the chat had given up on them, so it did not apply them. The
+chat has already said so. Ask again.
 
 **The chat says "change recording could not be enabled".** The
 document's tracked-changes protection is on. Remove the protection in

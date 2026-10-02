@@ -116,6 +116,12 @@ class CompanionRound(models.Model):
     extension picks it up (delivered_at set, never redelivered), applies the
     edits to the live document, and posts the outcome back. Rounds are the
     lasting record of what the AI changed and when.
+
+    delivered_at is also the start of the worker's wait for the outcome: an
+    extension that claims the round before applying (0.4.0 and later) moves
+    it forward to the claim. "expired" with no delivered_at was never handed
+    out; "expired" with one was collected and not reported in time, and may
+    still turn "applied" or "failed" if the report arrives late.
     """
 
     STATUS_CHOICES = [
