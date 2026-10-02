@@ -3,11 +3,11 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.case.documents.access import open_matters_for_user
 from apps.case.models import CaseLaw, Document, Fact, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
-from apps.matters.models import Matter
 from apps.notes.models import Note
 
 from .filters import LabelsFilter
@@ -43,12 +43,13 @@ def labels_list(request, matter_id):
 @login_required
 def add_label(request, matter_id):
     matter, _ = get_matter_from_url(request, matter_id)
+    # A label can go on the matter the tab is open on (whatever its status)
+    # or on another Open matter the user may see, never on one they may not.
+    matter_choices = open_matters_for_user(request.user, include_id=matter.id)
 
     if request.method == "POST":
         form = LabelsForm(request.POST, use_required_attribute=False)
-        form.fields["matter"].queryset = Matter.objects.filter(status="Open").order_by(
-            "name"
-        )
+        form.fields["matter"].queryset = matter_choices
 
         if form.is_valid():
             form.save()
@@ -61,10 +62,12 @@ def add_label(request, matter_id):
             {"form": form, "edit": False, "matter": matter},
         )
     else:
-        form = LabelsForm(initial={"matter": matter}, use_required_attribute=False)
-        form.fields["matter"].queryset = Matter.objects.filter(status="Open").order_by(
-            "name"
+        # The plus on the "All Matters" card asks for a global label.
+        initial_matter = None if request.GET.get("global") else matter
+        form = LabelsForm(
+            initial={"matter": initial_matter}, use_required_attribute=False
         )
+        form.fields["matter"].queryset = matter_choices
 
         return render(
             request,
@@ -80,11 +83,9 @@ def edit_label(request, label_id):
     except Label.DoesNotExist:
         return HttpResponse(status=404)
 
-    matter_list = Matter.objects.filter(status="Open").order_by("name")
-
-    # Include closed matter if label belongs to one
-    if label.matter and label.matter not in matter_list:
-        matter_list = matter_list | Matter.objects.filter(pk=label.matter.id)
+    # The Open matters the user may see, plus the label's own matter
+    # whatever its status.
+    matter_list = open_matters_for_user(request.user, include_id=label.matter_id)
 
     if request.method == "POST":
         form = LabelsForm(request.POST, instance=label, use_required_attribute=False)
@@ -167,6 +168,7 @@ def labels_sort(request, matter_id, order):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def delete_label(request, label_id):
     try:
         Label.objects.get(id=label_id).delete()
@@ -174,6 +176,17 @@ def delete_label(request, label_id):
         return HttpResponse(status=404)
 
     return HttpResponse(status=204, headers={"HX-Trigger": "labelsChanged"})
+
+
+# Object types whose row in its list is a table row, with the event that
+# makes that list re-fetch. (A highlight is a table row only in its table
+# view; its card and viewer rows swap out of band.)
+TABLE_ROW_TRIGGERS = {
+    "document": "documentsChanged",
+    "fact": "factsChanged",
+    "note": "notesChanged",
+    "caselaw": "caselawsChanged",
+}
 
 
 def _get_object_for_labels(object_type, object_id, view=None):
@@ -448,12 +461,16 @@ def labels_apply_modal_action(request, object_type, object_id):
         row_context["selected_highlights"] = request.session.get(
             selected_session_key, []
         )
-    if view == "table":
-        # The table row is a <tr> — emitting it bare alongside the modal HTML
-        # confuses HTMX's table-context auto-wrapping and the browser's HTML
-        # parser. Fire highlightsChanged instead so the parent list re-fetches.
+    # These rows are a <tr> — emitting one bare alongside the modal HTML
+    # confuses HTMX's table-context auto-wrapping and the browser's HTML
+    # parser (the row is not refreshed and its cells land in the dialog).
+    # Fire the list's own change event instead so the parent list re-fetches.
+    list_trigger = TABLE_ROW_TRIGGERS.get(object_type)
+    if object_type == "highlight" and view == "table":
+        list_trigger = "highlightsChanged"
+    if list_trigger:
         response = HttpResponse(modal_html)
-        response["HX-Trigger"] = "highlightsChanged"
+        response["HX-Trigger"] = list_trigger
         return response
 
     # Viewer/card row roots (div/article) are valid orphans — OOB swap directly.

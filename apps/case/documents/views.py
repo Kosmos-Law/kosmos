@@ -6,7 +6,8 @@ from django.core.files.storage import default_storage
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.utils.http import content_disposition_header
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.case.models import Document, Label
 from apps.case.views import get_matter_from_url, set_last_tab
@@ -19,7 +20,9 @@ from apps.management.selection import (
     toggle_id,
 )
 from utils.safe_json import json_for_script
+from utils.toasts import toast_warning
 
+from .access import documents_for_user, target_matter_for_user
 from .filters import FilesFilter
 from .fingerprint import find_duplicates, fingerprint_file
 from .forms import BulkFilesForm, FilesForm
@@ -171,8 +174,11 @@ def documents_sort(request, matter_id, order):
 
     current_order = filter_data.get("order_by", "")
 
+    # A second click on the same column reverses it. The column may itself
+    # ask for descending first ("-importance"), so reversing means flipping
+    # the sign either way.
     if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
+        new_order = order[1:] if order.startswith("-") else f"-{order}"
     else:
         new_order = order
 
@@ -210,16 +216,45 @@ def document_date(request, document_id):
     )
 
 
+def _documents_list_response(request, matter_id):
+    """The Documents tab list, as the row menus' POSTs swap it into #documents."""
+    context = {
+        "app": "matters",
+        "subapp": "documents",
+    } | get_document_data(request, matter_id)
+    return render(request, "case/documents/list.html", context)
+
+
+# A document filed under a proceeding is part of that proceeding's record:
+# Document.save() puts any other category back to Record.
+PROCEEDING_CATEGORIES = ("Record", "Discovery")
+
+
 @login_required
+@require_POST
 def document_category(request, document_id, category):
     """Set document category."""
     document = get_object_or_404(Document, id=document_id)
+
+    if document.proceeding_id and category not in PROCEEDING_CATEGORIES:
+        # Saving would silently turn the choice back into Record. Leave the
+        # document as it is and say why.
+        response = _documents_list_response(request, document.matter_id)
+        return toast_warning(
+            response,
+            "The category was not changed. This document is filed under a "
+            "proceeding, so it can only be Record or Discovery. To change it, "
+            "pick the category in Edit Details, which clears the proceeding.",
+            duration=10000,
+        )
+
     document.category = category
     document.save()
-    return redirect("case:documents-list", matter_id=document.matter_id)
+    return _documents_list_response(request, document.matter_id)
 
 
 @login_required
+@require_POST
 def document_proceeding(request, document_id, proceeding_id):
     """Set document proceeding."""
     from apps.matters.proceedings.models import Proceeding
@@ -229,20 +264,24 @@ def document_proceeding(request, document_id, proceeding_id):
     if proceeding_id == 0:
         document.proceeding = None
     else:
-        proceeding = get_object_or_404(Proceeding, id=proceeding_id)
+        # Only a proceeding of the document's own matter.
+        proceeding = get_object_or_404(
+            Proceeding, id=proceeding_id, matter_id=document.matter_id
+        )
         document.proceeding = proceeding
 
     document.save()
-    return redirect("case:documents-list", matter_id=document.matter_id)
+    return _documents_list_response(request, document.matter_id)
 
 
 @login_required
+@require_POST
 def document_importance(request, document_id, importance):
     """Set document importance."""
     document = get_object_or_404(Document, id=document_id)
     document.importance = importance
     document.save()
-    return redirect("case:documents-list", matter_id=document.matter_id)
+    return _documents_list_response(request, document.matter_id)
 
 
 def _describe_duplicates(duplicates, content_hash, limit=5):
@@ -333,7 +372,7 @@ def documents_add(request, matter_id):
                         document.delete()
                         form.add_error(
                             None,
-                            "FILE_REQUIRED: Upload failed — file did not save to storage.",
+                            "FILE_REQUIRED: Upload failed. The file did not save to storage.",
                         )
                     else:
                         # Queue OCR for the generated PDF
@@ -366,7 +405,11 @@ def documents_add(request, matter_id):
                 content_hash, page_fingerprint = fingerprint_file(
                     uploaded_file, is_pdf=True, size=uploaded_file.size
                 )
-                duplicates = find_duplicates(content_hash, page_fingerprint)
+                # Only matches the user may see: the warning names each
+                # match and its matter.
+                duplicates = documents_for_user(
+                    find_duplicates(content_hash, page_fingerprint), request.user
+                )
                 if duplicates.exists() and not request.POST.get("duplicate_ok"):
                     return render(
                         request,
@@ -399,7 +442,7 @@ def documents_add(request, matter_id):
                     document.delete()
                     form.add_error(
                         None,
-                        "FILE_REQUIRED: Upload failed — file did not save to storage.",
+                        "FILE_REQUIRED: Upload failed. The file did not save to storage.",
                     )
                 else:
                     # Queue OCR for PDF files
@@ -487,7 +530,9 @@ def documents_edit(request, document_id):
             fingerprints = fingerprint_file(
                 uploaded_file, is_pdf=True, size=uploaded_file.size
             )
-            duplicates = find_duplicates(*fingerprints, exclude_pk=document.pk)
+            duplicates = documents_for_user(
+                find_duplicates(*fingerprints, exclude_pk=document.pk), request.user
+            )
             if duplicates.exists() and not request.POST.get("duplicate_ok"):
                 return render(
                     request,
@@ -628,6 +673,7 @@ def bulk_documents_update(request, matter_id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def documents_delete(request, document_id):
     try:
         document = Document.objects.get(id=document_id)
@@ -662,7 +708,11 @@ def download_document(request, document_id):
     if document.category == "Record" and document.date:
         full_file_name = f"{document.date}_{full_file_name}"
 
-    response["Content-Disposition"] = f'attachment; filename="{full_file_name}"'
+    # The name is whatever the user typed: quotes, backslashes and non-ASCII
+    # characters have to be escaped or encoded, and a control character
+    # cannot go in a header at all.
+    full_file_name = "".join(ch for ch in full_file_name if ch.isprintable())
+    response["Content-Disposition"] = content_disposition_header(True, full_file_name)
     response["Content-Length"] = document.file.size
     response["Cache-Control"] = "private, no-store"
     response["X-Content-Type-Options"] = "nosniff"
@@ -917,6 +967,18 @@ def retry_ocr(request, document_id):
     document.ocr_status = "pending"
     document.save(update_fields=["ocr_status"])
 
+    # The "ocr failed" badge retries through HTMX and swaps itself for the
+    # pending badge, which then polls.
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "case/documents/ocr-badge.html",
+            {
+                "document": document,
+                "hide_on_bypass": request.POST.get("hide_on_bypass") == "1",
+            },
+        )
+
     return JsonResponse({"success": True, "status": "pending"})
 
 
@@ -1089,8 +1151,6 @@ def bulk_documents_category(request, matter_id):
 @login_required
 def bulk_documents_matter(request, matter_id):
     """Show modal to select matter for bulk move."""
-    from apps.matters.models import Matter
-
     matter, matters = get_matter_from_url(request, matter_id)
     key = get_session_key("selected_documents", matter_id)
     selected_documents = get_selected_ids(request, key)
@@ -1099,13 +1159,20 @@ def bulk_documents_matter(request, matter_id):
         target_matter_id = request.POST.get("matter")
 
         if target_matter_id:
-            target_matter = get_object_or_404(Matter, id=target_matter_id)
+            # The target arrives in the POST body, which the central matter
+            # check never sees.
+            target_matter = target_matter_for_user(target_matter_id, request.user)
 
             # Move documents to new matter
-            for doc in Document.objects.filter(id__in=selected_documents):
+            for doc in Document.objects.filter(
+                id__in=selected_documents
+            ).select_related("proceeding"):
                 old_file_path = doc.file.name if doc.file else None
 
                 doc.matter = target_matter
+                # A proceeding belongs to the matter the document is leaving.
+                if doc.proceeding and doc.proceeding.matter_id != target_matter.id:
+                    doc.proceeding = None
                 doc.save()
 
                 # Move file to new matter's folder if file exists
