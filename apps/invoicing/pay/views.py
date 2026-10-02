@@ -28,7 +28,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from apps.invoicing.invoices.models import Invoice
+from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
 from apps.invoicing.pay.balance import (
     matter_open_invoices,
     record_matter_balance_payment,
@@ -179,6 +179,16 @@ def pay_page(request, token):
             )
         return _unavailable(request, "This payment link is invalid.", status=404)
 
+    # An invoice that was voided or written off owes nothing, which the page
+    # would otherwise report as "paid in full".
+    if invoice.status in ("VOID", "UNCOLLECTIBLE"):
+        return _unavailable(
+            request,
+            "This invoice is no longer open for payment. "
+            "Please contact us if you have a question about it.",
+            status=410,
+        )
+
     try:
         processor = get_processor()
         config = processor.client_config(invoice)
@@ -259,6 +269,13 @@ def pay_charge(request, token):
             # (Confido) client_config() mints a new payment session, so calling
             # it here would orphan one. The client already holds the session it
             # was rendered with (passed back as `payment_token`).
+            # A payment is recorded against the invoice's matter. Without
+            # one the charge would succeed and leave no record: refuse first.
+            if not locked.matter_id:
+                logger.error("Charge refused, invoice %s has no matter", locked.id)
+                return JsonResponse(
+                    {"success": False, "error": NOT_AVAILABLE}, status=409
+                )
             amount_cents = _to_cents(locked.amount_remaining)
             reference = f"Invoice {locked.id}"
             if amount_cents <= 0:
@@ -379,6 +396,10 @@ def balance_invoice_pdf(request, token, invoice_id):
     if pay_request.is_trust or not pay_request.matter:
         raise Http404
     invoice = get_object_or_404(Invoice, pk=invoice_id, matter=pay_request.matter)
+    # The link covers the invoices the client has been sent. A draft or an
+    # approved invoice has not gone out, and its number is easy to guess.
+    if invoice.status in UNSENT_STATUSES:
+        raise Http404
     # A voided invoice's document is revoked here too (see pay_invoice_pdf).
     if invoice.status == "VOID":
         return _unavailable(request, "This invoice is no longer available.", status=410)
