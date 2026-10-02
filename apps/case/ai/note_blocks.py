@@ -128,7 +128,7 @@ def _editable_note(note_id, matter):
     return note
 
 
-def _apply_edit(match, matter):
+def _apply_edit(match, matter, requesting_user):
     try:
         entry = json.loads(match.group(1).strip())
         if not isinstance(entry, dict):
@@ -153,6 +153,12 @@ def _apply_edit(match, matter):
     else:
         note.content = (note.content.rstrip() + "\n\n" + content).strip()
         verb = "Appended to"
+    # This runs on the chat's worker thread, where no request (and so no
+    # current user) is set: without these the edit would keep the previous
+    # editor's name and its history row would have no user at all.
+    if requesting_user is not None:
+        note.updated_by = requesting_user
+        note._history_user = requesting_user
     note.save()
 
     scope = "library note" if note.matter_id is None else "note"
@@ -173,8 +179,8 @@ FAKE_CONFIRMATION_RE = re.compile(
 )
 
 FAKE_CONFIRMATION_NOTICE = (
-    "*(The assistant described a note write without performing one — "
-    "no note was changed. Ask again to retry.)*"
+    "*(The assistant described a note write without performing one. "
+    "No note was changed. Ask again to retry.)*"
 )
 
 
@@ -203,4 +209,6 @@ def apply_note_blocks(response_text, matter, requesting_user):
     response_text = CREATE_NOTE_RE.sub(
         lambda m: _apply_create(m, matter, requesting_user), response_text
     )
-    return EDIT_NOTE_RE.sub(lambda m: _apply_edit(m, matter), response_text)
+    return EDIT_NOTE_RE.sub(
+        lambda m: _apply_edit(m, matter, requesting_user), response_text
+    )

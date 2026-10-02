@@ -346,7 +346,8 @@
       const titleInput = document.getElementById('conversationTitleInput');
       const title = titleInput ? titleInput.value : '';
       const llm = '{{ conversation.llm }}';
-      const url = '{% url "case:ai-prompt-editor" matter.id %}?conversation_id=' + convId + '&llm=' + llm + '&title=' + encodeURIComponent(title);
+      const kind = '{{ conversation.kind }}';
+      const url = '{% url "case:ai-prompt-editor" matter.id %}?conversation_id=' + convId + '&llm=' + llm + '&kind=' + kind + '&title=' + encodeURIComponent(title);
       // Stash text for the modal to pick up (avoids URL length limits)
       if (text) {
         window._promptEditorInitialText = text;

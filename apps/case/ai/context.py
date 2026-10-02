@@ -28,7 +28,7 @@ from enum import Enum
 from pathlib import Path
 
 from django.core.cache import cache
-from django.db.models import Count, Max, Q
+from django.db.models import Count, F, Max, Q
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
@@ -1144,8 +1144,14 @@ def format_proceedings(matter) -> str:
 
 def format_tasks(matter) -> str:
     """Format tasks, pending first."""
+    # Pending tasks have no completion date, and PostgreSQL sorts NULLs last
+    # in ascending order: say so explicitly, or the 20-row cut is filled with
+    # finished work. Within each group the most important come first (7 is
+    # the top of the scale), then the soonest due.
     tasks = Task.objects.filter(matter=matter).order_by(
-        "date_completed", "importance", "date_due"
+        F("date_completed").desc(nulls_first=True),
+        "-importance",
+        F("date_due").asc(nulls_last=True),
     )[:20]
 
     if not tasks:

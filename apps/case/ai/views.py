@@ -633,6 +633,15 @@ def _statusbar_html(conversation, live, ctx=None):
     return render_to_string("case/ai/chat-statusbar.html", context)
 
 
+def _error_reply(message):
+    """The chat message shown for a failed run. Some workers already lead
+    their message with "Error:"; it is said once."""
+    detail = str(message or "").strip()
+    if detail.lower().startswith("error:"):
+        detail = detail[len("error:") :].strip()
+    return f"Error: Unable to get response. {detail}".strip()
+
+
 def _terminal(response):
     """Mark a status-poll response as the poller's last.
 
@@ -778,7 +787,7 @@ def ai_status(request, conv_id):
         error_message = Message.objects.create(
             conversation=conversation,
             role="assistant",
-            content=f"Error: Unable to get response. {status_data['message']}",
+            content=_error_reply(status_data["message"]),
             activity_log=status_data.get("activity_log", []),
             # An agent run that failed keeps its partial trail inspectable.
             agent_run=status_data.get("agent_run", {}),
@@ -1286,6 +1295,9 @@ def prompt_editor_modal(request, matter_id):
             "matter": matter,
             "conversation_id": conversation_id,
             "llm": llm,
+            # The first message sent from this form creates the conversation,
+            # so it has to carry the mode the window was opened in.
+            "kind": _kind_param(request.GET),
             "title": title,
         },
     )
