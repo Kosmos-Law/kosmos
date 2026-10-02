@@ -95,7 +95,11 @@
                        href="#"
                        hx-post="{% url 'case:documents-bulk-matter' matter.id %}"
                        hx-vals='{"matter": "{{ m.id }}"}'
-                       hx-swap="none"><i class="icon-briefcase-business"></i> {{ m.name }}</a>
+                       hx-swap="none"
+                       hx-confirm="Move the selected documents to {{ m.name }}? A document filed under a proceeding of this matter loses that proceeding, and this matter's labels come off."
+                       data-confirm-title="Move to Matter"
+                       data-confirm-text="Move"
+                       data-confirm-style="success"><i class="icon-briefcase-business"></i> {{ m.name }}</a>
                   </li>
                 {% endif %}
               {% endfor %}

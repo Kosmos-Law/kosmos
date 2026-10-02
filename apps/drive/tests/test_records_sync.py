@@ -261,3 +261,41 @@ def test_adoption_skipped_when_ambiguous(
     assert stats["records_adopted"] == 0
     assert stats["records_synced"] == 1
     assert Document.objects.count() == 3
+
+
+def test_a_move_to_another_matters_folder_leaves_the_old_matters_labels(
+    matter, proceeding, record_mapping, fake_drive
+):
+    """Moving the file in Drive is the only way to move a Drive document to
+    another matter. The matter it leaves keeps its own labels; global labels
+    go with the document."""
+    from apps.case.models import Label
+    from apps.drive.models import DriveFolderMapping
+    from apps.matters.models import Matter
+
+    meta = fake_drive.add_file("f1", "Complaint.pdf", "rf1")
+    google.sync(full=True)
+    doc = Document.objects.get()
+    own = Label.objects.create(matter=matter, name="Hot", color="red")
+    shared = Label.objects.create(matter=None, name="Privileged", color="gray")
+    doc.labels.add(own, shared)
+
+    other = Matter.objects.create(
+        name="Doe v Roe",
+        status="Open",
+        drive_folder="Doe v. Roe",
+        drive_folder_id="mf2",
+    )
+    fake_drive.add_folder("mf2", "Doe v. Roe", parent="root1")
+    fake_drive.add_folder("rf2", "Exhibits", parent="mf2")
+    DriveFolderMapping.objects.create(
+        matter=other, folder_id="rf2", folder_path="Exhibits", category="Evidence"
+    )
+    meta["parents"] = ["rf2"]
+    fake_drive.change_feed = [fake_drive.change_for("f1")]
+    google.sync()
+
+    doc.refresh_from_db()
+    assert doc.matter == other
+    assert doc.proceeding is None
+    assert list(doc.labels.all()) == [shared]

@@ -206,6 +206,13 @@ def ingest_pdf(service, file_meta, parts, mapping, dry_run, stats):
             if drifted:
                 fields.update(mappings.apply_mapping_fields(mapping))
             Document.objects.filter(pk=existing.pk).update(**fields)
+            if existing.matter_id != matter.id:
+                # Moved in Drive to another matter's folder. The matter it
+                # left keeps its own labels, as on a move made in Kosmos;
+                # global labels go with the document.
+                existing.labels.remove(
+                    *existing.labels.exclude(matter=None).exclude(matter_id=matter.id)
+                )
         stats["records_unchanged"] += 1
         return
 

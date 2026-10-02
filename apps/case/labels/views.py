@@ -326,6 +326,7 @@ def add_label_to(request, object_type, object_id):
 
 
 @login_required
+@require_POST
 def remove_label_from(request, object_type, object_id):
     """Remove a label from an object."""
     view = request.POST.get("view")

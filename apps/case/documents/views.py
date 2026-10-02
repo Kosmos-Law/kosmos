@@ -355,7 +355,7 @@ def documents_add(request, matter_id):
 
                     # Create document with auto-populated fields
                     document = form.save(commit=False)
-                    document.matter = matter
+                    _file_under_chosen_matter(document, form, matter)
                     document.created_by = request.user
 
                     # Auto-set date from email
@@ -367,6 +367,7 @@ def documents_add(request, matter_id):
 
                     document.save()  # Gets PK
                     form.save_m2m()
+                    _drop_other_matters_labels(document)
 
                     # Read PDF content and save as file
                     with open(pdf_file.name, "rb") as f:
@@ -439,10 +440,11 @@ def documents_add(request, matter_id):
 
                 # Two-phase save: first save without file to get PK
                 document = form.save(commit=False)
-                document.matter = matter
+                _file_under_chosen_matter(document, form, matter)
                 document.created_by = request.user
                 document.save()  # Gets PK
                 form.save_m2m()
+                _drop_other_matters_labels(document)
 
                 # Now save file with proper path using document.pk
                 document.file = uploaded_file
@@ -659,6 +661,17 @@ def _selected_on_matter(selected_ids, matter_id):
     ignored rather than acted on.
     """
     return Document.objects.filter(id__in=selected_ids, matter_id=matter_id)
+
+
+def _file_under_chosen_matter(document, form, matter):
+    """A new document goes on the matter chosen in the form's Matter field
+    (it was always put on the matter the form was opened from, whatever the
+    field said). The form's Proceeding list is that opening matter's, so a
+    proceeding picked there does not follow the document to another matter.
+    """
+    document.matter = form.cleaned_data.get("matter") or matter
+    if document.proceeding and document.proceeding.matter_id != document.matter_id:
+        document.proceeding = None
 
 
 def _drop_other_matters_labels(document):
@@ -1149,8 +1162,10 @@ def bulk_documents_importance(request, matter_id):
     if not selected_documents:
         return HttpResponse(status=400, content="No documents selected.")
 
-    importance = request.POST.get("importance")
+    importance = request.POST.get("importance", "")
     if importance:
+        if not importance.isdecimal() or not 1 <= int(importance) <= 7:
+            return HttpResponse(status=400, content="Invalid importance.")
         _selected_on_matter(selected_documents, matter_id).update(
             importance=int(importance)
         )
@@ -1169,9 +1184,32 @@ def bulk_documents_category(request, matter_id):
     if request.method == "POST":
         category = request.POST.get("category")
         if category:
-            _selected_on_matter(selected_documents, matter_id).update(category=category)
+            if category not in dict(Document.CATEGORY_CHOICES):
+                return HttpResponse(status=400, content="Invalid category.")
+            documents = _selected_on_matter(selected_documents, matter_id)
+            # A document filed under a proceeding can only be Record or
+            # Discovery (its next save would turn anything else back into
+            # Record), so it is left as it is, as the row's own menu does.
+            kept = 0
+            if category not in PROCEEDING_CATEGORIES:
+                kept = documents.filter(proceeding__isnull=False).count()
+                documents = documents.filter(proceeding__isnull=True)
+            documents.update(category=category)
             clear_selected_ids(request, key)
-            return selection_response("documentsChanged")
+            response = selection_response("documentsChanged")
+            if kept:
+                toast_warning(
+                    response,
+                    (
+                        "1 document was not changed. It is"
+                        if kept == 1
+                        else f"{kept} documents were not changed. They are"
+                    )
+                    + " filed under a proceeding, so the category can only be "
+                    "Record or Discovery.",
+                    duration=10000,
+                )
+            return response
 
         return HttpResponse(status=400, content="No category selected.")
 
