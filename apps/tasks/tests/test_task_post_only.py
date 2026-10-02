@@ -62,6 +62,16 @@ def test_note_delete_is_post_only(client, task, user):
     assert not TaskNote.objects.filter(pk=note.id).exists()
 
 
+def test_quick_add_is_post_only(client):
+    url = reverse("tasks:add-quick")
+    assert client.get(url).status_code == 405
+    assert client.get(url, {"description": "Planted by a link"}).status_code == 405
+    assert not Task.objects.exists()
+    # A post with no description field is an empty line, not a server error.
+    assert client.post(url).status_code == 204
+    assert not Task.objects.exists()
+
+
 def test_clear_completed_route_is_gone(client, task):
     """Nothing on any page called it, and a GET deleted every completed task
     in the current filter."""

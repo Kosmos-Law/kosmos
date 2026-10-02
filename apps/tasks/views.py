@@ -33,6 +33,7 @@ from apps.tasks.access import (
 from apps.tasks.constants import (
     ACTIVE_STATUSES,
     BOARD_PAGE_SIZE,
+    CHECKLIST_INCOMPLETE_MESSAGE,
     STATUS_BY_SLUG,
     STATUS_COMPLETE,
     STATUS_PENDING,
@@ -89,10 +90,32 @@ def _selected_tasks(request, selected_ids):
     return tasks_for_user(Task.objects.filter(id__in=selected_ids), request.user)
 
 
+INVALID_REQUEST = {"ok": False, "message": "Invalid request."}
+
+
+def _as_id(value):
+    """A posted id as an int, or None when it is not a whole number."""
+    if isinstance(value, (bool, float)):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _json_object(request):
+    """The request body as a JSON object, or None when it is anything else."""
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def _filter_matter(request, filter_data):
     """The matter the tasks filter is narrowed to, when the user may see it."""
     matter_id = filter_data.get("matter")
-    if matter_id in (None, "") or not str(matter_id).isdigit():
+    if matter_id in (None, "") or not str(matter_id).isdecimal():
         return None
     return filter_matters_for_user(
         Matter.objects.filter(pk=matter_id), request.user
@@ -173,33 +196,34 @@ def tasks_board_move(request):
     Returns {ok: bool, message?}; the client reverts the board (re-render) on
     a falsy ok, e.g. when an incomplete checklist blocks Completion.
     """
-    try:
-        payload = json.loads(request.body)
-    except (ValueError, TypeError):
-        return JsonResponse({"ok": False, "message": "Invalid request."}, status=400)
+    payload = _json_object(request)
+    if payload is None:
+        return JsonResponse(INVALID_REQUEST, status=400)
 
-    task = task_for_user(payload.get("task_id"), request.user)
+    # Every id is read before anything is saved: one that is not a number
+    # refuses the whole move rather than failing halfway through it.
+    task_id = _as_id(payload.get("task_id"))
+    ordered_ids = payload.get("ordered_ids", [])
+    if not isinstance(ordered_ids, list):
+        return JsonResponse(INVALID_REQUEST, status=400)
+    ordered_ids = [_as_id(tid) for tid in ordered_ids]
+    if task_id is None or None in ordered_ids:
+        return JsonResponse(INVALID_REQUEST, status=400)
+
+    task = task_for_user(task_id, request.user)
     status = STATUS_BY_SLUG.get(payload.get("status_slug"))
     if status is None:
         return JsonResponse({"ok": False, "message": "Unknown status."}, status=400)
 
     if status == STATUS_COMPLETE and not can_complete_task(task):
-        return JsonResponse(
-            {
-                "ok": False,
-                "message": "Please complete all checklist items before "
-                "marking this task as done.",
-            }
-        )
+        return JsonResponse({"ok": False, "message": CHECKLIST_INCOMPLETE_MESSAGE})
 
     if task.status != status:
         task.status = status
         task.save()
 
     # Persist the destination column's order as sequential custom_order values.
-    id_to_order = {
-        int(tid): index for index, tid in enumerate(payload.get("ordered_ids", []))
-    }
+    id_to_order = {tid: index for index, tid in enumerate(ordered_ids)}
     for t in _selected_tasks(request, id_to_order.keys()):
         new_order = id_to_order[t.id]
         if t.custom_order != new_order:
@@ -219,10 +243,9 @@ def tasks_board_bulk_move(request):
     completed. Returns {ok, skipped, message}; the client refreshes the board and
     shows a warning toast when tasks were skipped (a fetch can't read HX-Toast).
     """
-    try:
-        payload = json.loads(request.body)
-    except (ValueError, TypeError):
-        return JsonResponse({"ok": False, "message": "Invalid request."}, status=400)
+    payload = _json_object(request)
+    if payload is None:
+        return JsonResponse(INVALID_REQUEST, status=400)
 
     status = STATUS_BY_SLUG.get(payload.get("status_slug"))
     if status is None:
@@ -354,9 +377,12 @@ def tasks_add(request):
 
 
 @login_required
+@require_POST
 def tasks_add_quick(request):
+    typed = request.POST.get("description", "")
+
     # prevent creation of tasks without a description
-    if not request.POST["description"]:
+    if not typed:
         return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
     filter_data = request.session.get("tasks_filter", {})
@@ -415,9 +441,7 @@ def tasks_add_quick(request):
 
     # Legacy path: prefix matcher (also the fallback when the AI is down)
     last_matter_id = request.session.get("last_quick_task_matter")
-    match = process_quick_task_description(
-        request.POST["description"], last_matter_id, request.user
-    )
+    match = process_quick_task_description(typed, last_matter_id, request.user)
     description = match.description
 
     # Prevent creation of tasks with empty description after processing
@@ -496,7 +520,7 @@ def _quick_add_ai_entry(request):
         )
     try:
         entry = interpret_quick_add(
-            request.POST["description"],
+            request.POST.get("description", ""),
             request.user,
             recent_matter=recent_matter,
             model=firm.quick_task_ai_model,
@@ -527,10 +551,7 @@ def tasks_edit(request, id):
         if form.is_valid():
             task = form.save(commit=False)
             if task.status == STATUS_COMPLETE and not can_complete_task(task):
-                form.add_error(
-                    "status",
-                    "Please complete all checklist items before marking this task as done.",
-                )
+                form.add_error("status", CHECKLIST_INCOMPLETE_MESSAGE)
             else:
                 task.save()
                 request.session["edited_task_ids"] = [task.id]
@@ -772,14 +793,7 @@ def tasks_status(request, id):
         task.status = STATUS_PENDING
     else:
         if not can_complete_task(task):
-            response = HttpResponse(status=204)
-            response["HX-Toast"] = json.dumps(
-                {
-                    "type": "warning",
-                    "message": "Please complete all checklist items before marking this task as done.",
-                }
-            )
-            return response
+            return toast_warning(HttpResponse(status=204), CHECKLIST_INCOMPLETE_MESSAGE)
         task.status = STATUS_COMPLETE
     task.save()
     return _render_tasks(request)
@@ -795,14 +809,7 @@ def tasks_set_status(request, task_id, status):
     if status is None:
         raise Http404("Unknown status")
     if status == STATUS_COMPLETE and not can_complete_task(task):
-        response = HttpResponse(status=204)
-        response["HX-Toast"] = json.dumps(
-            {
-                "type": "items incomplete",
-                "message": "Please complete all checklist items before marking this task as done.",
-            }
-        )
-        return response
+        return toast_warning(HttpResponse(status=204), CHECKLIST_INCOMPLETE_MESSAGE)
     task.status = status
     task.save()
     return _render_tasks(request)

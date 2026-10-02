@@ -73,6 +73,14 @@ def status_is_custom(value):
     return set(coerce_status(value) or ACTIVE_STATUSES) != set(ACTIVE_STATUSES)
 
 
+# A task description is at least this long, in the forms and in quick add.
+DESCRIPTION_MIN_LENGTH = 4
+
+CHECKLIST_INCOMPLETE_MESSAGE = (
+    "Please complete all checklist items before marking this task as done."
+)
+
+
 def checklist_skip_message(skipped):
     """What a bulk change to Complete says about the tasks it left alone."""
     return f"{skipped} task(s) skipped. Complete their checklists first."

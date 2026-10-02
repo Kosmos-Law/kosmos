@@ -4,7 +4,12 @@ from django.core.exceptions import ValidationError
 from apps.accounts.models import CustomUser
 from apps.matters.models import Matter
 from apps.tasks.access import matters_for_task_form
-from apps.tasks.constants import BULK_STATUS_CHOICES, FORM_STATUS_CHOICES, NO_CHANGE
+from apps.tasks.constants import (
+    BULK_STATUS_CHOICES,
+    DESCRIPTION_MIN_LENGTH,
+    FORM_STATUS_CHOICES,
+    NO_CHANGE,
+)
 from apps.tasks.models import Task, TaskNote
 from config.settings import CustomFormRendererCompact
 
@@ -77,10 +82,12 @@ class TaskForm(forms.ModelForm):
     def clean_description(self):
         # An empty description arrives as None (the column is nullable).
         description = self.cleaned_data.get("description") or ""
-        if len(description) < 4:
-            raise ValidationError("Description must be 4 or more  characters.")
+        if len(description) < DESCRIPTION_MIN_LENGTH:
+            raise ValidationError(
+                f"Description must be {DESCRIPTION_MIN_LENGTH} or more characters."
+            )
         if len(description) > 200:
-            raise ValidationError("Description is limited to 200 character.")
+            raise ValidationError("Description is limited to 200 characters.")
         return description
 
     def clean_matter(self):

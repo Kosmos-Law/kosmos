@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone as tz
 from django.views.decorators.http import require_http_methods, require_POST
@@ -80,6 +80,20 @@ def group_items_by_section(items):
 # ---------------------------------------------------------------------------
 # Attaching a template to a task
 # ---------------------------------------------------------------------------
+
+
+def posted_task_id(request):
+    """The task a template form was opened from: (task_id, refusal).
+
+    The id travels in the query string or the body. None when there is no
+    task; a 400 as the refusal when what arrived is not a task id.
+    """
+    task_id = request.GET.get("task_id") or request.POST.get("task_id")
+    if not task_id:
+        return None, None
+    if not task_id.isdecimal():
+        return None, HttpResponseBadRequest("Invalid task.")
+    return int(task_id), None
 
 
 def attach_template_to_task(task, template):
@@ -307,7 +321,9 @@ def checklists_filter_keyword(request):
 
 @login_required
 def add_checklist_template(request):
-    task_id = request.GET.get("task_id") or request.POST.get("task_id")
+    task_id, refusal = posted_task_id(request)
+    if refusal:
+        return refusal
     matter_id = request.GET.get("matter_id") or request.POST.get("matter_id")
 
     if request.method == "POST":
@@ -339,7 +355,9 @@ def add_checklist_template(request):
 @login_required
 def edit_checklist_template(request, template_id):
     template = get_object_or_404(ChecklistTemplate, pk=template_id)
-    task_id = request.GET.get("task_id") or request.POST.get("task_id")
+    task_id, refusal = posted_task_id(request)
+    if refusal:
+        return refusal
     matter_id = request.GET.get("matter_id") or request.POST.get("matter_id")
 
     if request.method == "POST":
@@ -448,6 +466,7 @@ def add_template_item(request, template_id):
 
 
 @login_required
+@require_POST
 def delete_template_item(request, item_id):
     item = get_object_or_404(ChecklistTemplateItem, pk=item_id)
     template = item.template
@@ -655,6 +674,7 @@ def checklist_folder_delete_confirm(request, folder_id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def checklist_folder_delete(request, folder_id):
     folder = get_object_or_404(ChecklistFolder, pk=folder_id)
     delete_templates = request.GET.get("delete_templates")

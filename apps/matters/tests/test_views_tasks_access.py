@@ -124,12 +124,20 @@ def test_get_changes_nothing(client, matter, task, user):
         reverse("matters:tasks-set-status", args=[matter.id, task.id, "on-hold"]),
         reverse("matters:tasks-importance", args=[matter.id, task.id, 7]),
         reverse("matters:tasks-user", args=[matter.id, task.id, user.id]),
+        reverse("matters:tasks-add-quick", args=[matter.id]),
     ]
     for url in urls:
         assert client.get(url).status_code == 405, url
     task.refresh_from_db()
     assert task.status == "Pending"
     assert task.importance == 4
+    assert Task.objects.count() == 1
+
+
+def test_quick_add_post_without_a_description_is_not_an_error(client, matter):
+    url = reverse("matters:tasks-add-quick", args=[matter.id])
+    assert client.post(url).status_code == 204
+    assert not Task.objects.exists()
 
 
 def test_post_still_changes_the_task(client, matter, task):

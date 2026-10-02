@@ -125,7 +125,7 @@ def test_matter_tab_refreshes_presets(client, user, matter):
     session = client.session
     filter_data = stale_today_filter(user)
     filter_data["matter"] = matter.id
-    session["matter_tasks_filter"] = filter_data
+    session[f"matter_tasks_filter_{matter.id}"] = filter_data
     session.save()
 
     response = client.get(reverse("matters:tasks-list", args=[matter.id]))

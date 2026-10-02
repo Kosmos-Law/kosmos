@@ -5,7 +5,7 @@ guard."""
 import json
 
 import pytest
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from apps.checklists.models import Checklist, ChecklistItem
 from apps.tasks.models import Task
@@ -54,6 +54,17 @@ def test_quick_add_refuses_a_line_over_the_limit(client, matter):
     assert not Task.objects.exists()
 
 
+def test_quick_add_refuses_a_line_under_the_minimum(client, matter):
+    response = client.post(
+        reverse("matters:tasks-add-quick", args=[matter.id]), {"description": "abc"}
+    )
+    assert response.status_code == 422
+    toast = json.loads(response.headers["HX-Toast"])
+    assert toast["type"] == "error"
+    assert "4 or more characters" in toast["message"]
+    assert not Task.objects.exists()
+
+
 def test_quick_add_at_the_limit_is_saved(client, matter):
     response = client.post(
         reverse("matters:tasks-add-quick", args=[matter.id]),
@@ -61,6 +72,36 @@ def test_quick_add_at_the_limit_is_saved(client, matter):
     )
     assert response.status_code == 204
     assert Task.objects.get().matter == matter
+
+
+# -----------------------------------------------------
+# completing a task whose checklist is unfinished
+# -----------------------------------------------------
+@pytest.mark.parametrize(
+    "name,args",
+    [("matters:tasks-status", []), ("matters:tasks-set-status", ["complete"])],
+)
+def test_checklist_refusal_is_a_warning_toast(client, matter, task, name, args):
+    checklist = Checklist.objects.create(task=task, name="Filing")
+    ChecklistItem.objects.create(checklist=checklist, description="Proofread")
+    response = client.post(reverse(name, args=[matter.id, task.id, *args]))
+    assert response.status_code == 204
+    toast = json.loads(response.headers["HX-Toast"])
+    # "warning" is one of the four types the toast script knows.
+    assert toast["type"] == "warning"
+    assert "complete all checklist items" in toast["message"]
+    task.refresh_from_db()
+    assert task.status == "Pending"
+
+
+# -----------------------------------------------------
+# the focus control that set a field tasks do not have
+# -----------------------------------------------------
+def test_focus_route_is_gone(client, matter, task):
+    with pytest.raises(NoReverseMatch):
+        reverse("matters:tasks-focus", args=[matter.id, task.id, "Current"])
+    url = f"/matters/{matter.id}/tasks/{task.id}/focus/Current"
+    assert client.post(url).status_code == 404
 
 
 # -----------------------------------------------------
@@ -74,13 +115,14 @@ def test_restore_defaults_resets_this_tabs_filter_only(client, matter):
 
     url = reverse("matters:tasks-filter", args=[matter.id])
     client.post(url, {"status": ["Complete"], "importance": "7"})
-    assert client.session["matter_tasks_filter"]["importance"] == "7"
+    key = f"matter_tasks_filter_{matter.id}"
+    assert client.session[key]["importance"] == "7"
 
     response = client.post(url, {"restore_defaults": "1"})
     # Stays on the tab: the list is refreshed in place, nothing redirects.
     assert response.status_code == 204
     assert response.headers["HX-Trigger"] == "tasksListChanged"
-    assert client.session["matter_tasks_filter"] == {"matter": matter.id}
+    assert client.session[key] == {"matter": matter.id}
     assert client.session["tasks_filter"] == firm_filter
 
     listing = client.get(reverse("matters:tasks-list", args=[matter.id]))

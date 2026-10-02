@@ -401,11 +401,6 @@ urlpatterns = [
         name="tasks-user",
     ),
     path(
-        "matters/<int:id>/tasks/<int:task_id>/focus/<str:focus>",
-        tasks.tasks_focus,
-        name="tasks-focus",
-    ),
-    path(
         "matters/<int:id>/tasks/<int:task_id>/date", tasks.tasks_date, name="tasks-date"
     ),
     path(
