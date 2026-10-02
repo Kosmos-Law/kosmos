@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
+from apps.accounts.access import filter_matters_for_user
 from apps.matters.models import Matter
 
 from .models import Note, NoteFolder
@@ -55,3 +56,13 @@ def visible_notes_q(user, prefix=""):
     return Q(**{f"{prefix}matter__isnull": True}) | Q(
         **{f"{prefix}matter__in": user.assigned_matters.all()}
     )
+
+
+def matters_for_note_form(user, include_id=None):
+    """The matters a note may be filed under: the user's open matters, plus
+    ``include_id`` whatever its status (the matter the note is already on,
+    so a form opened on a closed matter still shows where the note is)."""
+    wanted = Q(status="Open")
+    if include_id:
+        wanted |= Q(pk=include_id)
+    return filter_matters_for_user(Matter.objects.filter(wanted), user).order_by("name")

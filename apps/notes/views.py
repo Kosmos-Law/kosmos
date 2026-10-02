@@ -30,6 +30,7 @@ from apps.matters.models import Matter
 from .access import (
     folder_for_user,
     matter_for_user,
+    matters_for_note_form,
     note_for_user,
     visible_notes_q,
 )
@@ -1288,9 +1289,9 @@ def reference_citations(request, note_id):
 def note_properties(request, note_id):
     """Properties modal for a matter note (matter re-assignment)."""
     note = _get_note(request, note_id, matter__isnull=False)
-    matters = filter_matters_for_user(
-        Matter.objects.filter(status="Open").order_by("name"), request.user
-    )
+    # The note's own matter stays in the list when it is not Open, so the
+    # menu opens on where the note is rather than on the first open matter
+    matters = matters_for_note_form(request.user, include_id=note.matter_id)
     context = {"note": note, "matters": matters}
     return render(request, "notes/properties-modal.html", context)
 
@@ -1301,11 +1302,14 @@ def note_reassign_matter(request, note_id):
     """Move a matter note to another matter; folder resets to that matter's
     root (a folder always belongs to exactly one matter's tree)."""
     note = _get_note(request, note_id, matter__isnull=False)
-    matter = get_object_or_404(
-        filter_matters_for_user(Matter.objects.filter(status="Open"), request.user),
-        pk=request.POST.get("matter"),
-    )
-    if matter.id != note.matter_id:
+    target_id = request.POST.get("matter", "")
+    # Move pressed without choosing another matter: nothing to do (and the
+    # note's own matter may not be Open, so it is not looked up below)
+    if target_id != str(note.matter_id):
+        matter = get_object_or_404(
+            filter_matters_for_user(Matter.objects.filter(status="Open"), request.user),
+            pk=target_id if target_id.isdigit() else None,
+        )
         note.matter = matter
         note.folder = None
         update_fields = ["matter", "folder"]
