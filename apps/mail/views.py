@@ -65,8 +65,12 @@ def get_emails_data(request, matter, matter_id):
         "email_count": emails.count(),
         "current_order": current_order,
         "keyword": keyword,
-        "filters_active": bool(
-            {k: v for k, v in filter_data.items() if k != "order_by" and v}
+        # Only the filter's own fields count: a stray key in the stored
+        # dict is not a filter.
+        "filters_active": any(
+            filter_data.get(name)
+            for name in EmailFilter.base_filters
+            if name != "order_by"
         ),
         "gmail_linked": mail_google.check_credentials(),
         "own_missing_label": own_missing_label,
@@ -109,11 +113,15 @@ def emails_filter(request, matter_id):
     filter_session_key = get_session_key("emails_filter", matter_id)
 
     if request.method == "POST":
-        filter_data = {
-            key: value
-            for key, value in request.POST.items()
-            if key != "csrfmiddlewaretoken"
-        }
+        if request.POST.get("reset"):
+            # Clear Filters: store no filter, not the button's own value.
+            filter_data = {}
+        else:
+            filter_data = {
+                key: value
+                for key, value in request.POST.items()
+                if key != "csrfmiddlewaretoken"
+            }
         request.session[filter_session_key] = filter_data
         request.session.modified = True
         return HttpResponse(status=204, headers={"HX-Trigger": "emailsChanged"})
@@ -167,10 +175,63 @@ def emails_sort(request, matter_id, order):
 
 
 @login_required
+def emails_list_items(request, matter_id):
+    """The list column alone, for a refresh that keeps the open email.
+
+    Promoting an email or changing its importance changes its row; reloading
+    the whole tab would close the reading pane the user is looking at.
+    """
+    matter, _ = get_matter_from_url(request, matter_id)
+    context = {"matter": matter} | get_emails_data(request, matter, matter_id)
+    return render(request, "case/emails/list-items.html", context)
+
+
+def _own_gmail_url(email, user):
+    """A Gmail link into the user's own mailbox for this message, or None.
+
+    A message id is local to one mailbox, so the link only opens for the
+    person that mailbox belongs to. The row shown may be a colleague's copy
+    (the list collapses duplicates to the first-synced one): prefer the
+    user's own copy of the same message when there is one.
+    """
+    if email.account_id is None:
+        # Rows from before per-user mailboxes belong to the first mailbox.
+        first = GmailAccount.objects.order_by("id").first()
+        return email.gmail_url if first and first.user_id == user.id else None
+    if email.account.user_id == user.id:
+        return email.gmail_url
+    if not email.message_id:
+        return None
+    own = (
+        Email.objects.filter(
+            matter_id=email.matter_id,
+            message_id=email.message_id,
+            account__user=user,
+        )
+        .select_related("account")
+        .first()
+    )
+    return own.gmail_url if own else None
+
+
+def _preview_response(request, email, changed=False):
+    """The reading pane for one email. ``changed`` also refreshes the list
+    column, whose row shows the importance and the promoted mark."""
+    response = render(
+        request,
+        "case/emails/preview.html",
+        {"email": email, "gmail_url": _own_gmail_url(email, request.user)},
+    )
+    if changed:
+        response["HX-Trigger"] = "emailItemsChanged"
+    return response
+
+
+@login_required
 def email_preview(request, email_id):
     """Preview-pane partial for one email."""
     email = get_object_or_404(Email, pk=email_id)
-    return render(request, "case/emails/preview.html", {"email": email})
+    return _preview_response(request, email)
 
 
 @login_required
@@ -189,7 +250,7 @@ def email_promote(request, email_id):
             "Try again, or check the logs.</p>"
         )
     email.refresh_from_db()
-    return render(request, "case/emails/preview.html", {"email": email})
+    return _preview_response(request, email, changed=True)
 
 
 @login_required
@@ -200,7 +261,7 @@ def email_importance(request, email_id, value):
     if 1 <= value <= 7:
         email.importance = value
         email.save(update_fields=["importance"])
-    return render(request, "case/emails/preview.html", {"email": email})
+    return _preview_response(request, email, changed=True)
 
 
 # ---------------------------------------------------------------------------

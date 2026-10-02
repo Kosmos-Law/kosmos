@@ -35,31 +35,15 @@
   {% endif %}
 {% else %}
   <div class="emails-split" x-data="{ sel: null }">
-    <div class="email-list">
-      {% for email in emails %}
-        <div class="email-list-item importance-{{ email.importance }}"
-             :class="{ 'active': sel === {{ email.id }} }"
-             @click="sel = {{ email.id }}"
-             hx-get="{% url 'case:email-preview' email.id %}"
-             hx-target="#email-preview">
-          <div class="email-list-line1">
-            <span class="email-list-sender">
-              {% if email.is_sent %}
-                To: {{ email.recipients_display|default:"(undisclosed)" }}
-              {% else %}
-                {{ email.sender_display }}
-              {% endif %}
-            </span>
-            <span class="email-list-meta">
-              {% if email.document %}<i class="icon-file-check" title="Promoted to Document"></i>{% endif %}
-              {% if email.attachment_files.all %}<i class="icon-paperclip"></i>{% endif %}
-              <span class="email-list-date">{{ email.date|date:"M j, Y" }}</span>
-            </span>
-          </div>
-          <div class="email-list-line2">{{ email.subject|default:"(no subject)" }}</div>
-        </div>
-      {% endfor %}
-    </div>
+    {% comment %}
+      emailItemsChanged (sent after Promote or an importance change)
+      re-fetches this column only, so the email open in the reading pane
+      stays open.
+    {% endcomment %}
+    <div class="email-list"
+         hx-get="{% url 'case:emails-list-items' matter.id %}"
+         hx-trigger="emailItemsChanged from:body"
+         hx-swap="innerHTML">{% include "case/emails/list-items.html" %}</div>
     <div id="email-preview" class="email-preview">
       <p class="detail-text email-preview-placeholder">Select an email to read it here.</p>
     </div>
