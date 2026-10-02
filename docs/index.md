@@ -1,4 +1,4 @@
-# Kosmos Documentation { .visually-hidden }
+# Law Practice Management { .home-title }
 
 Kosmos is a web-based practice management application for small law firms,
 with case building and AI-assisted legal analysis built in. It is free

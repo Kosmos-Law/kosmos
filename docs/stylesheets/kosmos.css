@@ -481,21 +481,8 @@
 
 /* --- The home page ------------------------------------------------------ */
 
-/* A heading kept for the page title, screen readers and search, but not
-   shown, as the landing page does with its section headings. */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* With no visible title there is nothing for the edit button to sit
-   beside. */
-.md-content__inner:has(> h1.visually-hidden) .md-content__button {
+/* The home page's title stands alone: there is no edit button beside it. */
+.md-content__inner:has(> h1.home-title) .md-content__button {
   display: none;
 }
 
