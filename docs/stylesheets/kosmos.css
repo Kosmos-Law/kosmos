@@ -257,6 +257,12 @@
   border-bottom: 1px solid var(--color-rule);
 }
 
+/* A little more air between the tabs. Added between them, not around
+   them, so the first tab stays in line with the mark above it. */
+.md-tabs__item + .md-tabs__item {
+  margin-left: 0.4rem;
+}
+
 .md-tabs__link {
   color: var(--color-dim);
   opacity: 1;

@@ -16,11 +16,11 @@ extra_css = ["stylesheets/kosmos.css"]
 
 nav = [
   { "Home" = "index.md" },
-  { "Install Kosmos" = [
+  { "Install" = [
     "admin/index.md",
     { "Install" = [
-      { "Install with the script" = "admin/install.md" },
-      { "Install by hand" = "admin/install-manual.md" },
+      { "Script" = "admin/install.md" },
+      { "Hand" = "admin/install-manual.md" },
       { "Configuration" = "admin/configuration.md" },
     ] },
     { "Integrations" = [
@@ -46,10 +46,10 @@ nav = [
       { "Security checklist" = "admin/security.md" },
     ] },
   ] },
-  { "Use Kosmos" = [
+  { "Use" = [
     "guide/index.md",
   ] },
-  { "Develop Kosmos" = [
+  { "Develop" = [
     "dev/index.md",
     { "Conventions" = [
       { "CSS theming" = "dev/frontend/theming.md" },
