@@ -111,6 +111,9 @@
           {% include "case/research/result-row.html" %}
         {% endfor %}
       </div>
+      <div class="flex-start-space">
+        <div>{% include "pagination.html" %}</div>
+      </div>
     {% endif %}
   {% else %}
     {% include "case/research/summary.html" %}

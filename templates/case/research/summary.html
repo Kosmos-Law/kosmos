@@ -4,4 +4,9 @@
     <h4>Answer</h4>
     <div>{{ query.final_summary|render_markdown }}</div>
   </div>
+{% elif query.status == "complete" and query.error_message %}
+  <div class="research-error">
+    <i class="icon-alert-triangle"></i>
+    {{ query.error_message }}
+  </div>
 {% endif %}
