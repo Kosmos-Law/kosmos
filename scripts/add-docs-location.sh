@@ -6,9 +6,11 @@
 #   scripts/add-docs-location.sh --dry-run SITE_FILE [DIR]
 #
 # SITE_FILE is the nginx site to add it to, for example
-# /etc/nginx/sites-available/kosmos-landing. DIR is the built site and
-# defaults to site/ in this checkout; build it first with
-# scripts/build-docs.sh.
+# /etc/nginx/sites-available/kosmos-landing.conf. DIR is the directory that
+# holds the built site: where scripts/publish-docs.sh copied it, or by
+# default site/ in this checkout (build it first with scripts/build-docs.sh).
+# The script has no other dependency on this repository, so it can be copied
+# to a server on its own.
 #
 # What it does:
 #   1. backs up the site file to /var/backups/

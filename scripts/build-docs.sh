@@ -9,8 +9,8 @@
 # named. It is not a project dependency: it needs a newer pymdown-extensions
 # than the application pins.
 #
-# The site is published at https://kosmos.law/docs/ by serving site/ from
-# nginx; see docs/dev/writing-docs.md.
+# scripts/publish-docs.sh builds with this and copies site/ to the server
+# that serves https://kosmos.law/docs/; see docs/dev/writing-docs.md.
 
 set -eu
 
