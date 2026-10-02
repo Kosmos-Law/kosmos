@@ -301,3 +301,66 @@ def test_an_applied_payment_cannot_move_to_another_matter(
     assert response.status_code == 200
     payment.refresh_from_db()
     assert payment.matter == trust_matter
+
+
+# --- the withdrawal on the Trust tab ----------------------------------------------
+
+
+def test_a_payments_withdrawal_cannot_be_edited_on_the_trust_tab(
+    client, trust_payment, client_contact
+):
+    withdrawal = _withdrawals(client_contact).get()
+    url = reverse("trust:edit", args=[withdrawal.id])
+
+    opened = client.get(url)
+    saved = client.post(
+        url,
+        {
+            "contact": client_contact.id,
+            "date": "2020-02-05",
+            "type": "Withdrawal",
+            "amount": "5.00",
+            "description": "Changed",
+        },
+    )
+
+    assert opened.status_code == saved.status_code == 204
+    assert "payment from trust" in opened["HX-Toast"]
+    withdrawal.refresh_from_db()
+    assert withdrawal.amount == Decimal("300.00")
+
+
+def test_a_payments_withdrawal_cannot_be_deleted_on_the_trust_tab(
+    client, trust_payment, client_contact
+):
+    withdrawal = _withdrawals(client_contact).get()
+
+    response = client.delete(reverse("trust:delete", args=[withdrawal.id]))
+
+    assert response.status_code == 204
+    assert "payment from trust" in response["HX-Toast"]
+    assert _withdrawals(client_contact).count() == 1
+
+
+def test_a_payments_withdrawal_can_still_be_confirmed(
+    client, trust_payment, client_contact
+):
+    withdrawal = _withdrawals(client_contact).get()
+
+    client.post(reverse("trust:confirmed", args=[withdrawal.id]))
+
+    withdrawal.refresh_from_db()
+    assert withdrawal.confirmed
+
+
+def test_deleting_the_matter_leaves_the_withdrawal_on_the_trust_ledger(
+    client, trust_payment, trust_matter, client_contact
+):
+    """The money left the trust account whatever became of the matter's
+    records: a trust ledger row never disappears as a side effect."""
+    trust_matter.delete()
+
+    assert not Payment.objects.exists()
+    withdrawal = _withdrawals(client_contact).get()
+    assert withdrawal.payment is None
+    assert withdrawal.amount == Decimal("300.00")

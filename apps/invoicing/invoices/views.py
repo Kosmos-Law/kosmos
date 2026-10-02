@@ -871,13 +871,15 @@ def invoices_edit_status(request, pk, status, view):
         )
         return response
 
+    was_draft = invoice.status == "DRAFT"
     invoice.status = status
     invoice.save()
 
-    # Leaving Draft by any road stores the invoice's PDF again: the copy
-    # kept from the draft carries the DRAFT watermark, and it is what the
-    # client's link serves.
-    if status != "DRAFT":
+    # Approving or sending stores the invoice's PDF, and so does leaving
+    # Draft by any other road: the copy kept from the draft carries the
+    # DRAFT watermark, and it is what the client's link serves. Any other
+    # change (Sent to Deferred, say) leaves the copy the client was sent.
+    if status in ("APPROVED", "SENT") or (was_draft and status != "DRAFT"):
         store_invoice_pdf(invoice, request)
 
     trigger = "invoicesChanged" if view == "list" else "invoiceDetailChanged"

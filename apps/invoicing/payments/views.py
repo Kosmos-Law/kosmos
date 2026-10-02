@@ -18,7 +18,7 @@ from apps.matters.models import Matter
 from .filters import PaymentFilter
 from .forms import PaymentForm
 from .models import Payment
-from .trust import sync_trust_withdrawal
+from .trust import delete_trust_withdrawal, sync_trust_withdrawal
 
 
 @login_required
@@ -82,7 +82,9 @@ def payments_add(request):
 @require_http_methods(["POST", "DELETE"])
 def payments_delete(_, pk):
     payment = get_object_or_404(Payment, pk=pk)
-    delete_with_applications(payment, payment.applications.all())
+    with transaction.atomic():
+        delete_trust_withdrawal(payment)
+        delete_with_applications(payment, payment.applications.all())
 
     return HttpResponse(
         status=204,
