@@ -176,6 +176,15 @@ def _apply_to_deposit(deposit, event):
         deposit.save(update_fields=changed)
 
 
+def _reopen_requests(**fulfilled_by):
+    """A payment request paid by money that then fell through is not paid:
+    put it back to Sent, so the list shows it as outstanding and it can be
+    resent or cancelled."""
+    from apps.invoicing.requests.models import PaymentRequest
+
+    PaymentRequest.objects.filter(status="PAID", **fulfilled_by).update(status="SENT")
+
+
 def _reverse_payment(payment, event):
     """An accepted operating charge fell through (ACH return / NSF / void)."""
     invoice_ids = list(payment.applications.values_list("invoice_id", flat=True))
@@ -184,6 +193,7 @@ def _reverse_payment(payment, event):
     for application in list(payment.applications.all()):
         application.delete()
     detail = payment.detail
+    _reopen_requests(payment=payment)
     payment.delete()
 
     # The delete hook leaves an invoice PAID when its *last* allocation is removed
@@ -229,6 +239,7 @@ def _reverse_deposit(deposit, event):
     contact = deposit.contact
     description = deposit.description
     amount = deposit.amount
+    _reopen_requests(trust_transaction=deposit)
     if deposit.confirmed:
         deposit.processor_status = event.status
         deposit.save(update_fields=["processor_status"])

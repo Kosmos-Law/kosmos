@@ -88,7 +88,9 @@ def get_clients_asymmetric():
 
     """
 
-    all_contacts = Transaction.objects.values("contact").distinct()
+    all_contacts = (
+        Transaction.objects.exclude(contact=None).values("contact").distinct()
+    )
 
     current_contacts = []
 
@@ -97,7 +99,15 @@ def get_clients_asymmetric():
 
         client_balance = get_asymmetric_client_balance(contact.id)
 
-        if client_balance != 0:
+        # Listed when any of the client's balances is not zero. (Listing on
+        # the asymmetric balance alone hid a client whose pending or
+        # confirmed balance was still non-zero, while the totals under the
+        # table, which add up every transaction, went on counting them.)
+        if (
+            client_balance != 0
+            or get_pending_client_balance(contact.id) != 0
+            or get_confirmed_client_balance(contact.id) != 0
+        ):
             new_contact = {
                 "id": contact.id,
                 "name": contact.name,

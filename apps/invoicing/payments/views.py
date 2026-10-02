@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.shortcuts import HttpResponse, get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -17,6 +18,7 @@ from apps.matters.models import Matter
 from .filters import PaymentFilter
 from .forms import PaymentForm
 from .models import Payment
+from .trust import sync_trust_withdrawal
 
 
 @login_required
@@ -67,7 +69,9 @@ def payments_add(request):
     form.fields["matter"].queryset = matters
 
     if request.method == "POST" and form.is_valid():
-        form.save()
+        with transaction.atomic():
+            payment = form.save()
+            sync_trust_withdrawal(payment)
 
         return HttpResponse(status=204, headers={"HX-Trigger": "paymentsChanged"})
 
@@ -103,7 +107,9 @@ def payments_edit(request, pk):
         form = PaymentForm(request.POST, instance=payment, use_required_attribute=False)
 
         if form.is_valid():
-            form.save()
+            with transaction.atomic():
+                payment = form.save()
+                sync_trust_withdrawal(payment)
 
             return HttpResponse(
                 status=204,
