@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.accounts.access import filter_matters_for_user
 from apps.case.courtlistener import fetch_case_by_citation
 from apps.case.models import CaseLaw, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
@@ -21,9 +22,10 @@ from utils.safe_json import json_for_script
 logger = logging.getLogger(__name__)
 
 
-def get_accessible_matters():
-    """Get all matters accessible to logged-in users."""
-    return Matter.objects.filter(status="Open")
+def get_accessible_matters(user):
+    """The matters this user can reach, whatever their status: a saved case
+    on a Pending, Complete or Closed matter is still the user's to open."""
+    return filter_matters_for_user(Matter.objects.all(), user)
 
 
 def get_caselaws_data(request, matter, matter_id):
@@ -262,7 +264,7 @@ def caselaws_save(request, matter_id):
 def caselaw_edit(request, caselaw_id):
     """Edit case law notes."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
     if request.method == "POST":
@@ -284,7 +286,7 @@ def caselaw_edit(request, caselaw_id):
 def caselaw_delete(request, caselaw_id):
     """Delete a case law entry."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
     matter_id = case_law.matter_id
 
@@ -299,7 +301,7 @@ def caselaw_delete(request, caselaw_id):
 def caselaw_importance(request, caselaw_id, value):
     """Update case law importance."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
     # Validate value is 1-10
@@ -315,7 +317,7 @@ def caselaw_importance(request, caselaw_id, value):
 def caselaw_viewer(request, caselaw_id):
     """Case law viewer with highlight support."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
     highlights = case_law.highlights.all().order_by("char_offset", "created_at")
 
@@ -486,7 +488,7 @@ def caselaw_set_ai(request, caselaw_id, state):
         return HttpResponse(status=400)
 
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
     case_law.ai_context = state
@@ -504,7 +506,7 @@ def caselaw_set_ai(request, caselaw_id, state):
 def caselaw_add_highlight(request, caselaw_id):
     """Add highlight to case law."""
     case_law = get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters()
+        CaseLaw, pk=caselaw_id, matter__in=get_accessible_matters(request.user)
     )
 
     slug = request.POST.get("slug", "").strip()
@@ -558,7 +560,10 @@ def toggle_caselaw_select(request, matter_id, caselaw_id):
     """Toggle selection of a case law in session."""
     # Verify case law exists and belongs to this matter
     get_object_or_404(
-        CaseLaw, pk=caselaw_id, matter_id=matter_id, matter__in=get_accessible_matters()
+        CaseLaw,
+        pk=caselaw_id,
+        matter_id=matter_id,
+        matter__in=get_accessible_matters(request.user),
     )
 
     selected_session_key = get_session_key("selected_caselaws", matter_id)
