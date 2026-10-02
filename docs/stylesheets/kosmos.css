@@ -89,7 +89,7 @@
      above and below, a 1px rule. The theme toggle and the search field
      take the same height so the three sit on one line. */
   --control-height: calc(0.75rem * 1.25 + 0.8rem + 2px);
-  /* The space between the toggle, the search field and the GitHub button. */
+  /* The space between the search field, the GitHub button and the toggle. */
   --control-gap: 1.4rem;
 }
 
@@ -312,10 +312,13 @@
 
 /* --- The theme toggle: the same button, square ------------------------- */
 
+/* It comes first in the markup; `order` puts it last, to the right of the
+   GitHub button. */
 .md-header__option {
+  order: 1;
   width: auto;
   height: auto;
-  margin: 0 var(--control-gap) 0 0;
+  margin: 0 0 0 var(--control-gap);
 }
 
 /* Only the label for the scheme not showing is visible; the other carries
@@ -355,7 +358,7 @@
    its room. */
 @media screen and (max-width: 59.984375em) {
   .md-header__option {
-    margin-right: 0.2rem;
+    margin-left: 0.2rem;
   }
 }
 
