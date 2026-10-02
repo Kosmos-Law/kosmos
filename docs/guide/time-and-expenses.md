@@ -220,10 +220,6 @@ them for **Category** only.
 
 Good to know:
 
-- On **Expenses** and **Flat Fees**, clicking the **Amount** of an entry
-  that is not on an invoice marks it as entered (or as not entered, if it
-  already is). Hover over the amount to see which. An entered entry
-  drops out of **Work in Progress**.
 - Moving an entry to another matter, singly or in bulk, takes it off any
   draft invoice.
 - In bulk changes, entries on an invoice that is past Draft are skipped,
