@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
 from apps.case.highlights.importance import parse_importance
@@ -100,6 +101,7 @@ def get_facts_data(request, matter, matter_id):
 
     return {
         "facts": facts,
+        "facts_filter_data": filter_data,
         "selected_facts": selected_facts,
         "all_selected": all_selected,
         "label_options": label_options,
@@ -124,6 +126,33 @@ def get_facts_data(request, matter, matter_id):
             else ""
         ),
     }
+
+
+def describe_facts_filter(data):
+    """The filter in force on the Facts tab, one phrase per condition, from
+    what get_facts_data returned. Empty when every fact is shown. The sort
+    order is not a filter and is not described."""
+    filter_data = data["facts_filter_data"]
+    parts = []
+    if data["keyword"]:
+        parts.append(f'keyword "{data["keyword"]}"')
+    for key, word in (("date_start", "from"), ("date_end", "to")):
+        # Only a date the filter itself would accept is in force.
+        try:
+            day = parse_date(str(filter_data.get(key) or ""))
+        except ValueError:
+            day = None
+        if day:
+            parts.append(f"{word} {day.isoformat()}")
+    if data["active_labels"]:
+        names = [option["name"] for option in data["active_labels"]]
+        joiner = " and " if data["labels_mode"] == LABELS_MODE_ALL else " or "
+        parts.append(f"label {joiner.join(names)}")
+    if data["importance_value"] == 7:
+        parts.append("importance Highest")
+    elif data["selected_importance"]:
+        parts.append(f"importance {data['selected_importance']} or higher")
+    return parts
 
 
 @login_required
@@ -432,7 +461,15 @@ def facts_pdf(request, matter_id):
 
     matter, matters = get_matter_from_url(request, matter_id)
 
-    file = generate_facts_pdf(matter.id, request)
+    # The button sits on the filtered list, so the PDF is that list: the
+    # same facts in the same order, and it says which filter was in force.
+    data = get_facts_data(request, matter, matter_id)
+    file = generate_facts_pdf(
+        matter.id,
+        request,
+        facts=data["facts"],
+        filter_summary=describe_facts_filter(data),
+    )
 
     current_date = datetime.now().strftime("%Y-%m-%d")
 
