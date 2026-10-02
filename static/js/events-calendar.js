@@ -227,8 +227,14 @@ document.addEventListener("alpine:init", () => {
     },
 
     handleDateClick(info) {
-      // Open add modal with pre-filled date
-      htmx.ajax("GET", `${this.addUrl}?date=${info.dateStr}`, {
+      // Open add modal with pre-filled date. A click on a Week or Day time
+      // slot carries its time too; info.dateStr is then a full date-time,
+      // so the date and the start time are sent as separate values.
+      let query = `date=${this.formatDate(info.date)}`;
+      if (!info.allDay) {
+        query += `&start_time=${this.formatTime(info.date).slice(0, 5)}`;
+      }
+      htmx.ajax("GET", `${this.addUrl}?${query}`, {
         target: "#htmx-modal-container",
         swap: "innerHTML",
       }).then(() => {

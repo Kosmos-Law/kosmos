@@ -26,9 +26,17 @@
                 hx-target="#htmx-modal-container">
           <i class="icon-list-filter with-text"></i>Filter
         </button>
-        {% include "calendar/status-dropdown.html" %}
-        {% include "calendar/assigned-dropdown.html" %}
-        {% include "calendar/matter-dropdown.html" %}
+        {% comment %}
+        In calendar view a change to the filter refetches the events and
+        leaves this page in place (events-calendar.js), so the menus fetch
+        their own new state. The list view re-renders whole and needs none
+        of this.
+        {% endcomment %}
+        <div class="events-filter-menus"
+             hx-get="{% url 'calendar:filter-menus' %}"
+             hx-trigger="eventsChanged from:body"
+             hx-target="this"
+             hx-swap="innerHTML">{% include "calendar/filter-menus.html" %}</div>
       </div>
     </div>
     <div class="toolbar-right">

@@ -12,6 +12,7 @@ from apps.calendar.views import (
     events_filter,
     events_filter_assigned,
     events_filter_matter,
+    events_filter_menus,
     events_filter_quick,
     events_filter_sort,
     events_filter_status,
@@ -65,6 +66,7 @@ urlpatterns = [
         name="delete-origin",
     ),
     path("events/filter/", events_filter, name="filter"),
+    path("events/filter/menus/", events_filter_menus, name="filter-menus"),
     path(
         "events/filter/quick/<str:quick_filter>",
         events_filter_quick,
