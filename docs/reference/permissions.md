@@ -105,7 +105,12 @@ matter's `members`.
 | `has_matter_access` | Every `/notes/<id>/…` endpoint, for a note that belongs to a matter | `apps/notes/views.py:1003` (`_get_note`) | 404 |
 | `filter_matters_for_user` | Notes editor tree, palette and search scopes | `apps/notes/views.py:802`, `:980`, `:1265`, `:1279` | Notes not listed |
 | `has_matter_access` | Case note "Edit Details" modal (also covered by the middleware) | `apps/case/notes/views.py:148` | 404 |
-| `filter_matters_for_user` | Matter notes in in-app search results | `apps/search/views.py:168` | Notes not listed |
+| `filter_matters_for_user` | Matters, proceedings and matter notes in in-app search results | `apps/search/views.py:152` | Not listed |
+| `entries_for_user` | Time, expense and flat-fee CSV exports, and the entries a bulk change touches | `apps/activity/access.py:23` | Entries left out |
+| `entry_for_user` | Opening, saving, deleting or toggling one time, expense or flat-fee entry by its id | `apps/activity/access.py:30` | 403 |
+| `has_matter_access` | The rate, trust-available and flat-fee-amount lookups behind the entry forms | `apps/activity/time/views.py`, `apps/activity/flat_fees/views.py` | 403 |
+| `matters_for_entry_form` | Matter choices in the entry forms and in the bulk "move to matter" menus | `apps/activity/access.py:48` | Matter not listed |
+| `assigned_matters` filter | "Upcoming Events" on the dashboard (events on no matter are shown to everyone) | `apps/dash/views.py:41` | Events not listed |
 | `filter_matters_for_user` | Dashboard matter lists, AI agenda matter list | `apps/dash/views.py:162`, `:311`; `apps/dash/agenda.py:110`, `:201` | Matter not listed |
 | `filter_matters_for_user`, `has_matter_access` | `/case/` landing redirect | `apps/case/views.py:58`, `:63` | Redirects to an accessible matter |
 | `perm_all_matters` only (role not consulted) | Daily digest email content | `apps/tasks/digest.py:47` | Items for other matters omitted |
@@ -150,7 +155,7 @@ Not checked against matter membership (sign-in only):
 | Matter switcher partial | `/matters/<id>/switcher` (matter name) | `apps/matters/views.py:575` |
 | Tasks and calendar | `/tasks/…`, `/events/…` | `apps/tasks/tasks.py`, `apps/calendar/events.py` |
 | Contacts | `/contacts/…` | `apps/contacts/` |
-| In-app search results for matters, proceedings, contacts and intakes | `/search/…` | `apps/search/views.py:96` |
+| Contacts in in-app search results | `/search/…` | `apps/search/views.py` |
 | Invoicing, trust and reports (for a user who holds those flags) | `/invoicing/…`, `/reports/…` | |
 
 ### Financial (`perm_financial`)
@@ -180,12 +185,7 @@ Not checked against `perm_financial`:
 |---|---|---|
 | Middleware: `/intakes/…`, `/settings/intake-emails/…` | `apps/accounts/middleware.py:31` | 403 |
 | Intakes in token search (`/search/api/`) | `apps/search/api.py:85` | Intakes omitted |
-
-Not checked against `perm_intakes`:
-
-| Area | Paths | Location |
-|---|---|---|
-| Intakes in in-app search results | `/search/…` | `apps/search/views.py:104` |
+| Intakes in in-app search results, and the search window's Intakes tab | `apps/search/views.py:80`, `:121` | Intakes omitted, tab not shown |
 
 ### Reports (`perm_reports`)
 
@@ -243,6 +243,7 @@ whether the server also refuses the request.
 | Matter navigation: Ledger tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html:55` | Yes (middleware and view) |
 | Matter form: Delete button | Admin | `templates/matters/form.html:28` | Yes (view) |
 | Activity lists: selection column and bulk actions | Admin or `perm_financial` | `templates/activity/time/list.html:191`, `expenses/list.html:183`, `flat-fees/list.html:146` | Bulk matter and comp only |
+| A matter's Time list: the Matter and Comp bulk menus (the selection column and the Category menu are for everyone) | Admin or `perm_financial` | `templates/matters/activity/list.html`; `apps/matters/activity/views.py:413`, `:473` | Yes |
 | Time codes: add and edit buttons | Admin | `templates/activity/time/codes/list.html:20`, `results.html:11` | Yes (view) |
 | Invoice detail: delete a voided invoice | Admin | `templates/invoicing/invoices/detail/detail.html:46` | Yes (view) |
 | Settings menu: Firm | Admin | `templates/settings/main.html:14` | Yes (middleware) |

@@ -1,10 +1,19 @@
+import re
+
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse, HttpResponseForbidden
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.activity.access import (
+    entries_for_user,
+    entry_for_user,
+    locked_response,
+    matters_for_entry_form,
+)
 from apps.activity.expenses.get_expenses_data import get_expenses_data
 from apps.activity.presets import activity_date_filters, detect_filter_label
 from apps.management.selection import (
@@ -148,6 +157,21 @@ def order_by_expenses(request, order):
     return HttpResponse(status=204, headers={"HX-Trigger": "expensesChanged"})
 
 
+# Shorthand a new expense's description may use. Each is expanded only where
+# it stands as a word of its own, so "staff " and "html " are left alone.
+EXPENSE_SHORTHAND = {
+    "ff": "Filing fee",
+    "fx": "FedEx",
+    "ml": "Mail",
+}
+_SHORTHAND_RE = re.compile(r"(?<![\w])(%s)(?= )" % "|".join(EXPENSE_SHORTHAND))
+
+
+def expand_expense_shorthand(description):
+    """Replace "ff ", "fx " and "ml " with the words they stand for."""
+    return _SHORTHAND_RE.sub(lambda m: EXPENSE_SHORTHAND[m.group(1)], description)
+
+
 @login_required
 def expenses_add(request, id=None, request_app="activity"):
     # if applicable, process any post data submitted by user
@@ -156,13 +180,7 @@ def expenses_add(request, id=None, request_app="activity"):
         if form.is_valid():
             entry = form.save(commit=False)
             entry.user_id = request.user.id
-            codes = {
-                "ff ": "Filing fee ",
-                "fx ": "FedEx ",
-                "ml ": "Mail ",
-            }
-            for key, val in codes.items():
-                entry.description = entry.description.replace(key, val)
+            entry.description = expand_expense_shorthand(entry.description)
             entry.save()
 
             if request_app == "activity":
@@ -188,21 +206,9 @@ def expenses_add(request, id=None, request_app="activity"):
         else:
             form = ExpenseEntryForm(initial={"date": today}, user=request.user)
 
-    # get list of matters for activity form
-    matter_list = Matter.objects.filter(
-        status__in=["Pending", "Open", "Complete"]
-    ).order_by("name")
-
-    # if a single matter is selected,  pull that matter as a quersyset
-    if id:
-        selected_matter = Matter.objects.filter(id=id)
-
-        # if the matter is closed, add it to the matter list
-        # if it is open, don't add it; avoid creating two instances of the same matter
-        if selected_matter.first().status == "Closed":
-            matter_list |= selected_matter
-
-    # set the form fields
+    # Matters the user may work on; the matter the form was opened from
+    # stays in the list even when it is closed.
+    matter_list = matters_for_entry_form(request.user, include_id=id)
     form.fields["matter"].queryset = matter_list
 
     # When no matter is pre-selected, autofocus the matter select instead of description
@@ -229,19 +235,24 @@ def expenses_add(request, id=None, request_app="activity"):
 
 @login_required
 def expenses_edit(request, id):
-    entry = get_object_or_404(ExpenseEntry, pk=id)
+    entry = entry_for_user(ExpenseEntry, id, request.user)
+    refusal = locked_response(entry)
+    if refusal:
+        return refusal
+    original_matter_id = entry.matter_id
+
+    # Matters the user may work on, plus the entry's own matter whatever its
+    # status.
+    matter_list = matters_for_entry_form(request.user, include_id=original_matter_id)
 
     if request.method == "POST":
         form = ExpenseEntryForm(request.POST, instance=entry, user=request.user)
         if form.is_valid():
-            original_entry = get_object_or_404(ExpenseEntry, pk=id)
             entry = form.save(commit=False)
 
-            # if the matter has been changed, be sure to clear the
-            # entry off of any relevant invoice
-            # this will not happen if the invoice has been approved,
-            # because editing will be locked at that point
-            if original_entry.matter != entry.matter:
+            # A moved entry comes off its (draft) invoice: that invoice
+            # belongs to the matter it left.
+            if original_matter_id != entry.matter_id:
                 entry.invoice = None
 
             entry.save()
@@ -249,20 +260,9 @@ def expenses_edit(request, id):
             return HttpResponse(status=204, headers={"HX-Trigger": "expensesChanged"})
 
     else:
-        # get list of matters for activity form
-        matter_list = Matter.objects.filter(
-            status__in=["Pending", "Open", "Complete"]
-        ).order_by("name")
-
-        selected_matter = Matter.objects.filter(id=entry.matter.id)
-        if selected_matter.first().status == "Closed":
-            matter_list |= selected_matter
-
-        # initialize form
         form = ExpenseEntryForm(instance=entry, user=request.user)
 
-        # set the form fields
-        form.fields["matter"].queryset = matter_list
+    form.fields["matter"].queryset = matter_list
 
     context = {
         "app": "activity",
@@ -279,21 +279,13 @@ def expenses_edit(request, id):
 
 @login_required
 def expenses_delete(request, id):
-    entry = get_object_or_404(ExpenseEntry, pk=id)
+    entry = entry_for_user(ExpenseEntry, id, request.user)
+    refusal = locked_response(entry)
+    if refusal:
+        return refusal
     entry.delete()
 
     return HttpResponse(status=204, headers={"HX-Trigger": "expensesChanged"})
-
-
-@login_required
-def expenses_toggle_entered(request, id):
-    entry = get_object_or_404(ExpenseEntry, pk=id)
-    if entry.entered == 1:
-        entry.entered = 0
-    else:
-        entry.entered = 1
-    entry.save()
-    return redirect("/activity/expenses")
 
 
 @login_required
@@ -305,17 +297,17 @@ def expenses_export_to_csv(request, format):
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(
         content_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
     )
 
-    # get the time expenses per the user filter
-    expenses = ExpenseEntry.objects.all()
+    # The expenses the list shows: the user's filter, within the matters the
+    # user may see.
     filter_data = request.session.get("expenses_filter", {})
     if filter_data:
-        filter = ExpenseFilter(filter_data)
-        expenses = filter.qs
+        expenses = ExpenseFilter(filter_data).qs
     else:
         expenses = ExpenseEntry.objects.all().order_by("date", "id")
+    expenses = entries_for_user(expenses, request.user)
 
     # write the time expenses to CSV
     if format == "clio":
@@ -373,8 +365,10 @@ def expenses_bulk_update_matter(request):
 
         if matter_id:
             matter = get_object_or_404(Matter, pk=matter_id)
-            entries = ExpenseEntry.objects.filter(
-                id__in=selected_expenses
+            if not request.user.has_matter_access(matter):
+                raise PermissionDenied
+            entries = entries_for_user(
+                ExpenseEntry.objects.filter(id__in=selected_expenses), request.user
             ).select_related("invoice")
 
             locked = 0
@@ -403,9 +397,7 @@ def expenses_bulk_update_matter(request):
                 )
             return response
 
-    matters = Matter.objects.filter(
-        status__in=["Pending", "Open", "Complete"]
-    ).order_by("name")
+    matters = matters_for_entry_form(request.user)
 
     context = {
         "selected_count": len(selected_expenses),
@@ -430,8 +422,8 @@ def expenses_bulk_update_comp(request):
     if request.method == "POST":
         comp_value = request.POST.get("comp")
         if comp_value in ["true", "false"]:
-            entries = ExpenseEntry.objects.filter(
-                id__in=selected_expenses
+            entries = entries_for_user(
+                ExpenseEntry.objects.filter(id__in=selected_expenses), request.user
             ).select_related("invoice")
             comp_bool = comp_value == "true"
 

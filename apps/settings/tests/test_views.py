@@ -169,6 +169,8 @@ def test_password_change_success(client, user):
     assert "success" in response.content.decode().lower()
     user.refresh_from_db()
     assert user.check_password("newpass123")
+    # ...and the session that made the change is still signed in.
+    assert client.get("/settings/profile/").status_code == 200
 
 
 def test_password_change_wrong_old_password(client, user):

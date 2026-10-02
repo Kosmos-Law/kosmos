@@ -23,17 +23,9 @@
   {% endif %}
 </td>
 <td class="amount">
-  {% if entry.invoice %}
-    {% if entry.comp %}
-      comp
-    {% else %}
-      ${{ entry.amount|floatformat:2|intcomma }}
-    {% endif %}
+  {% if entry.comp %}
+    comp
   {% else %}
-    {% if entry.comp %}
-      <a href={% url 'activity:flat-fees-toggle-entered' id=entry.id %}>comp</a>
-    {% else %}
-      <a href={% url 'activity:flat-fees-toggle-entered' id=entry.id %}>${{ entry.amount|floatformat:2|intcomma }}</a>
-    {% endif %}
+    ${{ entry.amount|floatformat:2|intcomma }}
   {% endif %}
 </td>

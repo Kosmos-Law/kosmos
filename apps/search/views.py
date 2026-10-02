@@ -77,6 +77,13 @@ def expand_search_with_synonyms(query):
     return terms
 
 
+def scopes_for(user):
+    """The search tabs a user gets: Intakes only with the Intakes permission."""
+    if user.is_admin or user.perm_intakes:
+        return SEARCH_SCOPES
+    return [scope for scope in SEARCH_SCOPES if scope[0] != "intakes"]
+
+
 @login_required
 def index(request):
     active_scope = request.GET.get("scope") or request.session.get(
@@ -86,10 +93,19 @@ def index(request):
         "app": "search",
         "action": "/search/results",
         "results": False,
-        "scopes": SEARCH_SCOPES,
+        "scopes": scopes_for(request.user),
         "active_scope": active_scope,
     }
     return render(request, "search/content.html", context)
+
+
+def _accessible_proceedings(text, accessible_matter_ids):
+    """Proceedings whose case number matches, on matters the user can open."""
+    return [
+        proceeding
+        for proceeding in search_proceedings_by_case_number(text)
+        if proceeding.matter_id in accessible_matter_ids
+    ]
 
 
 @login_required
@@ -101,7 +117,10 @@ def results(request):
     scope_matters = scope in ("all", "matters")
     scope_proceedings = scope in ("all", "proceedings")
     scope_contacts = scope in ("all", "contacts")
-    scope_intakes = scope in ("all", "intakes")
+    # Intakes are searched only for those who may open them.
+    scope_intakes = scope in ("all", "intakes") and (
+        request.user.is_admin or request.user.perm_intakes
+    )
     scope_notes = scope in ("all", "notes")
 
     # Save to session for persistence
@@ -117,7 +136,7 @@ def results(request):
                 "contacts": None,
                 "intakes": None,
                 "notes": None,
-                "scopes": SEARCH_SCOPES,
+                "scopes": scopes_for(request.user),
                 "active_scope": scope,
             },
         )
@@ -128,14 +147,24 @@ def results(request):
     intakes = []
     notes = []
 
+    # Matters, their proceedings and their notes surface only for matters
+    # the user can open.
+    accessible_matter_ids = set(
+        filter_matters_for_user(Matter.objects.all(), request.user).values_list(
+            "id", flat=True
+        )
+    )
+
     # Digits only - use exact matching for IDs and phone numbers
     if text.isdigit():
         if scope_matters:
             matters = list(
-                Matter.objects.filter(client_reference_id=text).order_by("name")
+                Matter.objects.filter(
+                    client_reference_id=text, id__in=accessible_matter_ids
+                ).order_by("name")
             )
         if scope_proceedings:
-            proceedings = list(search_proceedings_by_case_number(text))
+            proceedings = _accessible_proceedings(text, accessible_matter_ids)
         if scope_contacts:
             contacts = list(
                 Contact.objects.filter(
@@ -163,12 +192,6 @@ def results(request):
             models_to_search.append(Note)
 
         if models_to_search:
-            # Matter notes only surface for matters the user can access
-            accessible_matter_ids = set(
-                filter_matters_for_user(Matter.objects.all(), request.user).values_list(
-                    "id", flat=True
-                )
-            )
             # Use watson for fuzzy search
             seen_ids = {
                 "matter": set(),
@@ -184,7 +207,8 @@ def results(request):
                     obj = result.object
                     if isinstance(obj, Matter) and obj.id not in seen_ids["matter"]:
                         seen_ids["matter"].add(obj.id)
-                        matters.append(obj)
+                        if obj.id in accessible_matter_ids:
+                            matters.append(obj)
                     elif isinstance(obj, Contact) and obj.id not in seen_ids["contact"]:
                         seen_ids["contact"].add(obj.id)
                         contacts.append(obj)
@@ -202,7 +226,7 @@ def results(request):
 
             # Search proceedings by case number (fuzzy match)
             if scope_proceedings:
-                proceedings = list(search_proceedings_by_case_number(text))
+                proceedings = _accessible_proceedings(text, accessible_matter_ids)
 
     context = {
         "app": "search",
@@ -213,7 +237,7 @@ def results(request):
         "contacts": contacts,
         "intakes": intakes,
         "notes": notes,
-        "scopes": SEARCH_SCOPES,
+        "scopes": scopes_for(request.user),
         "active_scope": scope,
     }
 

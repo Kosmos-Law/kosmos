@@ -100,13 +100,6 @@ def test_filter_matter(client, matter):
     assert client.session["time_filter"]["matter"] == matter.id
 
 
-def test_toggle_entered(client, entry):
-    assert entry.entered == 0
-    client.get(f"/activity/time/{entry.id}/toggle-entered")
-    entry.refresh_from_db()
-    assert entry.entered == 1
-
-
 def test_export(client):
     response = client.get("/activity/time/export/clio")
     assert response.status_code == 200

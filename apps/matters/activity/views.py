@@ -2,11 +2,13 @@ import os
 from datetime import datetime
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.access import matter_access_required
+from apps.activity.access import matters_for_entry_form
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.expenses.summary import (
     calculate_summary as calculate_expense_summary,
@@ -122,6 +124,22 @@ def get_category_totals(matter, uncategorized_claimed=True):
     }
 
 
+def _time_ordering(request):
+    """The Time list's order: by date, newest first unless the Date sort
+    button has flipped it. (The session holds "-id" or "id" from when the
+    button sorted by entry id, which is the order entries were typed in, not
+    the order the work was done.)"""
+    if request.session.get("matter_activity_sort", "-id").startswith("-"):
+        return ("-date", "-id")
+    return ("date", "id")
+
+
+def _may_bulk_edit(user):
+    """Moving entries and marking them comp change what is billed: the
+    Financial permission, as on the Activity lists."""
+    return user.is_admin or user.perm_financial
+
+
 def get_matter_activity_data(request, matter):
     """Context for the matter activity subtab, honoring the Time/Expenses toggle
     (session `matter_activity_view`, default 'time'). Expenses is a simple
@@ -154,7 +172,7 @@ def get_matter_activity_data(request, matter):
                 category_filter,
                 field="activity_category",
             )
-            .select_related("user", "matter", "activity_category")
+            .select_related("user", "matter", "activity_category", "invoice")
             .order_by("-date", "-id")
         )
         return {
@@ -165,11 +183,10 @@ def get_matter_activity_data(request, matter):
             **filter_context,
         }
 
-    sort_order = request.session.get("matter_activity_sort", "-id")
     entries = (
         _apply_category_filter(TimeEntry.objects.filter(matter=matter), category_filter)
-        .select_related("category")
-        .order_by(sort_order)
+        .select_related("category", "invoice")
+        .order_by(*_time_ordering(request))
     )
     pagination = CustomPaginator(
         entries, per_page=10, request=request, session_key="activity_pagination"
@@ -188,9 +205,7 @@ def get_matter_activity_data(request, matter):
         "summary": calculate_summary(entries),
         "selected_entries": selected_entries,
         "all_selected": all_visible_selected(selected_entries, visible_ids),
-        "matters": Matter.objects.filter(
-            status__in=["Pending", "Open", "Complete"]
-        ).order_by("name"),
+        "matters": matters_for_entry_form(request.user),
         **filter_context,
     }
 
@@ -365,12 +380,11 @@ def activity_toggle_select(request, matter_id, entry_id):
 @matter_access_required
 @require_POST
 def activity_select_all(request, matter_id):
-    sort_order = request.session.get("matter_activity_sort", "-id")
     # Mirror the tab's category filter so "select all" matches what's shown.
     entries = _apply_category_filter(
         TimeEntry.objects.filter(matter=matter_id),
         _category_filter_value(request, matter_id),
-    ).order_by(sort_order)
+    ).order_by(*_time_ordering(request))
 
     pagination = CustomPaginator(
         entries, per_page=10, request=request, session_key="activity_pagination"
@@ -396,6 +410,9 @@ def activity_clear_selection(request, matter_id):
 @login_required
 @matter_access_required
 def activity_bulk_update_matter(request, matter_id):
+    if not _may_bulk_edit(request.user):
+        return HttpResponseForbidden()
+
     key = get_session_key("selected_matter_activity", matter_id)
     selected_entries = get_selected_ids(request, key)
 
@@ -406,9 +423,11 @@ def activity_bulk_update_matter(request, matter_id):
         new_matter_id = request.POST.get("matter")
         if new_matter_id:
             new_matter = get_object_or_404(Matter, pk=new_matter_id)
-            entries = TimeEntry.objects.filter(id__in=selected_entries).select_related(
-                "invoice"
-            )
+            if not request.user.has_matter_access(new_matter):
+                raise PermissionDenied
+            entries = TimeEntry.objects.filter(
+                id__in=selected_entries, matter_id=matter_id
+            ).select_related("invoice")
 
             locked = 0
             for entry in entries:
@@ -436,9 +455,7 @@ def activity_bulk_update_matter(request, matter_id):
                 )
             return response
 
-    matters = Matter.objects.filter(
-        status__in=["Pending", "Open", "Complete"]
-    ).order_by("name")
+    matters = matters_for_entry_form(request.user)
 
     context = {
         "selected_count": len(selected_entries),
@@ -453,6 +470,9 @@ def activity_bulk_update_matter(request, matter_id):
 @login_required
 @matter_access_required
 def activity_bulk_update_comp(request, matter_id):
+    if not _may_bulk_edit(request.user):
+        return HttpResponseForbidden()
+
     key = get_session_key("selected_matter_activity", matter_id)
     selected_entries = get_selected_ids(request, key)
 
@@ -463,9 +483,9 @@ def activity_bulk_update_comp(request, matter_id):
         comp_value = request.POST.get("comp")
 
         if comp_value in ["true", "false"]:
-            entries = TimeEntry.objects.filter(id__in=selected_entries).select_related(
-                "invoice"
-            )
+            entries = TimeEntry.objects.filter(
+                id__in=selected_entries, matter_id=matter_id
+            ).select_related("invoice")
             comp_bool = comp_value == "true"
 
             locked = 0

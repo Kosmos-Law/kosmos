@@ -234,10 +234,14 @@
             <td class="overview-action-date">{{ entry.date|date:"Y-m-d" }}</td>
             <td class="overview-action-user">{{ entry.user.initials }}</td>
             <td class="overview-cell-text">
-              <a href="#"
-                 class="overview-link"
-                 hx-get="{% url 'activity:time-edit' id=entry.id %}"
-                 hx-target="#htmx-modal-container">{{ entry.actions }}</a>
+              {% if entry.locked %}
+                {{ entry.actions }}
+              {% else %}
+                <a href="#"
+                   class="overview-link"
+                   hx-get="{% url 'activity:time-edit' id=entry.id %}"
+                   hx-target="#htmx-modal-container">{{ entry.actions }}</a>
+              {% endif %}
             </td>
           </tr>
         {% empty %}

@@ -113,6 +113,10 @@ class AbbreviationCodeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
+        # A code's own spaces are how it marks a word's edge ("conf " must
+        # not fire inside "conform"), so neither field is trimmed.
+        self.fields["code"].strip = False
+        self.fields["expansion"].strip = False
 
     def clean_code(self):
         code = self.cleaned_data.get("code")
