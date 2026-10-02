@@ -424,5 +424,5 @@ def create_task_from_ai_entry(entry, requesting_user):
         date_due=parse_due_date(entry.get("due")),
         importance=clamp_importance(entry.get("importance")),
         user=resolve_assignee_name(entry.get("user"), requesting_user),
-        matter=resolve_matter_name(entry.get("matter")),
+        matter=resolve_matter_name(entry.get("matter"), requesting_user),
     )

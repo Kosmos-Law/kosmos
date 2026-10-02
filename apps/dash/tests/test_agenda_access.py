@@ -179,3 +179,26 @@ class TestMatterRows:
             description="File the merger notice", status="Pending", matter=hidden_matter
         )
         assert "File the merger notice" in _agenda_context(user)
+
+
+def test_the_plan_chat_cannot_put_a_task_on_a_matter_the_user_cannot_open(db):
+    """A task the chat creates names its matter; the name is matched only
+    among the matters the asking user may see."""
+    from apps.accounts.models import CustomUser
+    from apps.matters.models import Matter
+    from apps.tasks.services import create_task_from_ai_entry
+
+    user = CustomUser.objects.create(username="Limited", perm_all_matters=False)
+    mine = Matter.objects.create(name="Assigned Matter Zed", status="Open")
+    mine.members.add(user)
+    Matter.objects.create(name="Unassigned Matter Zed", status="Open")
+
+    allowed = create_task_from_ai_entry(
+        {"description": "Call the clerk", "matter": "Assigned Matter Zed"}, user
+    )
+    refused = create_task_from_ai_entry(
+        {"description": "File the motion", "matter": "Unassigned Matter Zed"}, user
+    )
+
+    assert allowed.matter == mine
+    assert refused.matter is None
