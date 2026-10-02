@@ -809,21 +809,6 @@ def tasks_set_status(request, task_id, status):
 
 
 @login_required
-def tasks_change_user(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
-    user = get_object_or_404(CustomUser, pk=request.POST["user"])
-    users = CustomUser.objects.filter(is_active=True)
-    task.user = user
-    task.save()
-    context = {
-        "task": task,
-        "user": user,
-        "users": users,
-    }
-    return render(request, "tasks/change-user.html", context)
-
-
-@login_required
 @require_POST
 def tasks_importance(request, task_id, importance):
     task = task_for_user(task_id, request.user)
