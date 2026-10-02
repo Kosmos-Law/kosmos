@@ -6,6 +6,10 @@ from config.settings import CustomFormRendererCompact
 
 from .models import Event
 
+# The longest description the column holds. The field refuses anything
+# longer before clean_description runs, so the limit is stated once.
+DESCRIPTION_MAX_LENGTH = Event._meta.get_field("description").max_length
+
 
 class EventForm(forms.ModelForm):
     class Meta:
@@ -57,12 +61,22 @@ class EventForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, matters=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
 
         # Matter spans the first two of the three columns
         self.fields["matter"].widget.attrs["class"] = "span2"
+
+        # The view passes the matters this user may put an event on. They
+        # are set here, before validation, so a posted matter outside the
+        # list is refused instead of saved.
+        if matters is not None:
+            self.fields["matter"].queryset = matters
+
+        self.fields["description"].error_messages["max_length"] = (
+            f"Description is limited to {DESCRIPTION_MAX_LENGTH} characters."
+        )
 
         # Filter assigned_to to active users, alphabetical, title case
         self.fields["assigned_to"].queryset = CustomUser.objects.filter(
@@ -72,11 +86,10 @@ class EventForm(forms.ModelForm):
         self.fields["assigned_to"].empty_label = "Firm"
 
     def clean_description(self):
-        description = self.cleaned_data["description"]
+        # A blank description arrives as None (the column is nullable).
+        description = self.cleaned_data["description"] or ""
         if len(description) < 4:
             raise ValidationError("Description must be 4 or more characters.")
-        if len(description) > 200:
-            raise ValidationError("Description is limited to 200 character.")
         return description
 
     def clean(self):

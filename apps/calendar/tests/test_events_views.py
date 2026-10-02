@@ -51,7 +51,7 @@ def test_edit_post(client, user, matter, event):
 
 
 def test_delete(client, event):
-    response = client.get(f"/events/{event.id}/delete")
+    response = client.post(f"/events/{event.id}/delete")
     assert response.status_code == 204
     found = Event.objects.filter(pk=event.id).exists()
     assert not found
@@ -66,5 +66,5 @@ def test_edit_nonexistent(client):
 
 
 def test_delete_nonexistent(client):
-    response = client.get("/events/99999/delete")
+    response = client.post("/events/99999/delete")
     assert response.status_code == 404

@@ -71,8 +71,20 @@
   justify-content: space-between;
 }
 
-.modal-content .deadline-calculator-actions {
+/* The stand-alone calculator dialog has its own Cancel and Calculate in the
+   footer. The calculator inside Add/Edit Event has no footer of its own, so
+   it keeps these. */
+.deadline-calculator-modal .deadline-calculator-actions {
   display: none;
+}
+
+/* The results area sits outside the calculator's form, so the form error
+   style does not reach a message shown there. */
+.calc-results .errorlist {
+  color: var(--urgent);
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
 }
 
 .deadline-calculator-results {
@@ -341,6 +353,12 @@
 }
 
 /* View toggle buttons */
+/* Wrapper that lets the calendar view refresh its filter menus in place;
+   the menus stay direct items of the toolbar's flex row. */
+.events-filter-menus {
+  display: contents;
+}
+
 .view-toggle {
   display: flex;
   gap: 0;

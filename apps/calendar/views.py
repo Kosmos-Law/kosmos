@@ -4,26 +4,35 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 import apps.calendar.google as google
 import apps.calendar.sync as sync
+from apps.accounts.access import matter_access_required
+from apps.calendar.access import event_for_user, matters_for_events
 from apps.calendar.filter import EventFilter
 from apps.calendar.forms import EventForm
 from apps.calendar.models import Event
 from apps.management.filter_manager import FilterManager
-from apps.matters.models import Matter
 from utils.toasts import toast_warning
 
-from .events import get_table_data
+from .events import (
+    SESSION_KEY,
+    default_end_time,
+    event_filter,
+    get_table_data,
+    saved_filter,
+    toolbar_context,
+)
 
 # Shown when Google Calendar is connected but a sync push fails (e.g. an
 # expired/revoked token). The local save still succeeds — see
 # google.best_effort — so this is a non-blocking warning, not an error.
 GOOGLE_SYNC_FAILED_MSG = (
-    "Event saved, but couldn't sync to Google Calendar — reconnect it in Settings."
+    "Event saved, but couldn't sync to Google Calendar. Reconnect it in Settings."
 )
 
 
@@ -40,67 +49,16 @@ def _event_change_response(
 
 @login_required
 def events_index(request):
-    from apps.accounts.models import CustomUser
-
     today = timezone.localdate()
     third_day = today + timedelta(days=3)
 
     view_mode = request.session.get("events_view_mode", "calendar")
-    table_data = get_table_data(request)
-
-    events_filter = request.session.get("events_filter", {})
-    events_filter_status = events_filter.get("status", "")
-
-    # Get assigned_to filter display value
-    assigned_to_value = events_filter.get("assigned_to", "")
-    if assigned_to_value == "unassigned":
-        events_filter_assigned = "Firm"
-    elif assigned_to_value and assigned_to_value.startswith("firm_and_user:"):
-        try:
-            user_id = int(assigned_to_value.split(":")[1])
-            user = CustomUser.objects.get(pk=user_id)
-            name = user.get_short_name() or user.username
-            events_filter_assigned = f"Firm + {name}"
-        except (ValueError, TypeError, IndexError, CustomUser.DoesNotExist):
-            events_filter_assigned = ""
-    elif assigned_to_value:
-        try:
-            user = CustomUser.objects.get(pk=int(assigned_to_value))
-            events_filter_assigned = user.get_short_name() or user.username
-        except (ValueError, CustomUser.DoesNotExist):
-            events_filter_assigned = ""
-    else:
-        events_filter_assigned = ""
-
-    # Get matter filter display value
-    matter_value = events_filter.get("matter", "")
-    if matter_value == "unassigned":
-        events_filter_matter = "Unassigned"
-    elif matter_value:
-        try:
-            matter_obj = Matter.objects.get(pk=int(matter_value))
-            events_filter_matter = matter_obj.name
-        except (ValueError, Matter.DoesNotExist):
-            events_filter_matter = ""
-    else:
-        events_filter_matter = ""
 
     context = {
         "app": "events",
         "third_day": third_day,
         "view_mode": view_mode,
-        "events_filter_status": events_filter_status,
-        "events_filter_assigned": events_filter_assigned,
-        "events_filter_assigned_value": assigned_to_value,
-        "events_filter_matter": events_filter_matter,
-        "events_filter_matter_value": matter_value,
-        "matters": Matter.objects.filter(status__in=["Pending", "Open"]).order_by(
-            "name"
-        ),
-        "users": CustomUser.objects.filter(is_active=True).order_by(
-            "first_name", "last_name"
-        ),
-    } | table_data
+    } | get_table_data(request)
 
     return render(request, "calendar/main.html", context)
 
@@ -108,67 +66,19 @@ def events_index(request):
 @login_required
 def events_list(request):
     """Returns the appropriate view (list or calendar) based on session."""
-    from apps.accounts.models import CustomUser
-
     today = timezone.localdate()
     third_day = today + timedelta(days=3)
 
     view_mode = request.session.get("events_view_mode", "calendar")
-    events_filter = request.session.get("events_filter", {})
-    events_filter_status = events_filter.get("status", "")
-
-    # Get assigned_to filter display value
-    assigned_to_value = events_filter.get("assigned_to", "")
-    if assigned_to_value == "unassigned":
-        events_filter_assigned = "Firm"
-    elif assigned_to_value and assigned_to_value.startswith("firm_and_user:"):
-        try:
-            user_id = int(assigned_to_value.split(":")[1])
-            user = CustomUser.objects.get(pk=user_id)
-            name = user.get_short_name() or user.username
-            events_filter_assigned = f"Firm + {name}"
-        except (ValueError, TypeError, IndexError, CustomUser.DoesNotExist):
-            events_filter_assigned = ""
-    elif assigned_to_value:
-        try:
-            user = CustomUser.objects.get(pk=int(assigned_to_value))
-            events_filter_assigned = user.get_short_name() or user.username
-        except (ValueError, CustomUser.DoesNotExist):
-            events_filter_assigned = ""
-    else:
-        events_filter_assigned = ""
-
-    # Get matter filter display value
-    matter_value = events_filter.get("matter", "")
-    if matter_value == "unassigned":
-        events_filter_matter = "Unassigned"
-    elif matter_value:
-        try:
-            matter_obj = Matter.objects.get(pk=int(matter_value))
-            events_filter_matter = matter_obj.name
-        except (ValueError, Matter.DoesNotExist):
-            events_filter_matter = ""
-    else:
-        events_filter_matter = ""
 
     context = {
         "app": "events",
         "third_day": third_day,
         "view_mode": view_mode,
-        "events_filter_status": events_filter_status,
-        "events_filter_assigned": events_filter_assigned,
-        "events_filter_assigned_value": assigned_to_value,
-        "events_filter_matter": events_filter_matter,
-        "events_filter_matter_value": matter_value,
-        "matters": Matter.objects.filter(status__in=["Pending", "Open"]).order_by(
-            "name"
-        ),
-        "users": CustomUser.objects.filter(is_active=True).order_by(
-            "first_name", "last_name"
-        ),
     }
 
     if view_mode == "calendar":
+        context = context | toolbar_context(request)
         return render(request, "calendar/calendar.html", context)
 
     context = context | get_table_data(request)
@@ -182,32 +92,41 @@ def events_select(request):
 
 @login_required
 def events_filter(request):
-    filter_manager = FilterManager(request, EventFilter, "events_filter")
+    filter_manager = FilterManager(request, EventFilter, SESSION_KEY)
 
     if filter_manager.process_filter():
         return HttpResponse(status=204, headers={"HX-Trigger": "eventsChanged"})
 
-    return render(
-        request,
-        "calendar/filter.html",
-        {"filter": filter_manager.get_filter(Event.objects.all())},
-    )
+    return render(request, "calendar/filter.html", {"filter": event_filter(request)})
+
+
+@login_required
+def events_filter_menus(request):
+    """The toolbar's status, assignee and matter menus as the saved filter
+    now stands. The calendar view asks for these after a filter change,
+    because it refetches its events without re-rendering the toolbar."""
+    return render(request, "calendar/filter-menus.html", toolbar_context(request))
 
 
 @login_required
 def events_filter_quick(request, quick_filter):
-    filter_manager = FilterManager(request, EventFilter, "events_filter")
+    filter_manager = FilterManager(request, EventFilter, SESSION_KEY)
     filter_manager.apply_quick_filter(quick_filter)
 
     return HttpResponse(status=204, headers={"HX-Trigger": "eventsChanged"})
 
 
+def _save_filter_value(request, key, value):
+    """Set one value of the saved filter, keeping the rest."""
+    events_filter = saved_filter(request)
+    events_filter[key] = value if value else ""
+    request.session[SESSION_KEY] = events_filter
+    request.session.modified = True
+
+
 @login_required
 def events_filter_status(request, status):
-    events_filter = request.session.get("events_filter", {})
-    events_filter["status"] = status if status else ""
-    request.session["events_filter"] = events_filter
-    request.session.modified = True
+    _save_filter_value(request, "status", status)
 
     response = render(
         request,
@@ -221,43 +140,10 @@ def events_filter_status(request, status):
 @login_required
 def events_filter_assigned(request, assigned):
     """Filter events by assigned_to value."""
-    from apps.accounts.models import CustomUser
-
-    events_filter = request.session.get("events_filter", {})
-    events_filter["assigned_to"] = assigned if assigned else ""
-    request.session["events_filter"] = events_filter
-    request.session.modified = True
-
-    # Get display value for the dropdown
-    if assigned == "unassigned":
-        display_value = "Firm"
-    elif assigned and assigned.startswith("firm_and_user:"):
-        try:
-            user_id = int(assigned.split(":")[1])
-            user = CustomUser.objects.get(pk=user_id)
-            name = user.get_short_name() or user.username
-            display_value = f"Firm + {name}"
-        except (ValueError, TypeError, IndexError, CustomUser.DoesNotExist):
-            display_value = ""
-    elif assigned:
-        try:
-            user = CustomUser.objects.get(pk=int(assigned))
-            display_value = user.get_short_name() or user.username
-        except (ValueError, CustomUser.DoesNotExist):
-            display_value = ""
-    else:
-        display_value = ""
+    _save_filter_value(request, "assigned_to", assigned)
 
     response = render(
-        request,
-        "calendar/assigned-dropdown.html",
-        {
-            "events_filter_assigned": display_value,
-            "events_filter_assigned_value": assigned,
-            "users": CustomUser.objects.filter(is_active=True).order_by(
-                "first_name", "last_name"
-            ),
-        },
+        request, "calendar/assigned-dropdown.html", toolbar_context(request)
     )
     response["HX-Trigger"] = "eventsChanged"
     return response
@@ -266,33 +152,12 @@ def events_filter_assigned(request, assigned):
 @login_required
 def events_filter_matter(request, matter):
     """Filter events by matter value."""
-    events_filter = request.session.get("events_filter", {})
-    events_filter["matter"] = matter if matter else ""
-    request.session["events_filter"] = events_filter
-    request.session.modified = True
+    _save_filter_value(request, "matter", matter)
 
-    # Get display value for the dropdown
-    if matter == "unassigned":
-        display_value = "Unassigned"
-    elif matter:
-        try:
-            matter_obj = Matter.objects.get(pk=int(matter))
-            display_value = matter_obj.name
-        except (ValueError, Matter.DoesNotExist):
-            display_value = ""
-    else:
-        display_value = ""
-
+    # The menu is rebuilt from this user's own choices, so naming a matter
+    # that is not theirs neither filters by it nor shows its name.
     response = render(
-        request,
-        "calendar/matter-dropdown.html",
-        {
-            "events_filter_matter": display_value,
-            "events_filter_matter_value": matter,
-            "matters": Matter.objects.filter(status__in=["Pending", "Open"]).order_by(
-                "name"
-            ),
-        },
+        request, "calendar/matter-dropdown.html", toolbar_context(request)
     )
     response["HX-Trigger"] = "eventsChanged"
     return response
@@ -300,7 +165,7 @@ def events_filter_matter(request, matter):
 
 @login_required
 def events_filter_sort(request, order):
-    filter_data = request.session.get("events_filter", {})
+    filter_data = saved_filter(request)
 
     current_order = filter_data.get("order_by", "")
     if isinstance(current_order, list):
@@ -312,13 +177,39 @@ def events_filter_sort(request, order):
         new_order = order
 
     filter_data["order_by"] = new_order
-    request.session["events_filter"] = filter_data
+    request.session[SESSION_KEY] = filter_data
     request.session.modified = True
 
     return HttpResponse(status=204, headers={"HX-Trigger": "eventsChanged"})
 
 
+def _initial_from_click(request):
+    """The date, and the start time when a time slot was clicked, that the
+    calendar asks Add Event to open with. Anything unreadable falls back to
+    today with no time."""
+    initial = {"date": timezone.localdate()}
+
+    # Only the date part is read, so a full date-time here still lands on
+    # the day that was clicked.
+    try:
+        initial["date"] = datetime.strptime(
+            request.GET.get("date", "")[:10], "%Y-%m-%d"
+        ).date()
+    except ValueError:
+        pass
+
+    try:
+        initial["start_time"] = datetime.strptime(
+            request.GET.get("start_time", "")[:5], "%H:%M"
+        ).time()
+    except ValueError:
+        pass
+
+    return initial
+
+
 @login_required
+@matter_access_required
 def events_add(request, matter_id=None, origin="events"):
     # identify the origin of the request (events or agenda)
     if request.method == "GET":
@@ -328,21 +219,22 @@ def events_add(request, matter_id=None, origin="events"):
     # set the origin of the request, defaulting to "events"
     origin = request.session.get("origin", "events")
 
+    # The matter the form was opened from stays in the list whatever its
+    # status. Left out, a Complete or Closed matter was missing from the
+    # select and the event saved with no matter.
+    matters = matters_for_events(request.user, include_id=matter_id)
+
     # if applicable, process any post data submitted by user
     if request.method == "POST":
-        form = EventForm(request.POST, use_required_attribute=False)
+        form = EventForm(request.POST, matters=matters, use_required_attribute=False)
         if form.is_valid():
             # initialize event data
             event = form.save(commit=False)
             event.user = request.user
 
-            # Auto-set end_time to 1 hour after start_time if only start_time provided
+            # An event saved with a start and no end runs for an hour
             if event.start_time and not event.end_time:
-                start_datetime = datetime.combine(
-                    timezone.localdate(), event.start_time
-                )
-                end_datetime = start_datetime + timedelta(hours=1)
-                event.end_time = end_datetime.time()
+                event.end_time = default_end_time(event.start_time)
 
             event.save()
 
@@ -355,35 +247,10 @@ def events_add(request, matter_id=None, origin="events"):
 
     # if no post data has been submitted, show the contact form
     else:
-        # Use date from query param if provided, otherwise today
-        date_param = request.GET.get("date")
-        if date_param:
-            try:
-                initial_date = datetime.strptime(date_param, "%Y-%m-%d").date()
-            except ValueError:
-                initial_date = timezone.localdate()
-        else:
-            initial_date = timezone.localdate()
-
+        initial = _initial_from_click(request)
         if matter_id:
-            form = EventForm(
-                initial={
-                    "matter": matter_id,
-                    "date": initial_date,
-                },
-                use_required_attribute=False,
-            )
-        else:
-            form = EventForm(
-                initial={
-                    "date": initial_date,
-                },
-                use_required_attribute=False,
-            )
-
-    form.fields["matter"].queryset = Matter.objects.filter(
-        status__in=["Pending", "Open"]
-    ).order_by("name")
+            initial["matter"] = matter_id
+        form = EventForm(initial=initial, matters=matters, use_required_attribute=False)
 
     # When no matter is pre-selected, autofocus the matter select instead of description
     if not matter_id:
@@ -394,13 +261,22 @@ def events_add(request, matter_id=None, origin="events"):
 
     today = timezone.localdate().strftime("%Y-%m-%d")
 
+    # The form posts back to the address that names its matter, so the same
+    # matter list validates the submission. (The address with a matter and
+    # no origin is not used: "events/add/<origin>" sits above it in urls.py
+    # and takes a bare number as an origin.)
+    if matter_id:
+        action = reverse("calendar:add-matter-origin", args=[matter_id, origin])
+    else:
+        action = reverse("calendar:add")
+
     context = {
         "app": "events",
         "today": today,
         "edit": False,
         "add": True,
         "results": None,
-        "action": "/events/add",
+        "action": action,
         "google_connected": google_connected,
         "form": form,
     }
@@ -415,37 +291,27 @@ def events_edit(request, id, origin="events"):
         request.session["origin"] = origin
     origin = request.session.get("origin", "events")
 
-    event = get_object_or_404(Event, pk=id)
+    event = event_for_user(id, request.user)
+
+    # The matter the event is already on stays in the list even when it is
+    # closed, so the select can show it.
+    matters = matters_for_events(request.user, include_id=event.matter_id)
 
     if request.method == "POST":
-        form = EventForm(request.POST, instance=event, use_required_attribute=False)
-
-        # get list of open matters
-        matter_list = Matter.objects.filter(status__in=["Pending", "Open"]).order_by(
-            "name"
+        form = EventForm(
+            request.POST,
+            instance=event,
+            matters=matters,
+            use_required_attribute=False,
         )
-
-        # make sure the matter associated with the event is in the list
-        # if not, add it
-        # this ensures the matter is available in the form select element
-        # even when the matter is closed
-        if event.matter and event.matter not in matter_list:
-            matter_list |= Matter.objects.filter(pk=event.matter.id)
-
-        # bind list of matters to select element
-        form.fields["matter"].queryset = matter_list
 
         if form.is_valid():
             event = form.save(commit=False)
             event.user = request.user
 
-            # Auto-set end_time to 1 hour after start_time if only start_time provided
+            # An event saved with a start and no end runs for an hour
             if event.start_time and not event.end_time:
-                start_datetime = datetime.combine(
-                    timezone.localdate(), event.start_time
-                )
-                end_datetime = start_datetime + timedelta(hours=1)
-                event.end_time = end_datetime.time()
+                event.end_time = default_end_time(event.start_time)
 
             event.save()
 
@@ -458,21 +324,9 @@ def events_edit(request, id, origin="events"):
         form = EventForm(
             instance=event,
             initial={"matter": event.matter},
+            matters=matters,
             use_required_attribute=False,
         )
-
-    # pull the list of matters
-    matter_list = Matter.objects.filter(status__in=["Pending", "Open"]).order_by("name")
-
-    # make sure the matter associated with the event is in the list
-    # if not, add it
-    # this ensures the matter is available in the form select element
-    # even when the matter is closed
-    if event.matter and event.matter not in matter_list:
-        matter_list |= Matter.objects.filter(pk=event.matter.id)
-
-    # bind list of matters to select element
-    form.fields["matter"].queryset = matter_list
 
     google_connected = google.check_credentials()
 
@@ -492,13 +346,13 @@ def events_edit(request, id, origin="events"):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def events_delete(request, id, origin="events"):
-    # identify the origin of the request (events or agenda)
-    if request.method == "GET":
-        request.session["origin"] = origin
+    # The origin that counts is the one saved when the Edit Event dialog was
+    # opened: its Delete button names "events" wherever it was opened from.
     origin = request.session.get("origin", "events")
 
-    event = get_object_or_404(Event, pk=id)
+    event = event_for_user(id, request.user)
 
     # Remove from Google (queues a retry on failure) before deleting locally.
     sync_failed = sync.delete_event_remote(event) == "failed"
@@ -513,24 +367,39 @@ def events_delete(request, id, origin="events"):
     )
 
 
-@login_required
-def events_google_sync(request, id):
-    event = get_object_or_404(Event, pk=id)
-    sync.push_event(event)
-    return redirect("/events")
+def _deadline_inputs(request):
+    """The calculator's start date and day count, or the message to show
+    when either cannot be read."""
+    try:
+        initial_date = parser.parse(request.POST.get("initial_date", ""))
+    except (ValueError, OverflowError):
+        return None, None, "Enter a start date."
+
+    try:
+        days = int(request.POST.get("days", "").strip())
+    except ValueError:
+        return None, None, "Days must be a whole number."
+
+    return initial_date, days, None
 
 
 @login_required
 def events_deadline_results(request, matter_id=None):
-    # get the submitted initial date and days
-    initial_date = request.POST["initial_date"]
-    days = int(request.POST["days"])
+    initial_date, days, error = _deadline_inputs(request)
 
-    # convert initial date to python date object
-    initial_date = parser.parse(initial_date)
+    # calculate deadline; a count that runs past the calendar's last year
+    # is refused like any other unusable entry
+    deadline = None
+    if not error:
+        try:
+            deadline = initial_date + timedelta(days=days)
+        except OverflowError:
+            error = "That many days is out of range."
 
-    # calculate deadline
-    deadline = initial_date + timedelta(days=days)
+    if error:
+        return render(
+            request, "calendar/deadline-calculator-results.html", {"error": error}
+        )
 
     # determine whether deadline falls on a weekday
     # if so, provide the date of the next Monday
@@ -579,19 +448,16 @@ def events_calendar(request):
     today = timezone.localdate()
     third_day = today + timedelta(days=3)
 
-    events_filter = request.session.get("events_filter", {})
-    events_filter_status = events_filter.get("status", "")
-
     context = {
         "app": "events",
         "third_day": third_day,
         "view_mode": "calendar",
-        "events_filter_status": events_filter_status,
-    }
+    } | toolbar_context(request)
     return render(request, "calendar/calendar.html", context)
 
 
 @login_required
+@matter_access_required
 def events_api(request, matter_id=None):
     """
     JSON API for FullCalendar event feed.
@@ -621,10 +487,9 @@ def events_api(request, matter_id=None):
         if status:
             events = events.filter(status=status)
     else:
-        # Apply existing filter from session
-        events_filter_data = request.session.get("events_filter", {})
-        filter_instance = EventFilter(events_filter_data, queryset=Event.objects.all())
-        events = filter_instance.qs
+        # The saved filter (the default when none is saved), over the events
+        # this user may see
+        events = event_filter(request).qs
     events = events.filter(date__gte=start_date, date__lte=end_date)
 
     # Convert to FullCalendar format
@@ -692,7 +557,7 @@ def events_quick_update(request, id):
     Quick update for drag-drop operations.
     Only updates date/time fields.
     """
-    event = get_object_or_404(Event, pk=id)
+    event = event_for_user(id, request.user)
 
     # Parse the update data
     data = json.loads(request.body)
