@@ -38,6 +38,16 @@ from apps.trust.available import trust_available_by_client
 from apps.trust.trust import get_pending_client_balance
 
 
+def _events_for(user):
+    """Events the user may see: those on matters they can open, and those on
+    no matter at all."""
+    if user.is_admin or user.perm_all_matters:
+        return Event.objects.all()
+    return Event.objects.filter(
+        Q(matter__isnull=True) | Q(matter__in=user.assigned_matters.all())
+    )
+
+
 def dash_events_context(request):
     """The next upcoming pending events, plus any still-pending past-due
     ones — an event stays on the dash until it's marked complete or
@@ -50,9 +60,9 @@ def dash_events_context(request):
     """
     today = timezone.localdate()
     return {
-        "upcoming_events": Event.objects.filter(
-            status="Pending", date__isnull=False
-        ).order_by("date", "start_time", "party")[:7],
+        "upcoming_events": _events_for(request.user)
+        .filter(status="Pending", date__isnull=False)
+        .order_by("date", "start_time", "party")[:7],
         "today": today,
         "tomorrow": today + timedelta(days=1),
         "yesterday": today - timedelta(days=1),

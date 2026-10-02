@@ -1,3 +1,4 @@
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -42,6 +43,9 @@ def personal_profile(request, form_type=None):
             if change_password_form.is_valid() and form_type == "password":
                 user = change_password_form.save(commit=True)
                 user.save()
+                # Sessions are tied to the password hash: without this the
+                # change would sign the user out of the session making it.
+                update_session_auth_hash(request, user)
 
                 return HttpResponse(
                     '<div class="success-msg">Password changed successfully</div>'
