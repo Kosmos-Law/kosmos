@@ -1,10 +1,17 @@
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.activity.access import (
+    entries_for_user,
+    entry_for_user,
+    locked_response,
+    matters_for_entry_form,
+)
 from apps.activity.flat_fees.get_flat_fees_data import get_flat_fees_data
 from apps.activity.presets import activity_date_filters, detect_filter_label
 from apps.management.selection import (
@@ -17,6 +24,7 @@ from apps.management.selection import (
 )
 from apps.management.user_filter import cycle_user_filter
 from apps.matters.models import Matter
+from utils.toasts import toast_warning
 
 from .export import write_standard_csv
 from .filter import FlatFeeEntryFilter
@@ -26,11 +34,10 @@ from .models import FlatFeeEntry
 FLAT_FEES_TRIGGER = "flatFeesChanged"
 
 
-def _flat_fee_matter_queryset():
-    return Matter.objects.filter(
-        billing_type="FLAT_FEE",
-        status__in=["Pending", "Open", "Complete"],
-    ).order_by("name")
+def _flat_fee_matters(user, include_id=None):
+    """Flat-fee matters the user may work on, plus ``include_id`` whatever
+    its status."""
+    return matters_for_entry_form(user, billing_type="FLAT_FEE", include_id=include_id)
 
 
 @login_required
@@ -171,13 +178,7 @@ def flat_fees_add(request, id=None, request_app="activity"):
         else:
             form = FlatFeeEntryForm(initial={"date": today}, user=request.user)
 
-    matter_list = _flat_fee_matter_queryset()
-
-    if id:
-        selected_matter = Matter.objects.filter(id=id, billing_type="FLAT_FEE")
-        if selected_matter.exists() and selected_matter.first().status == "Closed":
-            matter_list |= selected_matter
-
+    matter_list = _flat_fee_matters(request.user, include_id=id)
     form.fields["matter"].queryset = matter_list
 
     if not id:
@@ -203,25 +204,26 @@ def flat_fees_add(request, id=None, request_app="activity"):
 
 @login_required
 def flat_fees_edit(request, id):
-    entry = get_object_or_404(FlatFeeEntry, pk=id)
+    entry = entry_for_user(FlatFeeEntry, id, request.user)
+    refusal = locked_response(entry)
+    if refusal:
+        return refusal
+    original_matter_id = entry.matter_id
+    matter_list = _flat_fee_matters(request.user, include_id=original_matter_id)
 
     if request.method == "POST":
         form = FlatFeeEntryForm(request.POST, instance=entry, user=request.user)
         if form.is_valid():
-            original_entry = get_object_or_404(FlatFeeEntry, pk=id)
             entry = form.save(commit=False)
-            if original_entry.matter != entry.matter:
+            # A moved entry comes off its (draft) invoice.
+            if original_matter_id != entry.matter_id:
                 entry.invoice = None
             entry.save()
             return HttpResponse(status=204, headers={"HX-Trigger": FLAT_FEES_TRIGGER})
     else:
-        matter_list = _flat_fee_matter_queryset()
-        if entry.matter:
-            selected_matter = Matter.objects.filter(id=entry.matter.id)
-            if selected_matter.first().status == "Closed":
-                matter_list |= selected_matter
         form = FlatFeeEntryForm(instance=entry, user=request.user)
-        form.fields["matter"].queryset = matter_list
+
+    form.fields["matter"].queryset = matter_list
 
     context = {
         "app": "activity",
@@ -230,24 +232,31 @@ def flat_fees_edit(request, id):
         "action": f"/activity/flat-fees/{id}/edit",
         "entry": entry,
         "form": form,
-        "matter_list": _flat_fee_matter_queryset(),
+        "matter_list": matter_list,
     }
 
     return render(request, "activity/flat-fees/form.html", context)
 
 
 @login_required
-def flat_fees_delete(_, id):
-    FlatFeeEntry.objects.get(pk=id).delete()
+def flat_fees_delete(request, id):
+    entry = entry_for_user(FlatFeeEntry, id, request.user)
+    refusal = locked_response(entry)
+    if refusal:
+        return refusal
+    entry.delete()
     return HttpResponse(status=204, headers={"HX-Trigger": FLAT_FEES_TRIGGER})
 
 
 @login_required
+@require_POST
 def flat_fees_toggle_entered(request, id):
-    entry = get_object_or_404(FlatFeeEntry, pk=id)
+    entry = entry_for_user(FlatFeeEntry, id, request.user)
+    if entry.invoice_id:
+        return HttpResponseForbidden("This entry is on an invoice.")
     entry.entered = not entry.entered
     entry.save()
-    return redirect("/activity/flat-fees")
+    return HttpResponse(status=204, headers={"HX-Trigger": FLAT_FEES_TRIGGER})
 
 
 @login_required
@@ -255,9 +264,11 @@ def matter_amount(request, matter_id):
     """AJAX endpoint that returns the matter's flat_fee_amount as plain text."""
     try:
         matter = Matter.objects.get(pk=matter_id, billing_type="FLAT_FEE")
-        amount = matter.flat_fee_amount
     except Matter.DoesNotExist:
-        amount = ""
+        return HttpResponse("")
+    if not request.user.has_matter_access(matter):
+        raise PermissionDenied
+    amount = matter.flat_fee_amount
     return HttpResponse(amount if amount is not None else "")
 
 
@@ -270,12 +281,14 @@ def flat_fees_export_to_csv(request, format):
         headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
     )
 
+    # The entries the list shows: the user's filter, within the matters the
+    # user may see.
     filter_data = request.session.get("flat_fees_filter", {})
     if filter_data:
-        filter = FlatFeeEntryFilter(filter_data)
-        entries = filter.qs
+        entries = FlatFeeEntryFilter(filter_data).qs
     else:
         entries = FlatFeeEntry.objects.all().order_by("date", "id")
+    entries = entries_for_user(entries, request.user)
 
     write_standard_csv(entries, response)
     return response
@@ -305,6 +318,18 @@ def flat_fees_clear_selection(request):
     return selection_response(FLAT_FEES_TRIGGER)
 
 
+def _bulk_response(locked):
+    """The reply to a bulk change, saying how many entries were left alone."""
+    response = HttpResponse(status=204, headers={"HX-Trigger": FLAT_FEES_TRIGGER})
+    if locked:
+        toast_warning(
+            response,
+            f"Skipped {locked} {'entry' if locked == 1 else 'entries'} "
+            "on a finalized invoice.",
+        )
+    return response
+
+
 @login_required
 def flat_fees_bulk_update_matter(request):
     if not request.user.is_admin and not request.user.perm_financial:
@@ -320,15 +345,25 @@ def flat_fees_bulk_update_matter(request):
         matter_id = request.POST.get("matter")
         if matter_id:
             matter = get_object_or_404(Matter, pk=matter_id, billing_type="FLAT_FEE")
-            entries = FlatFeeEntry.objects.filter(id__in=selected)
+            if not request.user.has_matter_access(matter):
+                raise PermissionDenied
+            entries = entries_for_user(
+                FlatFeeEntry.objects.filter(id__in=selected), request.user
+            ).select_related("invoice")
+            locked = 0
             for entry in entries:
+                # Entries on a finalized invoice are no longer editable:
+                # moving one would silently pull it off the invoice.
+                if entry.locked:
+                    locked += 1
+                    continue
                 entry.matter = matter
                 entry.invoice = None
                 entry.save()
             clear_selected_ids(request, key)
-            return HttpResponse(status=204, headers={"HX-Trigger": FLAT_FEES_TRIGGER})
+            return _bulk_response(locked)
 
-    matters = _flat_fee_matter_queryset()
+    matters = _flat_fee_matters(request.user)
 
     context = {
         "selected_count": len(selected),
@@ -352,13 +387,20 @@ def flat_fees_bulk_update_comp(request):
     if request.method == "POST":
         comp_value = request.POST.get("comp")
         if comp_value in ["true", "false"]:
-            entries = FlatFeeEntry.objects.filter(id__in=selected)
+            entries = entries_for_user(
+                FlatFeeEntry.objects.filter(id__in=selected), request.user
+            ).select_related("invoice")
             comp_bool = comp_value == "true"
+            locked = 0
             for entry in entries:
+                # Entries on a finalized invoice are no longer editable.
+                if entry.locked:
+                    locked += 1
+                    continue
                 entry.comp = comp_bool
                 entry.save()
             clear_selected_ids(request, key)
-            return HttpResponse(status=204, headers={"HX-Trigger": FLAT_FEES_TRIGGER})
+            return _bulk_response(locked)
 
     context = {
         "selected_count": len(selected),

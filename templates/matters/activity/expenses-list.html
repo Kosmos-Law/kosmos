@@ -16,14 +16,19 @@
           <td class="date">{{ expense.date|date:"Y-m-d"|default:"" }}</td>
           <td class="user">{{ expense.user.initials }}</td>
           <td class="actions card-desc">
-            <a href="#"
-               hx-get="/activity/expenses/{{ expense.id }}/edit"
-               hx-target="#htmx-modal-container"
-               hx-trigger="click"
-               data-bs-toggle="modal"
-               data-bs-target="#htmx-modal-container">
-              {% if expense.category %}{{ expense.category }} —{% endif %}
-            {{ expense.description }}</a>
+            {% if expense.locked %}
+              {% if expense.category %}{{ expense.category }} -{% endif %}
+              {{ expense.description }}
+            {% else %}
+              <a href="#"
+                 hx-get="/activity/expenses/{{ expense.id }}/edit"
+                 hx-target="#htmx-modal-container"
+                 hx-trigger="click"
+                 data-bs-toggle="modal"
+                 data-bs-target="#htmx-modal-container">
+                {% if expense.category %}{{ expense.category }} -{% endif %}
+              {{ expense.description }}</a>
+            {% endif %}
           </td>
           <td class="category">
             {% include "activity/categories/cell.html" with object_type="expense" object=expense category=expense.activity_category %}

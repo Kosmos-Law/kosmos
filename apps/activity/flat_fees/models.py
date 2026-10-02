@@ -31,6 +31,12 @@ class FlatFeeEntry(AuditMixin, models.Model):
         ]
 
     @property
+    def locked(self):
+        """On an invoice that has left DRAFT: no longer eligible for editing
+        (matter/comp/amount changes)."""
+        return self.invoice_id is not None and self.invoice.status != "DRAFT"
+
+    @property
     def discounted_amount(self):
         if self.comp:
             return self.amount

@@ -69,7 +69,7 @@ def test_delete(client, expense):
 
 def test_toggle_entered(client, expense):
     assert expense.entered is False
-    client.get(f"/activity/expenses/{expense.id}/toggle-entered")
+    client.post(f"/activity/expenses/{expense.id}/toggle-entered")
     expense.refresh_from_db()
     assert expense.entered is True
 

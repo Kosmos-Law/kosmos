@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.http import (
     Http404,
@@ -12,7 +12,12 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.activity.expenses.models import ExpenseEntry
+from apps.activity.access import (
+    entries_for_user,
+    entry_for_user,
+    locked_response,
+    matters_for_entry_form,
+)
 from apps.activity.presets import activity_date_filters, detect_filter_label
 from apps.activity.time.get_time_data import get_time_data
 from apps.management.pagination import CustomPaginator
@@ -40,11 +45,8 @@ def calculate_rate_for_matter(matter, user):
     Calculate the appropriate rate for a matter and user.
     Uses matter-specific rate if set, otherwise falls back to user rate.
     """
-    try:
-        rate = Rate.objects.filter(matter=matter, user=user).get()
-        return rate.matter_rate
-    except ObjectDoesNotExist:
-        return user.user_rate
+    rate = Rate.objects.filter(matter=matter, user=user).order_by("id").first()
+    return rate.matter_rate if rate else user.user_rate
 
 
 @login_required
@@ -293,23 +295,11 @@ def time_add(request, id=None, request_app="activity"):
                 initial={"date": today, "hours": 0.2}, user=request.user
             )
 
-    # get list of matters for activity form (hourly only)
-    matter_list = Matter.objects.filter(
-        status__in=["Pending", "Open", "Complete"],
-        billing_type="HOURLY",
-    ).order_by("name")
-
-    # if a single matter is selected,  pull that matter as a quersyset
-    if id:
-        selected_matter = Matter.objects.filter(id=id, billing_type="HOURLY")
-
-        # if the matter is closed, add it to the matter list
-        # if it is open, don't add it
-        # avoid creating two instances of the same matter
-        if selected_matter.exists() and selected_matter.first().status == "Closed":
-            matter_list |= selected_matter
-
-    # set the form fields
+    # Hourly matters the user may work on; the matter the form was opened
+    # from stays in the list even when it is closed.
+    matter_list = matters_for_entry_form(
+        request.user, billing_type="HOURLY", include_id=id
+    )
     form.fields["matter"].queryset = matter_list
 
     # When no matter is pre-selected, autofocus the matter select instead of actions
@@ -336,19 +326,26 @@ def time_add(request, id=None, request_app="activity"):
 
 @login_required
 def time_edit(request, id):
-    entry = get_object_or_404(TimeEntry, pk=id)
+    entry = entry_for_user(TimeEntry, id, request.user)
+    refusal = locked_response(entry)
+    if refusal:
+        return refusal
+    original_matter_id = entry.matter_id
+
+    # Hourly matters the user may work on, plus the entry's own matter
+    # whatever its status.
+    matter_list = matters_for_entry_form(
+        request.user, billing_type="HOURLY", include_id=original_matter_id
+    )
 
     if request.method == "POST":
         form = TimeEntryForm(request.POST, instance=entry, user=request.user)
         if form.is_valid():
-            original_entry = get_object_or_404(TimeEntry, pk=id)
             entry = form.save(commit=False)
 
-            # if the matter has been changed, be sure to clear the
-            # entry off of any relevant invoice
-            # this will not happen if the invoice has been approved,
-            # because editing will be locked at that point
-            if original_entry.matter != entry.matter:
+            # A moved entry comes off its (draft) invoice: that invoice
+            # belongs to the matter it left.
+            if original_matter_id != entry.matter_id:
                 entry.invoice = None
 
             if form.cleaned_data.get("apply_codes"):
@@ -359,21 +356,9 @@ def time_edit(request, id):
             return HttpResponse(status=204, headers={"HX-Trigger": "timeChanged"})
 
     else:
-        # get list of matters for activity form (hourly only)
-        matter_list = Matter.objects.filter(
-            status__in=["Pending", "Open", "Complete"],
-            billing_type="HOURLY",
-        ).order_by("name")
-
-        selected_matter = Matter.objects.filter(id=entry.matter.id)
-        if selected_matter.first().status == "Closed":
-            matter_list |= selected_matter
-
-        # initialize form
         form = TimeEntryForm(instance=entry, user=request.user)
 
-        # set the form fields
-        form.fields["matter"].queryset = matter_list
+    form.fields["matter"].queryset = matter_list
 
     context = {
         "app": "activity",
@@ -389,88 +374,25 @@ def time_edit(request, id):
 
 
 @login_required
-def time_delete(_, id):
-    TimeEntry.objects.get(pk=id).delete()
+def time_delete(request, id):
+    entry = entry_for_user(TimeEntry, id, request.user)
+    refusal = locked_response(entry)
+    if refusal:
+        return refusal
+    entry.delete()
 
     return HttpResponse(status=204, headers={"HX-Trigger": "timeChanged"})
 
 
 @login_required
+@require_POST
 def time_toggle_entered(request, id):
-    entry = get_object_or_404(TimeEntry, pk=id)
+    entry = entry_for_user(TimeEntry, id, request.user)
+    if entry.invoice_id:
+        return HttpResponseForbidden("This entry is on an invoice.")
     entry.entered = not entry.entered
     entry.save()
-    return redirect("/activity")
-
-
-@login_required
-def export_old(request):
-    import csv
-
-    from django.http import HttpResponse
-
-    # Create the HttpResponse object with the appropriate CSV header.
-    response = HttpResponse(
-        content_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="time_entries.csv"'},
-    )
-
-    entries = TimeEntry.objects.all()
-    entries = entries.exclude(matter__clio_matter_id__isnull=True)
-    entries = entries.filter(entered=False)
-    entries = entries.order_by("-date", "-id")
-
-    writer = csv.writer(response)
-    writer.writerow(
-        [
-            "matter",
-            "date",
-            "activity_description",
-            "note",
-            "price",
-            "quantity",
-            "type",
-            "activity_user",
-            "non-billable",
-        ]
-    )
-
-    for entry in entries:
-        writer.writerow(
-            [
-                entry.matter.clio_matter_id,
-                entry.date.strftime("%m/%d/%Y"),
-                "",
-                entry.actions,
-                entry.rate,
-                entry.hours,
-                "TimeEntry",
-                entry.user.get_full_name(),
-                entry.comp,
-            ]
-        )
-
-    entries = ExpenseEntry.objects.all()
-    entries = entries.exclude(matter__clio_matter_id="")
-    entries = entries.filter(entered=False)
-    entries = entries.order_by("-date", "-id")
-
-    for entry in entries:
-        writer.writerow(
-            [
-                entry.matter.clio_matter_id,
-                entry.date.strftime("%m/%d/%Y"),
-                "",
-                entry.description,
-                entry.amount,
-                "1",
-                "ExpenseEntry",
-                entry.user.get_full_name(),
-                entry.comp,
-            ]
-        )
-
-    return response
+    return HttpResponse(status=204, headers={"HX-Trigger": "timeChanged"})
 
 
 @login_required
@@ -485,14 +407,14 @@ def time_export_to_csv(request, format):
         headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
     )
 
-    # get the time entries per the user filter
-    entries = TimeEntry.objects.all()
+    # The entries the list shows: the user's filter, within the matters the
+    # user may see.
     filter_data = request.session.get("time_filter", {})
     if filter_data:
-        filter = TimeEntryFilter(filter_data)
-        entries = filter.qs
+        entries = TimeEntryFilter(filter_data).qs
     else:
         entries = TimeEntry.objects.all().order_by("date", "id")
+    entries = entries_for_user(entries, request.user)
 
     # write the time entries to CSV
     if format == "clio":
@@ -508,11 +430,12 @@ def set_rate(request, matter_id):
     """AJAX endpoint to get the rate for a matter and return it as plain text."""
     try:
         matter = Matter.objects.get(pk=matter_id)
-        rate_value = calculate_rate_for_matter(matter, request.user)
     except Matter.DoesNotExist:
-        rate_value = request.user.user_rate
+        return HttpResponse(request.user.user_rate)
+    if not request.user.has_matter_access(matter):
+        raise PermissionDenied
 
-    return HttpResponse(rate_value)
+    return HttpResponse(calculate_rate_for_matter(matter, request.user))
 
 
 def _trust_available(matter):
@@ -530,9 +453,11 @@ def trust_available(request, matter_id):
     form so the attorney sees how much is left in trust while billing."""
     try:
         matter = Matter.objects.get(pk=matter_id)
-        available = _trust_available(matter)
     except Matter.DoesNotExist:
-        available = 0
+        matter = None
+    if matter and not request.user.has_matter_access(matter):
+        raise PermissionDenied
+    available = _trust_available(matter) if matter else 0
 
     sign = "-" if available < 0 else ""
     return JsonResponse(
@@ -590,9 +515,11 @@ def time_bulk_update_matter(request):
 
         if matter_id:
             matter = get_object_or_404(Matter, pk=matter_id)
-            entries = TimeEntry.objects.filter(id__in=selected_time).select_related(
-                "invoice"
-            )
+            if not request.user.has_matter_access(matter):
+                raise PermissionDenied
+            entries = entries_for_user(
+                TimeEntry.objects.filter(id__in=selected_time), request.user
+            ).select_related("invoice")
 
             locked = 0
             for entry in entries:
@@ -618,9 +545,7 @@ def time_bulk_update_matter(request):
                 )
             return response
 
-    matters = Matter.objects.filter(
-        status__in=["Pending", "Open", "Complete"]
-    ).order_by("name")
+    matters = matters_for_entry_form(request.user)
 
     context = {
         "selected_count": len(selected_time),
@@ -645,9 +570,9 @@ def time_bulk_update_comp(request):
     if request.method == "POST":
         comp_value = request.POST.get("comp")
         if comp_value in ["true", "false"]:
-            entries = TimeEntry.objects.filter(id__in=selected_time).select_related(
-                "invoice"
-            )
+            entries = entries_for_user(
+                TimeEntry.objects.filter(id__in=selected_time), request.user
+            ).select_related("invoice")
             comp_bool = comp_value == "true"
 
             locked = 0

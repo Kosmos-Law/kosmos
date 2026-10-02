@@ -31,9 +31,15 @@
     {% endif %}
   {% else %}
     {% if entry.comp %}
-      <a href={% url 'activity:flat-fees-toggle-entered' id=entry.id %}>comp</a>
+      <a href="#"
+         hx-post="{% url 'activity:flat-fees-toggle-entered' id=entry.id %}"
+         hx-swap="none"
+         title="{% if entry.entered %}Mark as not entered{% else %}Mark as entered{% endif %}">comp</a>
     {% else %}
-      <a href={% url 'activity:flat-fees-toggle-entered' id=entry.id %}>${{ entry.amount|floatformat:2|intcomma }}</a>
+      <a href="#"
+         hx-post="{% url 'activity:flat-fees-toggle-entered' id=entry.id %}"
+         hx-swap="none"
+         title="{% if entry.entered %}Mark as not entered{% else %}Mark as entered{% endif %}">${{ entry.amount|floatformat:2|intcomma }}</a>
     {% endif %}
   {% endif %}
 </td>

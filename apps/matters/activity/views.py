@@ -154,7 +154,7 @@ def get_matter_activity_data(request, matter):
                 category_filter,
                 field="activity_category",
             )
-            .select_related("user", "matter", "activity_category")
+            .select_related("user", "matter", "activity_category", "invoice")
             .order_by("-date", "-id")
         )
         return {

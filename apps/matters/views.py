@@ -222,7 +222,7 @@ def _matter_overview_context(request, matter):
         "tasks": tasks,
         "recent_actions": (
             TimeEntry.objects.filter(matter=matter)
-            .select_related("user")
+            .select_related("user", "invoice")
             .order_by("-date", "-id")[:5]
         ),
         "today": today,

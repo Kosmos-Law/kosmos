@@ -102,7 +102,7 @@ def test_filter_matter(client, matter):
 
 def test_toggle_entered(client, entry):
     assert entry.entered == 0
-    client.get(f"/activity/time/{entry.id}/toggle-entered")
+    client.post(f"/activity/time/{entry.id}/toggle-entered")
     entry.refresh_from_db()
     assert entry.entered == 1
 

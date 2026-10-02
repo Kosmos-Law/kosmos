@@ -34,9 +34,15 @@
     {% endif %}
   {% else %}
     {% if expense.comp %}
-      <a href={% url 'activity:expenses-toggle-entered' id=expense.id %}>comp</a>
+      <a href="#"
+         hx-post="{% url 'activity:expenses-toggle-entered' id=expense.id %}"
+         hx-swap="none"
+         title="{% if expense.entered %}Mark as not entered{% else %}Mark as entered{% endif %}">comp</a>
     {% else %}
-      <a href={% url 'activity:expenses-toggle-entered' id=expense.id %}>${{ expense.amount|floatformat:2|intcomma }}</a>
+      <a href="#"
+         hx-post="{% url 'activity:expenses-toggle-entered' id=expense.id %}"
+         hx-swap="none"
+         title="{% if expense.entered %}Mark as not entered{% else %}Mark as entered{% endif %}">${{ expense.amount|floatformat:2|intcomma }}</a>
     {% endif %}
   {% endif %}
 </td>
