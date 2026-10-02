@@ -3,6 +3,7 @@
 from difflib import SequenceMatcher
 from typing import NamedTuple, Optional
 
+from apps.accounts.access import filter_matters_for_user
 from apps.matters.models import Matter
 
 # Scoring thresholds for inferring a matter from a typed prefix.
@@ -112,7 +113,15 @@ def _match_matter(prefix, matters_list):
     return best_matter, "resolved"
 
 
-def process_quick_task_description(description, last_matter_id=None):
+def _open_matters(user=None):
+    """Pending and Open matters; only the user's own when a user is given."""
+    matters = Matter.objects.filter(status__in=["Pending", "Open"])
+    if user is not None:
+        matters = filter_matters_for_user(matters, user)
+    return matters
+
+
+def process_quick_task_description(description, last_matter_id=None, user=None):
     """Process a quick task description with intelligent matter matching.
 
     Supports two modes:
@@ -126,6 +135,8 @@ def process_quick_task_description(description, last_matter_id=None):
     Args:
         description: The raw task description from user input.
         last_matter_id: The matter ID from the last quick task (or None).
+        user: Whoever is typing. A prefix resolves only among the matters
+            they may see, so another matter's name reads as unmatched.
 
     Returns:
         QuickTaskMatch: the cleaned description plus the matched matter and the
@@ -144,8 +155,7 @@ def process_quick_task_description(description, last_matter_id=None):
         if prefix.lower() == "admin":
             return QuickTaskMatch(description, None, True, "admin", prefix)
 
-        matters = Matter.objects.filter(status__in=["Pending", "Open"])
-        matters_list = [(m.name, m) for m in matters]
+        matters_list = [(m.name, m) for m in _open_matters(user)]
         matched_matter, status = _match_matter(prefix, matters_list)
         return QuickTaskMatch(description, matched_matter, True, status, prefix)
 
@@ -154,13 +164,36 @@ def process_quick_task_description(description, last_matter_id=None):
         description = description[0].upper() + description[1:]
 
     if last_matter_id:
-        try:
-            matched_matter = Matter.objects.get(pk=last_matter_id)
+        sticky = Matter.objects.filter(pk=last_matter_id)
+        if user is not None:
+            sticky = filter_matters_for_user(sticky, user)
+        matched_matter = sticky.first()
+        if matched_matter:
             return QuickTaskMatch(description, matched_matter, True, "sticky", "")
-        except Matter.DoesNotExist:
-            pass
 
     return QuickTaskMatch(description, None, False, "filter", "")
+
+
+def quick_add_refusal(description):
+    """A refusal when a quick-add description will not fit, else None.
+
+    Quick add has no form to show an error on, so the user is told in a
+    toast. The response is not a success: the input keeps what was typed
+    (it clears only after a successful request) and the list is left alone.
+    """
+    from django.http import HttpResponse
+
+    from apps.tasks.models import Task
+    from utils.toasts import toast_error
+
+    limit = Task._meta.get_field("description").max_length
+    if len(description) <= limit:
+        return None
+    return toast_error(
+        HttpResponse(status=422),
+        f"A task description is limited to {limit} characters. "
+        f"This one has {len(description)}. Shorten it and press Enter again.",
+    )
 
 
 # ── AI-entry validation ──────────────────────────────────────────────────────
@@ -169,14 +202,14 @@ def process_quick_task_description(description, last_matter_id=None):
 # None (or the fallback), never an exception.
 
 
-def resolve_matter_name(name):
-    """Exact-name (case-insensitive) match among Pending/Open matters."""
+def resolve_matter_name(name, user=None):
+    """Exact-name (case-insensitive) match among Pending/Open matters.
+
+    With ``user``, only among the matters that user may see.
+    """
     if not name:
         return None
-    return Matter.objects.filter(
-        name__iexact=str(name).strip(),
-        status__in=["Pending", "Open"],
-    ).first()
+    return _open_matters(user).filter(name__iexact=str(name).strip()).first()
 
 
 def resolve_assignee_name(name, requesting_user):

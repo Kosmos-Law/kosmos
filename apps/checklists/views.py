@@ -28,7 +28,7 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
-from apps.tasks.models import Task
+from apps.tasks.access import task_for_user
 
 CHECKLISTS_TRIGGER = "checklistsChanged"
 TASKS_TRIGGER = "tasksChanged"
@@ -75,6 +75,38 @@ def group_items_by_section(items):
             entry["number"] = ".".join(parts) + "."
 
     return groups
+
+
+# ---------------------------------------------------------------------------
+# Attaching a template to a task
+# ---------------------------------------------------------------------------
+
+
+def attach_template_to_task(task, template):
+    """Give the task a checklist copied from the template.
+
+    A task holds one checklist. When it already has one (a second attach from
+    a stale picker, or a double submit), that checklist is kept as it is and
+    returned: replacing it would throw away the items already ticked.
+    """
+    existing = Checklist.objects.filter(task=task).first()
+    if existing:
+        return existing
+
+    checklist = Checklist.objects.create(
+        task=task,
+        template=template,
+        name=template.name,
+    )
+    for item in template.items.all():
+        ChecklistItem.objects.create(
+            checklist=checklist,
+            description=item.description,
+            order=item.order,
+            item_type=item.item_type,
+            depth=item.depth,
+        )
+    return checklist
 
 
 # ---------------------------------------------------------------------------
@@ -311,26 +343,16 @@ def edit_checklist_template(request, template_id):
     matter_id = request.GET.get("matter_id") or request.POST.get("matter_id")
 
     if request.method == "POST":
+        # Checked before anything is saved: the task id arrives in the query
+        # string or the body, where nothing else has vetted it.
+        task = task_for_user(task_id, request.user) if task_id else None
         form = ChecklistTemplateForm(request.POST, instance=template)
         if form.is_valid():
             form.save()
 
             # If editing from a task, attach the checklist and open it
-            if task_id:
-                task = get_object_or_404(Task, pk=task_id)
-                checklist = Checklist.objects.create(
-                    task=task,
-                    template=template,
-                    name=template.name,
-                )
-                for item in template.items.all():
-                    ChecklistItem.objects.create(
-                        checklist=checklist,
-                        description=item.description,
-                        order=item.order,
-                        item_type=item.item_type,
-                        depth=item.depth,
-                    )
+            if task:
+                attach_template_to_task(task, template)
                 redirect_url = f"/checklists/{task.id}/modal/"
                 if matter_id:
                     redirect_url += f"?matter_id={matter_id}"
@@ -798,7 +820,7 @@ def checklists_bulk_delete(request):
 
 @login_required
 def checklist_modal(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = task_for_user(task_id, request.user)
     matter_id = request.GET.get("matter_id")
 
     try:
@@ -827,27 +849,13 @@ def checklist_modal(request, task_id):
 
 @login_required
 def attach_checklist(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = task_for_user(task_id, request.user)
     matter_id = request.GET.get("matter_id") or request.POST.get("matter_id")
 
     if request.method == "POST":
         template_id = request.POST.get("template_id")
         template = get_object_or_404(ChecklistTemplate, pk=template_id)
-
-        checklist = Checklist.objects.create(
-            task=task,
-            template=template,
-            name=template.name,
-        )
-
-        for item in template.items.all():
-            ChecklistItem.objects.create(
-                checklist=checklist,
-                description=item.description,
-                order=item.order,
-                item_type=item.item_type,
-                depth=item.depth,
-            )
+        attach_template_to_task(task, template)
 
         redirect_url = f"/checklists/{task.id}/modal/"
         if matter_id:
@@ -863,7 +871,7 @@ def attach_checklist(request, task_id):
 
 @login_required
 def checklist_search(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = task_for_user(task_id, request.user)
     matter_id = request.GET.get("matter_id", "")
     query = request.GET.get("q", "").strip()
 
@@ -888,7 +896,8 @@ def checklist_search(request, task_id):
 def toggle_checklist_item(request, item_id):
     item = get_object_or_404(ChecklistItem, pk=item_id)
     matter_id = request.GET.get("matter_id") or request.POST.get("matter_id")
-    task = item.checklist.task
+    # The item is reached through its task, so the task's matter decides.
+    task = task_for_user(item.checklist.task_id, request.user)
 
     if item.is_complete:
         item.is_complete = False
@@ -921,7 +930,7 @@ def toggle_checklist_item(request, item_id):
 @login_required
 @require_POST
 def remove_checklist(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = task_for_user(task_id, request.user)
 
     try:
         task.checklist.delete()
@@ -934,7 +943,7 @@ def remove_checklist(request, task_id):
 @login_required
 @require_POST
 def refresh_checklist(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = task_for_user(task_id, request.user)
     matter_id = request.GET.get("matter_id") or request.POST.get("matter_id")
 
     try:
