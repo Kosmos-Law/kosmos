@@ -53,13 +53,18 @@ link to.
 
 ## How it looks
 
-The site wears the landing page's design: the same night palette, the same
-typeface and the same mark. The landing page is its own repository
-([Kosmos-Law/web](https://github.com/Kosmos-Law/web)). Its design tokens are
-copied into `docs/stylesheets/kosmos.css`, which restyles the theme on top
-of them, and `zensical.toml` sets the typeface, the mark and the single
-dark scheme. When the landing page's palette or typeface changes, change
-the tokens at the top of that stylesheet to match.
+The site wears the landing page's design: the same typeface, the same mark
+and, at night, the same palette. The landing page is its own repository
+([Kosmos-Law/web](https://github.com/Kosmos-Law/web)) and has no day side,
+so the light scheme borrows the application's `nord-light` theme. The
+reader's system setting picks the scheme first shown, and the toggle in the
+header switches it.
+
+All of it lives in `docs/stylesheets/kosmos.css`: a block of design tokens
+for each scheme, copied from those two sources, and the rules that restyle
+the theme on top of them. `zensical.toml` sets the typeface and the two
+schemes. When the landing page's or the application's palette changes,
+change the tokens at the top of that stylesheet to match.
 
 ## Where a page goes
 

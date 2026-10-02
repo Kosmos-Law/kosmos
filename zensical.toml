@@ -17,7 +17,7 @@ extra_css = ["stylesheets/kosmos.css"]
 
 nav = [
   { "Home" = "index.md" },
-  { "Run Kosmos" = [
+  { "Install Kosmos" = [
     "admin/index.md",
     { "Install" = [
       { "Install with the script" = "admin/install.md" },
@@ -97,12 +97,25 @@ features = [
 [project.theme.font]
 text = "Schibsted Grotesk"
 
-# One scheme, like kosmos.law: night only. The colours are set in
-# docs/stylesheets/kosmos.css on top of the theme's dark scheme.
+# Night is kosmos.law's own palette; day borrows the application's
+# nord-light theme. The reader's system setting picks the first one shown,
+# and the header toggle switches. The colours are set in
+# docs/stylesheets/kosmos.css on top of the theme's two schemes.
 [[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
 scheme = "slate"
 primary = "custom"
 accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to light mode"
 
 [project.extra]
 # The mark in the header leads back to the main site.
@@ -116,6 +129,9 @@ md_in_html = {}
 tables = {}
 toc.permalink = true
 pymdownx.details = {}
+# Icon shortcodes such as :lucide-link:, drawn inline as SVG.
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
 pymdownx.highlight.anchor_linenums = true
 pymdownx.inlinehilite = {}
 pymdownx.superfences = {}
