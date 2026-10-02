@@ -113,10 +113,7 @@
                  hx-trigger="click">{{ event.description }}</a>
             </td>
             <td class="duration">
-              {% if event.duration %}
-                {{ event.duration }} hr
-                {% if event.duration != 1 %}s{% endif %}
-              {% endif %}
+              {% if event.duration %}{{ event.duration }} hr{{ event.duration|pluralize }}{% endif %}
             </td>
             <td class="location">{{ event.event_type|default:"" }}</td>
             <td class="party">{{ event.party }}</td>
