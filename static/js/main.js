@@ -36,11 +36,43 @@ document.addEventListener('click', async function(e) {
   if (confirmed) {
     // Navigate to the link's href or data-href (for buttons)
     const href = confirmLink.getAttribute('href') || confirmLink.dataset.href;
-    if (href) {
+    if (!href) return;
+    // An action that changes or deletes something is marked
+    // data-method="post": it goes as a POST with the CSRF token, which a
+    // plain link from elsewhere cannot do. Downloads stay ordinary links.
+    if ((confirmLink.dataset.method || '').toLowerCase() === 'post') {
+      postTo(href);
+    } else {
       window.location.href = href;
     }
   }
 });
+
+// The CSRF token the page was rendered with (base.html puts it on <body>
+// for htmx).
+function csrfToken() {
+  try {
+    const headers = JSON.parse(document.body.getAttribute('hx-headers') || '{}');
+    return headers['X-CSRFToken'] || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+// Navigate to a URL with POST, as a form submission would: the browser
+// follows the view's redirect.
+function postTo(url) {
+  const form = document.createElement('form');
+  form.method = 'post';
+  form.action = url;
+  const token = document.createElement('input');
+  token.type = 'hidden';
+  token.name = 'csrfmiddlewaretoken';
+  token.value = csrfToken();
+  form.appendChild(token);
+  document.body.appendChild(form);
+  form.submit();
+}
 
 // Handle buttons with data-href attribute (navigate without confirmation)
 document.addEventListener('click', function(e) {
