@@ -51,7 +51,6 @@ urlpatterns = [
         events_deadline_modal,
         name="deadline-modal",
     ),
-    path("events/add/<int:matter_id>", events_add, name="add-matter"),
     path(
         "events/add/<int:matter_id>/<str:origin>",
         events_add,
