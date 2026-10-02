@@ -339,7 +339,7 @@
 /* Week/Day view time slots */
 .fc .fc-timegrid-slot-label {
   color: var(--color-muted);
-  font-size: 0.75rem;
+  font-size: 1rem;
 }
 
 /* The time grid renders as layered tables: the slots table (hour rows) is
