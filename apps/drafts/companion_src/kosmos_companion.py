@@ -3,7 +3,7 @@
 Runs inside LibreOffice Writer (installed as an .oxt downloaded from Kosmos,
 which bakes the server URL and the user's token into config.json). "Kosmos >
 Connect to drafting session" pairs the front document with its draft link in
-Kosmos by file name (asking which one when several links share the name); a
+Kosmos by file name (asking which one when different files share the name); a
 background thread then polls the server every few seconds, applies queued
 edit rounds to the live document as tracked changes attributed to "Kosmos
 AI", reports each outcome, and pushes the document back (as ODT bytes) so
@@ -86,6 +86,23 @@ def _matching_sessions(sessions, doc_name):
     (newest first). More than one means the same file name is linked in
     several conversations, possibly on different matters."""
     return [s for s in sessions if s.get("name") == doc_name]
+
+
+def _distinct_documents(matches):
+    """One link per linked file, keeping the newest for each.
+
+    Several conversations may link the same file. Those links share one
+    connection on the server, so any of them will do and there is nothing
+    to ask. Links to different files of the same name are different
+    documents, and only the user knows which one is open. A server older
+    than 0.4.0 does not say which file a link is to; its links are told
+    apart by matter.
+    """
+    by_document = {}
+    for session in matches:
+        key = session.get("file") or ("matter", session.get("matter"))
+        by_document.setdefault(key, session)
+    return list(by_document.values())
 
 
 def _session_label(session):
@@ -472,7 +489,7 @@ class Companion(unohelper.Base, XJobExecutor):
             26,
             MultiLine=True,
             Label=(
-                f'"{doc_name}" is linked in more than one Kosmos conversation. '
+                f'More than one file named "{doc_name}" is linked in Kosmos. '
                 "Choose the matter and conversation this document belongs to."
             ),
         )
@@ -574,11 +591,12 @@ class Companion(unohelper.Base, XJobExecutor):
             )
             return
         session = matches[0]
-        if len(matches) > 1:
-            # The same file name is linked in several conversations. Pairing
-            # with the wrong one would send another matter's edits here.
+        documents = _distinct_documents(matches)
+        if len(documents) > 1:
+            # Different files share this name. Pairing with the wrong one
+            # would send another matter's edits here.
             try:
-                index = self._choose_session(doc_name, matches)
+                index = self._choose_session(doc_name, documents)
             except Exception:
                 # The chooser could not be shown. Fall back to the newest
                 # link, as before; the confirmation below names it.
@@ -586,7 +604,7 @@ class Companion(unohelper.Base, XJobExecutor):
                 index = 0
             if index is None:
                 return
-            session = matches[index]
+            session = documents[index]
 
         with _lock:
             if _connection is not None:

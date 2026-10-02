@@ -140,8 +140,11 @@ def api_sessions(request):
                     "matter": link.conversation.matter.name
                     if link.conversation.matter
                     else "",
-                    # Lets the extension tell apart two links to files of
-                    # the same name (0.4.0; 0.3.0 ignores it).
+                    # Let the extension tell apart links to different files
+                    # of the same name, and name them to the user (0.4.0;
+                    # 0.3.0 ignores both). Links to one file are siblings
+                    # and need no telling apart.
+                    "file": link.drive_file_id,
                     "conversation": link.conversation.title,
                 }
                 for link in links

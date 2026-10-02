@@ -163,10 +163,12 @@ def test_setup_dialog_names_the_version_and_how_to_update(client):
     assert "install it over the" in html
 
 
-def test_sessions_name_the_conversation(api, link):
-    """So the extension can tell apart two links to files of one name."""
+def test_sessions_name_the_file_and_the_conversation(api, link):
+    """So the extension can tell apart links to different files of one
+    name, and say which matter and conversation each belongs to."""
     data = json.loads(api.get("/case/drafts/companion/api/sessions/").content)
     assert data["sessions"][0]["conversation"] == "Drafting the motion"
+    assert data["sessions"][0]["file"] == "file1"
 
 
 @pytest.fixture

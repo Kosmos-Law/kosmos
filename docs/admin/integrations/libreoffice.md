@@ -113,11 +113,13 @@ Things users should know:
 - The extension matches the open document to its link **by file name**.
   The document must have been saved, and its name must be the same as
   the file that was linked in Kosmos.
-- A user who has linked files of the same name in more than one
-  conversation (a `motion.odt` on two matters, say) is asked which
-  matter and conversation the open document belongs to. With one match
-  there is no question. Choosing wrongly would send one matter's edits
-  to another matter's document, so the confirmation is worth reading.
+- A user who has linked different files of the same name (a
+  `motion.odt` on each of two matters, say) is asked which matter and
+  conversation the open document belongs to. Choosing wrongly would
+  send one matter's edits to another matter's document, so the
+  confirmation is worth reading. Several conversations linked to the
+  same file are not a choice: they share one connection, and nobody is
+  asked.
 - If a linked file is renamed in Drive, Kosmos picks up the new name the
   next time a message is sent in that conversation. Send one before
   connecting the renamed file.
@@ -144,9 +146,9 @@ installs it.
 
 What 0.4.0 adds over 0.3.0:
 
-- When the open file's name matches more than one of the user's draft
-  links, it asks which matter and conversation the document belongs to.
-  0.3.0 silently took the most recent link.
+- When the open file's name matches draft links to more than one file,
+  it asks which matter and conversation the document belongs to. 0.3.0
+  silently took the most recent link.
 - Before applying a set of edits it asks the server whether the chat is
   still waiting for them. If the chat has already given up and told the
   user the edits were not applied, the extension leaves the document
@@ -262,10 +264,10 @@ the linked conversation so Kosmos reads the new name, then connect
 again.
 
 **Writer asks which matter and conversation the document belongs to.**
-The user has linked files of this name in more than one conversation.
-Pick the one this document is for. To stop being asked, unlink the
-drafts that are no longer in use (the x beside the draft's name in each
-chat).
+The user has linked more than one file of this name. Pick the one this
+document is for. To stop being asked, unlink the drafts that are no
+longer in use (the x beside the draft's name in each chat), or give the
+files different names.
 
 **"This document has never been saved."** The extension can only pair a
 saved file. Save it into the matter's Drive folder, link it, then

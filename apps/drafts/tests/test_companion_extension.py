@@ -65,10 +65,36 @@ def ext():
 
 
 SESSIONS = [
-    {"id": 3, "name": "motion.odt", "matter": "Smith v Jones", "conversation": "Reply"},
-    {"id": 2, "name": "brief.odt", "matter": "Smith v Jones", "conversation": "Brief"},
-    {"id": 1, "name": "motion.odt", "matter": "Doe v Roe", "conversation": "Motion"},
+    {
+        "id": 3,
+        "name": "motion.odt",
+        "matter": "Smith v Jones",
+        "conversation": "Reply",
+        "file": "drive-smith",
+    },
+    {
+        "id": 2,
+        "name": "brief.odt",
+        "matter": "Smith v Jones",
+        "conversation": "Brief",
+        "file": "drive-brief",
+    },
+    {
+        "id": 1,
+        "name": "motion.odt",
+        "matter": "Doe v Roe",
+        "conversation": "Motion",
+        "file": "drive-doe",
+    },
 ]
+# A second conversation linking the same file as SESSIONS[0].
+SIBLING = {
+    "id": 4,
+    "name": "motion.odt",
+    "matter": "Smith v Jones",
+    "conversation": "Second chat",
+    "file": "drive-smith",
+}
 
 
 def test_matching_is_by_file_name_in_the_servers_order(ext):
@@ -76,6 +102,27 @@ def test_matching_is_by_file_name_in_the_servers_order(ext):
     assert [s["id"] for s in matches] == [3, 1]
     assert ext._matching_sessions(SESSIONS, "brief.odt")[0]["id"] == 2
     assert ext._matching_sessions(SESSIONS, "other.odt") == []
+
+
+def test_links_to_one_file_are_one_document(ext):
+    """Several conversations linking the same file share a connection on
+    the server: there is nothing to choose between."""
+    documents = ext._distinct_documents([SIBLING, SESSIONS[0]])
+    assert [s["id"] for s in documents] == [4]
+
+
+def test_links_to_different_files_are_different_documents(ext):
+    documents = ext._distinct_documents([SIBLING, SESSIONS[0], SESSIONS[2]])
+    assert [s["id"] for s in documents] == [4, 1]
+
+
+def test_an_older_server_names_no_file_so_matters_tell_them_apart(ext):
+    old = [
+        {"id": 3, "name": "motion.odt", "matter": "Smith v Jones"},
+        {"id": 2, "name": "motion.odt", "matter": "Smith v Jones"},
+        {"id": 1, "name": "motion.odt", "matter": "Doe v Roe"},
+    ]
+    assert [s["id"] for s in ext._distinct_documents(old)] == [3, 1]
 
 
 def test_label_names_matter_and_conversation(ext):
@@ -156,6 +203,14 @@ def test_one_match_connects_without_asking(writer):
     assert window.hello == [3]
     assert window.started == [3]
     assert "Smith v Jones: Reply" in window.messages[-1]
+
+
+def test_sibling_links_to_one_file_connect_without_asking(writer):
+    """Two conversations on the same file, a supported everyday case: the
+    newest is taken, as 0.3.0 did, and nobody is asked."""
+    window = writer([SIBLING, SESSIONS[0]])
+    assert window.asked == []
+    assert window.hello == [4]
 
 
 def test_several_matches_ask_and_connect_to_the_choice(writer):
