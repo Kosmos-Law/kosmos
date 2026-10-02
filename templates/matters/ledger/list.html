@@ -87,7 +87,7 @@
             <td class="type">{{ transaction.transaction_type }}</td>
             <td class="description dropdown-cell">
               {# invoices -------------------------------------- #}
-              {% if 'Invoice' in transaction.description %}
+              {% if transaction.kind == 'invoice' %}
                 <div class="ledger-desc">
                   <a href="{% url 'invoicing:invoices-detail-index' transaction.id %}">{{ transaction.description }}</a>
                   {% if transaction.invoice_status == 'PAID' %}
@@ -102,7 +102,7 @@
                     <span class="app-badge badge-gray">Void</span>
                   {% endif %}
                 </div>
-              {% elif 'Payment' in transaction.description %}
+              {% elif transaction.kind == 'payment' %}
                 <div class="ledger-desc">
                   <div class="dropdown" x-data="dropdown()">
                     <button class="button-link"
@@ -131,7 +131,7 @@
                           title="Awaiting bank (eCheck/ACH) settlement — provisional until it clears">Pending</span>
                   {% endif %}
                 </div>
-              {% elif 'Credit' in transaction.description %}
+              {% elif transaction.kind == 'credit' %}
                 <div class="dropdown" x-data="dropdown()">
                   <button class="button-link"
                           type="button"

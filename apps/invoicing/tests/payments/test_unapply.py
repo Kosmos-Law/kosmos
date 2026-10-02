@@ -185,3 +185,29 @@ def test_a_sent_invoice_cannot_be_edited_by_address(client, sent_invoice):
 
     assert client.get(url).status_code == 403
     assert client.post(url, {"discount": "50"}).status_code == 403
+
+
+def test_trust_payment_is_refused_on_a_matter_with_no_client(
+    client, matter, sent_invoice
+):
+    from apps.trust.models import Transaction
+
+    matter.client = None
+    matter.save()
+    url = reverse("invoicing:quick-invoice-payment", args=[sent_invoice.id, "trust"])
+
+    response = client.post(
+        url,
+        {
+            "matter": matter.id,
+            "date": "2020-02-05",
+            "amount": "300.00",
+            "payment_method": "TRUST",
+            "detail": "Invoice",
+        },
+    )
+
+    assert response.status_code == 204
+    assert "no client" in response.headers.get("HX-Toast", "")
+    assert not Transaction.objects.exists()
+    assert not Payment.objects.exists()

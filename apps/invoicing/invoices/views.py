@@ -535,6 +535,17 @@ def quick_invoice_payment(request, pk, payment_type):
         return HttpResponse(status=404)
     invoice_value = invoice.value["final_total"]
 
+    # Trust money belongs to a client. A withdrawal with no client would sit
+    # on no ledger, and the Trust tab cannot list it.
+    if payment_type == "trust" and not (invoice.matter and invoice.matter.client_id):
+        response = HttpResponse(status=204)
+        toast_error(
+            response,
+            "This matter has no client, so there is no trust balance to pay from. "
+            "Set the client on the matter first.",
+        )
+        return response
+
     form = PaymentForm(
         request.POST or None,
         use_required_attribute=False,

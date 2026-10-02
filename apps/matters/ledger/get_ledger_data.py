@@ -71,6 +71,10 @@ def get_ledger_data(matter):
                 "id": invoice.id,
                 "date": invoice.date_issued,
                 "transaction_type": "Charge",
+                # What the row is, for the template's links and menu. The
+                # description is free text and cannot say: a credit described
+                # as "Payment adjustment" is still a credit.
+                "kind": "invoice",
                 "description": f"Invoice {invoice.id}",
                 "amount": invoice.value["final_total"],
                 "invoice_status": invoice.status,
@@ -98,6 +102,7 @@ def get_ledger_data(matter):
                         payment.payment_method, payment.payment_method.title()
                     )
                 ),
+                "kind": "payment",
                 "amount": payment.amount,
                 "affects_balance": True,  # Payments always affect balance
                 # Provisional until an online (ACH) payment settles.
@@ -111,7 +116,8 @@ def get_ledger_data(matter):
                 "id": credit.id,
                 "date": credit.date,
                 "transaction_type": "Credit",
-                "description": credit.detail,
+                "kind": "credit",
+                "description": credit.detail or "Credit",
                 "amount": credit.amount,
                 "affects_balance": True,  # Credits always affect balance
             }
