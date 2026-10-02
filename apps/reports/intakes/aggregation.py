@@ -14,20 +14,14 @@ from django.db.models import Count
 from django.db.models.functions import TruncMonth
 
 from apps.intakes.models import Intake
+from apps.matters.models import PracticeArea
 from apps.reports.activity.aggregation import _window_months, resolve_end
 
-# Practice areas / statuses to match the intake form choices.
-PRACTICE_AREAS = [
-    "General",
-    "Boundary",
-    "Title",
-    "LLT - LL",
-    "LLT - T",
-    "QT",
-    "HOA",
-    "Fraud",
-    "Construction",
-]
+# An intake with no practice area is counted under this heading.
+UNSPECIFIED = "Unspecified"
+
+# The statuses the intake form offers, in the order the table shows them. A
+# status outside this list (set some other way) gets a column after them.
 INTAKE_STATUSES = [
     "Open",
     "Pending",
@@ -40,6 +34,34 @@ INTAKE_STATUSES = [
 CONVERTED_STATUS = "Accepted"
 
 
+def _percentages(counts, total):
+    if not total:
+        return {}
+    return {key: round(count / total * 100, 1) for key, count in counts.items()}
+
+
+def _monthly_table(months, columns, counts, key):
+    """One row a month with a count and a share for each column, and the
+    column totals. ``counts`` maps ((year, month), column) to a number."""
+    rows = []
+    totals = defaultdict(int)
+    for m in months:
+        month = (m["year"], m["month"])
+        cells = {column: counts.get((month, column), 0) for column in columns}
+        total = sum(cells.values())
+        for column, count in cells.items():
+            totals[column] += count
+        rows.append(
+            {
+                "month": m["date"].strftime("%B %Y"),
+                key: cells,
+                "total": total,
+                "percentages": _percentages(cells, total),
+            }
+        )
+    return rows, totals
+
+
 def build_intakes_context(request):
     end, current_first = resolve_end(request.session.get("intakes_end"))
     months = _window_months(end)
@@ -47,68 +69,41 @@ def build_intakes_context(request):
     window_end = months[-1]["date"] + relativedelta(months=1)
     intakes = Intake.objects.filter(date__gte=window_start, date__lt=window_end)
 
-    # --- Per-month practice-area table (contiguous window months) ---
-    intake_data = []
-    totals_by_practice_area = defaultdict(int)
-    for m in months:
-        row = {"month": m["date"].strftime("%B %Y"), "practice_areas": {}, "total": 0}
-        for pa in PRACTICE_AREAS:
-            count = intakes.filter(
-                date__year=m["year"], date__month=m["month"], practice_area__name=pa
-            ).count()
-            row["practice_areas"][pa] = count
-            row["total"] += count
-            totals_by_practice_area[pa] += count
-        row["percentages"] = (
-            {
-                pa: round(row["practice_areas"][pa] / row["total"] * 100, 1)
-                for pa in PRACTICE_AREAS
-            }
-            if row["total"]
-            else {}
-        )
-        intake_data.append(row)
+    # One pass over the window: how many intakes each month, by practice
+    # area and by status.
+    by_area = defaultdict(int)
+    by_status = defaultdict(int)
+    for row in (
+        intakes.annotate(m=TruncMonth("date"))
+        .values("m", "practice_area__name", "status")
+        .annotate(c=Count("id"))
+    ):
+        month = (row["m"].year, row["m"].month)
+        by_area[(month, row["practice_area__name"] or UNSPECIFIED)] += row["c"]
+        by_status[(month, row["status"] or UNSPECIFIED)] += row["c"]
 
-    total_intakes = sum(r["total"] for r in intake_data)
-    percentages_by_practice_area = (
-        {
-            pa: round(totals_by_practice_area[pa] / total_intakes * 100, 1)
-            for pa in PRACTICE_AREAS
-        }
-        if total_intakes
-        else {}
+    # The columns are the firm's own practice areas (Settings, Practice
+    # Areas), plus any other area an intake in the window carries, so that
+    # every intake is in the table and the totals are the real totals.
+    used_areas = {area for (_month, area) in by_area}
+    practice_areas = sorted(
+        set(PracticeArea.objects.filter(is_active=True).values_list("name", flat=True))
+        | (used_areas - {UNSPECIFIED})
     )
+    if UNSPECIFIED in used_areas:
+        practice_areas.append(UNSPECIFIED)
+    used_statuses = {status for (_month, status) in by_status}
+    statuses = INTAKE_STATUSES + sorted(used_statuses - set(INTAKE_STATUSES))
 
-    # --- Per-month status table ---
-    status_data = []
-    totals_by_status = defaultdict(int)
-    for m in months:
-        row = {"month": m["date"].strftime("%B %Y"), "statuses": {}, "total": 0}
-        for st in INTAKE_STATUSES:
-            count = intakes.filter(
-                date__year=m["year"], date__month=m["month"], status=st
-            ).count()
-            row["statuses"][st] = count
-            row["total"] += count
-            totals_by_status[st] += count
-        row["percentages"] = (
-            {
-                st: round(row["statuses"][st] / row["total"] * 100, 1)
-                for st in INTAKE_STATUSES
-            }
-            if row["total"]
-            else {}
-        )
-        status_data.append(row)
-
-    percentages_by_status = (
-        {
-            st: round(totals_by_status[st] / total_intakes * 100, 1)
-            for st in INTAKE_STATUSES
-        }
-        if total_intakes
-        else {}
+    intake_data, totals_by_practice_area = _monthly_table(
+        months, practice_areas, by_area, "practice_areas"
     )
+    status_data, totals_by_status = _monthly_table(
+        months, statuses, by_status, "statuses"
+    )
+    total_intakes = sum(row["total"] for row in intake_data)
+    percentages_by_practice_area = _percentages(totals_by_practice_area, total_intakes)
+    percentages_by_status = _percentages(totals_by_status, total_intakes)
 
     # --- Month-over-month volume bar (0 for empty months) ---
     counts_by_month = {
@@ -166,8 +161,8 @@ def build_intakes_context(request):
         "totals_by_status": dict(totals_by_status),
         "percentages_by_practice_area": percentages_by_practice_area,
         "percentages_by_status": percentages_by_status,
-        "practice_areas": PRACTICE_AREAS,
-        "intake_statuses": INTAKE_STATUSES,
+        "practice_areas": practice_areas,
+        "intake_statuses": statuses,
         "flow_chart": flow_chart,
         "practice_donut": practice_donut,
         "conversion_donut": conversion_donut,

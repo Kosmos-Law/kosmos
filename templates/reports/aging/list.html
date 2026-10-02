@@ -45,7 +45,11 @@
             </td>
           {% endif %}
           <td>
-            <a href="{% url 'matters:detail' id=inv.matter.id %}">{{ inv.matter.name }}</a>
+            {% if inv.matter %}
+              <a href="{% url 'matters:detail' id=inv.matter.id %}">{{ inv.matter.name }}</a>
+            {% else %}
+              Invoice {{ inv.id }} (no matter)
+            {% endif %}
           </td>
           <td>{{ inv.date_issued|date:"M j, Y" }}</td>
           <td class="numeric">{{ inv.days_old }}</td>
