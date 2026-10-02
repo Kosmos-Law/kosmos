@@ -1,13 +1,12 @@
 name: Documentation
 
-# Builds the documentation site (docs/, zensical.toml) with Zensical.
-# Pull requests into dev get a strict build, which fails on a broken
-# internal link. A push to dev builds the same way and publishes to GitHub
-# Pages.
+# Checks the documentation site (docs/, zensical.toml). A pull request into
+# dev that touches the docs gets a strict build, which fails on a broken
+# internal link.
 #
-# Publishing needs two repository settings, made once:
-#   Settings > Pages > Source: GitHub Actions
-#   Settings > Environments > github-pages > Deployment branches: allow dev
+# This workflow does not publish anything. The site is served from the
+# project's own server at https://kosmos.law/docs/, which builds it from a
+# checkout of this repository (see docs/dev/writing-docs.md).
 
 on:
   pull_request:
@@ -15,20 +14,9 @@ on:
     paths:
       - "docs/**"
       - "zensical.toml"
-      - ".github/workflows/docs.yaml"
-  push:
-    branches: [ "dev" ]
-    paths:
-      - "docs/**"
-      - "zensical.toml"
+      - "scripts/build-docs.sh"
       - ".github/workflows/docs.yaml"
   workflow_dispatch:
-
-env:
-  # Zensical runs as a standalone tool, not a project dependency (it needs a
-  # newer pymdown-extensions than the application pins). docs/dev/writing-docs.md
-  # names this version too; change both together.
-  ZENSICAL_VERSION: "0.0.67"
 
 concurrency:
   group: docs-${{ github.ref }}
@@ -49,27 +37,4 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Build the site
-        run: uvx "zensical@${ZENSICAL_VERSION}" build --strict --clean
-
-      - name: Upload the site
-        if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: site
-
-  deploy:
-    name: Publish to GitHub Pages
-    if: github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v5
+        run: scripts/build-docs.sh --strict

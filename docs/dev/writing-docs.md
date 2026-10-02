@@ -1,23 +1,79 @@
 # Writing documentation
 
 The documentation is Markdown under `docs/`, built into a site by
-[Zensical](https://zensical.org) and published to GitHub Pages when a
-change lands on `dev`.
+[Zensical](https://zensical.org) and published at
+[kosmos.law/docs](https://kosmos.law/docs/).
 
 ## Build it locally
 
 ```bash
-uvx zensical@0.0.67 serve            # live preview at http://localhost:8000
-uvx zensical@0.0.67 build --strict   # what CI runs; fails on a broken link
+scripts/build-docs.sh            # build into site/
+scripts/build-docs.sh --strict   # what CI runs; fails on a broken link
+uvx zensical@0.0.67 serve        # live preview at http://localhost:8000
 ```
 
 Zensical runs as a standalone tool through `uvx`, not as a project
 dependency: it needs a newer `pymdown-extensions` than the application
-pins. The version is set in `.github/workflows/docs.yaml`; use the same one
-locally.
+pins. The version is set in `scripts/build-docs.sh`; use the same one for
+`serve`.
 
 The build writes to `site/`, which is ignored by git. If the Django dev
-server is already on port 8000, pass `--dev-addr localhost:8001`.
+server is already on port 8000, pass `--dev-addr localhost:8001` to
+`serve`.
+
+## How the site is published
+
+The site is static files. The server that hosts kosmos.law keeps a checkout
+of this repository, builds the site there, and serves the result under
+`/docs/` from the same nginx server block as the landing page:
+
+```nginx
+location /docs/ {
+    alias /path/to/kosmos/site/;
+    index index.html;
+    error_page 404 /docs/404.html;
+}
+```
+
+`scripts/add-docs-location.sh` adds that block to an nginx site file for
+you: it backs the file up, inserts the block, tests the configuration and
+reloads nginx, and restores the backup if the test fails.
+
+```bash
+scripts/build-docs.sh
+sudo scripts/add-docs-location.sh /etc/nginx/sites-available/<site>
+```
+
+To publish a change, pull and rebuild on that server:
+
+```bash
+git pull
+scripts/build-docs.sh
+```
+
+nginx serves `site/` directly, so the new build is live as soon as it
+finishes. `site_url` in `zensical.toml` is `https://kosmos.law/docs/`; the
+pages link to each other relatively, so the same build also works under
+any other address.
+
+Nothing is published from GitHub. The workflow in
+`.github/workflows/docs.yaml` only checks that a pull request's docs build
+without a broken link.
+
+## How it looks
+
+The site wears the landing page's design: the same typeface, the same mark
+and, at night, the same palette. The landing page is its own repository
+([Kosmos-Law/web](https://github.com/Kosmos-Law/web)) and has no day side,
+so the light scheme borrows the application's `nord-light` theme. The
+reader's system setting picks the scheme first shown, and the toggle in the
+header switches it.
+
+All of it lives in `docs/stylesheets/kosmos.css`: a block of design tokens
+for each scheme, copied from those two sources, and the rules that restyle
+the theme on top of them. `zensical.toml` sets the typeface and the two
+schemes. When the landing page's or the application's palette changes,
+change the tokens at the top of that stylesheet to match.
 
 ## Where a page goes
 
