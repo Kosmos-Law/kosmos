@@ -67,6 +67,7 @@
   </script>
 </head>
 <body class="minimal-layout {% if env == 'dev' %}env-dev{% endif %}"
+      {% if not user.is_authenticated %}data-shortcuts="off"{% endif %}
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   {% if env == 'dev' %}
     <div class="dev-banner">
