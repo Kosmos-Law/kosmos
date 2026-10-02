@@ -22,7 +22,7 @@ All are fields on `CustomUser`
 | All Matters | `perm_all_matters` | on | Off limits the user to matters they are a member of (`Matter.members`). |
 | Financial | `perm_financial` | on | |
 | Intakes | `perm_intakes` | on | |
-| Reports | `perm_reports` | on | |
+| Reports | `perm_reports` | off | The one switch that starts off: the reports show the whole firm's figures. An administrator turns it on for each user who needs it. |
 | Research | `perm_research` | on | |
 | (not in Settings) | `is_staff`, `is_superuser` | off (on from `createsuperuser`) | Django's own flags. Needed for `/admin/` in addition to the Admin role. |
 | Status | `is_active` | on | Off refuses sign-in, ends existing sessions and rejects the user's API token. |

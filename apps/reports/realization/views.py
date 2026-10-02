@@ -1,5 +1,4 @@
 from dateutil.relativedelta import relativedelta
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -8,7 +7,6 @@ from .aggregation import build_realization_context, resolve_realization_end
 
 
 @login_required
-@staff_member_required
 def realization_index(request):
     return render(
         request, "reports/realization/main.html", build_realization_context(request)
@@ -16,7 +14,6 @@ def realization_index(request):
 
 
 @login_required
-@staff_member_required
 def realization_list(request):
     return render(
         request, "reports/realization/list.html", build_realization_context(request)
@@ -24,7 +21,6 @@ def realization_list(request):
 
 
 @login_required
-@staff_member_required
 def realization_period(request):
     """Step the rolling window's end month (held in the session) one month back
     or forward, capped at the current month, then re-render the report."""

@@ -139,7 +139,7 @@ request. Admin rows are shown switched on and cannot be changed.
 | **All Matters** | Access to matters they are not assigned to. See [Limit a user to certain matters](#limit-a-user-to-certain-matters). |
 | **Financial** | Everything under `/invoicing/` (invoices, unbilled work, payments, credits, payment requests, the trust ledger), the Rates and Ledger tabs of a matter, the balance and trust figures on a matter's Overview, bulk "change matter" and "comp" on time and expense lists, and the ledger, trust and invoice reads in the [Claude Desktop](integrations/claude-desktop.md) connection. |
 | **Intakes** | Everything under `/intakes/`, including the intake form builder, and the intake email templates under **Settings → Intake Emails**. |
-| **Reports** | Everything under `/reports/`, and the firm-wide breakdown in the dashboard's Unbilled Time section (they see their own figures instead). |
+| **Reports** | Everything under `/reports/`, and the firm-wide breakdown in the dashboard's Work in Progress section (they see their own figures instead). This switch starts off for a new user; the other four start on. |
 | **Research** | The Research tab in a matter's case navigation, and the research pages and actions behind it. |
 
 The server refuses these by address (HTTP 403), not only in the menus.

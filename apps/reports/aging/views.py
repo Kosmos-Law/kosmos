@@ -1,4 +1,3 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
@@ -115,7 +114,6 @@ def _aging_chart(grand_totals):
 
 
 @login_required
-@staff_member_required
 def aging_index(request):
     sort_by = request.GET.get("sort", "client_name")
     sort_direction = request.GET.get("direction", "asc")
@@ -134,7 +132,6 @@ def aging_index(request):
 
 
 @login_required
-@staff_member_required
 def aging_list(request):
     sort_by = request.GET.get("sort", "client_name")
     sort_direction = request.GET.get("direction", "asc")

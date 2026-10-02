@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -16,19 +15,16 @@ from .functions import generate_client_statement_pdf
 
 
 @login_required
-@staff_member_required
 def clients_index(request):
     return render(request, "reports/clients/main.html", build_clients_context(request))
 
 
 @login_required
-@staff_member_required
 def clients_list(request):
     return render(request, "reports/clients/list.html", build_clients_context(request))
 
 
 @login_required
-@staff_member_required
 def clients_period(request, period):
     """Store the clients quick-period (month/quarter/year) and reload the report."""
     request.session["clients_period"] = period
@@ -37,7 +33,6 @@ def clients_period(request, period):
 
 
 @login_required
-@staff_member_required
 def clients_filter(request):
     filter_manager = FilterManager(request, ClientReportFilter, "clients_filter")
 
@@ -51,7 +46,6 @@ def clients_filter(request):
 
 
 @login_required
-@staff_member_required
 def client_statement_filter(request):
     if request.method == "POST":
         # Convert month/year inputs to date_from and date_to
@@ -108,7 +102,6 @@ def client_statement_filter(request):
 
 
 @login_required
-@staff_member_required
 def client_statement(request):
 
     # Get current filter data from session
@@ -278,7 +271,6 @@ def client_statement(request):
 
 
 @login_required
-@staff_member_required
 def client_statement_pdf(request):
     """Export client statement report as PDF"""
 

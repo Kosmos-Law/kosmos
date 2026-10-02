@@ -2,7 +2,6 @@ import os
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -16,19 +15,16 @@ from .functions import generate_intakes_pdf
 
 
 @login_required
-@staff_member_required
 def intakes_index(request):
     return render(request, "reports/intakes/main.html", build_intakes_context(request))
 
 
 @login_required
-@staff_member_required
 def intakes_list(request):
     return render(request, "reports/intakes/list.html", build_intakes_context(request))
 
 
 @login_required
-@staff_member_required
 def intakes_period(request):
     """Step the rolling window's end month (held in the session) one month back
     or forward, capped at the current month, then re-render the report."""
@@ -44,7 +40,6 @@ def intakes_period(request):
 
 
 @login_required
-@staff_member_required
 def intakes_filter(request):
     filter_manager = FilterManager(request, IntakeReportFilter, "intakes_filter")
 
@@ -58,7 +53,6 @@ def intakes_filter(request):
 
 
 @login_required
-@staff_member_required
 def intakes_pdf(request):
     """Export intakes report as PDF"""
 
