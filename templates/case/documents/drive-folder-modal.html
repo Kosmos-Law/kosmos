@@ -61,8 +61,11 @@
                 </label>
               {% empty %}
                 <p class="detail-text">
-                  No folders were found under the Drive root. Check the Drive
-                  connection and the <code>DRIVE_NOTES_ROOT</code> setting.
+                  No folders were found in the &ldquo;{{ drive_root_name }}&rdquo;
+                  folder in Google Drive, which holds one folder for each
+                  matter. Create this matter's folder there, then open this
+                  dialog again. If the folders are already there, ask an
+                  administrator to check the Google Drive connection.
                 </p>
               {% endfor %}
             </div>

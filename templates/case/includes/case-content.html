@@ -30,6 +30,11 @@
          hx-trigger="notesChanged from:body, visibilitychange[document.visibilityState === 'visible'] from:document"
          hx-get="{% url 'case:notes-list' matter.id %}"
          hx-target="this">{% include tab_template %}</div>
+  {% elif subapp == "emails" %}
+    <div id="emails"
+         hx-trigger="emailsChanged from:body"
+         hx-get="{% url 'case:emails-list' matter.id %}"
+         hx-target="this">{% include tab_template %}</div>
   {% elif subapp == "labels" %}
     <div id="labels"
          hx-trigger="labelsChanged from:body"

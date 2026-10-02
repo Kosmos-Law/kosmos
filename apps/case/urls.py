@@ -676,6 +676,11 @@ urlpatterns = [
     path("case/<int:matter_id>/emails/", mail.emails_index, name="emails-index"),
     path("case/<int:matter_id>/emails/list/", mail.emails_list, name="emails-list"),
     path(
+        "case/<int:matter_id>/emails/list/items/",
+        mail.emails_list_items,
+        name="emails-list-items",
+    ),
+    path(
         "case/<int:matter_id>/emails/label/link/",
         mail.label_link_modal,
         name="emails-label-link-modal",

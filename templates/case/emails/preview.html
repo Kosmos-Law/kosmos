@@ -66,11 +66,17 @@
           </li>
         </ul>
       </div>
-      <a href="{{ email.gmail_url }}"
-         target="_blank"
-         rel="noopener"
-         class="btn-icon"
-         title="Open in Gmail"><i class="icon-external-link with-text"></i>Gmail</a>
+      {% comment %}
+        The link opens the message in one mailbox, so it is offered only to
+        the user that mailbox belongs to (the view works out gmail_url).
+      {% endcomment %}
+      {% if gmail_url %}
+        <a href="{{ gmail_url }}"
+           target="_blank"
+           rel="noopener"
+           class="btn-icon"
+           title="Open in Gmail"><i class="icon-external-link with-text"></i>Gmail</a>
+      {% endif %}
       {% if email.document %}
         <a href="{% url 'case:viewer' email.document.id %}"
            target="_blank"

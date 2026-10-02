@@ -12,7 +12,11 @@
       {% if available_matters %}
         <form id="bulk-matter-form"
               hx-post="{% url 'case:documents-bulk-matter' matter.id %}"
-              hx-swap="none">
+              hx-swap="none"
+              hx-confirm="Move {{ selected_count }} document{{ selected_count|pluralize }} to the selected matter? A document filed under a proceeding of this matter loses that proceeding."
+              data-confirm-title="Move to Matter"
+              data-confirm-text="Move"
+              data-confirm-style="success">
           {% csrf_token %}
           <div class="form-group">
             <label for="matter-select">Select Target Matter</label>

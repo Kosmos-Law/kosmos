@@ -53,6 +53,9 @@ def get_search_data(request, matter, matter_id):
                 }
             elif (
                 isinstance(obj, Highlight)
+                # A highlight on a court opinion has no document; the row
+                # template renders document highlights only.
+                and obj.document_id
                 and obj.document.matter_id == matter.id
                 and "highlights" in active_scopes
             ):
@@ -213,7 +216,9 @@ def get_search_data(request, matter, matter_id):
         if importance:
             try:
                 importance = int(importance)
-                results = [r for r in results if r["object"].importance <= importance]
+                # "Importance (≥)": at least this important, as the filter
+                # is labelled and as the other tabs behave.
+                results = [r for r in results if r["object"].importance >= importance]
             except (ValueError, TypeError):
                 pass
 
