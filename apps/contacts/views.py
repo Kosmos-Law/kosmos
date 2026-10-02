@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
 import apps.contacts.google as google
 from apps.contacts.contacts import get_list_data
@@ -10,6 +11,7 @@ from apps.contacts.models import Contact
 from apps.folders.models import Folder
 from apps.intakes.models import Intake
 from apps.matters.models import Group, Matter, Relationship, Role
+from utils.toasts import toast_error
 
 
 @login_required
@@ -203,9 +205,20 @@ def edit(request, id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def delete(request, id):
-    # delete contact/matter relationships
     contact = get_object_or_404(Contact, pk=id)
+
+    blockers = contact.deletion_blockers()
+    if blockers:
+        response = HttpResponse(status=204)
+        toast_error(
+            response,
+            f"{contact.name} was not deleted: this contact {' and '.join(blockers)}.",
+        )
+        return response
+
+    # delete contact/matter relationships
     relationships = Relationship.objects.filter(contact=contact)
     for relationship in relationships:
         relationship.delete()
@@ -221,7 +234,9 @@ def delete(request, id):
     if request.session.get("selected_contact_id", False):
         del request.session["selected_contact_id"]
 
-    return HttpResponse(status=204, headers={"HX-Refresh": "true"})
+    # Back to the list. (A refresh would reload the deleted contact's own
+    # address, and report that it could not be found.)
+    return HttpResponse(status=204, headers={"HX-Redirect": reverse("contacts:index")})
 
 
 @login_required

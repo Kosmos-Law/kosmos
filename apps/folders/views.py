@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods
 
 import apps.contacts.google as google
 from apps.contacts.models import Contact
@@ -8,6 +9,7 @@ from apps.folders.folders import get_list_data
 from apps.folders.forms import FolderForm
 from apps.folders.models import Folder
 from apps.matters.models import Relationship
+from utils.toasts import toast_warning
 
 
 @login_required
@@ -124,13 +126,20 @@ def delete_confirm(request, folder_id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def delete(request, folder_id):
     folder = get_object_or_404(Folder, pk=folder_id)
 
-    # Check if we should delete contacts too
+    # Check if we should delete contacts too. A contact the firm has to keep
+    # (a client, or one with trust activity) is never deleted this way: it
+    # stays, without a folder.
+    kept = 0
     if request.GET.get("delete_contacts"):
         contacts = Contact.objects.filter(folder=folder)
         for contact in contacts:
+            if contact.deletion_blockers():
+                kept += 1
+                continue
             # Delete relationships
             Relationship.objects.filter(contact=contact).delete()
             # Delete from Google if connected
@@ -154,4 +163,12 @@ def delete(request, folder_id):
 
     folder.delete()
 
-    return HttpResponse(status=204, headers={"HX-Refresh": "true"})
+    response = HttpResponse(status=204, headers={"HX-Refresh": "true"})
+    if kept:
+        toast_warning(
+            response,
+            f"Kept {kept} contact{'' if kept == 1 else 's'} that "
+            f"{'is a client or has' if kept == 1 else 'are clients or have'} "
+            "trust activity. Find them under Unsorted.",
+        )
+    return response

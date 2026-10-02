@@ -98,6 +98,26 @@ class Contact(AuditMixin, models.Model):
     def __str__(self):
         return f"{self.name}"
 
+    def deletion_blockers(self):
+        """Why this contact must not be deleted, as phrases that finish the
+        sentence "this contact ...". Empty when it is safe to delete.
+
+        Deleting a contact deletes what hangs off it: the database cascades
+        to the client's trust ledger and payment requests, and detaches the
+        contact from the matters it is the client of. Those are records a
+        firm has to keep, so the contact stays while they exist."""
+        blockers = []
+        matters = self.client_matters.count()
+        if matters:
+            blockers.append(
+                f"is the client on {matters} matter{'' if matters == 1 else 's'}"
+            )
+        if self.transaction_set.exists():
+            blockers.append("has trust activity")
+        if self.trust_requests.exists():
+            blockers.append("has payment requests")
+        return blockers
+
     @property
     def client_status(self):
         """Derived from the contact's matters (+ intake); never stored."""

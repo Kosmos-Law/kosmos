@@ -48,7 +48,7 @@
       {% if edit %}
         <button type="button"
                 class="btn btn-danger"
-                hx-confirm="Are you sure you want to delete this record?"
+                hx-confirm="Delete this contact? It is removed from every matter it is on, and this cannot be undone."
                 hx-delete="{% url 'contacts:delete' id=contact.id %}"
                 hx-target="#htmx-modal-container">Delete</button>
       {% elif matter_return %}

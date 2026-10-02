@@ -26,6 +26,6 @@ def test_select(client, folder_data):
 
 
 def test_delete(client, folder_data):
-    client.get(f"/folders/delete/{folder_data.id}")
+    client.delete(f"/folders/delete/{folder_data.id}")
     found = Folder.objects.filter(id=folder_data.id).exists()
     assert not found
