@@ -323,12 +323,12 @@ The role and permission switches are described in
 
 - A new user has every permission until you switch some off.
 - Restricting a user to assigned matters closes those matters' pages, case
-  workspace and document downloads to everyone else. It does not filter
-  the task list, the calendar, contacts or practice-wide search, so it is
-  not an ethical screen.
-- The permission switches are enforced by address, with a few leaks that
-  the matrix lists: rates and fees in the time list, and intake names in
-  search.
+  workspace and document downloads to everyone else, and leaves them out
+  of search. It does not filter the task list, the calendar or contacts,
+  so it is not an ethical screen.
+- The permission switches are enforced by address, with one leak that
+  the matrix lists: rates, fees and amounts in the time, expense and
+  flat-fee lists.
 - Nothing stops an admin from demoting or deactivating the last admin.
   Recovery is `createsuperuser` from the shell.
 - A user's API token (Claude Desktop, LibreOffice companion) never expires

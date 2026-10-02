@@ -149,8 +149,6 @@ Read these limits before you rely on a switch:
   still shows its Rate and Fee columns, and the expense and flat-fee lists
   still show amounts. The Claude Desktop connection still serves a
   matter's rates, activity and settlement sections.
-- **Intakes** does not cover search. Intake names still appear in
-  practice-wide search results.
 
 The [permissions matrix](../reference/permissions.md) has the full list of
 what is and is not enforced, with the source location of each check.
@@ -184,21 +182,21 @@ For a restricted user, Kosmos then:
   research. The check follows the record, so the address of a single
   document, chat or email is refused just as the matter's own pages are;
 - leaves other matters' entries out of the time, expense and flat-fee
-  lists;
-- hides other matters' notes in the notes editor and in search;
-- limits the dashboard's matter lists, the daily digest and the Claude
-  Desktop connection to their matters.
+  lists and their CSV exports, and refuses another matter's entry when
+  it is asked for directly;
+- leaves other matters, their proceedings and their notes out of search,
+  and hides their notes in the notes editor;
+- limits the dashboard's matter lists and upcoming events, the daily
+  digest and the Claude Desktop connection to their matters.
 
 !!! warning
 
     Matter membership is not a complete wall. The task list, the calendar
-    and contacts are not filtered by membership, and practice-wide search
-    still returns every matter, proceeding, contact and intake that
-    matches. A restricted user can therefore see that another matter
-    exists, its name, and the tasks and events entered for it. A user who
-    also holds **Financial** or **Reports** sees every matter's invoices
-    and reports. Do not use this setting as an ethical screen between
-    people inside the firm.
+    and contacts are not filtered by membership. A restricted user can
+    therefore see that another matter exists, its name, and the tasks and
+    events entered for it. A user who also holds **Financial** or
+    **Reports** sees every matter's invoices and reports. Do not use this
+    setting as an ethical screen between people inside the firm.
 
 ## Settings on one user that affect others
 
