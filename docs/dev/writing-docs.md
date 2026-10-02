@@ -47,9 +47,9 @@ finishes. `site_url` in `zensical.toml` is `https://kosmos.law/docs/`; the
 pages link to each other relatively, so the same build also works under
 any other address.
 
-A push to `dev` also publishes a copy to GitHub Pages
-(`.github/workflows/docs.yaml`). That copy is a mirror, not the address to
-link to.
+Nothing is published from GitHub. The workflow in
+`.github/workflows/docs.yaml` only checks that a pull request's docs build
+without a broken link.
 
 ## How it looks
 

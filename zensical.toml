@@ -9,7 +9,6 @@ site_description = "Documentation for Kosmos, practice management for small law 
 site_url = "https://kosmos.law/docs/"
 repo_url = "https://github.com/Kosmos-Law/kosmos"
 repo_name = "GitHub"
-edit_uri = "edit/dev/docs/"
 copyright = '<a href="https://kosmos.law/">kosmos.law</a> · <a href="https://github.com/Kosmos-Law/kosmos/blob/dev/LICENSE">License</a> · <a href="mailto:info@kosmos.law">info@kosmos.law</a>'
 # The look follows kosmos.law (the Kosmos-Law/web repository): its palette,
 # typeface and mark. See docs/stylesheets/kosmos.css.
@@ -82,7 +81,6 @@ language = "en"
 logo = "assets/kosmos-mark-inline.svg"
 favicon = "assets/favicon.svg"
 features = [
-  "content.action.edit",
   "content.code.copy",
   "navigation.footer",
   "navigation.indexes",

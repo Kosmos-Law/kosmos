@@ -554,11 +554,6 @@
 
 /* --- The home page ------------------------------------------------------ */
 
-/* The home page's title stands alone: there is no edit button beside it. */
-.md-content__inner:has(> h1.home-title) .md-content__button {
-  display: none;
-}
-
 /* Each card's way in: a small link mark opposite its title. The link is
    stretched over the whole card, so the card itself is the target. */
 .md-typeset .grid.cards > ul > li {
