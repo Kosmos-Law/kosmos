@@ -21,6 +21,11 @@
             role="form"
             class="form-compact col3 matter-form">
         {% csrf_token %}
+        {% comment %}
+        Carried through the "create new contact" detour so it returns to
+        this matter's edit form, not to a blank add form.
+        {% endcomment %}
+        {% if edit %}<input type="hidden" name="matter_id" value="{{ matter.id }}">{% endif %}
         {{ form }}
       </form>
     </div>

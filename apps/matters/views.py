@@ -1,4 +1,6 @@
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -10,7 +12,7 @@ from apps.contacts.models import Contact
 from apps.matters.filter import MatterFilter
 from apps.matters.forms import MatterForm
 from apps.matters.get_matter_list import get_matter_list
-from apps.matters.models import Matter
+from apps.matters.models import Matter, PracticeArea
 from apps.matters.proceedings.models import Proceeding
 from apps.matters.settlement.models import SettlementEntry
 
@@ -177,6 +179,14 @@ def detail(request, id):
     return redirect(f"/matters/{id}/{tab}")
 
 
+def _practice_area_choices(matter):
+    """The Overview's practice-area dropdown: the active areas, as the matter
+    form offers, plus the matter's own if that one has been retired."""
+    return PracticeArea.objects.filter(
+        Q(is_active=True) | Q(pk=matter.practice_area_id)
+    ).order_by("name")
+
+
 def _matter_overview_context(request, matter):
     """Shared context for the Overview tab (full page + HTMX partial). The
     firm's default jurisdiction (Firm.jurisdiction) is shown when the matter
@@ -189,7 +199,6 @@ def _matter_overview_context(request, matter):
 
     from apps.activity.time.models import TimeEntry
     from apps.matters.ledger.get_ledger_data import get_ledger_data
-    from apps.matters.models import PracticeArea
     from apps.settings.models import Firm
     from apps.tasks.constants import ACTIVE_STATUSES
     from apps.tasks.models import Task
@@ -217,7 +226,7 @@ def _matter_overview_context(request, matter):
         "company_jurisdiction": company.jurisdiction if company else "",
         "show_financial": show_financial,
         # Options for the inline practice-area dropdown.
-        "practice_areas": PracticeArea.objects.order_by("name"),
+        "practice_areas": _practice_area_choices(matter),
         "events": events,
         "tasks": tasks,
         "recent_actions": (
@@ -291,15 +300,13 @@ def overview_status_update(request, id, status):
 @matter_access_required
 def overview_practice_area_update(request, id, practice_area_id):
     """Save a Practice Area dropdown pick and re-render the cell."""
-    from apps.matters.models import PracticeArea
-
     matter = get_object_or_404(Matter, pk=id)
     matter.practice_area = get_object_or_404(PracticeArea, pk=practice_area_id)
     matter.save()
     return render(
         request,
         "matters/overview/practice-area.html",
-        {"matter": matter, "practice_areas": PracticeArea.objects.order_by("name")},
+        {"matter": matter, "practice_areas": _practice_area_choices(matter)},
     )
 
 
@@ -483,6 +490,9 @@ def add(request):
             matter = form.save(commit=False)
             matter.user_id = request.user.id
             matter.save()
+            # Someone limited to assigned matters can open what they create.
+            if not request.user.has_matter_access(matter):
+                matter.members.add(request.user)
 
             return HttpResponse(status=204, headers={"HX-Trigger": "mattersChanged"})
 
@@ -588,7 +598,14 @@ def delete(request, id):
         return render(request, "matters/delete_confirmation.html", context)
 
     elif request.method == "DELETE":
-        matter.delete()
+        from apps.invoicing.invoices.models import Invoice
+
+        # The dialog counts the matter's invoices among what is deleted, and
+        # the database would only detach them (Invoice.matter is SET_NULL),
+        # leaving invoices with no matter, no entries and no payments.
+        with transaction.atomic():
+            Invoice.objects.filter(matter=matter).delete()
+            matter.delete()
 
         return HttpResponse(status=204, headers={"HX-Redirect": "/matters"})
 

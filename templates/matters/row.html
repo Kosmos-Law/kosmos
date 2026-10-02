@@ -9,7 +9,7 @@
        href="#"
        hx-target="#show-matter-work-status-{{ matter.id }}"
        hx-swap="innerHTML"
-       hx-get="{% url 'matters:edit-work-status' matter_id=matter.id %}">{{ matter.work_status }}</a>
+       hx-get="{% url 'matters:edit-work-status' matter_id=matter.id %}">{{ matter.work_status|default:"—" }}</a>
   </td>
   <td class="case-no dropdown-cell">
     {% if matter.primary_proceeding.case_number %}

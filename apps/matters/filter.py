@@ -1,7 +1,7 @@
 import django_filters
 from django_filters.filters import forms
 
-from apps.matters.models import Matter
+from apps.matters.models import Matter, PracticeArea
 
 MATTER_STATUS_CHOICES = (
     ("Pending", "Pending"),
@@ -10,41 +10,37 @@ MATTER_STATUS_CHOICES = (
     ("Complete", "Complete"),
 )
 
-PRACTICE_AREA_CHOICES = (
-    ("Excess Funds", "Excess Funds"),
-    ("Eviction", "Eviction"),
-    ("General", "General"),
-    ("Practice Area A", "Practice Area A"),
-    ("Practice Area B", "Practice Area B"),
-)
-
 
 class MatterFilter(django_filters.FilterSet):
     status = django_filters.ChoiceFilter(
         choices=MATTER_STATUS_CHOICES, empty_label="All"
     )
-    practice_area = django_filters.ChoiceFilter(
-        choices=PRACTICE_AREA_CHOICES, empty_label="All"
+    # The firm's own list (Settings, Practice Areas), inactive ones included
+    # so matters filed under a retired area can still be found.
+    practice_area = django_filters.ModelChoiceFilter(
+        queryset=PracticeArea.objects.all(), empty_label="All"
     )
     date_start = django_filters.DateFilter(
         widget=forms.widgets.DateInput(attrs={"type": "date"}),
         field_name="date_start",
         lookup_expr="gte",
-        label="Date start",
+        label="Opened on or after",
     )
     date_end = django_filters.DateFilter(
         widget=forms.widgets.DateInput(attrs={"type": "date"}),
         field_name="date_end",
         lookup_expr="lte",
-        label="Date end",
+        label="Closed on or before",
     )
     order_by = django_filters.OrderingFilter(
         fields=(
             ("name", "name"),
+            ("work_status", "work_status"),
             ("description", "description"),
         ),
         field_labels={
             "name": "Name",
+            "work_status": "Work status",
             "description": "Description",
         },
         empty_label=None,

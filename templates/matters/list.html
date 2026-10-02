@@ -50,8 +50,8 @@
           </th>
           <th class="work-status">
             Work Status
-            <button class="btn-sort {% if current_order == 'description' %}active{% endif %}"
-                    hx-post="{% url 'matters:order-by' 'description' %}">
+            <button class="btn-sort {% if current_order == 'work_status' %}active{% endif %}"
+                    hx-post="{% url 'matters:order-by' 'work_status' %}">
               <i class="icon-chevrons-up-down"></i>
             </button>
           </th>

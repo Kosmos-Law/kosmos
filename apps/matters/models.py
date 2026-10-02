@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from apps.contacts.models import Contact
@@ -100,19 +101,39 @@ class Matter(AuditMixin, models.Model):
     INACTIVE_STATUSES = ("Complete", "Closed")
 
     def save(self, *args, **kwargs):
+        previous_status = None
+        if self.pk:
+            previous_status = (
+                Matter.objects.filter(pk=self.pk)
+                .values_list("status", flat=True)
+                .first()
+            )
+        was_inactive = previous_status in self.INACTIVE_STATUSES
+        date_end_before = self.date_end
+
         if self.status in self.INACTIVE_STATUSES:
             from apps.matters.proceedings.models import Proceeding
 
-            # Mark all proceedings as concluded when work ends, and drop the
-            # matter's Drive folder mappings along with its Drive and Gmail
-            # links. Closed-out files move out of the "Matters - Open"
-            # Drive/Gmail roots, so stale links only produce missing-folder
-            # and missing-label drift warnings (and automatic label setup
-            # would recreate the matter's Gmail labels). Synced rows all
-            # survive the unlink: record Documents are append-only and
-            # Email rows are only removed by label events on a still-mapped
-            # matter.
-            Proceeding.objects.filter(matter=self).update(status="Concluded")
+            if not was_inactive:
+                # Work has just ended: record the day, and conclude the
+                # proceedings still in progress. This runs once, on the way
+                # in, so a proceeding corrected afterwards stays corrected;
+                # one already Dismissed keeps that more exact status.
+                if not self.date_end:
+                    self.date_end = timezone.localdate()
+                if self.pk:
+                    Proceeding.objects.filter(matter=self).exclude(
+                        status="Dismissed"
+                    ).update(status="Concluded")
+
+            # Drop the matter's Drive folder mappings along with its Drive
+            # and Gmail links. Closed-out files move out of the "Matters -
+            # Open" Drive/Gmail roots, so stale links only produce
+            # missing-folder and missing-label drift warnings (and automatic
+            # label setup would recreate the matter's Gmail labels). Synced
+            # rows all survive the unlink: record Documents are append-only
+            # and Email rows are only removed by label events on a
+            # still-mapped matter.
             self.gmail_label_id = None
             self.gmail_label_name = None
             self.drive_folder = None
@@ -122,6 +143,14 @@ class Matter(AuditMixin, models.Model):
 
                 DriveFolderMapping.objects.filter(matter=self).delete()
                 DriveMatterState.objects.filter(matter=self).delete()
+
+        elif was_inactive:
+            # Reopened: the matter no longer has a closing date.
+            self.date_end = None
+
+        # A caller saving named fields still gets the closing date written.
+        if self.date_end != date_end_before and kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = {*kwargs["update_fields"], "date_end"}
 
         # (Client status is no longer maintained here — it's derived from a
         # contact's matters; see apps.contacts.models.derive_client_status.)

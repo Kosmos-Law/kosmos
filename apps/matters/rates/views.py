@@ -51,7 +51,7 @@ def add(request, id):
 
     # if applicable, process any post data submitted by user
     if request.method == "POST":
-        form = RateForm(request.POST, use_required_attribute=False)
+        form = RateForm(request.POST, matter=matter, use_required_attribute=False)
         if form.is_valid():
             rate = form.save(commit=False)
             rate.matter = matter
@@ -61,18 +61,14 @@ def add(request, id):
 
     # if no post data has been submitted, show the proceeding form
     else:
-        user_list = CustomUser.objects.all().order_by("username")
+        form = RateForm(
+            initial={"user": request.user}, matter=matter, use_required_attribute=False
+        )
 
-        for user in user_list:
-            matter_rates = Rate.objects.filter(matter=matter, user=user)
-            if matter_rates:
-                user_list = user_list.exclude(pk=user.pk)
-
-        form = RateForm(initial={"user": request.user}, use_required_attribute=False)
-
-        # set the list of potential users
-        for user in user_list:
-            user.username = user.username.title()
+    # Offer only the users who have no rate on this matter yet.
+    form.fields["user"].queryset = CustomUser.objects.exclude(
+        rate__matter=matter
+    ).order_by("username")
 
     context = {
         "app": "matters",
@@ -96,7 +92,9 @@ def edit(request, id, rate_id):
 
     # if applicable, process any post data submitted by user
     if request.method == "POST":
-        form = RateForm(request.POST, instance=rate, use_required_attribute=False)
+        form = RateForm(
+            request.POST, instance=rate, matter=matter, use_required_attribute=False
+        )
         if form.is_valid():
             rate = form.save(commit=False)
             rate.save()
@@ -105,7 +103,7 @@ def edit(request, id, rate_id):
 
     # if no post data has been submitted, show the proceeding form
     else:
-        form = RateForm(instance=rate, use_required_attribute=False)
+        form = RateForm(instance=rate, matter=matter, use_required_attribute=False)
 
     context = {
         "app": "matters",

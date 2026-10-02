@@ -148,19 +148,31 @@ def toggle_permission(request, user_id, perm):
     )
 
 
+# Matters the assignment dialog lists: those still being worked. A new matter
+# starts as Pending, and has to be assignable before it is opened.
+ASSIGNABLE_STATUSES = ("Pending", "Open")
+
+
+def _assignment_lists(target_user):
+    """The dialog's two columns: the user's assigned matters, and the rest."""
+    assigned = target_user.assigned_matters.filter(
+        status__in=ASSIGNABLE_STATUSES
+    ).order_by("name")
+    unassigned = (
+        Matter.objects.filter(status__in=ASSIGNABLE_STATUSES)
+        .exclude(id__in=set(assigned.values_list("id", flat=True)))
+        .order_by("name")
+    )
+    return assigned, unassigned
+
+
 @login_required
 def matter_assignments(request, user_id):
     """Render the matter assignment modal for a user."""
     if not request.user.is_admin:
         return HttpResponseForbidden()
     target_user = CustomUser.objects.get(id=user_id)
-    assigned = target_user.assigned_matters.filter(status="Open").order_by("name")
-    assigned_ids = set(assigned.values_list("id", flat=True))
-    unassigned = (
-        Matter.objects.filter(status="Open")
-        .exclude(id__in=assigned_ids)
-        .order_by("name")
-    )
+    assigned, unassigned = _assignment_lists(target_user)
     context = {
         "target_user": target_user,
         "assigned": assigned,
@@ -182,13 +194,7 @@ def toggle_matter_assignment(request, user_id, matter_id):
     else:
         target_user.assigned_matters.add(matter)
     # Re-render just the body partial
-    assigned = target_user.assigned_matters.filter(status="Open").order_by("name")
-    assigned_ids = set(assigned.values_list("id", flat=True))
-    unassigned = (
-        Matter.objects.filter(status="Open")
-        .exclude(id__in=assigned_ids)
-        .order_by("name")
-    )
+    assigned, unassigned = _assignment_lists(target_user)
     context = {
         "target_user": target_user,
         "assigned": assigned,

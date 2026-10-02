@@ -1,6 +1,6 @@
 """In-form contact creation for the matter client picker.
 
-From the client combobox on the add-matter form, the user can create a new
+From the client combobox on the add or edit matter form, the user can create a new
 contact — or convert an intake — without losing their in-progress matter. Because
 the app has a single modal container (a swap into it destroys the matter form),
 this runs as an in-place wizard that swaps only the ``.modal-dialog`` and stashes
@@ -9,6 +9,7 @@ matter form is re-rendered with the newly chosen client selected.
 """
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
@@ -16,6 +17,7 @@ from apps.contacts.forms import ContactForm
 from apps.folders.models import Folder
 from apps.intakes.models import Intake
 from apps.matters.forms import MatterForm
+from apps.matters.models import Matter
 
 # Everything the launching button POSTs from the matter form except the CSRF
 # token and the combobox's own search box.
@@ -56,6 +58,26 @@ def _render_matter_dialog(request, client_id=None):
     request.session.modified = True
     if client_id is not None:
         draft["client"] = str(client_id)
+
+    # The detour began on a matter's edit form: go back to that form, for
+    # that matter. Returning an add form here made Submit create a second
+    # matter.
+    matter_id = draft.pop("matter_id", None)
+    if matter_id:
+        matter = get_object_or_404(Matter, pk=matter_id)
+        if not request.user.has_matter_access(matter):
+            raise PermissionDenied
+        form = MatterForm(initial=draft, instance=matter, use_required_attribute=False)
+        context = {
+            "app": "matters",
+            "edit": True,
+            "add": False,
+            "action": f"/matters/{matter.id}/edit",
+            "matter": matter,
+            "form": form,
+        }
+        return render(request, "matters/form.html", context)
+
     form = MatterForm(initial=draft, use_required_attribute=False)
     context = {
         "app": "matters",
