@@ -82,6 +82,17 @@
   --md-shadow-z3: 0 0.4rem 1.6rem rgb(46 52 64 / 0.16);
 }
 
+/* --- The header's controls share one height and one gap ----------------- */
+
+:root {
+  /* The landing page's corner button: a 15px line at 1.25, 8px of padding
+     above and below, a 1px rule. The theme toggle and the search field
+     take the same height so the three sit on one line. */
+  --control-height: calc(0.75rem * 1.25 + 0.8rem + 2px);
+  /* The space between the toggle, the search field and the GitHub button. */
+  --control-gap: 1.4rem;
+}
+
 /* --- The theme's own variables, pointed at the tokens ------------------- */
 
 [data-md-color-scheme] {
@@ -285,9 +296,67 @@
   color: var(--color-text);
 }
 
+.md-search {
+  padding: 0;
+}
+
+.md-search__button {
+  box-sizing: border-box;
+  height: var(--control-height);
+}
+
 .md-search__button:hover {
   border-color: var(--color-dim);
   color: var(--color-strong);
+}
+
+/* --- The theme toggle: the same button, square ------------------------- */
+
+.md-header__option {
+  width: auto;
+  height: auto;
+  margin: 0 var(--control-gap) 0 0;
+}
+
+/* Only the label for the scheme not showing is visible; the other carries
+   the hidden attribute and must stay hidden. */
+.md-header__option > label.md-header__button:not([hidden]) {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.4rem;
+  background: var(--panel-fill);
+  color: var(--color-text);
+  opacity: 1;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.md-header__option > label.md-header__button:not([hidden]):hover {
+  border-color: var(--color-dim);
+  color: var(--color-strong);
+  opacity: 1;
+}
+
+.md-header__option > label.md-header__button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* Below the width where the search field and the GitHub button appear,
+   the toggle sits beside icon buttons: no wide gap, so the title keeps
+   its room. */
+@media screen and (max-width: 59.984375em) {
+  .md-header__option {
+    margin-right: 0.2rem;
+  }
 }
 
 /* --- The repository link: the landing page's GitHub button -------------- */
@@ -297,6 +366,7 @@
 .md-header__source {
   width: auto;
   max-width: none;
+  margin-left: var(--control-gap);
 }
 
 .md-source {
