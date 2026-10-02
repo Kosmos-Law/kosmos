@@ -47,8 +47,20 @@ nav = [
   { "Use" = [
     "guide/index.md",
     { "Getting started" = "guide/getting-started.md" },
-    { "Matters" = "guide/matters.md" },
-    { "Time and expenses" = "guide/time-and-expenses.md" },
+    { "Practice" = [
+      { "Matters" = "guide/matters.md" },
+      { "Contacts" = "guide/contacts.md" },
+      { "Tasks" = "guide/tasks.md" },
+      { "Calendar" = "guide/calendar.md" },
+      { "Intakes and client forms" = "guide/intakes.md" },
+    ] },
+    { "Billing" = [
+      { "Time and expenses" = "guide/time-and-expenses.md" },
+      { "Reports" = "guide/reports.md" },
+    ] },
+    { "Administer" = [
+      { "Settings" = "guide/settings.md" },
+    ] },
   ] },
   { "Develop" = [
     "dev/index.md",
