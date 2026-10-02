@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from dateutil import parser
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -262,9 +262,7 @@ def events_add(request, matter_id=None, origin="events"):
     today = timezone.localdate().strftime("%Y-%m-%d")
 
     # The form posts back to the address that names its matter, so the same
-    # matter list validates the submission. (The address with a matter and
-    # no origin is not used: "events/add/<origin>" sits above it in urls.py
-    # and takes a bare number as an origin.)
+    # matter list validates the submission.
     if matter_id:
         action = reverse("calendar:add-matter-origin", args=[matter_id, origin])
     else:
@@ -456,6 +454,11 @@ def events_calendar(request):
     return render(request, "calendar/calendar.html", context)
 
 
+def _feed_date(value):
+    """The date in one of the feed's ISO date or date-time parameters."""
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+
+
 @login_required
 @matter_access_required
 def events_api(request, matter_id=None):
@@ -471,15 +474,18 @@ def events_api(request, matter_id=None):
     end_param = request.GET.get("end")
 
     # Parse FullCalendar's ISO date parameters
-    if start_param:
-        start_date = datetime.fromisoformat(start_param.replace("Z", "+00:00")).date()
-    else:
-        start_date = timezone.localdate() - timedelta(days=30)
+    try:
+        if start_param:
+            start_date = _feed_date(start_param)
+        else:
+            start_date = timezone.localdate() - timedelta(days=30)
 
-    if end_param:
-        end_date = datetime.fromisoformat(end_param.replace("Z", "+00:00")).date()
-    else:
-        end_date = timezone.localdate() + timedelta(days=60)
+        if end_param:
+            end_date = _feed_date(end_param)
+        else:
+            end_date = timezone.localdate() + timedelta(days=60)
+    except ValueError:
+        return HttpResponseBadRequest("start and end must be ISO dates.")
 
     if matter_id:
         events = Event.objects.filter(matter_id=matter_id)
@@ -550,6 +556,32 @@ def events_api(request, matter_id=None):
     return JsonResponse(calendar_events, safe=False)
 
 
+def _quick_update_changes(body):
+    """The date and times a drag or resize asks for, or None when the
+    request is not the JSON object of dates and times the calendar sends."""
+    try:
+        data = json.loads(body)
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    changes = {}
+    try:
+        if "date" in data:
+            changes["date"] = datetime.strptime(data["date"], "%Y-%m-%d").date()
+        for field in ("start_time", "end_time"):
+            if field in data:
+                changes[field] = (
+                    datetime.strptime(data[field], "%H:%M:%S").time()
+                    if data[field]
+                    else None
+                )
+    except (ValueError, TypeError):
+        return None
+    return changes
+
+
 @login_required
 @require_POST
 def events_quick_update(request, id):
@@ -559,23 +591,14 @@ def events_quick_update(request, id):
     """
     event = event_for_user(id, request.user)
 
-    # Parse the update data
-    data = json.loads(request.body)
+    # Everything is read before anything is set, so a request that cannot
+    # be read changes nothing.
+    changes = _quick_update_changes(request.body)
+    if changes is None:
+        return HttpResponseBadRequest("Unreadable date or time.")
 
-    if "date" in data:
-        event.date = datetime.strptime(data["date"], "%Y-%m-%d").date()
-
-    if "start_time" in data:
-        if data["start_time"]:
-            event.start_time = datetime.strptime(data["start_time"], "%H:%M:%S").time()
-        else:
-            event.start_time = None
-
-    if "end_time" in data:
-        if data["end_time"]:
-            event.end_time = datetime.strptime(data["end_time"], "%H:%M:%S").time()
-        else:
-            event.end_time = None
+    for field, value in changes.items():
+        setattr(event, field, value)
 
     event.save()
 
