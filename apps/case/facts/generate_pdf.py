@@ -19,7 +19,12 @@ def generate_facts_pdf(matter_id, request):
         raise Http404("Matter does not exist")
 
     proceeding = Proceeding.objects.filter(matter=matter.id).order_by("-id").first()
-    facts = Fact.objects.filter(matter=matter.id).order_by("date")
+    # The screen's own order (date, then time) and its sources.
+    facts = (
+        Fact.objects.filter(matter=matter.id)
+        .order_by("date", "time")
+        .prefetch_related("highlights__document", "highlights__caselaw", "documents")
+    )
 
     context = {
         "matter": matter,
