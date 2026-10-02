@@ -3,7 +3,7 @@
 
 Dear {{ client_name|default:"Client" }},
 
-{% if cover_message %}{{ cover_message }}{% else %}So that we can understand your situation before we speak, please complete the short form below. It takes a few minutes, and your answers save as you go — you can close the page and come back to it.{% endif %}
+{% if cover_message %}{{ cover_message }}{% else %}So that we can understand your situation before we speak, please complete the short form below. It takes a few minutes, and your answers save as you go, so you can close the page and come back to it.{% endif %}
 
 Open your form: {{ form_url }}
 

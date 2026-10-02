@@ -12,7 +12,7 @@
       {% if send_error %}<p class="form-error-banner">{{ send_error }}</p>{% endif %}
       <p class="modal-note">
         Sends <strong>{{ submission.template_name }}</strong> to {{ intake.name }}.
-        Copying the link counts as sending it — the client has it either way.
+        Copying the link counts as sending it: the client has it either way.
       </p>
       <form id="send-form"
             hx-post="{{ action }}"

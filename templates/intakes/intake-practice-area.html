@@ -5,7 +5,7 @@
           type="button"
           x-ref="button"
           @click="toggle()"
-          :aria-expanded="open">{{ intake.practice_area }}</button>
+          :aria-expanded="open">{{ intake.practice_area|default:"—" }}</button>
   <ul hx-target="#intake-practice-area-dropdown-{{ intake.id }}"
       hx-swap="outerHTML"
       class="dropdown-menu"
