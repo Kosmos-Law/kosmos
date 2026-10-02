@@ -11,6 +11,7 @@ from apps.contacts.access import (
     assignable_roles,
     is_client_mirror,
     matter_for_user,
+    posted_ids,
     relationship_for_user,
 )
 from apps.contacts.functions.load_contacts import load_contacts
@@ -26,7 +27,7 @@ from apps.management.selection import (
 )
 from apps.matters.contacts.filters import MatterContactFilter
 from apps.matters.models import Group, Matter, Relationship, Role
-from utils.toasts import toast_warning
+from utils.toasts import toast_error, toast_warning
 
 DEFAULT_MATTER_CONTACT_FILTER = {"order_by": "group"}
 
@@ -276,11 +277,28 @@ def assign_results(request, id):
 
 
 @login_required
+@require_POST
 def assign_store(request):
-    matter = matter_for_user(request.POST["matter_id"], request.user)
-    contact = get_object_or_404(Contact, pk=request.POST["contact_id"])
-    group = get_object_or_404(Group, pk=request.POST["group_id"])
-    role = get_object_or_404(Role, pk=request.POST["role_id"])
+    # The matter rides in a hidden field. Without it there is nothing to
+    # assign to, and nothing the user can choose to put that right.
+    matter_ids = posted_ids(request, "matter_id")
+    if matter_ids is None:
+        return toast_error(
+            HttpResponse(status=204),
+            "This form has lost track of its matter. Close it and open "
+            "Assign Contact again.",
+        )
+    matter = matter_for_user(matter_ids["matter_id"], request.user)
+
+    # No contact picked from the search, or a dropdown left on its prompt.
+    ids = posted_ids(request, "contact_id", "group_id", "role_id")
+    if ids is None:
+        return toast_warning(
+            HttpResponse(status=204), "Choose a contact, a group and a role."
+        )
+    contact = get_object_or_404(Contact, pk=ids["contact_id"])
+    group = get_object_or_404(Group, pk=ids["group_id"])
+    role = get_object_or_404(Role, pk=ids["role_id"])
 
     if already_assigned(matter, contact, group, role):
         response = HttpResponse(status=204)
@@ -313,6 +331,7 @@ def assign_edit(request, id):
 
 
 @login_required
+@require_POST
 def assign_update(request, id):
     relationship = relationship_for_user(id, request.user)
     if is_client_mirror(relationship):
@@ -324,6 +343,7 @@ def assign_update(request, id):
 
 
 @login_required
+@require_POST
 def assign_delete(request, id):
     relationship = relationship_for_user(id, request.user)
     if is_client_mirror(relationship):

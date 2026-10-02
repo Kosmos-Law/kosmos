@@ -288,3 +288,35 @@ def test_a_contact_cannot_be_linked_to_an_intake_without_the_permission(
 
     assert response.status_code == 403
     assert not Contact.objects.filter(name="Quiet Link").exists()
+
+
+def _intake_tab(client, contact):
+    return client.get(reverse("contacts:detail-intake", args=[contact.id]))
+
+
+def test_the_intake_tab_has_no_link_without_the_intakes_permission(
+    client, user, contact, intake
+):
+    """The link would only be refused: the tab still says where the contact
+    came from."""
+    contact.intake = intake
+    contact.save()
+    _set(user, perm_intakes=False)
+
+    body = _intake_tab(client, contact).content.decode()
+
+    assert "created from an intake submission" in body
+    assert f"/intakes/{intake.id}/" not in body
+    assert "View Intake Details" not in body
+
+
+def test_the_intake_tab_links_to_the_intake_with_the_permission(
+    client, contact, intake
+):
+    contact.intake = intake
+    contact.save()
+
+    body = _intake_tab(client, contact).content.decode()
+
+    assert f'href="/intakes/{intake.id}/"' in body
+    assert "View Intake Details" in body

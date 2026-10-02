@@ -87,3 +87,17 @@ def already_assigned(matter, contact, group, role):
     return Relationship.objects.filter(
         matter=matter, contact=contact, group=group, role=role
     ).exists()
+
+
+def posted_ids(request, *names):
+    """The named ids from the POST body as ints, or None when any is missing
+    or not a number. An empty dropdown or an unpicked contact sends nothing
+    (or an empty string), which a lookup by primary key turns into a server
+    error."""
+    ids = {}
+    for name in names:
+        value = (request.POST.get(name) or "").strip()
+        if not value.isdigit():
+            return None
+        ids[name] = int(value)
+    return ids

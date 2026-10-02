@@ -1,17 +1,26 @@
 <div class="contact-tab-content">
   {# Intake Information #}
   {% if selected_contact.intake %}
+    {% comment %}
+      The intake itself is for users with the Intakes permission: everyone
+      else is told where the contact came from, without a link they would be
+      refused at.
+    {% endcomment %}
     <div class="contact-intake-section">
-      <p class="intake-description">
-        This contact was created from an intake submission. Click below to view it on the Intakes tab.
-      </p>
-      <div class="action-buttons">
-        <a href="{% url 'intakes:detail-index' id=selected_contact.intake.id %}"
-           class="btn btn-outline-primary">
-          <i class="icon-file-text"></i>
-          View Intake Details
-        </a>
-      </div>
+      {% if user.is_admin or user.perm_intakes %}
+        <p class="intake-description">
+          This contact was created from an intake submission. Click below to view it on the Intakes tab.
+        </p>
+        <div class="action-buttons">
+          <a href="{% url 'intakes:detail-index' id=selected_contact.intake.id %}"
+             class="btn btn-outline-primary">
+            <i class="icon-file-text"></i>
+            View Intake Details
+          </a>
+        </div>
+      {% else %}
+        <p class="intake-description">This contact was created from an intake submission.</p>
+      {% endif %}
     </div>
   {% else %}
     <div class="contact-intake-section">
