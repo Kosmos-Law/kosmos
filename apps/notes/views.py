@@ -11,7 +11,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import (
+    require_GET,
+    require_http_methods,
+    require_POST,
+)
 from watson import search as watson
 
 from apps.accounts.access import filter_matters_for_user
@@ -1118,18 +1122,11 @@ def note_delete(request, note_id):
 
 
 @login_required
+@require_GET
 def note_content(request, note_id):
-    """GET returns markdown content, POST saves it."""
+    """The note's markdown content. Read-only: saves go through
+    note_autosave, which checks the version the client last saw."""
     note = _get_note(request, note_id)
-
-    if request.method == "POST":
-        content = request.POST.get("content", "")
-        note.content = content
-        note.save()
-        if note.matter_id is None:
-            queue_note_summary(note.id)
-        return HttpResponse(status=204)
-
     return HttpResponse(note.content, content_type="text/plain; charset=utf-8")
 
 
