@@ -2,13 +2,17 @@
 One selectable case on the selection screen, with every pre-read signal:
 citation/court/date, forward citations, cross-variant hit count, the
 snippet-stage promise score, and the triage reason. `checked` is set by
-the including group.
+the including group; when the screen comes back with a message,
+`kept_selection` (the ids the user sent) decides instead.
 {% endcomment %}
 <div class="research-selection-row">
   <input type="checkbox"
          name="case_{{ result.id }}"
          id="case-{{ result.id }}"
-         {% if checked %}checked{% endif %}
+         {% if kept_selection != None %} {% if result.id in kept_selection %}checked{% endif %}
+         {% elif checked %}
+         checked
+         {% endif %}
          onchange="researchSelCount(this.form)">
   <div class="research-selection-main">
     <div>

@@ -16,6 +16,7 @@ from .jurisdictions import STATES
 from .models import CaseBrief, CitationVerification, ResearchQuery, ResearchResult
 from .tasks import (
     ASSESS_INTERRUPTED,
+    BRIEF_MAX,
     _rank_candidates,
     assessment_lost,
     generate_brief,
@@ -322,6 +323,7 @@ def research_results(request, matter_id, query_id):
             "pagination": pagination,
             "session_key": session_key,
             "trigger_key": "researchResultsChanged",
+            "brief_max": BRIEF_MAX,
         },
     )
 
@@ -403,6 +405,34 @@ def research_confirm(request, matter_id, query_id):
     return render(request, "case/research/refinement.html", context)
 
 
+def _render_selection(request, query, matter, error, kept_selection=None):
+    """The case selection screen again, with a message. kept_selection is
+    the set of result ids to show ticked (the pipeline's recommendation
+    when None)."""
+    pending = list(query.results.filter(relevance="pending").order_by("position"))
+    ordered, _ = _rank_candidates(pending)
+    return render(
+        request,
+        "case/research/results.html",
+        {
+            "query": query,
+            "matter": matter,
+            "results": [],
+            "ruled_out": list(
+                query.results.filter(relevance__in=["rejected", "low"]).order_by(
+                    "position"
+                )
+            ),
+            "recommended_candidates": [r for r in ordered if r.recommended],
+            "other_candidates": [r for r in ordered if not r.recommended],
+            "selection_error": error,
+            "kept_selection": kept_selection,
+            "brief_max": BRIEF_MAX,
+            "sort": "relevance",
+        },
+    )
+
+
 @login_required
 def research_select_cases(request, matter_id, query_id):
     """POST: run full-opinion briefs on the user-selected cases.
@@ -433,25 +463,21 @@ def research_select_cases(request, matter_id, query_id):
     keep = [rid for rid in selected_ids if rid in valid_ids]
 
     if not keep:
-        pending = list(query.results.filter(relevance="pending").order_by("position"))
-        ordered, _ = _rank_candidates(pending)
-        return render(
+        return _render_selection(
+            request, query, matter, "Select at least one case to brief."
+        )
+    # The selection is briefed inside one task with a fixed time limit, so
+    # it is held to the number the pipeline itself would brief. The ticks
+    # come back as they were sent, for the user to trim.
+    if len(keep) > BRIEF_MAX:
+        return _render_selection(
             request,
-            "case/research/results.html",
-            {
-                "query": query,
-                "matter": matter,
-                "results": [],
-                "ruled_out": list(
-                    query.results.filter(relevance__in=["rejected", "low"]).order_by(
-                        "position"
-                    )
-                ),
-                "recommended_candidates": [r for r in ordered if r.recommended],
-                "other_candidates": [r for r in ordered if not r.recommended],
-                "selection_error": "Select at least one case to brief.",
-                "sort": "relevance",
-            },
+            query,
+            matter,
+            f"Select at most {BRIEF_MAX} cases to brief at a time. "
+            f"{len(keep)} are selected. The rest can be briefed one at a "
+            "time from their cards afterwards.",
+            kept_selection=set(keep),
         )
 
     # Unselected candidates step aside (still briefable later via the
