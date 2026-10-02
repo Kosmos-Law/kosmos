@@ -3,15 +3,26 @@
 import email
 import html
 import mailbox
+import mimetypes
 import os
 import re
 from datetime import datetime
 from email.utils import parseaddr, parsedate_to_datetime
 from tempfile import NamedTemporaryFile
 from typing import NamedTuple
+from urllib.parse import unquote, urlsplit
 
+from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.template.loader import render_to_string
+from django.utils._os import safe_join
 from weasyprint import HTML
+from weasyprint.urls import URLFetcher, URLFetcherResponse
+
+# The only hosts an email PDF may reach over the network: the two the
+# template itself (templates/case/documents/email_pdf.html) links for its
+# typeface. Nothing an email's own HTML names is on this list.
+TEMPLATE_FONT_HOSTS = frozenset({"fonts.googleapis.com", "fonts.gstatic.com"})
 
 
 class EmailMetadata(NamedTuple):
@@ -240,6 +251,69 @@ def sanitize_html_for_pdf(html_content: str) -> str:
     return html_content
 
 
+def _static_file_path(url: str, base_url: str) -> str | None:
+    """The file on disk behind one of the application's own static URLs.
+
+    The PDF template links the application's stylesheets by URL. They are
+    read from disk here, so rendering never calls back into the web server.
+    """
+    parts = urlsplit(url)
+    base = urlsplit(base_url)
+    if (parts.scheme, parts.netloc) != (base.scheme, base.netloc):
+        return None
+    prefix = "/" + settings.STATIC_URL.strip("/") + "/"
+    if not parts.path.startswith(prefix):
+        return None
+    relative_path = unquote(parts.path[len(prefix) :])
+    # Both lookups refuse a path that climbs out of the static directories.
+    found = finders.find(relative_path)
+    if found:
+        return found
+    if settings.STATIC_ROOT:
+        candidate = safe_join(settings.STATIC_ROOT, relative_path)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def email_pdf_url_fetcher(base_url: str):
+    """A WeasyPrint URL fetcher for rendering an email someone else wrote.
+
+    An email's HTML can name any address: an image on the sender's server
+    (a tracking pixel), or one inside the firm's own network. WeasyPrint
+    would fetch each from the server. This fetcher serves only:
+
+    - inline ``data:`` URLs (nothing is fetched);
+    - the application's own static files, read from disk;
+    - the font hosts the PDF template itself links.
+
+    Everything else is refused. WeasyPrint logs the refusal and renders the
+    email without that resource.
+    """
+
+    def fetch(url, *args, **kwargs):
+        parts = urlsplit(url)
+        scheme = parts.scheme.lower()
+        if scheme == "data":
+            return URLFetcher(allowed_protocols=["data"]).fetch(url)
+        static_path = _static_file_path(url, base_url)
+        if static_path:
+            content_type = mimetypes.guess_type(static_path)[0]
+            return URLFetcherResponse(
+                url,
+                body=open(static_path, "rb"),
+                headers={"Content-Type": content_type or "application/octet-stream"},
+            )
+        if scheme == "https" and parts.hostname in TEMPLATE_FONT_HOSTS:
+            # No redirects: an allowed host must not be a way to anywhere else.
+            return URLFetcher(allowed_protocols=["https"], allow_redirects=False).fetch(
+                url
+            )
+        raise ValueError(f"Refused to fetch {url!r} while rendering an email PDF")
+
+    return fetch
+
+
 def text_to_html(text_content: str) -> str:
     """Convert plain text to HTML with proper formatting."""
     if not text_content:
@@ -283,7 +357,11 @@ def generate_email_pdf(
     }
 
     html_string = render_to_string("case/documents/email_pdf.html", context)
-    html_obj = HTML(string=html_string, base_url=base_url)
+    html_obj = HTML(
+        string=html_string,
+        base_url=base_url,
+        url_fetcher=email_pdf_url_fetcher(base_url),
+    )
 
     pdf_file = NamedTemporaryFile(suffix=".pdf", delete=False)
     html_obj.write_pdf(target=pdf_file.name)
