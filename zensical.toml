@@ -18,11 +18,9 @@ nav = [
   { "Home" = "index.md" },
   { "Install" = [
     "admin/index.md",
-    { "Install" = [
-      { "Script" = "admin/install.md" },
-      { "Hand" = "admin/install-manual.md" },
-      { "Configuration" = "admin/configuration.md" },
-    ] },
+    { "Script" = "admin/install.md" },
+    { "Hand" = "admin/install-manual.md" },
+    { "Configuration" = "admin/configuration.md" },
     { "Integrations" = [
       { "Outgoing email" = "admin/integrations/email.md" },
       { "File storage" = "admin/integrations/storage.md" },
