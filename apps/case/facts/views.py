@@ -15,6 +15,7 @@ from apps.management.selection import (
     toggle_id,
 )
 
+from .access import label_for_matter, source_for_fact
 from .filters import (
     LABELS_MODE_ALL,
     LABELS_MODE_ANY,
@@ -400,7 +401,7 @@ def bulk_facts_label_action(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No facts selected.")
 
-    label = get_object_or_404(Label, id=request.POST.get("label_id"))
+    label = label_for_matter(matter, request.POST.get("label_id"))
     action = request.POST.get("action")
     facts = _selected_facts_qs(matter, selected)
 
@@ -531,14 +532,12 @@ def fact_add_source(request, fact_id):
     matter = fact.matter
 
     source_type = request.POST.get("type")
-    source_id = request.POST.get("id")
+    source = source_for_fact(fact, source_type, request.POST.get("id"))
 
     if source_type == "document":
-        document = get_object_or_404(Document, pk=source_id)
-        fact.documents.add(document)
+        fact.documents.add(source)
     elif source_type == "highlight":
-        highlight = get_object_or_404(Highlight, pk=source_id)
-        fact.highlights.add(highlight)
+        fact.highlights.add(source)
 
     context = {
         "matter": matter,
@@ -557,12 +556,12 @@ def fact_remove_source(request, fact_id):
     source_type = request.POST.get("type")
     source_id = request.POST.get("id")
 
+    # Looked up among the fact's own sources, so an id from elsewhere is a
+    # plain 404 and never reveals whether that record exists.
     if source_type == "document":
-        document = get_object_or_404(Document, pk=source_id)
-        fact.documents.remove(document)
+        fact.documents.remove(get_object_or_404(fact.documents, pk=source_id))
     elif source_type == "highlight":
-        highlight = get_object_or_404(Highlight, pk=source_id)
-        fact.highlights.remove(highlight)
+        fact.highlights.remove(get_object_or_404(fact.highlights, pk=source_id))
 
     context = {
         "matter": matter,

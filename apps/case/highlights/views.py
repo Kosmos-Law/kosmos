@@ -6,6 +6,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.case.facts.access import label_for_matter
 from apps.case.models import Document, Highlight, Label, Witness
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.management.pagination import CustomPaginator
@@ -666,7 +667,7 @@ def bulk_highlights_label_action(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No highlights selected.")
 
-    label = get_object_or_404(Label, id=request.POST.get("label_id"))
+    label = label_for_matter(matter, request.POST.get("label_id"))
     action = request.POST.get("action")
     highlights = _selected_highlights_qs(matter, selected)
 
