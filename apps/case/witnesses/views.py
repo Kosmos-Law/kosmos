@@ -4,6 +4,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
+from apps.case.facts.sorting import (
+    filterset_sort_keys,
+    stored_sort_key,
+    with_valid_sort,
+)
 from apps.case.highlights.importance import parse_importance
 from apps.case.models import Highlight, Witness
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
@@ -19,11 +24,15 @@ from apps.management.selection import (
 from .filters import WitnessesFilter
 from .forms import WitnessForm
 
+SORT_KEYS = filterset_sort_keys(WitnessesFilter)
+
 
 def get_witnesses_data(request, matter, matter_id):
     """Get witnesses data with filters applied from session."""
     filter_session_key = get_session_key("witnesses_filter", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
+    filter_data = with_valid_sort(
+        request.session.get(filter_session_key, {}), SORT_KEYS
+    )
 
     witnesses = []
     if matter:
@@ -37,9 +46,7 @@ def get_witnesses_data(request, matter, matter_id):
             witnesses = queryset
 
     # Get current sort order
-    current_order = filter_data.get("order_by", "name")
-    if isinstance(current_order, list):
-        current_order = current_order[0] if current_order else "name"
+    current_order = stored_sort_key(filter_data, SORT_KEYS, "name")
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -388,6 +395,9 @@ def witnesses_filter(request, matter_id):
 @login_required
 def witnesses_sort(request, matter_id, order):
     """Sort witnesses by field, toggling asc/desc."""
+    if order not in SORT_KEYS:
+        return HttpResponse(status=400, content="Invalid sort.")
+
     filter_session_key = get_session_key("witnesses_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 

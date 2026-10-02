@@ -17,6 +17,7 @@ signals so the choice is informed. Mirrors the query-variant gate.
     </div>
   {% endif %}
   <form id="researchSelForm"
+        data-max="{{ brief_max|default:'' }}"
         hx-post="{% url 'case:research-select' matter.id query.id %}"
         hx-target="#research-results"
         hx-swap="innerHTML">
@@ -33,7 +34,7 @@ signals so the choice is informed. Mirrors the query-variant gate.
       {% endfor %}
     {% endif %}
     {% if ruled_out %}
-      <details class="research-ruled-out">
+      <details class="research-ruled-out" {% if kept_selection %}open{% endif %}>
         <summary>Ruled out at triage ({{ ruled_out|length }}). Select any the triage got wrong.</summary>
         {% for result in ruled_out %}
           {% include "case/research/case-selection-row.html" with checked=False %}
@@ -41,7 +42,10 @@ signals so the choice is informed. Mirrors the query-variant gate.
       </details>
     {% endif %}
     <div class="research-selection-footer">
-      <span class="detail-text"><span id="researchSelCount">0</span> cases selected</span>
+      <span class="detail-text">
+        <span id="researchSelCount">0</span> cases selected
+        {% if brief_max %}({{ brief_max }} at most){% endif %}
+      </span>
       <button type="submit" class="btn btn-success">
         <i class="icon-play"></i> Run briefs
       </button>
@@ -49,14 +53,19 @@ signals so the choice is informed. Mirrors the query-variant gate.
   </form>
 </div>
 <script>
-  if (!window.researchSelCount) {
-    window.researchSelCount = function (form) {
-      const count = form.querySelectorAll('input[type="checkbox"]:checked').length;
-      const counter = document.getElementById('researchSelCount');
-      if (counter) counter.textContent = count;
-      const button = form.querySelector('button[type="submit"]');
-      if (button) button.disabled = count === 0;
-    };
-  }
+  /* Redefined on every render so a page left open across an update picks
+     up the current rule. Run briefs is off with nothing selected and
+     above the form's data-max (the server refuses more than that too). */
+  window.researchSelCount = function (form) {
+    const count = form.querySelectorAll('input[type="checkbox"]:checked').length;
+    const max = parseInt(form.dataset.max, 10) || Infinity;
+    const counter = document.getElementById('researchSelCount');
+    if (counter) {
+      counter.textContent = count;
+      counter.parentElement.classList.toggle('research-save-error', count > max);
+    }
+    const button = form.querySelector('button[type="submit"]');
+    if (button) button.disabled = count === 0 || count > max;
+  };
   researchSelCount(document.getElementById('researchSelForm'));
 </script>

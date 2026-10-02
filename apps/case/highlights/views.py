@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.case.facts.access import label_for_matter
+from apps.case.facts.sorting import filterset_sort_keys, with_valid_sort
 from apps.case.models import Document, Highlight, Label, Witness
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.management.pagination import CustomPaginator
@@ -24,12 +25,19 @@ from .filters import HighlightsFilter
 from .forms import HighlightForm
 from .importance import DEFAULT_IMPORTANCE, parse_importance
 
+SORT_KEYS = filterset_sort_keys(HighlightsFilter)
+HIGHLIGHT_COLORS = frozenset(value for value, _ in Highlight.COLOR_CHOICES)
+
 
 def get_highlights_data(request, matter, matter_id):
     """Get highlights data with filters applied from session."""
     filter_session_key = get_session_key("highlights_filter", matter_id)
     pagination_session_key = get_session_key("highlights_pagination", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
+    # A stored sort key that is not one of the list's own is dropped, so
+    # the list falls back to its default order (newest first).
+    filter_data = with_valid_sort(
+        request.session.get(filter_session_key, {}), SORT_KEYS
+    )
 
     highlights = []
     documents = []
@@ -318,6 +326,9 @@ def highlights_filter(request, matter_id):
 @login_required
 def highlights_filter_sort(request, matter_id, order):
     """Sort highlights by field, toggling asc/desc."""
+    if order not in SORT_KEYS:
+        return HttpResponse(status=400, content="Invalid sort.")
+
     filter_session_key = get_session_key("highlights_filter", matter_id)
     pagination_session_key = get_session_key("highlights_pagination", matter_id)
     filter_data = request.session.get(filter_session_key, {})
@@ -395,6 +406,10 @@ def add_highlight(request, document_id):
         if importance is None:
             return JsonResponse({"error": "Invalid importance."}, status=400)
 
+        color = request.POST.get("color", "yellow")
+        if color not in HIGHLIGHT_COLORS:
+            return JsonResponse({"error": "Invalid color."}, status=400)
+
         highlight = Highlight.objects.create(
             document=document,
             slug=slug,
@@ -402,7 +417,7 @@ def add_highlight(request, document_id):
             page_number=int(request.POST.get("page_number")),
             paragraph_number=paragraph_number,
             coordinates=coordinates,
-            color=request.POST.get("color", "yellow"),
+            color=color,
             importance=importance,
             created_by=request.user,
         )

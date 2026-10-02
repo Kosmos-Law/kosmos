@@ -20,7 +20,16 @@
   <body>
     <div class="template">
       <div class="section">
-        <h3>{{ matter.name }} - Facts</h3>
+        <h3>
+          {{ matter.name }} - Facts
+          {% if filter_summary %}(filtered){% endif %}
+        </h3>
+        {% if filter_summary %}
+          <p>
+            Showing {{ facts|length }} of {{ total_count }} fact{{ total_count|pluralize }}.
+            Filter: {{ filter_summary|join:"; " }}.
+          </p>
+        {% endif %}
         <div class="table-container">
           <table class="table facts-list">
             {% if facts %}

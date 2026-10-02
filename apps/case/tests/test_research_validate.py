@@ -140,13 +140,14 @@ class TestLookupInTheTab:
 @pytest.fixture
 def citing_cases(monkeypatch):
     """A CourtListener with a settable list of opinions citing the case."""
-    state = {"citing": [601, 602], "assessments": 0}
+    state = {"citing": [601, 602], "assessments": 0, "summaries": 0}
 
     def fake_gemini(system_prompt, messages, **kwargs):
-        # The case's own summary is asked for too; only assessments count.
         if "citing opinion" in messages[0]["content"]:
             state["assessments"] += 1
-        return '{"treatment": "positive", "summary": "Follows it."}', None, None
+            return '{"treatment": "positive", "summary": "Follows it."}', None, None
+        state["summaries"] += 1
+        return "A summary of the case.", None, None
 
     monkeypatch.setattr(
         research_tasks,
@@ -194,6 +195,19 @@ class TestValidatingTwice:
 
         assert citing_cases["assessments"] == 2
         assert not CitationVerification.objects.filter(result=result, summary="")
+
+    def test_the_case_summary_is_written_once_and_reused(self, result, citing_cases):
+        """Each Validate click used to ask the model for it again."""
+        research_tasks._review_result(result.id)
+        result.refresh_from_db()
+        assert result.review_summary == "A summary of the case."
+        assert citing_cases["summaries"] == 1
+
+        research_tasks._review_result(result.id)
+
+        result.refresh_from_db()
+        assert citing_cases["summaries"] == 1
+        assert result.review_summary == "A summary of the case."
 
     def test_a_new_citing_opinion_is_added_after_the_ones_listed(
         self, result, citing_cases

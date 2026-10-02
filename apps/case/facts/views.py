@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
 from apps.case.highlights.importance import parse_importance
@@ -26,6 +27,9 @@ from .filters import (
 )
 from .forms import FactForm
 from .generate_pdf import generate_facts_pdf
+from .sorting import filterset_sort_keys, stored_sort_key, with_valid_sort
+
+SORT_KEYS = filterset_sort_keys(FactsFilter)
 
 
 def labels_mode_from(filter_data):
@@ -58,7 +62,9 @@ def label_filter_options(matter, filter_data):
 def get_facts_data(request, matter, matter_id):
     """Get facts data with filters applied from session."""
     filter_session_key = get_session_key("facts_filter", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
+    filter_data = with_valid_sort(
+        request.session.get(filter_session_key, {}), SORT_KEYS
+    )
 
     facts = []
     if matter:
@@ -72,9 +78,7 @@ def get_facts_data(request, matter, matter_id):
             facts = queryset
 
     # Get current sort order
-    current_order = filter_data.get("order_by", "date")
-    if isinstance(current_order, list):
-        current_order = current_order[0] if current_order else "date"
+    current_order = stored_sort_key(filter_data, SORT_KEYS, "date")
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -97,6 +101,7 @@ def get_facts_data(request, matter, matter_id):
 
     return {
         "facts": facts,
+        "facts_filter_data": filter_data,
         "selected_facts": selected_facts,
         "all_selected": all_selected,
         "label_options": label_options,
@@ -121,6 +126,33 @@ def get_facts_data(request, matter, matter_id):
             else ""
         ),
     }
+
+
+def describe_facts_filter(data):
+    """The filter in force on the Facts tab, one phrase per condition, from
+    what get_facts_data returned. Empty when every fact is shown. The sort
+    order is not a filter and is not described."""
+    filter_data = data["facts_filter_data"]
+    parts = []
+    if data["keyword"]:
+        parts.append(f'keyword "{data["keyword"]}"')
+    for key, word in (("date_start", "from"), ("date_end", "to")):
+        # Only a date the filter itself would accept is in force.
+        try:
+            day = parse_date(str(filter_data.get(key) or ""))
+        except ValueError:
+            day = None
+        if day:
+            parts.append(f"{word} {day.isoformat()}")
+    if data["active_labels"]:
+        names = [option["name"] for option in data["active_labels"]]
+        joiner = " and " if data["labels_mode"] == LABELS_MODE_ALL else " or "
+        parts.append(f"label {joiner.join(names)}")
+    if data["importance_value"] == 7:
+        parts.append("importance Highest")
+    elif data["selected_importance"]:
+        parts.append(f"importance {data['selected_importance']} or higher")
+    return parts
 
 
 @login_required
@@ -429,7 +461,15 @@ def facts_pdf(request, matter_id):
 
     matter, matters = get_matter_from_url(request, matter_id)
 
-    file = generate_facts_pdf(matter.id, request)
+    # The button sits on the filtered list, so the PDF is that list: the
+    # same facts in the same order, and it says which filter was in force.
+    data = get_facts_data(request, matter, matter_id)
+    file = generate_facts_pdf(
+        matter.id,
+        request,
+        facts=data["facts"],
+        filter_summary=describe_facts_filter(data),
+    )
 
     current_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -629,6 +669,9 @@ def facts_filter_labels_mode(request, matter_id, mode):
 @login_required
 def facts_sort(request, matter_id, order):
     """Sort facts by field, toggling asc/desc."""
+    if order not in SORT_KEYS:
+        return HttpResponse(status=400, content="Invalid sort.")
+
     filter_session_key = get_session_key("facts_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 
