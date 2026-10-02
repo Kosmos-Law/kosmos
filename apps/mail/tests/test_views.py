@@ -82,8 +82,11 @@ def test_email_promote_creates_document(
     }
     settings.MEDIA_ROOT = str(tmp_path)
     ocr_queued = []
+    # Patched where promote.py looks it up: that module binds async_task at
+    # import, so patching django_q.tasks only worked if this test happened
+    # to be the first to import it.
     monkeypatch.setattr(
-        "django_q.tasks.async_task",
+        "apps.mail.promote.async_task",
         lambda func, *args, **kwargs: ocr_queued.append(args[0]),
     )
 

@@ -118,7 +118,7 @@ def test_promote_tells_the_list_column_to_reload(
         },
     }
     settings.MEDIA_ROOT = str(tmp_path)
-    monkeypatch.setattr("django_q.tasks.async_task", lambda *args, **kwargs: None)
+    monkeypatch.setattr("apps.mail.promote.async_task", lambda *args, **kwargs: None)
     # 01:30 UTC on the 6th is the evening of the 5th in New York.
     email = make_email(
         matter,
