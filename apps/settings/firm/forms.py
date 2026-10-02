@@ -35,16 +35,23 @@ class FirmForm(forms.ModelForm):
             "invoice_bcc",
             "intake_email",
             "jurisdiction",
+            "payment_terms",
+            "invoice_trust_note",
         ]
         widgets = {
             "invoice_bcc": forms.Textarea(attrs={"rows": 2}),
+            "invoice_trust_note": forms.Textarea(attrs={"rows": 3}),
         }
         labels = {
             "billing_email": "Billing Email",
             "invoice_bcc": "Invoice BCC",
             "intake_email": "Intake Email",
+            "payment_terms": "Payment Terms",
+            "invoice_trust_note": "Invoice Trust Note",
         }
         help_texts = {
+            "payment_terms": "One sentence added to payment reminders, for example the terms in your fee agreement. Leave blank to say nothing.",
+            "invoice_trust_note": "Printed under Funds in Trust on an invoice when the client holds money in trust. Leave blank to print the balance alone.",
             "jurisdiction": "Used for a matter that has no jurisdiction of its own: on its Overview, and in AI chat and intake assessments.",
         }
 

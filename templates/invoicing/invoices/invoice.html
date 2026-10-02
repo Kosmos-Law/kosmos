@@ -175,13 +175,14 @@
           <h3>Funds in Trust</h3>
           <table class="table">
             <tr>
-              <td>Retainer Balance *</td>
+              <td>
+                Retainer Balance
+                {% if company.invoice_trust_note %}*{% endif %}
+              </td>
               <td class="money">${{ confirmed_balance|floatformat:2|intcomma }}</td>
             </tr>
           </table>
-          <p class="trust-caption">
-            * Please note: funds on retainer are not applied to invoices before the end of the case. They are held for the full duration of the matter as described in Paragraph 4.3 of your Attorney Client Agreement, and if applicable, your Retainer Addendum. This invoice does not indicate any change in your trust balance. Please pay the amount due highlighted above.
-          </p>
+          {% if company.invoice_trust_note %}<p class="trust-caption">* {{ company.invoice_trust_note }}</p>{% endif %}
         </div>
       {% endif %}
       {% if invoice.message %}

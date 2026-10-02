@@ -261,8 +261,8 @@ def send_request_reminder(
     """Email a payment reminder for an already-sent request. Returns True.
 
     The reminder notes how many days ago the request went out and (for
-    operating requests) that payment is due upon receipt under the
-    attorney-client agreement; trust reminders use softer retainer language.
+    operating requests) the firm's own payment terms, when it has set any
+    (Settings, Firm); trust reminders use softer retainer language.
     Includes the same pay link, no attachments. Logs a reminder-kind
     transmission on the request AND on each invoice the request's earlier
     sends attached (the reminder concerns those invoices); the days-since
@@ -316,6 +316,7 @@ def send_request_reminder(
         "amount_due": payment_request.amount_requested,
         "cover_message": message or "",
         "days_since": days_since_requested(payment_request),
+        "payment_terms": company.payment_terms if company else "",
         "firm_name": company.name if company else "",
         # Client-facing contact prompt: the firm's billing address (falling
         # back to the general firm email), matching the invoice emails.

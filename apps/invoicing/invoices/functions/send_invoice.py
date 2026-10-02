@@ -231,8 +231,8 @@ def send_reminder(
 ):
     """Email a payment reminder for an already-sent invoice. Returns True.
 
-    The reminder notes how many days ago the invoice went out, that payment is
-    due upon receipt under the attorney-client agreement, and that
+    The reminder notes how many days ago the invoice went out, the firm's own
+    payment terms when it has set any (Settings, Firm), and that
     accommodations are available on request. attach_pdf optionally attaches a
     courtesy copy of the invoice PDF (off by default — it's downloadable at
     the pay link). Logs a 'reminder'-kind transmission; the invoice's status,
@@ -290,6 +290,7 @@ def send_reminder(
             "amount_due": invoice.amount_remaining,
             "cover_message": message or "",
             "days_since": days_since_sent(invoice),
+            "payment_terms": company.payment_terms if company else "",
             "firm_name": company.name if company else "",
             "billing_email": billing_email,
             "pay_url": payment_url(invoice, request),

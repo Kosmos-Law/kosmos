@@ -1,9 +1,9 @@
 import os
-from datetime import datetime
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -19,10 +19,11 @@ from apps.activity.flat_fees.summary import (
 )
 from apps.activity.time.models import TimeEntry
 from apps.activity.time.summary import calculate_summary as calculate_time_summary
-from apps.invoicing.applications.models import PaymentApplication
+from apps.invoicing.applications.models import PaymentApplication, apply_to_invoice
 from apps.invoicing.invoices.functions import generate_ledes_98b
 from apps.invoicing.invoices.get_invoice_data import get_invoice_data
 from apps.invoicing.payments.forms import PaymentForm
+from apps.invoicing.payments.trust import sync_trust_withdrawal
 from apps.invoicing.templatetags.invoicing_extras import ledger_visible_to
 from apps.management.pagination import CustomPaginator
 from apps.management.selection import (
@@ -36,7 +37,6 @@ from apps.management.selection import (
 )
 from apps.matters.ledger.get_ledger_data import get_ledger_context
 from apps.matters.models import Matter
-from apps.trust.models import Transaction
 from utils.toasts import toast_error, toast_success
 
 from .filters import InvoiceFilter
@@ -527,14 +527,10 @@ def invoice_flat_fee_entries(request, pk):
 
 @login_required
 def quick_invoice_payment(request, pk, payment_type):
-    current_date = datetime.now().date()
-
     try:
         invoice = Invoice.objects.get(pk=pk)
     except (Invoice.DoesNotExist, Exception):
         return HttpResponse(status=404)
-    invoice_value = invoice.value["final_total"]
-
     # Trust money belongs to a client. A withdrawal with no client would sit
     # on no ledger, and the Trust tab cannot list it.
     if payment_type == "trust" and not (invoice.matter and invoice.matter.client_id):
@@ -550,35 +546,33 @@ def quick_invoice_payment(request, pk, payment_type):
         request.POST or None,
         use_required_attribute=False,
         initial={
-            "amount": invoice_value,
+            # What is still owed, not the invoice's total: a second payment
+            # on a part-paid invoice starts at the remainder.
+            "amount": invoice.amount_remaining,
             "matter": invoice.matter,
             "detail": f"Invoice {invoice.id}",
         },
     )
+    # The payment is for this invoice, so it is on this invoice's matter.
+    form.fields["matter"].queryset = Matter.objects.filter(pk=invoice.matter_id)
 
     if payment_type == "trust":
         form.fields["payment_method"].initial = "TRUST"
 
     if request.method == "POST" and form.is_valid():
-        payment = form.save()
+        with transaction.atomic():
+            payment = form.save()
 
-        # Auto-allocate payment to invoice
-        amount_to_allocate = min(payment.amount, invoice.amount_remaining)
-        if amount_to_allocate > 0:
-            PaymentApplication.objects.create(
-                payment=payment,
-                invoice=invoice,
-                amount_applied=amount_to_allocate,
-            )
+            # Auto-allocate payment to invoice
+            amount_to_allocate = min(payment.amount, invoice.amount_remaining)
+            if amount_to_allocate > 0:
+                apply_to_invoice(
+                    PaymentApplication, "payment", payment, invoice, amount_to_allocate
+                )
 
-        if payment_type == "trust":
-            Transaction.objects.create(
-                contact=invoice.matter.client,
-                date=current_date,
-                type="Withdrawal",
-                amount=payment.amount,
-                description=f"Invoice {invoice.id}",
-            )
+            # A payment by Trust records its withdrawal, dated as the payment
+            # is, whichever button opened this form.
+            sync_trust_withdrawal(payment)
 
         return HttpResponse(status=302, headers={"HX-Redirect": "/invoicing/payments"})
 
@@ -613,16 +607,21 @@ def invoices_add(request):
         # Check if a matter was specified via GET parameter
         matter_id = request.GET.get("matter")
 
-        entries = TimeEntry.objects.filter(
-            invoice__isnull=True, entered=False, date__gte="2024-01-01"
-        ).values_list("matter", flat=True)
-
-        expenses = ExpenseEntry.objects.filter(
-            invoice__isnull=True, entered=False
-        ).values_list("matter", flat=True)
-
-        # Combine all matter IDs (including the specified one if provided)
-        matter_ids = list(chain(entries, expenses))
+        # A matter is offered when it has work an invoice would pick up:
+        # time, expenses or flat fees that are on no invoice and not marked
+        # Entered, on a billable matter (the Work in Progress tab's rule).
+        unbilled = {"invoice__isnull": True, "entered": False, "matter__billable": True}
+        matter_ids = list(
+            chain(
+                TimeEntry.objects.filter(**unbilled).values_list("matter", flat=True),
+                ExpenseEntry.objects.filter(**unbilled).values_list(
+                    "matter", flat=True
+                ),
+                FlatFeeEntry.objects.filter(**unbilled).values_list(
+                    "matter", flat=True
+                ),
+            )
+        )
         if matter_id:
             matter_ids.append(int(matter_id))
             form.fields["matter"].initial = matter_id
@@ -875,7 +874,10 @@ def invoices_edit_status(request, pk, status, view):
     invoice.status = status
     invoice.save()
 
-    if status in ["APPROVED", "SENT"]:
+    # Leaving Draft by any road stores the invoice's PDF again: the copy
+    # kept from the draft carries the DRAFT watermark, and it is what the
+    # client's link serves.
+    if status != "DRAFT":
         store_invoice_pdf(invoice, request)
 
     trigger = "invoicesChanged" if view == "list" else "invoiceDetailChanged"

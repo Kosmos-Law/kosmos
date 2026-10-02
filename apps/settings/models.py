@@ -33,6 +33,10 @@ class Firm(AuditMixin):
     intake_email = models.EmailField(blank=True)
     logo = models.ImageField(upload_to="company/", blank=True, null=True)
     jurisdiction = models.CharField(max_length=100, blank=True)
+    # Wording that depends on a firm's own fee agreement. Blank leaves the
+    # sentence out of the document.
+    invoice_trust_note = models.TextField(blank=True, default="")
+    payment_terms = models.CharField(max_length=255, blank=True, default="")
     # Quick task entry: the fuzzy "Matter - description" prefix matcher is
     # the default; AI interpretation of the whole line is an opt-in add-on.
     quick_task_ai = models.BooleanField(default=False)
