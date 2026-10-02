@@ -126,6 +126,26 @@ class TestConversationIdFromTheRequest:
         assert response.status_code == 200
         assert b"Visible" in response.content
 
+    def test_message_list_with_a_malformed_id_is_not_found(self, client, matter, user):
+        """It used to fall back to the matter's first conversation, as if
+        the id had named it."""
+        first = Conversation.objects.create(matter=matter, title="First", user=user)
+        Message.objects.create(
+            conversation=first, role="user", content="SHOULD NOT SHOW", user=user
+        )
+        response = client.get(
+            reverse("case:ai-messages", args=[matter.id]), {"conversation_id": "abc"}
+        )
+        assert response.status_code == 404
+        assert b"SHOULD NOT SHOW" not in response.content
+
+    def test_message_list_without_an_id_still_renders(self, client, matter):
+        """A chat with nothing sent yet has no id to give."""
+        response = client.get(
+            reverse("case:ai-messages", args=[matter.id]), {"conversation_id": ""}
+        )
+        assert response.status_code == 200
+
     def test_conversation_must_be_on_the_matter_in_the_url(
         self, client, matter, other_conversation
     ):

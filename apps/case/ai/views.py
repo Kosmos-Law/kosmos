@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Max
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -401,10 +401,12 @@ def message_list(request, matter_id):
     matter, _ = get_matter_from_url(request, matter_id)
     conversation_id = request.GET.get("conversation_id")
 
+    # No id at all is a chat with nothing sent yet. An id that is not a
+    # number names no conversation: say so, rather than showing another one.
     try:
         conv_pk = int(conversation_id) if conversation_id else None
     except (TypeError, ValueError):
-        conv_pk = None
+        raise Http404("No such conversation.") from None
 
     if conv_pk:
         # The id comes from the query string, which the central matter check
