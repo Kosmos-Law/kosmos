@@ -35,6 +35,15 @@ location /docs/ {
 }
 ```
 
+`scripts/add-docs-location.sh` adds that block to an nginx site file for
+you: it backs the file up, inserts the block, tests the configuration and
+reloads nginx, and restores the backup if the test fails.
+
+```bash
+scripts/build-docs.sh
+sudo scripts/add-docs-location.sh /etc/nginx/sites-available/<site>
+```
+
 To publish a change, pull and rebuild on that server:
 
 ```bash
