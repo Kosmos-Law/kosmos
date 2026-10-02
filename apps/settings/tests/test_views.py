@@ -18,16 +18,16 @@ def test_index(client):
 # -----------------------------------------------------
 # Tasks settings tests
 # -----------------------------------------------------
-def test_tasks_settings_index(client):
-    response = client.get("/settings/tasks/")
+def test_tasks_settings_index(admin_client):
+    response = admin_client.get("/settings/tasks/")
     assert response.status_code == 200
     assertTemplateUsed(response, "settings/tasks/index.html")
 
 
-def test_tasks_settings_save(client):
+def test_tasks_settings_save(admin_client):
     from apps.settings.models import Firm
 
-    response = client.post(
+    response = admin_client.post(
         "/settings/tasks/",
         {"quick_task_ai": "True", "quick_task_ai_model": "claude-sonnet"},
     )
@@ -37,7 +37,7 @@ def test_tasks_settings_save(client):
     assert firm.quick_task_ai_model == "claude-sonnet"
 
     # A partial post reads as the safe defaults.
-    client.post("/settings/tasks/", {})
+    admin_client.post("/settings/tasks/", {})
     firm.refresh_from_db()
     assert firm.quick_task_ai is False
     assert firm.quick_task_ai_model == "gemini-flash"
@@ -123,7 +123,7 @@ def test_change_role(admin_client, user):
 
 def test_switch_status(admin_client, user):
     original_status = user.is_active
-    response = admin_client.get(f"/settings/users/switch-status/{user.id}/")
+    response = admin_client.post(f"/settings/users/switch-status/{user.id}/")
     assert response.status_code == 204
     user.refresh_from_db()
     assert user.is_active != original_status
@@ -196,20 +196,20 @@ def test_password_change_mismatch(client, user):
 # -----------------------------------------------------
 # Firm management tests
 # -----------------------------------------------------
-def test_firm_index(client):
-    response = client.get("/settings/firm/")
+def test_firm_index(admin_client):
+    response = admin_client.get("/settings/firm/")
     assert response.status_code == 200
     assertTemplateUsed(response, "settings/firm/index.html")
 
 
-def test_firm_index_has_form(client):
-    response = client.get("/settings/firm/")
+def test_firm_index_has_form(admin_client):
+    response = admin_client.get("/settings/firm/")
     assert response.status_code == 200
     assertTemplateUsed(response, "settings/firm/form.html")
     assert "id_name" in response.content.decode()
 
 
-def test_firm_create(client):
+def test_firm_create(admin_client):
     from apps.settings.models import Firm
 
     data = {
@@ -221,7 +221,7 @@ def test_firm_create(client):
         "phone": "406-555-1234",
         "email": "info@testfirm.com",
     }
-    response = client.post("/settings/firm/", data)
+    response = admin_client.post("/settings/firm/", data)
     assert response.status_code == 200
     assert "success" in response.headers.get("HX-Toast", "").lower()
     assert Firm.objects.count() == 1
@@ -230,7 +230,7 @@ def test_firm_create(client):
     assert company.city == "Anytown"
 
 
-def test_firm_update(client):
+def test_firm_update(admin_client):
     from apps.settings.models import Firm
 
     Firm.objects.create(name="Original Firm", city="Missoula")
@@ -238,7 +238,7 @@ def test_firm_update(client):
         "name": "Updated Firm",
         "city": "Helena",
     }
-    response = client.post("/settings/firm/", data)
+    response = admin_client.post("/settings/firm/", data)
     assert response.status_code == 200
     assert "success" in response.headers.get("HX-Toast", "").lower()
     assert Firm.objects.count() == 1
@@ -247,21 +247,21 @@ def test_firm_update(client):
     assert company.city == "Helena"
 
 
-def test_firm_post_returns_partial(client):
+def test_firm_post_returns_partial(admin_client):
     """POST should return only the form partial, not the full page layout."""
     data = {"name": "Test Firm"}
-    response = client.post("/settings/firm/", data)
+    response = admin_client.post("/settings/firm/", data)
     content = response.content.decode()
     assert "section-nav" not in content
     assert "<nav" not in content
     assert "Save Firm Details" in content
 
 
-def test_firm_form_prepopulated(client):
+def test_firm_form_prepopulated(admin_client):
     from apps.settings.models import Firm
 
     Firm.objects.create(name="My Firm", phone="555-0000")
-    response = client.get("/settings/firm/")
+    response = admin_client.get("/settings/firm/")
     assert response.status_code == 200
     content = response.content.decode()
     assert "My Firm" in content
@@ -301,11 +301,11 @@ def test_intake_email_template_crud(client):
     assert IntakeEmailTemplate.objects.count() == 0
 
 
-def test_firm_form_saves_intake_email(client):
+def test_firm_form_saves_intake_email(admin_client):
     from apps.settings.models import Firm
 
     Firm.objects.create(name="My Firm")
-    response = client.post(
+    response = admin_client.post(
         "/settings/firm/", {"name": "My Firm", "intake_email": "intakes@example.com"}
     )
     assert response.status_code == 200
@@ -313,23 +313,6 @@ def test_firm_form_saves_intake_email(client):
 
 
 # --- Permissions modal --------------------------------------------------------
-
-
-@pytest.fixture
-def admin_client(db):
-    from django.test import Client as DjangoClient
-
-    from apps.accounts.models import CustomUser
-
-    admin = CustomUser.objects.create(
-        username="boss", email="boss@example.com", role="ADMIN"
-    )
-    admin.set_password("pw")
-    admin.save()
-    c = DjangoClient()
-    c.login(username="boss", password="pw")
-    c.get("/dash/")
-    return c
 
 
 @pytest.fixture
@@ -373,3 +356,57 @@ def test_toggle_perm_fires_matrix_reload(admin_client, staff_member):
     assert "permissionsChanged" in response.headers["HX-Trigger"]
     staff_member.refresh_from_db()
     assert staff_member.perm_financial is False
+
+
+# --- Admin-only pages and endpoints -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/settings/firm/",
+        "/settings/tasks/",
+        "/settings/contacts/",
+        "/settings/matters/",
+        "/settings/users/",
+        "/settings/permissions/",
+    ],
+)
+def test_admin_only_settings_refuse_a_non_admin(client, path):
+    """Hiding these pages in the settings navigation is not enough: the URL
+    itself has to refuse a user without the Admin role."""
+    assert client.get(path).status_code == 403
+
+
+def test_firm_details_cannot_be_changed_by_a_non_admin(client):
+    from apps.settings.models import Firm
+
+    Firm.objects.create(name="Firm", invoice_bcc="")
+    response = client.post(
+        "/settings/firm/", {"name": "Firm", "invoice_bcc": "elsewhere@example.com"}
+    )
+    assert response.status_code == 403
+    assert Firm.objects.first().invoice_bcc == ""
+
+
+def test_role_change_refuses_get(admin_client, user):
+    """A state change on GET could be triggered by a link an admin merely
+    opens."""
+    response = admin_client.get(f"/settings/users/change-role/{user.id}/ADMIN/")
+    assert response.status_code == 405
+    user.refresh_from_db()
+    assert user.role == "USER"
+
+
+def test_role_change_refuses_an_unknown_role(admin_client, user):
+    response = admin_client.post(f"/settings/users/change-role/{user.id}/OWNER/")
+    assert response.status_code == 400
+    user.refresh_from_db()
+    assert user.role == "USER"
+
+
+def test_status_switch_refuses_get(admin_client, user):
+    response = admin_client.get(f"/settings/users/switch-status/{user.id}/")
+    assert response.status_code == 405
+    user.refresh_from_db()
+    assert user.is_active is True

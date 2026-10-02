@@ -91,9 +91,14 @@ class EmailVerificationCode(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Wrong guesses made against this code. Kept here, not in the session,
+    # so the limit cannot be multiplied by opening more sessions.
+    attempts = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         db_table = "app_accounts_email_verification_code"
 
     def is_expired(self):
-        return (timezone.now() - self.created_at).seconds > 300  # 5 minutes
+        # total_seconds(), not .seconds: the latter wraps every 24 hours, so
+        # an old code would read as fresh again once a day.
+        return (timezone.now() - self.created_at).total_seconds() > 300  # 5 minutes

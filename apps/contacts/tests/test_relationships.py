@@ -1,5 +1,6 @@
 import pytest
 from django.db import IntegrityError
+from django.test import Client
 from django.urls import reverse
 
 from apps.contacts.models import ContactRelationship, RelationshipType
@@ -314,22 +315,32 @@ def test_delete_relationship(client, contact, contact_beta, symmetric_type):
 
 
 # --------------------------------------------------------------------------
-# Settings: relationship-type CRUD
+# Settings: relationship-type CRUD (admin-only pages)
 # --------------------------------------------------------------------------
 
 
-def test_settings_index_lists_types(client, symmetric_type):
-    response = client.get(reverse("settings:contacts-index"))
+@pytest.fixture
+def admin_client(user):
+    user.role = "ADMIN"
+    user.save(update_fields=["role"])
+    client = Client()
+    client.login(username="Ollie", password="clawboy")
+    client.get("/dash/")  # Set daily dash session to avoid redirect
+    return client
+
+
+def test_settings_index_lists_types(admin_client, symmetric_type):
+    response = admin_client.get(reverse("settings:contacts-index"))
     assert response.status_code == 200
     assert "Spouse of" in response.content.decode()
 
 
-def test_add_relationship_type(client):
+def test_add_relationship_type(admin_client):
     url = reverse("settings:add-relationship-type")
-    response = client.get(url)
+    response = admin_client.get(url)
     assert response.status_code == 200
 
-    response = client.post(
+    response = admin_client.post(
         url, {"label": "Guardian of", "inverse_label": "Ward of", "is_active": "True"}
     )
     assert response.status_code == 204
@@ -337,8 +348,8 @@ def test_add_relationship_type(client):
     assert RelationshipType.objects.filter(label="Guardian of").exists()
 
 
-def test_edit_relationship_type(client, asymmetric_type):
-    response = client.post(
+def test_edit_relationship_type(admin_client, asymmetric_type):
+    response = admin_client.post(
         reverse("settings:edit-relationship-type", args=[asymmetric_type.id]),
         {"label": "Boss of", "inverse_label": "Reports to", "is_active": "True"},
     )
@@ -348,14 +359,14 @@ def test_edit_relationship_type(client, asymmetric_type):
 
 
 def test_delete_relationship_type_cascades(
-    client, contact, contact_beta, symmetric_type
+    admin_client, contact, contact_beta, symmetric_type
 ):
     ContactRelationship.objects.create(
         from_contact=contact,
         to_contact=contact_beta,
         relationship_type=symmetric_type,
     )
-    response = client.post(
+    response = admin_client.post(
         reverse("settings:delete-relationship-type", args=[symmetric_type.id])
     )
     assert response.status_code == 204
@@ -364,16 +375,16 @@ def test_delete_relationship_type_cascades(
     assert not ContactRelationship.objects.exists()
 
 
-def test_relationship_type_filter(client, symmetric_type, asymmetric_type):
+def test_relationship_type_filter(admin_client, symmetric_type, asymmetric_type):
     asymmetric_type.is_active = False
     asymmetric_type.save()
 
-    response = client.post(
+    response = admin_client.post(
         reverse("settings:relationship-type-filter", args=["inactive"])
     )
     assert response.status_code == 204
     assert response.headers["HX-Trigger"] == "relationshipTypeListReload"
-    response = client.get(reverse("settings:relationship-type-list"))
+    response = admin_client.get(reverse("settings:relationship-type-list"))
     content = response.content.decode()
     assert "Employer of" in content
     assert "Spouse of" not in content

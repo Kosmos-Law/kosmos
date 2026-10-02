@@ -1,5 +1,6 @@
 from django.db.models import Count
 
+from apps.accounts.access import filter_matters_for_user
 from apps.case.models import Document, Label
 from apps.case.views import get_matter_from_url
 from apps.drive.mappings import matter_drive_status
@@ -22,7 +23,9 @@ def get_selected_matter(request):
     This uses the session-based approach for apps that haven't been refactored
     to use URL-based matter context.
     """
-    matters = Matter.objects.filter(status="Open").order_by("name")
+    matters = filter_matters_for_user(
+        Matter.objects.filter(status="Open").order_by("name"), request.user
+    )
     matter_id = request.session.get("last_viewed_matter")
 
     if matter_id:

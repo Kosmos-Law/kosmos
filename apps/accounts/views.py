@@ -1,13 +1,45 @@
+import hmac
+
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import redirect_to_login
+from django.db.models import F
 from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import CreateView
 
 from .forms import CustomUserCreationForm, VerificationCodeForm
 from .models import CustomUser, EmailVerificationCode
 from .utils import generate_verification_code, send_verification_email
+
+# Wrong codes allowed before the emailed code is thrown away and the user
+# has to sign in again. A six-digit code cannot survive unlimited guesses.
+MAX_CODE_ATTEMPTS = 5
+
+
+def _safe_next_url(request, url):
+    """Return ``url`` only if it stays on this site; otherwise ''. The value
+    comes from the query string, so an unchecked redirect would let a crafted
+    sign-in link bounce the user to another site."""
+    if url and url_has_allowed_host_and_scheme(
+        url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return url
+    return ""
+
+
+def admin_login(request):
+    """Replace Django admin's own sign-in form, which takes a password alone,
+    with the emailed-code sign-in every other page uses."""
+    next_url = _safe_next_url(request, request.GET.get("next", ""))
+    return redirect_to_login(
+        next_url or reverse("admin:index"), login_url=reverse("accounts:login")
+    )
 
 
 class SignUpView(CreateView):
@@ -42,7 +74,9 @@ class LoginView(View):
             EmailVerificationCode.objects.create(user=user, code=code)
             send_verification_email(user, code)
             request.session["pending_user_id"] = user.id
-            next_url = request.POST.get("next") or request.GET.get("next", "")
+            next_url = _safe_next_url(
+                request, request.POST.get("next") or request.GET.get("next", "")
+            )
             if next_url:
                 request.session["login_next_url"] = next_url
             return redirect("accounts:login-verify")
@@ -78,35 +112,46 @@ class VerifyCodeView(View):
 
         if form.is_valid():
             code = form.cleaned_data["code"]
+            user = CustomUser.objects.filter(id=pending_user_id).first()
+            verification = EmailVerificationCode.objects.filter(
+                user_id=pending_user_id
+            ).first()
 
-            try:
-                user = CustomUser.objects.get(id=pending_user_id)
-                verification = EmailVerificationCode.objects.get(user=user, code=code)
-
-                if verification.is_expired():
-                    # Code expired
-                    verification.delete()
-                    return render(
-                        request,
-                        self.template_name,
-                        {
-                            "form": form,
-                            "error": "Code has expired. Please log in again.",
-                        },
-                    )
-
-                # Success - clean up and log in
-                verification.delete()
+            if user is None or verification is None:
+                # The code was used, or discarded after too many wrong tries.
                 del request.session["pending_user_id"]
-                next_url = request.session.pop("login_next_url", None)
-                login(request, user)
-                return redirect(next_url or settings.LOGIN_REDIRECT_URL)
+                return self._error(request, form, "Please log in again.")
 
-            except (CustomUser.DoesNotExist, EmailVerificationCode.DoesNotExist):
-                return render(
-                    request,
-                    self.template_name,
-                    {"form": form, "error": "Invalid verification code."},
+            if verification.is_expired():
+                verification.delete()
+                return self._error(
+                    request, form, "Code has expired. Please log in again."
                 )
 
+            if not hmac.compare_digest(code.encode(), verification.code.encode()):
+                # Counted on the code itself, not in the session: however many
+                # browser sessions are waiting on this sign-in, the code gets
+                # MAX_CODE_ATTEMPTS guesses in total.
+                EmailVerificationCode.objects.filter(pk=verification.pk).update(
+                    attempts=F("attempts") + 1
+                )
+                verification.refresh_from_db()
+                if verification.attempts >= MAX_CODE_ATTEMPTS:
+                    verification.delete()
+                    del request.session["pending_user_id"]
+                    return self._error(
+                        request, form, "Too many incorrect codes. Please log in again."
+                    )
+                return self._error(request, form, "Invalid verification code.")
+
+            # Success - clean up and log in
+            verification.delete()
+            del request.session["pending_user_id"]
+            next_url = request.session.pop("login_next_url", None)
+            login(request, user)
+            return redirect(next_url or settings.LOGIN_REDIRECT_URL)
+
         return render(request, self.template_name, {"form": form})
+
+    def _error(self, request, form, message):
+        return render(request, self.template_name, {"form": form, "error": message})

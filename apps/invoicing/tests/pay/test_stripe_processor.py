@@ -225,3 +225,17 @@ def test_webhook_unhandled_event_ignored():
     with patch("stripe.Webhook.construct_event", return_value=event):
         with pytest.raises(WebhookVerificationError):
             proc().verify_and_parse_webhook(SimpleNamespace(body=b"{}", signature="x"))
+
+
+def test_webhook_refused_when_no_secret_is_configured():
+    """An empty signing secret is a key anyone can sign with, so the adapter
+    must refuse before it ever asks Stripe's library to verify."""
+    unsigned = StripeProcessor(
+        secret_key="sk_test_x", publishable_key="pk_test_x", webhook_secret=""
+    )
+    with patch("stripe.Webhook.construct_event") as construct:
+        with pytest.raises(WebhookVerificationError):
+            unsigned.verify_and_parse_webhook(
+                SimpleNamespace(body=b"{}", signature="x")
+            )
+    construct.assert_not_called()

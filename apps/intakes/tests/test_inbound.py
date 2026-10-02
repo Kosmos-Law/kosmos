@@ -127,12 +127,15 @@ def test_stale_timestamp_rejected(user):
     assert InboundEmail.objects.count() == 0
 
 
-def test_blank_key_unenforced(user, mock_ai, settings):
+def test_blank_key_refuses_everything(user, mock_ai, settings):
+    """No signing key means nothing can be verified, so nothing is accepted:
+    the sender and recipient checks alone are forgeable."""
     settings.MAILGUN_WEBHOOK_SIGNING_KEY = ""
     mock_ai(EXTRACTION)
     response = post_inbound({"signature": "", "timestamp": "", "token": ""})
-    assert response.status_code == 200
-    assert InboundEmail.objects.count() == 1
+    assert response.status_code == 403
+    assert InboundEmail.objects.count() == 0
+    assert Intake.objects.count() == 0
 
 
 def test_non_intake_recipient_dropped(user, mock_ai):

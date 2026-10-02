@@ -173,6 +173,9 @@ class StripeProcessor(PaymentProcessor):
         """Verify Stripe's signature and normalize the event. The signed payload
         IS the trust boundary (no re-fetch needed)."""
         signature = getattr(request, "signature", "") or ""
+        if not self.webhook_secret:
+            # An empty secret is a key anyone can sign with.
+            raise WebhookVerificationError("STRIPE_WEBHOOK_SECRET is not configured.")
         try:
             event = stripe.Webhook.construct_event(
                 request.body, signature, self.webhook_secret

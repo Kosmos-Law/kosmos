@@ -20,7 +20,6 @@ import time
 from email.utils import parseaddr
 
 from django.conf import settings
-from django.core.cache import cache
 from django.db import transaction
 from django.db.models import F, Value
 from django.db.models.functions import Replace
@@ -35,6 +34,7 @@ from apps.intakes.forms import IntakeForm
 from apps.intakes.models import InboundEmail, Intake, Note
 from apps.matters.models import PracticeArea
 from config.helpers import normalize_phone
+from utils.ratelimit import rate_limited
 
 logger = logging.getLogger(__name__)
 
@@ -99,32 +99,12 @@ Rules:
 - Return ONLY the JSON object, no other text, no markdown fences."""
 
 
-def _client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "") or "unknown"
-
-
-def _rate_limited(request, scope, *, limit, window):
-    """Best-effort fixed-window limiter keyed by client IP (Django cache)."""
-    key = f"ratelimit:{scope}:{_client_ip(request)}"
-    try:
-        cache.get_or_set(key, 0, window)
-        count = cache.incr(key)
-    except ValueError:
-        cache.set(key, 1, window)
-        count = 1
-    return count > limit
-
-
 def _verify_mailgun_signature(post):
-    """Check Mailgun's HMAC over timestamp+token. An empty signing key means
-    verification is not enforced, so the webhook can be deployed before the
-    key is configured (KOSMOS_SEAM_KEY precedent)."""
+    """Check Mailgun's HMAC over timestamp+token. With no signing key
+    configured nothing can be verified, so nothing is accepted."""
     key = settings.MAILGUN_WEBHOOK_SIGNING_KEY
     if not key:
-        return True
+        return False
 
     timestamp = post.get("timestamp", "")
     token = post.get("token", "")
@@ -148,7 +128,7 @@ def mailgun_inbound(request):
     stored and processed out-of-band; a fast 200 keeps Mailgun from retrying.
     Rejections are deliberate about status: 403 makes Mailgun retry (recovers
     a misconfigured signing key), 200 is a permanent intentional drop."""
-    if _rate_limited(request, "mailgun-inbound", limit=60, window=60):
+    if rate_limited(request, "mailgun-inbound", limit=60, window=60):
         return HttpResponse(status=429)
 
     if not _verify_mailgun_signature(request.POST):
