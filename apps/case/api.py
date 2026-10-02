@@ -9,10 +9,11 @@ creators the in-app AI's fenced blocks use.
 
 Access mirrors the app: matters are the user's accessible OPEN matters
 only, and every denial is a 404 so it doesn't confirm existence. The
-money sections (rates, activity, ledger, trust) and invoice reads
-additionally require the user's financial permission, like the in-app
-Rates and Ledger tabs; that denial is a 403 since the matter's existence
-is already known to the caller.
+money sections (rates, ledger, trust) and invoice reads additionally
+require the user's financial permission, like the in-app Rates and Ledger
+tabs; that denial is a 403 since the matter's existence is already known
+to the caller. The activity section is open to every user who can see the
+matter, as the Activity screens are.
 """
 
 import json
@@ -64,9 +65,11 @@ CONVERSATION_404 = "No such AI conversation in this matter."
 INVOICE_404 = "No such invoice, or you do not have access to it."
 FINANCIAL_403 = "Your Kosmos account does not have financial access."
 
-# Sections that carry rates, fees or amounts. The in-app agent applies the
-# same list to the user it is working for (ai/agent_tools.agent_sections).
-FINANCIAL_SECTIONS = ("rates", "activity", "ledger", "trust")
+# Sections behind the Financial permission in the application itself (the
+# Rates and Ledger tabs, trust). The in-app agent applies the same list to
+# the user it is working for (ai/agent_tools.agent_sections). Activity is
+# not among them: the Activity screens show rate and fee to every user.
+FINANCIAL_SECTIONS = ("rates", "ledger", "trust")
 
 
 def _has_financial_access(user):
