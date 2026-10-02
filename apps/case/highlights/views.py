@@ -406,6 +406,10 @@ def add_highlight(request, document_id):
         if importance is None:
             return JsonResponse({"error": "Invalid importance."}, status=400)
 
+        color = request.POST.get("color", "yellow")
+        if color not in HIGHLIGHT_COLORS:
+            return JsonResponse({"error": "Invalid color."}, status=400)
+
         highlight = Highlight.objects.create(
             document=document,
             slug=slug,
@@ -413,7 +417,7 @@ def add_highlight(request, document_id):
             page_number=int(request.POST.get("page_number")),
             paragraph_number=paragraph_number,
             coordinates=coordinates,
-            color=request.POST.get("color", "yellow"),
+            color=color,
             importance=importance,
             created_by=request.user,
         )

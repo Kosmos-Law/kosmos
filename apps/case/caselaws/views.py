@@ -552,13 +552,17 @@ def caselaw_add_highlight(request, caselaw_id):
         if importance is None:
             return JsonResponse({"error": "Invalid importance."}, status=400)
 
+        color = request.POST.get("color", "yellow")
+        if color not in HIGHLIGHT_COLORS:
+            return JsonResponse({"error": "Invalid color."}, status=400)
+
         highlight = Highlight.objects.create(
             caselaw=case_law,
             slug=slug,
             text=request.POST.get("text", ""),
             char_offset=char_offset,
             page_number=page_number,
-            color=request.POST.get("color", "yellow"),
+            color=color,
             importance=importance,
             created_by=request.user,
             updated_by=request.user,
