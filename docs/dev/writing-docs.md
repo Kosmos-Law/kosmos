@@ -23,38 +23,44 @@ server is already on port 8000, pass `--dev-addr localhost:8001` to
 
 ## How the site is published
 
-The site is static files. The server that hosts kosmos.law keeps a checkout
-of this repository, builds the site there, and serves the result under
-`/docs/` from the same nginx server block as the landing page:
+The site is static files, and the server that hosts kosmos.law receives
+only those: it has no checkout of this repository for the docs and no build
+tools. The build happens wherever this repository already is, and
+`scripts/publish-docs.sh` copies the result across:
+
+```bash
+scripts/publish-docs.sh user@host:/www/kosmos-docs
+```
+
+It builds with `--strict`, then mirrors `site/` to the target with rsync,
+so a page removed from the docs is removed there too. Because mirroring
+deletes, the script first checks that the target is new, empty or already a
+docs build, and refuses anything else. `--dry-run` shows what would change
+without copying. The target can also be given as `DOCS_PUBLISH_TARGET`.
+
+On the receiving server, nginx serves that directory under `/docs/` from
+the same server block as the landing page:
 
 ```nginx
 location /docs/ {
-    alias /path/to/kosmos/site/;
+    alias /www/kosmos-docs/;
     index index.html;
     error_page 404 /docs/404.html;
 }
 ```
 
-`scripts/add-docs-location.sh` adds that block to an nginx site file for
-you: it backs the file up, inserts the block, tests the configuration and
-reloads nginx, and restores the backup if the test fails.
+`scripts/add-docs-location.sh` adds that block to an nginx site file: it
+backs the file up, inserts the block, tests the configuration and reloads
+nginx, and restores the backup if the test fails. It is a one-time step per
+server:
 
 ```bash
-scripts/build-docs.sh
-sudo scripts/add-docs-location.sh /etc/nginx/sites-available/<site>
+sudo scripts/add-docs-location.sh /etc/nginx/sites-available/<site> /www/kosmos-docs
 ```
 
-To publish a change, pull and rebuild on that server:
-
-```bash
-git pull
-scripts/build-docs.sh
-```
-
-nginx serves `site/` directly, so the new build is live as soon as it
-finishes. `site_url` in `zensical.toml` is `https://kosmos.law/docs/`; the
-pages link to each other relatively, so the same build also works under
-any other address.
+`site_url` in `zensical.toml` is `https://kosmos.law/docs/`; the pages link
+to each other relatively, so the same build also works under any other
+address.
 
 Nothing is published from GitHub. The workflow in
 `.github/workflows/docs.yaml` only checks that a pull request's docs build
