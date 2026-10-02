@@ -17,7 +17,6 @@ from apps.activity.expenses.views import (
     expenses_index,
     expenses_list,
     expenses_select_all,
-    expenses_toggle_entered,
     expenses_toggle_select,
     order_by_expenses,
 )
@@ -37,7 +36,6 @@ from apps.activity.flat_fees.views import (
     flat_fees_index,
     flat_fees_list,
     flat_fees_select_all,
-    flat_fees_toggle_entered,
     flat_fees_toggle_select,
     matter_amount,
     order_by_flat_fees,
@@ -66,7 +64,6 @@ from apps.activity.time.views import (
     time_index,
     time_list,
     time_select_all,
-    time_toggle_entered,
     time_toggle_select,
     trust_available,
 )
@@ -87,11 +84,6 @@ urlpatterns = [
     ),
     path("activity/time/export/<str:format>", time_export_to_csv, name="time-export"),
     path("activity/time/<int:id>/delete", time_delete, name="time-delete"),
-    path(
-        "activity/time/<int:id>/toggle-entered",
-        time_toggle_entered,
-        name="time-toggle-entered",
-    ),
     path("activity/time/filter", time_filter, name="time-filter"),
     path(
         "activity/time/filter/quick/<str:quick_filter>",
@@ -175,11 +167,6 @@ urlpatterns = [
         name="expenses-export",
     ),
     path("activity/expenses/<int:id>/delete", expenses_delete, name="expenses-delete"),
-    path(
-        "activity/expenses/<int:id>/toggle-entered",
-        expenses_toggle_entered,
-        name="expenses-toggle-entered",
-    ),
     path("activity/expenses/filter/", expenses_filter, name="expenses-filter"),
     path(
         "activity/expenses/filter/quick/<str:quick_filter>",
@@ -249,11 +236,6 @@ urlpatterns = [
         "activity/flat-fees/<int:id>/delete",
         flat_fees_delete,
         name="flat-fees-delete",
-    ),
-    path(
-        "activity/flat-fees/<int:id>/toggle-entered",
-        flat_fees_toggle_entered,
-        name="flat-fees-toggle-entered",
     ),
     path("activity/flat-fees/filter", flat_fees_filter, name="flat-fees-filter"),
     path(

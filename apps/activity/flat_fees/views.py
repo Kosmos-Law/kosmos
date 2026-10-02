@@ -249,17 +249,6 @@ def flat_fees_delete(request, id):
 
 
 @login_required
-@require_POST
-def flat_fees_toggle_entered(request, id):
-    entry = entry_for_user(FlatFeeEntry, id, request.user)
-    if entry.invoice_id:
-        return HttpResponseForbidden("This entry is on an invoice.")
-    entry.entered = not entry.entered
-    entry.save()
-    return HttpResponse(status=204, headers={"HX-Trigger": FLAT_FEES_TRIGGER})
-
-
-@login_required
 def matter_amount(request, matter_id):
     """AJAX endpoint that returns the matter's flat_fee_amount as plain text."""
     try:

@@ -385,17 +385,6 @@ def time_delete(request, id):
 
 
 @login_required
-@require_POST
-def time_toggle_entered(request, id):
-    entry = entry_for_user(TimeEntry, id, request.user)
-    if entry.invoice_id:
-        return HttpResponseForbidden("This entry is on an invoice.")
-    entry.entered = not entry.entered
-    entry.save()
-    return HttpResponse(status=204, headers={"HX-Trigger": "timeChanged"})
-
-
-@login_required
 def time_export_to_csv(request, format):
     # Set the file name
     current_day_and_time = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")

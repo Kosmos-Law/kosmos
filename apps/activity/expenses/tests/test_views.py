@@ -67,13 +67,6 @@ def test_delete(client, expense):
     assert not found
 
 
-def test_toggle_entered(client, expense):
-    assert expense.entered is False
-    client.post(f"/activity/expenses/{expense.id}/toggle-entered")
-    expense.refresh_from_db()
-    assert expense.entered is True
-
-
 def test_filter_get(client):
     response = client.get("/activity/expenses/filter/")
     assert response.status_code == 200

@@ -272,29 +272,6 @@ def test_flat_fee_bulk_comp_skips_billed_entries(client, user, flat_matter):
     assert unbilled.comp is True
 
 
-# --- the Entered toggle -----------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    "make, name",
-    [
-        (_expense, "activity:expenses-toggle-entered"),
-        (_flat_fee, "activity:flat-fees-toggle-entered"),
-    ],
-)
-def test_entered_toggle_needs_a_post(client, user, matter, make, name):
-    entry = make(user, matter, "Toggle me")
-    url = reverse(name, args=[entry.id])
-
-    assert client.get(url).status_code == 405
-    entry.refresh_from_db()
-    assert entry.entered is False
-
-    assert client.post(url).status_code == 204
-    entry.refresh_from_db()
-    assert entry.entered is True
-
-
 # --- shorthand and abbreviation codes --------------------------------------
 
 
