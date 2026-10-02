@@ -379,3 +379,80 @@ def test_value_with_discount(user, matter):
     value = matter.value
     # Billed invoices should reflect discount
     assert value["invoices"]["billed"] == Decimal("500.00")  # 600 - 100 discount
+
+
+def test_value_counts_drafted_work_as_work_in_progress(user, matter):
+    """Work on a DRAFT invoice leaves the invoicing queue but is not billed:
+    it stays work in progress, net of the draft's discount."""
+    from decimal import Decimal
+
+    from apps.activity.time.models import TimeEntry
+    from apps.invoicing.invoices.models import Invoice
+
+    TimeEntry.objects.create(
+        user=user,
+        matter=matter,
+        date="2024-01-01",
+        actions="Drafted work",
+        hours=Decimal("2.0"),
+        rate=300,
+        comp=False,
+        entered=False,
+    )
+    # Saving a DRAFT sweeps the entry above (dated on or before date_limit) onto it.
+    Invoice.objects.create(
+        created_by=user,
+        matter=matter,
+        date_limit="2024-01-31",
+        date_issued="2024-02-01",
+        status="DRAFT",
+        discount=Decimal("50"),
+    )
+    TimeEntry.objects.create(
+        user=user,
+        matter=matter,
+        date="2024-03-01",
+        actions="Later work",
+        hours=Decimal("1.0"),
+        rate=100,
+        comp=False,
+        entered=False,
+    )
+
+    value = matter.value
+    assert value["unbilled"]["net_fees"] == Decimal("100")
+    assert value["drafted"]["net_fees"] == Decimal("600")
+    assert value["billed"]["net_fees"] == 0
+    assert value["invoices"]["billed"] == 0
+    assert value["work_in_progress"] == Decimal("650")
+
+
+def test_value_sent_invoice_leaves_work_in_progress(user, matter):
+    from decimal import Decimal
+
+    from apps.activity.time.models import TimeEntry
+    from apps.invoicing.invoices.models import Invoice
+
+    invoice = Invoice.objects.create(
+        created_by=user,
+        matter=matter,
+        date_limit="2024-01-31",
+        date_issued="2024-02-01",
+        status="SENT",
+    )
+    TimeEntry.objects.create(
+        user=user,
+        matter=matter,
+        date="2024-01-01",
+        actions="Billed work",
+        hours=Decimal("2.0"),
+        rate=300,
+        comp=False,
+        entered=False,
+        invoice=invoice,
+    )
+
+    value = matter.value
+    assert value["drafted"]["net_fees"] == 0
+    assert value["work_in_progress"] == 0
+    assert value["billed"]["net_fees"] == Decimal("600")

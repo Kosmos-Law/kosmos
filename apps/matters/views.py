@@ -232,6 +232,7 @@ def _matter_overview_context(request, matter):
         from apps.trust.trust import get_pending_client_balance
 
         context["balance_due"] = get_ledger_data(matter)["balance_due"]
+        context["work_in_progress"] = matter.value["work_in_progress"]
         trust_available = client_trust_available(matter.client_id)
         trust_balance = (
             get_pending_client_balance(matter.client.id) if matter.client else 0
@@ -389,7 +390,10 @@ def _get_detail_tab_data(request, matter, tab):
     from apps.matters.activity.views import get_matter_activity_data
     from apps.matters.contacts.views import get_contact_list
     from apps.matters.events.get_event_data import get_event_data
-    from apps.matters.ledger.get_ledger_data import get_ledger_data
+    from apps.matters.ledger.get_ledger_data import (
+        get_ledger_data,
+        get_ledger_summary,
+    )
     from apps.matters.rates.models import Rate
     from apps.matters.tasks.views import get_matter_tasks_data
     from apps.trust.available import client_trust_available
@@ -471,12 +475,6 @@ def _get_detail_tab_data(request, matter, tab):
         if matter.client:
             client_trust_balance = get_pending_client_balance(matter.client.id)
 
-        total_cost = (
-            matter.value["invoices"]["payment_sum"]
-            + ledger_data["balance_due"]
-            + matter.value["unbilled"]["net_fees_and_expenses"]
-        )
-
         # A matter's trust available IS its client's (pooled trust) — the single
         # authoritative, pending-based figure from the trust app.
         from apps.trust.available import trust_available_severity
@@ -486,12 +484,12 @@ def _get_detail_tab_data(request, matter, tab):
         return {
             "tab_template": "matters/ledger/list.html",
             "client_trust_balance": client_trust_balance,
-            "total_cost": total_cost,
             "trust_available": trust_available,
             "trust_available_severity": trust_available_severity(
                 trust_available, client_trust_balance
             ),
             **ledger_data,
+            **get_ledger_summary(matter, ledger_data),
         }
 
     # Fallback

@@ -24,7 +24,7 @@ from apps.calendar.models import Event
 from apps.intakes.models import Intake
 from apps.invoicing.applications.models import CreditApplication, PaymentApplication
 from apps.invoicing.credits.models import Credit
-from apps.invoicing.invoices.models import Invoice
+from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
 from apps.invoicing.payments.models import Payment
 from apps.matters.models import Matter
 from apps.reports.wip.aggregation import (
@@ -132,13 +132,14 @@ def dash_collections_context(request):
         }
 
     # Matters with low available (< $1000)
-    # Use subqueries to calculate unbilled amounts
+    # Use subqueries to calculate unbilled amounts. Work on a DRAFT/APPROVED
+    # invoice is still unbilled (as in trust available), so a matter whose
+    # work is all on a draft stays on the watch list.
+    not_billed = Q(entered=False, invoice__isnull=True) | Q(
+        invoice__status__in=UNSENT_STATUSES
+    )
     unbilled_fees_subquery = (
-        TimeEntry.objects.filter(
-            matter=OuterRef("pk"),
-            entered=False,
-            invoice__isnull=True,
-        )
+        TimeEntry.objects.filter(not_billed, matter=OuterRef("pk"))
         .exclude(comp=True)
         .values("matter")
         .annotate(total=Sum(F("hours") * F("rate")))
@@ -146,11 +147,7 @@ def dash_collections_context(request):
     )
 
     unbilled_expenses_subquery = (
-        ExpenseEntry.objects.filter(
-            matter=OuterRef("pk"),
-            entered=False,
-            invoice__isnull=True,
-        )
+        ExpenseEntry.objects.filter(not_billed, matter=OuterRef("pk"))
         .exclude(comp=True)
         .values("matter")
         .annotate(total=Sum("amount"))

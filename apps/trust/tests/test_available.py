@@ -10,6 +10,7 @@ from decimal import Decimal
 import pytest
 
 from apps.activity.time.models import TimeEntry
+from apps.invoicing.invoices.models import Invoice
 from apps.matters.models import Matter, PracticeArea
 from apps.trust.available import client_trust_available, trust_available_by_client
 from apps.trust.models import Transaction
@@ -58,6 +59,38 @@ def test_available_pools_all_matters_and_uses_pending(user, contact):
     # per-matter view would wrongly show 800 / 700; a confirmed-only view -500.
     assert client_trust_available(contact.id) == Decimal("500.00")
     assert trust_available_by_client([contact.id])[contact.id] == Decimal("500.00")
+
+
+def test_drafted_work_still_draws_on_trust(user, contact):
+    """Putting work on a DRAFT invoice must not free up trust: it is neither in
+    the invoicing queue nor owed yet, but it is still work in progress."""
+    Transaction.objects.create(
+        contact=contact,
+        date="2024-01-01",
+        type="Deposit",
+        amount=Decimal("1000.00"),
+        confirmed=True,
+    )
+    matter = _matter(user, contact, "Matter One")
+    _unbilled_time(user, matter, "1.0", 400)
+    assert client_trust_available(contact.id) == Decimal("600.00")
+
+    # Saving a DRAFT sweeps the unbilled entry onto the invoice.
+    invoice = Invoice.objects.create(
+        created_by=user,
+        matter=matter,
+        date_limit="2024-01-31",
+        date_issued="2024-02-01",
+        status="DRAFT",
+        discount=Decimal("50.00"),
+    )
+    assert TimeEntry.objects.get(matter=matter).invoice_id == invoice.id
+    assert client_trust_available(contact.id) == Decimal("650.00")
+
+    # Sending it moves the same amount from work in progress to owed.
+    invoice.status = "SENT"
+    invoice.save()
+    assert client_trust_available(contact.id) == Decimal("650.00")
 
 
 def test_no_client_is_zero():

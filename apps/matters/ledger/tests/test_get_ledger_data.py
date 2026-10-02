@@ -7,7 +7,7 @@ from apps.invoicing.applications.models import PaymentApplication
 from apps.invoicing.credits.models import Credit
 from apps.invoicing.invoices.models import Invoice
 from apps.invoicing.payments.models import Payment
-from apps.matters.ledger.get_ledger_data import get_ledger_data
+from apps.matters.ledger.get_ledger_data import get_ledger_data, get_ledger_summary
 
 pytestmark = pytest.mark.django_db
 
@@ -293,3 +293,45 @@ class TestGetLedgerDataTotalCredits:
         )
         result = get_ledger_data(matter)
         assert result["total_credits"] == Decimal("150.00")
+
+
+class TestGetLedgerDataUnsentInvoices:
+    def test_draft_listed_apart_from_transactions(self, matter, draft_invoice):
+        data = get_ledger_data(matter)
+        assert data["transactions"] == []
+        assert data["balance_due"] == 0
+        (unsent,) = data["unsent_invoices"]
+        assert unsent["id"] == draft_invoice.id
+        assert unsent["status"] == "DRAFT"
+        assert unsent["amount"] == Decimal("300")
+        assert data["unsent_total"] == Decimal("300")
+
+    def test_sent_invoice_is_not_unsent(self, matter, sent_invoice):
+        data = get_ledger_data(matter)
+        assert data["unsent_invoices"] == []
+        assert data["unsent_total"] == 0
+
+
+class TestGetLedgerSummary:
+    def test_total_cost_includes_drafted_work(
+        self, matter, sent_invoice, draft_invoice, payment
+    ):
+        # $1000 sent ($400 paid, $600 owed) + $300 on a draft.
+        data = get_ledger_data(matter)
+        summary = get_ledger_summary(matter, data)
+        assert summary["total_invoices"] == Decimal("1000")
+        assert summary["total_payments"] == Decimal("400")
+        assert summary["work_in_progress"] == Decimal("300")
+        assert summary["total_cost"] == Decimal("1300")
+
+    def test_total_cost_unchanged_when_draft_is_sent(
+        self, matter, sent_invoice, draft_invoice
+    ):
+        before = get_ledger_summary(matter, get_ledger_data(matter))["total_cost"]
+        draft_invoice.status = "SENT"
+        draft_invoice.save()
+        data = get_ledger_data(matter)
+        summary = get_ledger_summary(matter, data)
+        assert summary["work_in_progress"] == 0
+        assert data["balance_due"] == Decimal("1300")
+        assert summary["total_cost"] == before == Decimal("1300")

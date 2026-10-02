@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, render
 
 from apps.accounts.access import matter_access_required
 from apps.matters.ledger.generate_ledger import generate_ledger
-from apps.matters.ledger.get_ledger_data import get_ledger_data
+from apps.matters.ledger.get_ledger_data import get_ledger_data, get_ledger_summary
 from apps.matters.models import Matter
 from apps.trust.available import client_trust_available, trust_available_severity
 from apps.trust.trust import get_pending_client_balance
@@ -34,12 +34,6 @@ def ledger_index(request, id):
     if matter.client:
         client_trust_balance = get_pending_client_balance(matter.client.id)
 
-    total_cost = (
-        matter.value["invoices"]["payment_sum"]
-        + ledger_data["balance_due"]
-        + matter.value["unbilled"]["net_fees_and_expenses"]
-    )
-
     trust_available = client_trust_available(matter.client_id)
     context = {
         "app": "matters",
@@ -51,8 +45,8 @@ def ledger_index(request, id):
         "trust_available_severity": trust_available_severity(
             trust_available, client_trust_balance
         ),
-        "total_cost": total_cost,
-    } | ledger_data
+    }
+    context |= ledger_data | get_ledger_summary(matter, ledger_data)
 
     return render(request, "matters/includes/tab-page.html", context)
 
@@ -81,7 +75,8 @@ def ledger_list(request, id):
         "trust_available_severity": trust_available_severity(
             trust_available, client_trust_balance
         ),
-    } | ledger_data
+    }
+    context |= ledger_data | get_ledger_summary(matter, ledger_data)
 
     return render(request, "matters/ledger/list.html", context)
 

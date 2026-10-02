@@ -1,7 +1,7 @@
 from operator import itemgetter
 
 from apps.invoicing.credits.models import Credit
-from apps.invoicing.invoices.models import Invoice
+from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
 from apps.invoicing.payments.models import Payment
 
 # Ledger-friendly labels for the payment method (e.g. "Payment by ACH" /
@@ -33,6 +33,12 @@ def get_ledger_data(matter):
 
     When payments/credits are fully applied to invoices,
     ``currently_owed + deferred_total`` reconciles to ``balance_due``.
+
+    Invoices not yet issued (``DRAFT``/``APPROVED``) are not ledger transactions
+    and never touch the balance: until an invoice is sent its work is still work
+    in progress. They are listed apart, in ``unsent_invoices`` (with their sum in
+    ``unsent_total``), so the summary can show how much of the work in progress
+    already sits on a draft.
     """
     transactions = []
     balance = 0  # Initialize balance to prevent UnboundLocalError
@@ -128,6 +134,18 @@ def get_ledger_data(matter):
     # Calculate total credits
     total_credits = sum(c.amount for c in credits) if credits else 0
 
+    unsent_invoices = [
+        {
+            "id": invoice.id,
+            "date": invoice.date_issued,
+            "status": invoice.status,
+            "amount": invoice.value["final_total"],
+        }
+        for invoice in Invoice.objects.filter(
+            matter=matter, status__in=UNSENT_STATUSES
+        ).order_by("date_issued", "id")
+    ]
+
     return {
         "transactions": transactions,
         "balance_due": balance,
@@ -135,4 +153,27 @@ def get_ledger_data(matter):
         "currently_owed": currently_owed,
         "has_deferred": bool(deferred_total),
         "total_credits": total_credits,
+        "unsent_invoices": unsent_invoices,
+        "unsent_total": sum(i["amount"] for i in unsent_invoices),
+    }
+
+
+def get_ledger_summary(matter, ledger_data):
+    """The Ledger tab's summary figures that sit beside ``get_ledger_data``.
+
+    ``work_in_progress`` is everything not yet billed, drafts included, so
+    ``total_cost`` (paid + still owed + work in progress) does not dip while an
+    invoice is being prepared.
+    """
+    value = matter.value
+    work_in_progress = value["work_in_progress"]
+    return {
+        "total_invoices": value["invoices"]["billed"],
+        "total_payments": value["invoices"]["payment_sum"],
+        "work_in_progress": work_in_progress,
+        "total_cost": (
+            value["invoices"]["payment_sum"]
+            + ledger_data["balance_due"]
+            + work_in_progress
+        ),
     }

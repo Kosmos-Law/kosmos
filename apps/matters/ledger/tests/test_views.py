@@ -32,3 +32,12 @@ class TestLedgerList:
         url = reverse("matters:ledger-list", args=[matter.id])
         response = client.get(url)
         assert "client_trust_balance" in response.context
+
+    def test_draft_invoice_shown_under_work_in_progress(
+        self, client, matter, draft_invoice
+    ):
+        url = reverse("matters:ledger-list", args=[matter.id])
+        response = client.get(url)
+        assert response.context["work_in_progress"] == 300
+        assert response.context["total_cost"] == 300
+        assert f"On Invoice {draft_invoice.id}" in response.content.decode()
