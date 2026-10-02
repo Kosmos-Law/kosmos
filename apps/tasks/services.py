@@ -175,7 +175,8 @@ def process_quick_task_description(description, last_matter_id=None, user=None):
 
 
 def quick_add_refusal(description):
-    """A refusal when a quick-add description will not fit, else None.
+    """A refusal when a quick-add description is too short or too long,
+    else None. The limits are the task form's.
 
     Quick add has no form to show an error on, so the user is told in a
     toast. The response is not a success: the input keeps what was typed
@@ -183,17 +184,25 @@ def quick_add_refusal(description):
     """
     from django.http import HttpResponse
 
+    from apps.tasks.constants import DESCRIPTION_MIN_LENGTH
     from apps.tasks.models import Task
     from utils.toasts import toast_error
 
     limit = Task._meta.get_field("description").max_length
-    if len(description) <= limit:
+    length = len(description.strip())
+    if length < DESCRIPTION_MIN_LENGTH:
+        message = (
+            f"A task description needs {DESCRIPTION_MIN_LENGTH} or more "
+            f"characters. This one has {length}. Add to it and press Enter again."
+        )
+    elif len(description) > limit:
+        message = (
+            f"A task description is limited to {limit} characters. "
+            f"This one has {len(description)}. Shorten it and press Enter again."
+        )
+    else:
         return None
-    return toast_error(
-        HttpResponse(status=422),
-        f"A task description is limited to {limit} characters. "
-        f"This one has {len(description)}. Shorten it and press Enter again.",
-    )
+    return toast_error(HttpResponse(status=422), message)
 
 
 # ── AI-entry validation ──────────────────────────────────────────────────────

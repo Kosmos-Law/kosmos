@@ -112,7 +112,7 @@ def resolve_task_filter(request):
     # is dropped rather than left to name the matter on the toolbar.
     stored_matter = filter_data.get("matter")
     if stored_matter not in (None, "") and not sees_all_matters(request.user):
-        allowed = str(stored_matter).isdigit() and (
+        allowed = str(stored_matter).isdecimal() and (
             filter_matters_for_user(
                 Matter.objects.filter(pk=stored_matter), request.user
             ).exists()

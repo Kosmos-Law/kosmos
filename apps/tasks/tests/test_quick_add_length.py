@@ -1,4 +1,5 @@
-"""Quick add refuses a description the task cannot hold, and says so."""
+"""Quick add holds a description to the task form's limits (4 to 200
+characters) and says so when it refuses one."""
 
 import json
 
@@ -35,6 +36,30 @@ def test_limit_is_on_the_description_not_the_matter_prefix(client, matter):
     task = Task.objects.get()
     assert len(task.description) == 200
     assert task.matter == matter
+
+
+@pytest.mark.parametrize("line", ["abc", "Sample - abc", "  ab  "])
+def test_short_line_is_refused_with_a_message(client, matter, line):
+    response = client.post(reverse("tasks:add-quick"), {"description": line})
+    assert response.status_code == 422
+    assert "HX-Trigger" not in response.headers
+    toast = _toast(response)
+    assert toast["type"] == "error"
+    assert "4 or more characters" in toast["message"]
+    assert not Task.objects.exists()
+
+
+def test_four_characters_is_enough(client):
+    response = client.post(reverse("tasks:add-quick"), {"description": "Call"})
+    assert response.status_code == 204
+    assert Task.objects.get().description == "Call"
+
+
+def test_empty_line_stays_a_silent_no_op(client):
+    response = client.post(reverse("tasks:add-quick"), {"description": ""})
+    assert response.status_code == 204
+    assert "HX-Toast" not in response.headers
+    assert not Task.objects.exists()
 
 
 def test_ai_description_over_the_limit_is_refused(client, monkeypatch):

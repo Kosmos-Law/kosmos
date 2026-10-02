@@ -71,7 +71,7 @@ def test_quick_filter_sets_label_and_window(client, matter):
         reverse("matters:tasks-filter-quick", args=[matter.id, "today"])
     )
     assert response.status_code == 204
-    session_filter = _session_for(client, "matter_tasks_filter")
+    session_filter = _session_for(client, f"matter_tasks_filter_{matter.id}")
     assert session_filter["filter_label"] == "today"
     assert session_filter["date_due_max"] == str(timezone.localdate())
     assert session_filter["date_due_min"] == ""
@@ -108,14 +108,14 @@ def test_modal_apply_strips_csrf_token_from_session(client, matter):
         reverse("matters:tasks-filter", args=[matter.id]),
         {"status": "Complete"},
     )
-    session_filter = _session_for(client, "matter_tasks_filter")
+    session_filter = _session_for(client, f"matter_tasks_filter_{matter.id}")
     assert "csrfmiddlewaretoken" not in session_filter
 
 
 def test_modal_apply_preserves_dropdown_state(client, matter):
     # Set an importance via its endpoint first.
     client.post(reverse("matters:tasks-filter-importance", args=[matter.id, 7]))
-    pre = _session_for(client, "matter_tasks_filter")
+    pre = _session_for(client, f"matter_tasks_filter_{matter.id}")
     assert str(pre.get("importance")) == "7"
 
     # Apply the modal with only status, leaving importance out of POST.
@@ -123,7 +123,7 @@ def test_modal_apply_preserves_dropdown_state(client, matter):
         reverse("matters:tasks-filter", args=[matter.id]),
         {"status": "Complete"},
     )
-    post = _session_for(client, "matter_tasks_filter")
+    post = _session_for(client, f"matter_tasks_filter_{matter.id}")
     # Merge preserves the prior importance selection.
     assert str(post.get("importance")) == "7"
     # Status has been multi-valued since the multi-select status filter.
