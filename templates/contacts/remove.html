@@ -9,24 +9,38 @@
       </div>
     </div>
     <div class="modal-body">
+      {% comment %}
+        The row that stands for a matter's own client is not offered: the
+        client is changed in Edit Matter. The role is shown because a
+        contact can be on one matter in more than one role.
+      {% endcomment %}
+      {% if not relationships %}
+        <p class="modal-note">There is no matter to remove this contact from. A matter's client is changed in Edit Matter.</p>
+      {% endif %}
       <form id="contact-remove-form"
-            action="{{ action }}"
-            method="post"
+            hx-post="{{ action }}"
+            hx-swap="none"
             class="form-responsive form-spacious"
             role="form">
         {% csrf_token %}
-        <label>Matter:</label>
-        <label>
-          <select class="contacts-assignment-select" name="relationship_id">
-            {% for relationship in relationships %}
-              <option value="{{ relationship.id }}">{{ relationship.matter.name }}</option>
-            {% endfor %}
-          </select>
-        </label>
+        <input type="hidden" name="contact_id" value="{{ contact.id }}" />
+        {% if relationships %}
+          <label>Matter:</label>
+          <label>
+            <select class="contacts-assignment-select" name="relationship_id">
+              {% for relationship in relationships %}
+                <option value="{{ relationship.id }}">{{ relationship.matter.name }} ({{ relationship.role.name }})</option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endif %}
       </form>
     </div>
     <div class="modal-footer">
-      <button type="submit" form="contact-remove-form" class="btn btn-success">Submit</button>
+      <button type="submit"
+              form="contact-remove-form"
+              class="btn btn-success"
+              {% if not relationships %}disabled{% endif %}>Submit</button>
     </div>
   </div>
 </div>

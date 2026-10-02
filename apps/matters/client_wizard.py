@@ -15,6 +15,7 @@ from django.urls import reverse
 
 from apps.contacts.forms import ContactForm
 from apps.folders.models import Folder
+from apps.intakes.access import intake_for_new_contact, require_intakes
 from apps.intakes.models import Intake
 from apps.matters.forms import MatterForm
 from apps.matters.models import Matter
@@ -105,7 +106,11 @@ def client_new_contact(request):
 
 @login_required
 def client_intake_picker(request):
-    """ "+ Convert an intake": stash the matter draft, list unconverted intakes."""
+    """ "+ Convert an intake": stash the matter draft, list unconverted intakes.
+
+    The matter form is open to everyone; the list of intakes is for users
+    with the Intakes permission (the button is hidden from the rest)."""
+    require_intakes(request.user)
     _stash_matter_draft(request)
     intakes = Intake.objects.filter(contact__isnull=True).order_by("-date")
     return render(request, "matters/client-intake-picker.html", {"intakes": intakes})
@@ -115,6 +120,7 @@ def client_intake_picker(request):
 def client_intake_contact(request, id):
     """An intake was picked: open the contact form prefilled from it (the draft
     is already stashed from the picker step)."""
+    require_intakes(request.user)
     intake = get_object_or_404(Intake, pk=id)
     form = ContactForm(
         initial={
@@ -135,11 +141,13 @@ def client_create_contact(request):
     """Save the new contact, then return to the matter form with it selected."""
     form = ContactForm(request.POST, use_required_attribute=False)
     if form.is_valid():
+        intake, refusal = intake_for_new_contact(request)
+        if refusal:
+            return refusal
         contact = form.save(commit=False)
         contact.user = request.user
-        intake_id = request.POST.get("intake_id")
-        if intake_id:
-            contact.intake = get_object_or_404(Intake, pk=intake_id)
+        if intake:
+            contact.intake = intake
         contact.save()
         return _render_matter_dialog(request, client_id=contact.id)
     # Validation error — re-render the contact form in the dialog.

@@ -7,9 +7,12 @@
           <tr>
             <td>{{ contact.name }}</td>
             <td>
-              <a href={% url 'contacts:toggle-google-sync' id=contact.id %}>
+              <button type="button"
+                      class="btn-icon"
+                      hx-post="{% url 'contacts:toggle-google-sync' id=contact.id %}"
+                      hx-swap="none">
                 <span class="material-icons">sync</span>
-              </a>
+              </button>
             </td>
           </tr>
         {% endfor %}
