@@ -11,6 +11,7 @@ from django.urls import reverse
 from apps.mail import google
 from apps.mail.models import Email
 
+from .conftest import gmail_message
 from .test_views import make_email
 
 pytestmark = pytest.mark.django_db
@@ -95,3 +96,39 @@ def test_emails_tab_with_no_label_and_no_emails_prompts_to_link(
 
     assert "No Gmail label is linked to this matter yet" in content
     assert "emails-split" not in content
+
+
+# ── A message trashed or deleted in a mailbox ────────────────────────────
+
+
+def _synced_on_both(matter, matter2, fake_gmail):
+    """One message under both matters' labels, then matter2 is closed (which
+    clears its label and keeps its emails)."""
+    fake_gmail.messages = {"m1": gmail_message("m1", label_ids=("Label_1", "Label_2"))}
+    google.sync(full=True)
+    assert Email.objects.filter(gmail_id="m1").count() == 2
+    matter2.status = "Closed"
+    matter2.save()
+    matter2.refresh_from_db()
+    assert matter2.gmail_label_name is None
+
+
+@pytest.mark.parametrize(
+    "history",
+    [
+        {"labelsAdded": [{"message": {"id": "m1"}, "labelIds": ["TRASH"]}]},
+        {"messagesDeleted": [{"message": {"id": "m1"}}]},
+    ],
+    ids=["trashed", "deleted"],
+)
+def test_trashed_message_leaves_a_labelled_matter_and_stays_on_a_closed_one(
+    matter, matter2, fake_gmail, history
+):
+    _synced_on_both(matter, matter2, fake_gmail)
+
+    fake_gmail.history = [history]
+    stats = google.sync()
+
+    assert stats["removed"] == 1
+    assert not Email.objects.filter(matter=matter).exists()
+    assert Email.objects.filter(matter=matter2, gmail_id="m1").exists()

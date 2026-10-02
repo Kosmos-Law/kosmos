@@ -227,11 +227,36 @@ def _get_object_for_labels(object_type, object_id, view=None):
     return obj, matter, row_template, context_key
 
 
+def _labels_for(matter):
+    """The labels that may go on something in ``matter``: the global ones and
+    the matter's own."""
+    return Label.objects.filter(Q(matter=None) | Q(matter=matter))
+
+
+def _label_pk(request):
+    """The posted label id as an integer, or None when it is not one."""
+    try:
+        return int(request.POST.get("label_id", ""))
+    except ValueError:
+        return None
+
+
+def _label_to_add(request, matter):
+    """The posted label, or 404. The id arrives in the POST body: without
+    this, any label id (another matter's label included) could be put on the
+    object and its name shown there."""
+    return get_object_or_404(_labels_for(matter), pk=_label_pk(request))
+
+
+def _label_to_remove(request, obj):
+    """The posted label, or 404: one that is on the object. That covers a
+    label left over from another matter, which must stay removable."""
+    return get_object_or_404(obj.labels.all(), pk=_label_pk(request))
+
+
 def _split_labels_by_state(obj, matter):
     """Return (applied, available) lists of labels for the given object."""
-    labels = Label.objects.filter(Q(matter=None) | Q(matter=matter)).order_by(
-        "matter", "name"
-    )
+    labels = _labels_for(matter).order_by("matter", "name")
     applied_ids = set(obj.labels.values_list("id", flat=True))
     applied, available = [], []
     for label in labels:
@@ -268,40 +293,7 @@ def labels_apply_modal(request, object_type, object_id):
 
 
 @login_required
-def labels_search(request, object_type, object_id):
-    """Search labels for apply modal."""
-    obj, matter, _, _ = _get_object_for_labels(object_type, object_id)
-    if obj is None:
-        return HttpResponse("Invalid object type", status=400)
-
-    query = request.GET.get("q", "").strip()
-    view = request.GET.get("view", "")
-
-    # Get available labels (global + matter-specific)
-    if matter:
-        labels = Label.objects.filter(Q(matter=None) | Q(matter=matter))
-    else:
-        labels = Label.objects.filter(matter=None)
-
-    # Filter by search query
-    if query:
-        labels = labels.filter(name__icontains=query)
-
-    # Exclude already-applied labels
-    existing_label_ids = obj.labels.values_list("id", flat=True)
-    labels = labels.exclude(id__in=existing_label_ids)
-
-    # Order: global first, then matter-specific, alphabetically
-    labels = labels.order_by("matter", "name")
-
-    return render(
-        request,
-        "case/labels/apply-results.html",
-        {"labels": labels, "object": obj, "object_type": object_type, "view": view},
-    )
-
-
-@login_required
+@require_POST
 def add_label_to(request, object_type, object_id):
     """Add a label to an object."""
     view = request.POST.get("view")
@@ -311,13 +303,7 @@ def add_label_to(request, object_type, object_id):
     if obj is None:
         return HttpResponse("Invalid object type", status=400)
 
-    label_id = request.POST.get("label_id")
-    if label_id:
-        try:
-            label = Label.objects.get(id=label_id)
-            obj.labels.add(label)
-        except Label.DoesNotExist:
-            pass
+    obj.labels.add(_label_to_add(request, matter))
 
     context = {
         context_key: obj,
@@ -349,50 +335,7 @@ def remove_label_from(request, object_type, object_id):
     if obj is None:
         return HttpResponse("Invalid object type", status=400)
 
-    label_id = request.POST.get("label_id")
-    if label_id:
-        try:
-            label = Label.objects.get(id=label_id)
-            obj.labels.remove(label)
-        except Label.DoesNotExist:
-            pass
-
-    context = {
-        context_key: obj,
-        "importance_choices": range(7, 0, -1),
-        "matter": matter,
-    }
-
-    # Add selection state for row templates that include a checkbox
-    if object_type == "caselaw" and matter:
-        selected_session_key = get_session_key("selected_caselaws", matter.id)
-        context["selected_caselaws"] = request.session.get(selected_session_key, [])
-    elif object_type == "highlight" and matter:
-        selected_session_key = get_session_key("selected_highlights", matter.id)
-        context["selected_highlights"] = request.session.get(selected_session_key, [])
-    elif object_type == "fact" and matter:
-        selected_session_key = get_session_key("selected_facts", matter.id)
-        context["selected_facts"] = request.session.get(selected_session_key, [])
-
-    return render(request, row_template, context)
-
-
-@login_required
-def labels_create_and_apply(request, object_type, object_id):
-    """Create a new label and apply it to an object."""
-    view = request.POST.get("view")
-    obj, matter, row_template, context_key = _get_object_for_labels(
-        object_type, object_id, view
-    )
-    if obj is None:
-        return HttpResponse("Invalid object type", status=400)
-
-    name = request.POST.get("name", "").strip()
-    color = request.POST.get("color", "gray")
-
-    if name:
-        label = Label.objects.create(matter=matter, name=name, color=color)
-        obj.labels.add(label)
+    obj.labels.remove(_label_to_remove(request, obj))
 
     context = {
         context_key: obj,
@@ -425,13 +368,12 @@ def labels_apply_modal_action(request, object_type, object_id):
     if obj is None:
         return HttpResponse("Invalid object type", status=400)
 
-    label = get_object_or_404(Label, id=request.POST.get("label_id"))
     action = request.POST.get("action")
 
     if action == "add":
-        obj.labels.add(label)
+        obj.labels.add(_label_to_add(request, matter))
     elif action == "remove":
-        obj.labels.remove(label)
+        obj.labels.remove(_label_to_remove(request, obj))
     else:
         return HttpResponse("Invalid action", status=400)
 

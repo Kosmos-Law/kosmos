@@ -225,6 +225,14 @@ def _documents_list_response(request, matter_id):
     return render(request, "case/documents/list.html", context)
 
 
+# A document that came from Google Drive is on the matter its Drive folder is
+# linked to. The sync would move it straight back, so it is not moved here.
+DRIVE_MOVE_MESSAGE = (
+    "This document follows its folder in Google Drive. To move it to another "
+    "matter, move the file in Drive."
+)
+
+
 # A document filed under a proceeding is part of that proceeding's record:
 # Document.save() puts any other category back to Record.
 PROCEEDING_CATEGORIES = ("Record", "Discovery")
@@ -235,6 +243,9 @@ PROCEEDING_CATEGORIES = ("Record", "Discovery")
 def document_category(request, document_id, category):
     """Set document category."""
     document = get_object_or_404(Document, id=document_id)
+
+    if category not in dict(Document.CATEGORY_CHOICES):
+        return HttpResponse(status=400, content="Invalid category.")
 
     if document.proceeding_id and category not in PROCEEDING_CATEGORIES:
         # Saving would silently turn the choice back into Record. Leave the
@@ -279,6 +290,8 @@ def document_proceeding(request, document_id, proceeding_id):
 def document_importance(request, document_id, importance):
     """Set document importance."""
     document = get_object_or_404(Document, id=document_id)
+    if not 1 <= importance <= 7:
+        return HttpResponse(status=400, content="Invalid importance.")
     document.importance = importance
     document.save()
     return _documents_list_response(request, document.matter_id)
@@ -510,6 +523,17 @@ def documents_edit(request, document_id):
 
         uploaded_file = request.FILES.get("file")
 
+        # The Matter field is locked for a Drive-synced document (the form
+        # ignores it). A request that asks for another matter anyway is
+        # refused outright rather than saved with the matter left alone.
+        posted_matter = request.POST.get("matter")
+        if (
+            document.is_drive_synced
+            and posted_matter
+            and posted_matter != str(old_matter_id)
+        ):
+            form.add_error("matter", DRIVE_MOVE_MESSAGE)
+
         if uploaded_file and document.drive_file_id:
             # Drive-synced record: the bytes mirror the Drive file. Metadata
             # stays editable; the file itself is replaced in Drive.
@@ -581,6 +605,8 @@ def documents_edit(request, document_id):
 
             document.save()
             form.save_m2m()
+            if document.matter_id != old_matter_id:
+                _drop_other_matters_labels(document)
 
             # Queue OCR for new PDF file
             if uploaded_file:
@@ -625,6 +651,26 @@ def documents_edit(request, document_id):
         )
 
 
+def _selected_on_matter(selected_ids, matter_id):
+    """The selected documents that are on the matter in the URL.
+
+    The selection is a list of ids kept in the session. The matter in the URL
+    is the one the user was checked against, so an id that is not on it is
+    ignored rather than acted on.
+    """
+    return Document.objects.filter(id__in=selected_ids, matter_id=matter_id)
+
+
+def _drop_other_matters_labels(document):
+    """After a move: take off the labels that belong to another matter.
+
+    A matter's own labels stay behind when a document leaves it; global
+    labels go with the document.
+    """
+    stale = document.labels.exclude(matter=None).exclude(matter_id=document.matter_id)
+    document.labels.remove(*stale)
+
+
 @login_required
 def bulk_documents_update(request, matter_id):
     matter, matters = get_matter_from_url(request, matter_id)
@@ -642,7 +688,7 @@ def bulk_documents_update(request, matter_id):
             proceeding = form.cleaned_data.get("proceeding")
             labels = form.cleaned_data.get("labels")
 
-            documents = Document.objects.filter(id__in=selected_documents)
+            documents = _selected_on_matter(selected_documents, matter_id)
 
             for document in documents:
                 if proceeding:
@@ -1071,7 +1117,7 @@ def bulk_documents_ai(request, matter_id, action):
     if not selected_documents:
         return HttpResponse(status=400, content="No documents selected.")
 
-    Document.objects.filter(id__in=selected_documents).update(ai_context=action)
+    _selected_on_matter(selected_documents, matter_id).update(ai_context=action)
 
     clear_selected_ids(request, key)
     return selection_response("documentsChanged")
@@ -1087,7 +1133,7 @@ def bulk_documents_delete(request, matter_id):
     if not selected_documents:
         return HttpResponse(status=400, content="No documents selected.")
 
-    Document.objects.filter(id__in=selected_documents).delete()
+    _selected_on_matter(selected_documents, matter_id).delete()
     clear_selected_ids(request, key)
 
     return selection_response("documentsChanged")
@@ -1105,7 +1151,7 @@ def bulk_documents_importance(request, matter_id):
 
     importance = request.POST.get("importance")
     if importance:
-        Document.objects.filter(id__in=selected_documents).update(
+        _selected_on_matter(selected_documents, matter_id).update(
             importance=int(importance)
         )
 
@@ -1123,7 +1169,7 @@ def bulk_documents_category(request, matter_id):
     if request.method == "POST":
         category = request.POST.get("category")
         if category:
-            Document.objects.filter(id__in=selected_documents).update(category=category)
+            _selected_on_matter(selected_documents, matter_id).update(category=category)
             clear_selected_ids(request, key)
             return selection_response("documentsChanged")
 
@@ -1159,14 +1205,21 @@ def bulk_documents_matter(request, matter_id):
         target_matter_id = request.POST.get("matter")
 
         if target_matter_id:
+            if not target_matter_id.isdecimal():
+                return HttpResponse(status=400, content="Invalid matter.")
             # The target arrives in the POST body, which the central matter
             # check never sees.
             target_matter = target_matter_for_user(target_matter_id, request.user)
 
             # Move documents to new matter
-            for doc in Document.objects.filter(
-                id__in=selected_documents
+            skipped = 0
+            for doc in _selected_on_matter(
+                selected_documents, matter_id
             ).select_related("proceeding"):
+                if doc.is_drive_synced:
+                    skipped += 1
+                    continue
+
                 old_file_path = doc.file.name if doc.file else None
 
                 doc.matter = target_matter
@@ -1174,6 +1227,7 @@ def bulk_documents_matter(request, matter_id):
                 if doc.proceeding and doc.proceeding.matter_id != target_matter.id:
                     doc.proceeding = None
                 doc.save()
+                _drop_other_matters_labels(doc)
 
                 # Move file to new matter's folder if file exists
                 if old_file_path:
@@ -1196,7 +1250,24 @@ def bulk_documents_matter(request, matter_id):
                         pass  # File move failed, but document is still moved
 
             clear_selected_ids(request, key)
-            return selection_response("documentsChanged")
+            response = selection_response("documentsChanged")
+            if skipped == 1:
+                toast_warning(
+                    response,
+                    "1 document from Google Drive was not moved. It follows its "
+                    "folder in Google Drive. To move it to another matter, move "
+                    "the file in Drive.",
+                    duration=10000,
+                )
+            elif skipped:
+                toast_warning(
+                    response,
+                    f"{skipped} documents from Google Drive were not moved. They "
+                    "follow their folders in Google Drive. To move one to "
+                    "another matter, move the file in Drive.",
+                    duration=10000,
+                )
+            return response
 
         return HttpResponse(status=400, content="No matter selected.")
 

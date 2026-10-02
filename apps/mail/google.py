@@ -339,9 +339,19 @@ def _remove_email(account, matter, gmail_id, stats, dry_run):
 
 def _remove_everywhere(account, gmail_id, stats, dry_run):
     """Trashed/deleted in this mailbox: drop this account's rows across all
-    matters (gmail_ids are mailbox-local, so cross-matter — not
-    cross-account — removal is what "everywhere" means)."""
-    qs = Email.objects.filter(gmail_id=gmail_id).filter(_account_scope(account))
+    label-linked matters (gmail_ids are mailbox-local, so cross-matter — not
+    cross-account — removal is what "everywhere" means).
+
+    A matter with no label is left alone. It is no longer synced: that is
+    the state of a closed matter whose emails were kept, and tidying a
+    mailbox afterwards must not empty its file.
+    """
+    qs = (
+        Email.objects.filter(gmail_id=gmail_id)
+        .filter(_account_scope(account))
+        .exclude(matter__gmail_label_name__isnull=True)
+        .exclude(matter__gmail_label_name="")
+    )
     if dry_run:
         stats["removed"] += qs.count()
         return

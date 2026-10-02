@@ -75,6 +75,13 @@ class FilesForm(forms.ModelForm):
             ).order_by("name")
         self.fields["matter"].queryset = queryset
 
+        # A document that came from Google Drive follows its folder there:
+        # the sync puts it back on the folder's matter, so its matter is
+        # shown and cannot be changed here. (A disabled field also ignores
+        # whatever is posted for it.)
+        if self.instance.pk and self.instance.is_drive_synced:
+            self.fields["matter"].disabled = True
+
         # If matter provided (new document), set it as initial
         if matter:
             self.fields["matter"].initial = matter

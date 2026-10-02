@@ -1133,11 +1133,6 @@ urlpatterns = [
         name="labels-apply-modal-action",
     ),
     path(
-        "case/labels/search/<str:object_type>/<int:object_id>/",
-        labels.labels_search,
-        name="labels-search",
-    ),
-    path(
         "case/labels/add-to/<str:object_type>/<int:object_id>/",
         labels.add_label_to,
         name="add-label-to",
@@ -1146,11 +1141,6 @@ urlpatterns = [
         "case/labels/remove-from/<str:object_type>/<int:object_id>/",
         labels.remove_label_from,
         name="remove-label-from",
-    ),
-    path(
-        "case/labels/create-and-apply/<str:object_type>/<int:object_id>/",
-        labels.labels_create_and_apply,
-        name="labels-create-and-apply",
     ),
     # AI conversation operations
     path(

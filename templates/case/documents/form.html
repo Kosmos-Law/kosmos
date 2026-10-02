@@ -27,7 +27,15 @@
         {% if edit %}<input type="hidden" name="edit" value="true">{% endif %}
         <div class="form-group">
           <label for="{{ form.matter.id_for_label }}">{{ form.matter.label }}</label>
-          <div>{{ form.matter }}{{ form.matter.errors }}</div>
+          <div>
+            {{ form.matter }}{{ form.matter.errors }}
+            {% if edit and document.is_drive_synced %}
+              <p class="detail-text">
+                This document follows its folder in Google Drive. To move it
+                to another matter, move the file in Drive.
+              </p>
+            {% endif %}
+          </div>
         </div>
         <div class="form-group">
           <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
