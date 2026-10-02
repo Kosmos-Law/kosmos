@@ -430,7 +430,18 @@ def delete_highlight(request, highlight_id):
     """Delete a highlight."""
     highlight = get_object_or_404(Highlight, id=highlight_id)
 
-    # Check permission (creator or allow all authenticated users for now)
+    # Prune the id from any current selection so the bulk count stays honest.
+    matter_id = (
+        highlight.document.matter_id
+        if highlight.document
+        else highlight.caselaw.matter_id
+    )
+    key = get_session_key("selected_highlights", matter_id)
+    selected = get_selected_ids(request, key)
+    if highlight.id in selected:
+        selected.remove(highlight.id)
+        request.session[key] = selected
+
     highlight.delete()
 
     # Return 204 with trigger for HTMX, JSON for JS (viewer context)
@@ -456,6 +467,17 @@ def highlight_detail(request, highlight_id):
         "case/highlights/detail.html",
         {"highlight": highlight, "matter": matter},
     )
+
+
+def _form_error_text(form):
+    """A form's errors as one line: "Slug: This field is required." """
+    parts = []
+    for name, errors in form.errors.items():
+        text = " ".join(errors)
+        if name in form.fields:
+            text = f"{form[name].label}: {text}"
+        parts.append(text)
+    return " ".join(parts)
 
 
 @login_required
@@ -488,6 +510,12 @@ def edit_highlight(request, highlight_id):
             return HttpResponse(
                 status=204,
                 headers={"HX-Trigger": "highlightsChanged"},
+            )
+        if is_viewer_context:
+            # The viewer's script reads JSON, so the reasons go back as
+            # JSON for it to show rather than as the re-rendered form.
+            return JsonResponse(
+                {"error": _form_error_text(form), "errors": form.errors}, status=400
             )
     else:
         form = HighlightForm(instance=highlight)
