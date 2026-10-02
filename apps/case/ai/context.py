@@ -595,9 +595,8 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
 
     Args:
         matter: The Matter object to assemble context for
-        user: The requesting user (for request info section, and for what
-            the context may carry: rates and fees need the Financial
-            permission)
+        user: The requesting user (for the request info section). With no
+            user, time entries carry no rate, fee or invoice status.
         conversation: Optional Conversation object (excluded from reference conversations)
 
     Structure:
@@ -639,7 +638,7 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
 
     # Time Entries
     sections["time_entries"] = format_time_entries(
-        matter, include_financial=has_financial_access(user)
+        matter, include_billing=user is not None
     )
 
     # Settlement
@@ -731,10 +730,13 @@ def assemble_matter_context_with_selection(
         matter: The Matter object
         user_message: The user's question (used by the selector)
         llm: The LLM key (for token budget)
-        user: The requesting user. The context is built for them: without
-            the Financial permission (or with no user, as in the nightly
-            auto-summary, whose output every member of the matter reads)
-            time entries carry no rate or fee and invoices are not offered.
+        user: The requesting user. The context is built for them:
+            invoices are offered to the selector only with the Financial
+            permission. Time entries carry their rate, fee, comp flag and
+            invoice status for every user, as the Activity screens show
+            them. With no user (the nightly auto-summary, whose output
+            every member of the matter reads) there is no billing detail
+            at all: no invoices, and time entries without money.
         conversation: Optional Conversation (excluded from reference conversations)
         include_library: Offer firm-library notes (standalone notes in
             AI-library folders) to the selector, and inject "always" library
@@ -794,7 +796,7 @@ def assemble_matter_context_with_selection(
     sections["tasks"] = format_tasks(matter)
     sections["events"] = format_events(matter)
     sections["time_entries"] = format_time_entries(
-        matter, include_financial=include_financial
+        matter, include_billing=user is not None
     )
     sections["settlement"] = format_settlement(matter)
 
@@ -1197,11 +1199,13 @@ def format_events(matter) -> str:
     return "\n".join(lines)
 
 
-def format_time_entries(matter, include_financial=False) -> str:
+def format_time_entries(matter, include_billing=False) -> str:
     """Format time entries: the work done, by whom and for how long.
 
-    Rates, fees, comp status and the invoice each entry sits on are added
-    only for a reader with the Financial permission.
+    With ``include_billing`` each entry also carries its rate, fee, comp
+    flag and the invoice it sits on. The Activity screens show those to
+    every user who can see the matter, so every requesting user gets them;
+    only a run for no user (the nightly auto-summary) leaves them out.
     """
     entries = (
         TimeEntry.objects.filter(matter=matter)
@@ -1215,7 +1219,7 @@ def format_time_entries(matter, include_financial=False) -> str:
     lines = []
     for entry in entries:
         user_name = entry.user.get_full_name() if entry.user else "Unknown"
-        if not include_financial:
+        if not include_billing:
             lines.append(
                 f"- [{entry.date}] {entry.actions} — {entry.hours}h by {user_name}"
             )

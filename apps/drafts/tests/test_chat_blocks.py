@@ -65,6 +65,8 @@ def test_companion_failure_reported(link, monkeypatch):
 
 
 def test_companion_timeout_expires_round(link, monkeypatch):
+    """Real clock, real sleep: nobody collects the round. The collected
+    cases are in test_round_lifecycle.py."""
     _connect(link)
     monkeypatch.setattr(chat, "COMPANION_WAIT_SECONDS", 1)
     result = chat.apply_edit_blocks(f"Done.\n\n{BLOCK}", link)

@@ -152,8 +152,8 @@ def build_agent_tools(
     include_financial: bool = False,
     include_research: bool = False,
 ) -> list[dict]:
-    """Provider-neutral tool specs for one agent turn, for one user: the
-    billing tool and sections need the Financial permission, the
+    """Provider-neutral tool specs for one agent turn, for one user:
+    read_invoice and the rates section need the Financial permission, the
     CourtListener tools the Research permission."""
     section_enum = [
         name
@@ -172,11 +172,9 @@ def build_agent_tools(
             "witnesses",
             "emails",
         )
-        if include_financial or name not in ("rates", "activity")
+        if include_financial or name != "rates"
     ]
-    money_sections = (
-        "rates, activity (time and expenses), " if include_financial else ""
-    )
+    rates_section = "rates, " if include_financial else ""
     tools = [
         {
             "name": "search_materials",
@@ -333,7 +331,8 @@ def build_agent_tools(
             "name": "read_matter_section",
             "description": (
                 "A structured section of the matter record as text: "
-                f"overview, contacts, {money_sections}"
+                f"overview, contacts, {rates_section}"
+                "activity (time and expenses), "
                 "events, tasks, proceedings, settlement, documents (the "
                 "manifest), highlights, timeline, witnesses, emails (the "
                 "thread manifest). The overview, contacts, witnesses and "
@@ -737,9 +736,9 @@ def make_agent_executor(
 ):
     """Build ``execute_batch(calls) -> outcomes`` for one agent turn.
 
-    The executor works for ``user``: the billing tool and sections need
-    their Financial permission and the CourtListener tools their Research
-    permission. With no user, neither is available.
+    The executor works for ``user``: read_invoice and the rates section
+    need their Financial permission and the CourtListener tools their
+    Research permission. With no user, neither is available.
 
     ``calls`` are ``{"id", "name", "input"}``; outcomes are ``{"id",
     "name", "content": json string, "is_error"}`` in the same order.

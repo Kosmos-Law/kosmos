@@ -15,6 +15,7 @@ from django.views.decorators.http import require_http_methods
 
 from apps.case.ai.models import Conversation
 from apps.drafts import services
+from apps.drafts.companion import EXTENSION_VERSION
 from apps.drafts.models import CompanionToken
 from apps.drive import google
 from utils.toasts import toast_error
@@ -112,5 +113,8 @@ def draft_companion_setup(request):
     return render(
         request,
         "case/ai/companion-setup.html",
-        {"token": CompanionToken.for_user(request.user)},
+        {
+            "token": CompanionToken.for_user(request.user),
+            "extension_version": EXTENSION_VERSION,
+        },
     )
