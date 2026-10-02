@@ -2,7 +2,7 @@
  {
   "key": "inquiry",
   "name": "Inquiry",
-  "description": "Mirrors the Craig Legal website's Inquiry form.",
+  "description": "A sample Inquiry form. Review and edit it before use.",
   "intro_text": "Tell us briefly about your legal problem and we'll be in touch.",
   "schema": [
    {
@@ -59,8 +59,8 @@
  {
   "key": "intake",
   "name": "Client Intake",
-  "description": "Mirrors the Craig Legal website's Client Intake form.",
-  "intro_text": "Please answer as fully as you can. Approximations are fine \u2014 we'll confirm the details together.",
+  "description": "A sample Client Intake form. Review and edit it before use.",
+  "intro_text": "Please answer as fully as you can. Approximations are fine. We'll confirm the details together.",
   "schema": [
    {
     "key": "personal_details_8f86e7",
@@ -768,7 +768,7 @@
  {
   "key": "onboarding",
   "name": "Client Onboarding",
-  "description": "Mirrors the Craig Legal website's Client Onboarding form.",
+  "description": "A sample Client Onboarding form. Review and edit it before use.",
   "intro_text": "A few details we need before we open your matter.",
   "schema": [
    {
@@ -1366,7 +1366,7 @@
  {
   "key": "supplement_boundary",
   "name": "Boundary Dispute Supplement",
-  "description": "Mirrors the Craig Legal website's Boundary Dispute Supplement form.",
+  "description": "A sample Boundary Dispute Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to boundary disputes. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -1678,7 +1678,7 @@
  {
   "key": "supplement_easement",
   "name": "Easement Dispute Supplement",
-  "description": "Mirrors the Craig Legal website's Easement Dispute Supplement form.",
+  "description": "A sample Easement Dispute Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to easement disputes. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -1917,7 +1917,7 @@
  {
   "key": "supplement_quiet_title",
   "name": "Quiet Title Supplement",
-  "description": "Mirrors the Craig Legal website's Quiet Title Supplement form.",
+  "description": "A sample Quiet Title Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to quiet title matters. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -2135,7 +2135,7 @@
  {
   "key": "supplement_contract",
   "name": "Purchase / Sale Supplement",
-  "description": "Mirrors the Craig Legal website's Purchase / Sale Supplement form.",
+  "description": "A sample Purchase / Sale Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to purchase and sale disputes. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -2348,7 +2348,7 @@
  {
   "key": "supplement_hoa",
   "name": "Association Dispute Supplement",
-  "description": "Mirrors the Craig Legal website's Association Dispute Supplement form.",
+  "description": "A sample Association Dispute Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to homeowner and condo association disputes. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -2595,7 +2595,7 @@
  {
   "key": "supplement_landlord",
   "name": "Landlord-Tenant Supplement (Landlord)",
-  "description": "Mirrors the Craig Legal website's Landlord-Tenant Supplement (Landlord) form.",
+  "description": "A sample Landlord-Tenant Supplement (Landlord) form. Review and edit it before use.",
   "intro_text": "A few more questions for landlords. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -2819,7 +2819,7 @@
  {
   "key": "supplement_tenant",
   "name": "Landlord-Tenant Supplement (Tenant)",
-  "description": "Mirrors the Craig Legal website's Landlord-Tenant Supplement (Tenant) form.",
+  "description": "A sample Landlord-Tenant Supplement (Tenant) form. Review and edit it before use.",
   "intro_text": "A few more questions for tenants. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -3062,7 +3062,7 @@
  {
   "key": "supplement_construction",
   "name": "Construction Dispute Supplement",
-  "description": "Mirrors the Craig Legal website's Construction Dispute Supplement form.",
+  "description": "A sample Construction Dispute Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to construction disputes. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -3340,7 +3340,7 @@
  {
   "key": "supplement_fraud",
   "name": "Real Estate Fraud Supplement",
-  "description": "Mirrors the Craig Legal website's Real Estate Fraud Supplement form.",
+  "description": "A sample Real Estate Fraud Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to real estate fraud. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -3727,7 +3727,7 @@
  {
   "key": "supplement_commercial",
   "name": "Commercial Dispute Supplement",
-  "description": "Mirrors the Craig Legal website's Commercial Dispute Supplement form.",
+  "description": "A sample Commercial Dispute Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to commercial disputes. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {
@@ -3941,7 +3941,7 @@
  {
   "key": "supplement_collections",
   "name": "Collections Supplement",
-  "description": "Mirrors the Craig Legal website's Collections Supplement form.",
+  "description": "A sample Collections Supplement form. Review and edit it before use.",
   "intro_text": "A few more questions specific to collections matters. Please answer as completely as you can; approximations are fine.",
   "schema": [
    {

@@ -210,7 +210,7 @@ def test_happy_path_creates_intake_and_note(user, mock_ai):
 
 FORWARDED_BODY = (
     "See below, promising case.\n\n"
-    "James Craig\nCraig Legal, LLC\n406-555-0199\n\n"
+    "Alex Morgan\nExample Law, LLC\n406-555-0199\n\n"
     "---------- Forwarded message ---------\n"
     "From: Jane Roe <jane@example.com>\n"
     "Date: Mon, Jul 27, 2026\n"
@@ -223,7 +223,7 @@ def test_note_strips_forwarder_signature(user, mock_ai):
     mock_ai(EXTRACTION)
     post_inbound({"body-plain": FORWARDED_BODY})
     details = Note.objects.get().details
-    assert "Craig Legal, LLC" not in details
+    assert "Example Law, LLC" not in details
     assert "promising case" not in details
     assert "Forwarded message" in details
     assert "From: Jane Roe" in details

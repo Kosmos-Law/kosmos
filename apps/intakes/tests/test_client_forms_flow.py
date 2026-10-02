@@ -20,7 +20,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def firm():
-    return Firm.objects.create(name="Craig Legal, PLLC", email="office@example.com")
+    return Firm.objects.create(name="Example Law, PLLC", email="office@example.com")
 
 
 def post_json(client, url, payload):

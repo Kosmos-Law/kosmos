@@ -13,7 +13,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def firm():
-    return Firm.objects.create(name="Craig Legal, PLLC", email="office@example.com")
+    return Firm.objects.create(name="Example Law, PLLC", email="office@example.com")
 
 
 def add_url(intake):
@@ -102,7 +102,7 @@ class TestSendingAForm:
         assert len(mail.outbox) == 1
         message = mail.outbox[0]
         assert message.to == ["client@example.com"]
-        assert "Craig Legal" in message.subject
+        assert "Example Law" in message.subject
         assert "/form/" in message.body
 
         submission.refresh_from_db()
