@@ -1,23 +1,65 @@
 # Writing documentation
 
 The documentation is Markdown under `docs/`, built into a site by
-[Zensical](https://zensical.org) and published to GitHub Pages when a
-change lands on `dev`.
+[Zensical](https://zensical.org) and published at
+[kosmos.law/docs](https://kosmos.law/docs/).
 
 ## Build it locally
 
 ```bash
-uvx zensical@0.0.67 serve            # live preview at http://localhost:8000
-uvx zensical@0.0.67 build --strict   # what CI runs; fails on a broken link
+scripts/build-docs.sh            # build into site/
+scripts/build-docs.sh --strict   # what CI runs; fails on a broken link
+uvx zensical@0.0.67 serve        # live preview at http://localhost:8000
 ```
 
 Zensical runs as a standalone tool through `uvx`, not as a project
 dependency: it needs a newer `pymdown-extensions` than the application
-pins. The version is set in `.github/workflows/docs.yaml`; use the same one
-locally.
+pins. The version is set in `scripts/build-docs.sh`; use the same one for
+`serve`.
 
 The build writes to `site/`, which is ignored by git. If the Django dev
-server is already on port 8000, pass `--dev-addr localhost:8001`.
+server is already on port 8000, pass `--dev-addr localhost:8001` to
+`serve`.
+
+## How the site is published
+
+The site is static files. The server that hosts kosmos.law keeps a checkout
+of this repository, builds the site there, and serves the result under
+`/docs/` from the same nginx server block as the landing page:
+
+```nginx
+location /docs/ {
+    alias /path/to/kosmos/site/;
+    index index.html;
+    error_page 404 /docs/404.html;
+}
+```
+
+To publish a change, pull and rebuild on that server:
+
+```bash
+git pull
+scripts/build-docs.sh
+```
+
+nginx serves `site/` directly, so the new build is live as soon as it
+finishes. `site_url` in `zensical.toml` is `https://kosmos.law/docs/`; the
+pages link to each other relatively, so the same build also works under
+any other address.
+
+A push to `dev` also publishes a copy to GitHub Pages
+(`.github/workflows/docs.yaml`). That copy is a mirror, not the address to
+link to.
+
+## How it looks
+
+The site wears the landing page's design: the same night palette, the same
+typeface and the same mark. The landing page is its own repository
+([Kosmos-Law/web](https://github.com/Kosmos-Law/web)). Its design tokens are
+copied into `docs/stylesheets/kosmos.css`, which restyles the theme on top
+of them, and `zensical.toml` sets the typeface, the mark and the single
+dark scheme. When the landing page's palette or typeface changes, change
+the tokens at the top of that stylesheet to match.
 
 ## Where a page goes
 

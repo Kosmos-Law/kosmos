@@ -1,15 +1,19 @@
 # Documentation site. Pages live in docs/; see docs/dev/writing-docs.md.
-#   uvx zensical@0.0.67 serve
-#   uvx zensical@0.0.67 build --strict
-# The version is pinned in .github/workflows/docs.yaml.
+#   scripts/build-docs.sh            build into site/
+#   scripts/build-docs.sh --strict   and fail on a broken link
+# The Zensical version is pinned in scripts/build-docs.sh.
 
 [project]
-site_name = "Kosmos"
+site_name = "Kosmos Documentation"
 site_description = "Documentation for Kosmos, practice management for small law firms."
-site_url = "https://kosmos-law.github.io/kosmos/"
+site_url = "https://kosmos.law/docs/"
 repo_url = "https://github.com/Kosmos-Law/kosmos"
-repo_name = "Kosmos-Law/kosmos"
+repo_name = "GitHub"
 edit_uri = "edit/dev/docs/"
+copyright = '<a href="https://kosmos.law/">kosmos.law</a> · <a href="https://github.com/Kosmos-Law/kosmos/blob/dev/LICENSE">License</a> · <a href="mailto:info@kosmos.law">info@kosmos.law</a>'
+# The look follows kosmos.law (the Kosmos-Law/web repository): its palette,
+# typeface and mark. See docs/stylesheets/kosmos.css.
+extra_css = ["stylesheets/kosmos.css"]
 
 nav = [
   { "Home" = "index.md" },
@@ -75,8 +79,8 @@ nav = [
 
 [project.theme]
 language = "en"
-logo = "assets/kosmos-mark.svg"
-favicon = "assets/kosmos-mark.svg"
+logo = "assets/kosmos-mark-inline.svg"
+favicon = "assets/favicon.svg"
 features = [
   "content.action.edit",
   "content.code.copy",
@@ -90,22 +94,20 @@ features = [
   "search.highlight",
 ]
 
-[[project.theme.palette]]
-media = "(prefers-color-scheme)"
-toggle.icon = "lucide/sun-moon"
-toggle.name = "Switch to light mode"
+[project.theme.font]
+text = "Schibsted Grotesk"
 
+# One scheme, like kosmos.law: night only. The colours are set in
+# docs/stylesheets/kosmos.css on top of the theme's dark scheme.
 [[project.theme.palette]]
-media = "(prefers-color-scheme: light)"
-scheme = "default"
-toggle.icon = "lucide/sun"
-toggle.name = "Switch to dark mode"
-
-[[project.theme.palette]]
-media = "(prefers-color-scheme: dark)"
 scheme = "slate"
-toggle.icon = "lucide/moon"
-toggle.name = "Switch to system preference"
+primary = "custom"
+accent = "custom"
+
+[project.extra]
+# The mark in the header leads back to the main site.
+homepage = "https://kosmos.law/"
+generator = false
 
 [project.markdown_extensions]
 admonition = {}

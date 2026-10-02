@@ -7,10 +7,10 @@ created or updated by `python manage.py setup_schedules`, which is
 safe to run again at any time, and they do nothing unless the worker
 is running.
 
-Times are in the server's configured time zone (`TIME_ZONE` in
-`config/settings.py`). The two AI summary jobs share a start time
-that `setup_schedules --auto-summary-time` can change; the default
-is shown.
+Times are in the firm's time zone, the `TIME_ZONE` variable in
+`config/.env`. The two AI summary jobs share a start time that
+`setup_schedules --auto-summary-time` can change; the default is
+shown.
 
 | Job | When | What it does |
 |---|---|---|

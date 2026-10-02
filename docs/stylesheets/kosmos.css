@@ -1,0 +1,392 @@
+/* The documentation wears kosmos.law's clothes.
+
+   The tokens below are the landing page's own (Kosmos-Law/web,
+   src/styles/global.css): Nord, night only, Polar Night ground and Snow
+   Storm text, set in Schibsted Grotesk. If the landing page's palette
+   changes, change these to match; everything else follows from them.
+
+   Sizes: the theme sets the root font size to 20px, where the landing page
+   uses 16px. A length here is the landing page's value in px divided by
+   20 (its 12px card radius is 0.6rem), not its rem value. */
+
+:root {
+  --color-night: #2e3440; /* nord0 */
+  --color-panel: #3b4252; /* nord1 */
+  --color-rule: #434c5e; /* nord2 */
+  --color-snow: #eceff4; /* nord6 */
+  --color-text: #d8dee9; /* nord4 */
+  --color-dim: #aab3c5; /* nord4 ↔ nord3 brightened */
+  --color-frost: #88c0d0; /* nord8 */
+  --color-amber: #ebcb8b; /* nord13 */
+  --color-mist: #98c2c5; /* amber ↔ frost */
+
+  /* The landing page's cards: a translucent step up from the night. */
+  --panel-fill: rgb(59 66 82 / 0.55);
+}
+
+/* --- The theme's own variables, repointed ------------------------------ */
+
+[data-md-color-scheme="slate"] {
+  color-scheme: dark;
+
+  --md-default-bg-color: var(--color-night);
+  --md-default-bg-color--light: rgb(46 52 64 / 0.54);
+  --md-default-bg-color--lighter: rgb(46 52 64 / 0.26);
+  --md-default-bg-color--lightest: rgb(46 52 64 / 0.07);
+
+  /* Running text is nord4. The landing page's dimmer body colour is for a
+     few lines of copy; pages of prose need the extra contrast. */
+  --md-default-fg-color: var(--color-text);
+  --md-default-fg-color--light: var(--color-dim);
+  --md-default-fg-color--lighter: rgb(170 179 197 / 0.5);
+  --md-default-fg-color--lightest: var(--color-rule);
+
+  --md-primary-fg-color: var(--color-night);
+  --md-primary-fg-color--light: var(--color-panel);
+  --md-primary-fg-color--dark: var(--color-night);
+  --md-primary-bg-color: var(--color-text);
+  --md-primary-bg-color--light: var(--color-dim);
+
+  --md-accent-fg-color: var(--color-snow);
+  --md-accent-fg-color--transparent: rgb(236 239 244 / 0.1);
+  --md-typeset-a-color: var(--color-frost);
+
+  --md-code-fg-color: var(--color-text);
+  --md-code-bg-color: var(--color-panel);
+  --md-code-bg-color--light: rgb(59 66 82 / 0.9);
+  --md-code-bg-color--lighter: rgb(59 66 82 / 0.54);
+
+  /* Syntax colours from Nord's Frost and Aurora. */
+  --md-code-hl-color: var(--color-frost);
+  --md-code-hl-color--light: rgb(136 192 208 / 0.15);
+  --md-code-hl-number-color: #b48ead; /* nord15 */
+  --md-code-hl-special-color: var(--color-amber);
+  --md-code-hl-function-color: var(--color-frost);
+  --md-code-hl-constant-color: #b48ead;
+  --md-code-hl-keyword-color: #81a1c1; /* nord9 */
+  --md-code-hl-string-color: #a3be8c; /* nord14 */
+  --md-code-hl-name-color: var(--color-text);
+  --md-code-hl-operator-color: var(--color-dim);
+  --md-code-hl-punctuation-color: var(--color-dim);
+  --md-code-hl-comment-color: #8792a8;
+  --md-code-hl-generic-color: var(--color-dim);
+  --md-code-hl-variable-color: var(--color-mist);
+
+  --md-typeset-mark-color: rgb(235 203 139 / 0.3);
+  --md-typeset-kbd-color: var(--color-panel);
+  --md-typeset-kbd-accent-color: var(--color-rule);
+  --md-typeset-kbd-border-color: var(--color-night);
+  --md-typeset-table-color: var(--color-rule);
+  --md-typeset-table-color--light: rgb(59 66 82 / 0.4);
+
+  --md-admonition-fg-color: var(--color-text);
+  --md-admonition-bg-color: var(--panel-fill);
+
+  --md-footer-fg-color: var(--color-text);
+  --md-footer-fg-color--light: var(--color-dim);
+  --md-footer-fg-color--lighter: var(--color-dim);
+  --md-footer-bg-color: var(--color-night);
+  --md-footer-bg-color--dark: var(--color-night);
+
+  --md-shadow-z1: none;
+  --md-shadow-z2: 0 0.2rem 0.8rem rgb(0 0 0 / 0.25);
+  --md-shadow-z3: 0 0.4rem 1.6rem rgb(0 0 0 / 0.3);
+
+  /* The theme's newer surface tokens, as RGB triplets. */
+  --color-foreground: 236 239 244;
+  --color-background: 46 52 64;
+  --color-background-subtle: 59 66 82;
+  --color-backdrop: 36 41 51;
+}
+
+/* --- Type -------------------------------------------------------------- */
+
+/* Hierarchy comes from size, colour and space. 500 is the heaviest weight
+   the landing page uses, so it is the heaviest here. */
+[data-md-color-scheme="slate"] .md-typeset h1,
+[data-md-color-scheme="slate"] .md-typeset h2,
+[data-md-color-scheme="slate"] .md-typeset h3,
+[data-md-color-scheme="slate"] .md-typeset h4,
+[data-md-color-scheme="slate"] .md-typeset h5,
+[data-md-color-scheme="slate"] .md-typeset h6,
+[data-md-color-scheme="slate"] .md-header__title {
+  font-weight: 500;
+  color: var(--color-snow);
+}
+
+.md-typeset strong,
+.md-typeset b,
+.md-typeset th,
+.md-nav__title,
+.md-nav__item--section > .md-nav__link,
+.md-nav__link--active,
+.md-tabs__item--active .md-tabs__link {
+  font-weight: 500;
+}
+
+.md-typeset strong,
+.md-typeset b {
+  color: var(--color-snow);
+}
+
+/* Links: frost, snow on hover, no underline, as on the landing page. */
+.md-typeset a {
+  color: var(--color-frost);
+  text-decoration: none;
+}
+
+.md-typeset a:hover,
+.md-typeset a:focus {
+  color: var(--color-snow);
+}
+
+.md-typeset a:focus-visible,
+.md-nav__link:focus-visible,
+.md-tabs__link:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* --- Header and tabs: the night itself, ruled off below ---------------- */
+
+.md-header,
+.md-tabs {
+  background: var(--color-night);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.md-tabs {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.md-tabs__link {
+  color: var(--color-dim);
+  opacity: 1;
+}
+
+.md-tabs__link:hover,
+.md-tabs__item--active .md-tabs__link {
+  color: var(--color-snow);
+}
+
+/* The kit's inline mark: the kappa with its sparkle. It is wider than it
+   is tall, so let it keep its shape. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  width: auto;
+  height: 1.4rem;
+}
+
+/* The search field and the repository link, as the landing page's GitHub
+   button: a ruled, translucent panel. */
+.md-search__button,
+.md-search__form {
+  border: 1px solid var(--color-rule);
+  border-radius: 0.4rem;
+  background: var(--panel-fill);
+  color: var(--color-text);
+}
+
+.md-search__button:hover {
+  border-color: var(--color-dim);
+  color: var(--color-snow);
+}
+
+/* --- Navigation -------------------------------------------------------- */
+
+.md-nav__link {
+  color: var(--color-dim);
+}
+
+.md-nav__link:hover,
+.md-nav__link--active,
+.md-nav__item--section > .md-nav__link {
+  color: var(--color-snow);
+}
+
+.md-nav__title {
+  color: var(--color-snow);
+}
+
+/* --- Panels: code, tables, callouts and the home page's cards ---------- */
+
+.md-typeset pre > code,
+.md-typeset .highlight pre {
+  border-radius: 0.6rem;
+}
+
+.md-typeset code {
+  border-radius: 0.2rem;
+}
+
+.md-typeset table:not([class]) {
+  border: 1px solid var(--color-rule);
+  border-radius: 0.6rem;
+  background: var(--panel-fill);
+}
+
+.md-typeset table:not([class]) th {
+  color: var(--color-snow);
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border: 1px solid var(--color-rule);
+  border-radius: 0.6rem;
+  background: var(--panel-fill);
+  box-shadow: none;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  font-weight: 500;
+  color: var(--color-snow);
+}
+
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border: 1px solid var(--color-rule);
+  border-radius: 0.6rem;
+  background: var(--panel-fill);
+  box-shadow: none;
+}
+
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:hover {
+  border-color: var(--color-dim);
+  box-shadow: none;
+}
+
+.md-typeset hr {
+  border-color: var(--color-rule);
+}
+
+/* --- Footer: ruled off above, quiet ------------------------------------ */
+
+.md-footer {
+  border-top: 1px solid var(--color-rule);
+}
+
+.md-footer-meta {
+  background: var(--color-night);
+}
+
+.md-copyright {
+  font-size: 0.75rem;
+}
+
+.md-copyright,
+.md-copyright a {
+  color: var(--color-dim);
+}
+
+.md-copyright a:hover {
+  color: var(--color-snow);
+}
+
+/* --- Callouts: full-size text, tinted from the palette ------------------ */
+
+.md-typeset .admonition,
+.md-typeset details {
+  font-size: 1em;
+}
+
+.md-typeset .admonition.warning,
+.md-typeset .admonition.caution,
+.md-typeset .admonition.attention {
+  border-color: rgb(235 203 139 / 0.45);
+  background: rgb(235 203 139 / 0.07);
+}
+
+.md-typeset .warning > .admonition-title::before,
+.md-typeset .caution > .admonition-title::before,
+.md-typeset .attention > .admonition-title::before {
+  background-color: var(--color-amber);
+}
+
+.md-typeset .admonition.note,
+.md-typeset .admonition.info,
+.md-typeset .admonition.tip {
+  border-color: rgb(136 192 208 / 0.4);
+  background: rgb(136 192 208 / 0.06);
+}
+
+.md-typeset .note > .admonition-title::before,
+.md-typeset .info > .admonition-title::before,
+.md-typeset .tip > .admonition-title::before {
+  background-color: var(--color-frost);
+}
+
+/* --- The repository link, as the landing page's GitHub button ----------- */
+
+.md-header__source {
+  width: auto;
+  max-width: none;
+}
+
+.md-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.4rem;
+  background: var(--panel-fill);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-text);
+  opacity: 1;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.md-source:hover {
+  border-color: var(--color-dim);
+  color: var(--color-snow);
+  opacity: 1;
+}
+
+.md-source__icon {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+}
+
+.md-source__icon svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0;
+}
+
+.md-source__repository {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Star and fork counts are noise beside a button. */
+.md-source__facts {
+  display: none;
+}
+
+/* --- Details ------------------------------------------------------------ */
+
+/* The site name in the header, at the weight of everything else. */
+.md-header__topic:first-child {
+  font-weight: 500;
+}
+
+/* Tables at the size of the text around them, and a variable or command
+   name in the first column kept on one line. */
+.md-typeset table:not([class]) {
+  font-size: 1em;
+}
+
+.md-typeset table:not([class]) td:first-child code {
+  white-space: nowrap;
+}
