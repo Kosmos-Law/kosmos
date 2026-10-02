@@ -422,22 +422,6 @@ def bulk_facts_label_action(request, matter_id):
 
 
 @login_required
-def facts_print(request, matter_id):
-    """Print view for facts."""
-    matter, matters = get_matter_from_url(request, matter_id)
-
-    facts = []
-    if matter:
-        facts = Fact.objects.filter(matter=matter).order_by("date", "time")
-
-    context = {
-        "matter": matter,
-        "facts": facts,
-    }
-    return render(request, "case/facts/print.html", context)
-
-
-@login_required
 def facts_pdf(request, matter_id):
     """Generate PDF for facts."""
     import os
@@ -457,29 +441,6 @@ def facts_pdf(request, matter_id):
     os.unlink(file.name)
 
     return response
-
-
-@login_required
-def facts_edit_description(request, fact_id):
-    """Inline edit fact description."""
-    fact = get_object_or_404(Fact, pk=fact_id)
-    matter = fact.matter
-    context = {"fact": fact, "matter": matter}
-    return render(request, "case/facts/edit-description.html", context)
-
-
-@login_required
-def facts_update_description(request, fact_id):
-    """Update fact description inline."""
-    fact = get_object_or_404(Fact, pk=fact_id)
-    fact.description = request.POST.get("description")
-    fact.save()
-
-    context = {
-        "matter": fact.matter,
-        "fact": fact,
-    } | _fact_selection_context(request, fact)
-    return render(request, "case/facts/fact-row.html", context)
 
 
 @login_required
