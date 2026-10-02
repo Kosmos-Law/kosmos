@@ -67,6 +67,60 @@ test("markup in note text reaches the editor as text, not as tags", () => {
   );
 });
 
+test("a bare <br> is a line break; any other tag is still text", () => {
+  for (const tag of ["<br>", "<br/>", "<br />", "<BR>", "<Br/>"]) {
+    assert.equal(markdownToHtml(`one${tag}two`), "<p>one<br>two</p>");
+  }
+  // Anything more than the bare tag stays what it is: text
+  for (const md of [
+    'one<br class="x">two',
+    "one<br onclick=alert(1)>two",
+    "one<br x/>two",
+    "one</br>two",
+    "one<brr>two",
+    "one< br>two",
+  ]) {
+    assert.equal(visibleText(markdownToHtml(md)), md);
+    assert.equal(roundTrip(md), md);
+  }
+  // Inside code it is code
+  assert.equal(
+    markdownToHtml("write `<br>` for a break"),
+    "<p>write <code>&lt;br&gt;</code> for a break</p>",
+  );
+  assert.equal(roundTrip("write `<br>` for a break"), "write `<br>` for a break");
+});
+
+test("a line break inside a table cell is kept as <br>", () => {
+  const table = [
+    "| Witness | Notes |",
+    "| --- | --- |",
+    "| Smith | Deposed 3/1<br>Recalled 4/2<br>See x<y |",
+    "| Jones | **bold**<br>[[doc:1|Depo_Vol1.pdf]] |",
+  ].join("\n");
+  assert.ok(
+    markdownToHtml(table).includes(
+      "<td><p>Deposed 3/1<br>Recalled 4/2<br>See x&lt;y</p></td>",
+    ),
+  );
+  assert.equal(roundTrip(table), table);
+  // The other spellings come back as the plain one
+  assert.equal(roundTrip(table.replaceAll("<br>", "<BR />")), table);
+  // A cell holding nothing but a break is an empty cell
+  assert.equal(
+    roundTrip("| a | b |\n| --- | --- |\n| <br> | x |"),
+    "| a | b |\n| --- | --- |\n|  | x |",
+  );
+});
+
+test("outside a table a <br> becomes a new paragraph on save, as before", () => {
+  assert.equal(markdownToHtml("one<br>two"), "<p>one<br>two</p>");
+  // The break is written as a newline, which the next load reads as the
+  // start of a new paragraph
+  assert.equal(roundTrip("one<br>two"), "one\ntwo");
+  assert.equal(roundTrip(roundTrip("one<br>two")), "one\n\ntwo");
+});
+
 test("an ampersand and a typed entity keep their spelling", () => {
   for (const md of ["AT&T v. Smith", "Write &amp; to show an ampersand", "R&D &lt; cost"]) {
     assert.equal(visibleText(markdownToHtml(md)), md);

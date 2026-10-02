@@ -31,6 +31,10 @@ const UNDERSCORE_ITALIC = underscoreRun("_");
 // Pieces that must come through exactly (code spans, reference chips, link
 // addresses) are lifted out first and put back last, so neither the
 // escaping nor the emphasis rules can touch them.
+//
+// One tag is let through: a bare <br> (any case, with or without the
+// slash) is a line break, which is how AI-written tables break a line
+// inside a cell. A <br> carrying anything else (an attribute) stays text.
 function formatInline(text) {
   // NUL marks the held pieces below; stored text never contains one
   // (the database refuses it), so drop any that arrive by paste
@@ -80,7 +84,8 @@ function formatInline(text) {
     .replace(/o==(.+?)==/g, '<mark data-color="mark-orange">$1</mark>')
     .replace(/c==(.+?)==/g, '<mark data-color="mark-citation">$1</mark>')
     .replace(/a==(.+?)==/g, '<mark data-color="mark-gray">$1</mark>')
-    .replace(/==(.+?)==/g, "<mark>$1</mark>");
+    .replace(/==(.+?)==/g, "<mark>$1</mark>")
+    .replace(/&lt;br\s*\/?&gt;/gi, "<br>");
 
   // Last held first: a held piece can contain an earlier one (a code span
   // inside a chip's label), never a later one. The function form keeps a
@@ -437,6 +442,11 @@ export function htmlToMarkdown(html) {
   const tempDiv = document.createElement("div");
   tempDiv.innerHTML = html;
 
+  // A line break is a newline, except inside a table cell: a pipe row is
+  // one line, so there the break is written as <br> (which the loader
+  // turns back into a break) instead of being flattened to a space.
+  let lineBreak = "\n";
+
   function processNode(node, listDepth, listType, listIndex) {
     if (node.nodeType === Node.TEXT_NODE) return node.textContent;
     if (node.nodeType !== Node.ELEMENT_NODE) return "";
@@ -547,15 +557,19 @@ export function htmlToMarkdown(html) {
             .join("")
             .replace(/\s*\n\s*/g, " ")
             .trim()
+            // A cell that is only breaks is an empty cell
+            .replace(/^(?:\s*<br>\s*)+$/, "")
             // Escape literal pipes, but not the one inside a reference
             // token ([[doc:1|label]]) — that pipe is syntax the loader's
             // ref regex must still match.
             .replace(/\[\[(?:doc|hl):\d+\|[^\]]+\]\]|\|/g, (m) =>
               m === "|" ? "\\|" : m,
             );
+        lineBreak = "<br>";
         const grid = Array.from(node.rows).map((tr) =>
           Array.from(tr.cells).map(cellText),
         );
+        lineBreak = "\n";
         if (!grid.length) return "";
         const width = Math.max(...grid.map((r) => r.length));
         const line = (cells) => {
@@ -574,7 +588,7 @@ export function htmlToMarkdown(html) {
         return [line(head), separator, ...body.map(line)].join("\n") + "\n\n";
       }
       case "br":
-        return "\n";
+        return lineBreak;
       case "span":
         if (
           node.classList.contains("note-ref") ||
