@@ -33,6 +33,12 @@
          hx-target=".detail-body"
          hx-push-url="{% url 'invoicing:invoice-pdf-preview-index' invoice.id %}">Review</a>
     </li>
+    <li {% if subapp == "history" %}class="active"{% endif %}>
+      <a href="{% url 'invoicing:invoice-history-index' invoice.id %}"
+         hx-get="{% url 'invoicing:invoice-tab-content' invoice.id 'history' %}"
+         hx-target=".detail-body"
+         hx-push-url="{% url 'invoicing:invoice-history-index' invoice.id %}">History</a>
+    </li>
     {% if invoice|ledger_visible_to:request.user %}
       <li {% if subapp == "ledger" %}class="active"{% endif %}>
         <a href="{% url 'invoicing:invoice-ledger-index' invoice.id %}"
@@ -41,11 +47,5 @@
            hx-push-url="{% url 'invoicing:invoice-ledger-index' invoice.id %}">Ledger</a>
       </li>
     {% endif %}
-    <li {% if subapp == "history" %}class="active"{% endif %}>
-      <a href="{% url 'invoicing:invoice-history-index' invoice.id %}"
-         hx-get="{% url 'invoicing:invoice-tab-content' invoice.id 'history' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'invoicing:invoice-history-index' invoice.id %}">History</a>
-    </li>
   </ul>
 </nav>
