@@ -388,20 +388,18 @@ def _format_ledger(matter):
     totals.append(f"Payments received: {_money(value['invoices']['payment_sum'])}")
     totals.append(f"Credits: {_money(data['total_credits'])}")
     totals.append(
-        "Unbilled work in progress: "
-        f"{_money(value['unbilled']['net_fees_and_expenses'])}"
+        "Work in progress (not yet billed; includes invoices not yet sent): "
+        f"{_money(value['work_in_progress'])}"
     )
     sections.append("\n".join(totals))
 
-    unsent = Invoice.objects.filter(
-        matter=matter, status__in=["DRAFT", "APPROVED"]
-    ).order_by("date_issued")
-    if unsent:
-        lines = ["Invoices not yet sent:"]
-        for invoice in unsent:
+    if data["unsent_invoices"]:
+        lines = ["Invoices not yet sent (part of work in progress, not owed yet):"]
+        for invoice in data["unsent_invoices"]:
             lines.append(
-                f"- [inv:{invoice.id}] Invoice {invoice.id} ({invoice.status.title()}, "
-                f"dated {invoice.date_issued}) {_money(invoice.value['final_total'])}"
+                f"- [inv:{invoice['id']}] Invoice {invoice['id']} "
+                f"({invoice['status'].title()}, dated {invoice['date']}) "
+                f"{_money(invoice['amount'])}"
             )
         sections.append("\n".join(lines))
 

@@ -21,6 +21,10 @@ INVOICE_STATUS = (
     ("VOID", "Void"),
 )
 
+# Assembled but not yet issued to the client. Work on these invoices is still
+# work in progress, not a receivable: it stays out of the ledger and balance due.
+UNSENT_STATUSES = ("DRAFT", "APPROVED")
+
 
 class Invoice(AuditMixin, models.Model):
     # Opaque public identifier for tokenized payment links (never expose the

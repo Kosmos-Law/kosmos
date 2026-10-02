@@ -64,6 +64,12 @@
   width: 10rem;
 }
 
+/* A breakout of the row above it (work in progress already on a draft
+   invoice): part of that figure, not an addition to it. */
+.ledger-totals tr.sub th {
+  padding-left: 2rem;
+}
+
 .ledger-totals tr:last-child th,
 .ledger-totals tr:last-child td {
   border-bottom: none;

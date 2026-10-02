@@ -5,11 +5,11 @@
     <table class="ledger-totals">
       <tr>
         <th>Total Invoices</th>
-        <td class="numeric">${{ matter.value.invoices.billed|floatformat:2|intcomma }}</td>
+        <td class="numeric">${{ total_invoices|floatformat:2|intcomma }}</td>
       </tr>
       <tr>
         <th>Total Payments</th>
-        <td class="numeric">${{ matter.value.invoices.payment_sum|floatformat:2|intcomma }}</td>
+        <td class="numeric">${{ total_payments|floatformat:2|intcomma }}</td>
       </tr>
       <tr>
         <th>Total Credits</th>
@@ -33,8 +33,23 @@
     <table class="ledger-totals">
       <tr>
         <th>Work in Progress</th>
-        <td class="numeric">${{ matter.value.unbilled.net_fees_and_expenses|floatformat:2|intcomma }}</td>
+        <td class="numeric">${{ work_in_progress|floatformat:2|intcomma }}</td>
       </tr>
+      {% comment %}
+        Invoices not yet sent: their work is still in progress, so each is
+        broken out of the figure above rather than added to it.
+      {% endcomment %}
+      {% for invoice in unsent_invoices %}
+        <tr class="sub">
+          <th>
+            <div class="ledger-desc">
+              <a href="{% url 'invoicing:invoices-detail-index' invoice.id %}">On Invoice {{ invoice.id }}</a>
+              <span class="app-badge badge-gray">{{ invoice.status|title }}</span>
+            </div>
+          </th>
+          <td class="numeric">${{ invoice.amount|floatformat:2|intcomma }}</td>
+        </tr>
+      {% endfor %}
       <tr class="total">
         <th>Total Cost to Date</th>
         <td class="numeric">${{ total_cost|floatformat:2|intcomma }}</td>

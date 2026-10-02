@@ -190,7 +190,7 @@ class Matter(AuditMixin, models.Model):
         from apps.activity.expenses.models import ExpenseEntry
         from apps.activity.flat_fees.models import FlatFeeEntry
         from apps.activity.time.models import TimeEntry
-        from apps.invoicing.invoices.models import Invoice
+        from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
         from apps.invoicing.payments.models import Payment
 
         # Helper to build fee/expense aggregation dict
@@ -272,7 +272,8 @@ class Matter(AuditMixin, models.Model):
             "net_fees_and_expenses": net_fees + net_expenses + net_flat_fees,
         }
 
-        # Unbilled fees and expenses (entered=False, no invoice)
+        # Unbilled fees and expenses (entered=False, no invoice): the invoicing
+        # queue. Not the whole of work in progress; see drafted below.
         unbilled_gross_fees, unbilled_comp_fees = aggregate_fees(
             TimeEntry.objects.filter(matter=self, entered=False, invoice__isnull=True)
         )
@@ -307,8 +308,58 @@ class Matter(AuditMixin, models.Model):
             ),
         }
 
-        # Billed = total - unbilled
-        billed = {key: total[key] - unbilled[key] for key in total.keys()}
+        # Drafted = entries on invoices not yet issued (DRAFT/APPROVED). Off the
+        # invoicing queue, but still work in progress until the invoice is sent.
+        drafted_gross_fees, drafted_comp_fees = aggregate_fees(
+            TimeEntry.objects.filter(matter=self, invoice__status__in=UNSENT_STATUSES)
+        )
+        drafted_net_fees = drafted_gross_fees - drafted_comp_fees
+
+        drafted_gross_expenses, drafted_comp_expenses = aggregate_expenses(
+            ExpenseEntry.objects.filter(
+                matter=self, invoice__status__in=UNSENT_STATUSES
+            )
+        )
+        drafted_net_expenses = drafted_gross_expenses - drafted_comp_expenses
+
+        drafted_gross_flat_fees, drafted_comp_flat_fees = aggregate_flat_fees(
+            FlatFeeEntry.objects.filter(
+                matter=self, invoice__status__in=UNSENT_STATUSES
+            )
+        )
+        drafted_net_flat_fees = drafted_gross_flat_fees - drafted_comp_flat_fees
+
+        drafted = {
+            "gross_fees": drafted_gross_fees,
+            "comp_fees": drafted_comp_fees,
+            "net_fees": drafted_net_fees,
+            "gross_expenses": drafted_gross_expenses,
+            "comp_expenses": drafted_comp_expenses,
+            "net_expenses": drafted_net_expenses,
+            "gross_flat_fees": drafted_gross_flat_fees,
+            "comp_flat_fees": drafted_comp_flat_fees,
+            "net_flat_fees": drafted_net_flat_fees,
+            "net_fees_and_expenses": (
+                drafted_net_fees + drafted_net_expenses + drafted_net_flat_fees
+            ),
+        }
+
+        # Billed = total - unbilled - drafted (only issued invoices are billed)
+        billed = {key: total[key] - unbilled[key] - drafted[key] for key in total}
+
+        # Work in progress = everything not yet billed: the invoicing queue plus
+        # the drafts, net of the discounts already set on those drafts.
+        drafted_discount = (
+            Invoice.objects.filter(matter=self, status__in=UNSENT_STATUSES).aggregate(
+                total_discount=Sum("discount")
+            )["total_discount"]
+            or 0
+        )
+        work_in_progress = (
+            unbilled["net_fees_and_expenses"]
+            + drafted["net_fees_and_expenses"]
+            - drafted_discount
+        )
 
         # Invoice totals - aggregate from time/expense/flat-fee entries on all invoices except DRAFT/APPROVED
         invoice_fees, invoice_comp_fees = aggregate_fees(
@@ -356,6 +407,8 @@ class Matter(AuditMixin, models.Model):
         return {
             "total": total,
             "unbilled": unbilled,
+            "drafted": drafted,
+            "work_in_progress": work_in_progress,
             "billed": billed,
             "invoices": invoices,
         }

@@ -6,7 +6,8 @@ trust available is inherently **client-level**:
     trust_available(client) = PENDING trust balance
                             − currently owed across the client's non-deferred
                               invoices
-                            − unbilled net fees/expenses on the client's
+                            − work in progress (net fees/expenses not yet
+                              billed, drafts included) on the client's
                               non-deferred-fee matters
 
 **Pending, not confirmed:** firms customarily work against provisional deposits
@@ -31,6 +32,7 @@ from django.db.models import (
     DecimalField,
     F,
     OuterRef,
+    Q,
     Subquery,
     Sum,
     Value,
@@ -162,45 +164,62 @@ def _owed_by_client(client_ids):
 
 
 def _unbilled_by_client(client_ids):
-    """``{client_id: unbilled net fees/expenses}`` — sum of each non-deferred-fee
-    matter's unbilled net work (deferred-fee matters accrue but aren't
-    collectible, so they must not drag trust available down)."""
+    """``{client_id: work in progress}`` — sum of each non-deferred-fee matter's
+    net work not yet billed (deferred-fee matters accrue but aren't collectible,
+    so they must not drag trust available down).
+
+    Work on a DRAFT/APPROVED invoice counts, net of that invoice's discount: it
+    has left the invoicing queue but isn't owed until the invoice is sent, and
+    would otherwise drop out of trust available while the draft is open."""
     from apps.activity.expenses.models import ExpenseEntry
     from apps.activity.flat_fees.models import FlatFeeEntry
     from apps.activity.time.models import TimeEntry
+    from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
     from apps.matters.models import Matter
 
     fee = F("hours") * F("rate")
+    not_billed = Q(entered=False, invoice__isnull=True) | Q(
+        invoice__status__in=UNSENT_STATUSES
+    )
     matters = (
         Matter.objects.filter(client_id__in=client_ids, deferred_fees=False)
         .annotate(
             net_fees=_coalesced_sum(
-                TimeEntry.objects.filter(
-                    matter=OuterRef("pk"), entered=False, invoice__isnull=True
-                ).exclude(comp=True),
+                TimeEntry.objects.filter(not_billed, matter=OuterRef("pk")).exclude(
+                    comp=True
+                ),
                 "matter",
                 fee,
             ),
             net_exp=_coalesced_sum(
-                ExpenseEntry.objects.filter(
-                    matter=OuterRef("pk"), entered=False, invoice__isnull=True
-                ).exclude(comp=True),
+                ExpenseEntry.objects.filter(not_billed, matter=OuterRef("pk")).exclude(
+                    comp=True
+                ),
                 "matter",
                 F("amount"),
             ),
             net_flat=_coalesced_sum(
-                FlatFeeEntry.objects.filter(
-                    matter=OuterRef("pk"), entered=False, invoice__isnull=True
-                ).exclude(comp=True),
+                FlatFeeEntry.objects.filter(not_billed, matter=OuterRef("pk")).exclude(
+                    comp=True
+                ),
                 "matter",
                 F("amount"),
             ),
+            draft_discount=_coalesced_sum(
+                Invoice.objects.filter(
+                    matter=OuterRef("pk"), status__in=UNSENT_STATUSES
+                ),
+                "matter",
+                F("discount"),
+            ),
         )
-        .values("client_id", "net_fees", "net_exp", "net_flat")
+        .values("client_id", "net_fees", "net_exp", "net_flat", "draft_discount")
     )
     unbilled = defaultdict(Decimal)
     for m in matters:
-        unbilled[m["client_id"]] += m["net_fees"] + m["net_exp"] + m["net_flat"]
+        unbilled[m["client_id"]] += (
+            m["net_fees"] + m["net_exp"] + m["net_flat"] - m["draft_discount"]
+        )
     return unbilled
 
 

@@ -3,6 +3,7 @@ from datetime import datetime
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -22,6 +23,7 @@ from apps.invoicing.applications.models import PaymentApplication
 from apps.invoicing.invoices.functions import generate_ledes_98b
 from apps.invoicing.invoices.get_invoice_data import get_invoice_data
 from apps.invoicing.payments.forms import PaymentForm
+from apps.invoicing.templatetags.invoicing_extras import ledger_visible_to
 from apps.management.pagination import CustomPaginator
 from apps.management.selection import (
     all_visible_selected,
@@ -32,6 +34,7 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
+from apps.matters.ledger.get_ledger_data import get_ledger_context
 from apps.matters.models import Matter
 from apps.trust.models import Transaction
 from utils.toasts import toast_error, toast_success
@@ -128,6 +131,15 @@ def _get_invoice_time_context(request, invoice):
     }
 
 
+def _get_invoice_ledger_context(request, invoice):
+    """Build context for the invoice Ledger tab: the invoice's matter ledger,
+    exactly as the matter's own Ledger tab shows it. Gated like that tab (the
+    whole invoicing app already requires the financial permission)."""
+    if not ledger_visible_to(invoice, request.user):
+        raise PermissionDenied
+    return get_ledger_context(invoice.matter)
+
+
 @login_required
 def invoices_detail_index(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
@@ -197,6 +209,8 @@ def invoice_tab_content(request, pk, tab):
         context["file_url"] = reverse_lazy(
             "invoicing:invoices-pdf", kwargs={"pk": invoice.pk}
         )
+    elif tab == "ledger":
+        context.update(_get_invoice_ledger_context(request, invoice))
 
     return render(request, "invoicing/invoices/detail/detail-tab-content.html", context)
 
@@ -225,6 +239,21 @@ def invoice_history_index(request, pk):
         "invoice": invoice,
         "view": "detail",
     }
+
+    return render(request, "invoicing/invoices/detail/detail-index.html", context)
+
+
+@login_required
+def invoice_ledger_index(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+
+    context = {
+        "app": "invoicing",
+        "subapp": "ledger",
+        "invoice": invoice,
+        "view": "detail",
+    }
+    context.update(_get_invoice_ledger_context(request, invoice))
 
     return render(request, "invoicing/invoices/detail/detail-index.html", context)
 

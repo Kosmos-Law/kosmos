@@ -436,7 +436,7 @@ class TestMoney:
         assert "Credit: Payment by Check $300.00 | balance $200.00" in text
         assert "Balance due: $200.00" in text
         assert "Payments received: $300.00" in text
-        assert "Invoices not yet sent:" in text
+        assert "Invoices not yet sent" in text
 
     def test_trust(self, api, matter):
         Transaction.objects.create(
