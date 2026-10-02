@@ -7,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from apps.contacts.models import Contact
 from apps.invoicing.pay.balance import matter_balance_cents
@@ -381,6 +382,7 @@ def requests_client_email(request):
 
 
 @login_required
+@require_POST
 def requests_cancel(request, pk):
     payment_request = get_object_or_404(PaymentRequest, pk=pk)
     if payment_request.status == "SENT":

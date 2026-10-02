@@ -96,13 +96,29 @@ def test_invoices_edit_status(client, invoice):
     response = client.post(
         reverse(
             "invoicing:invoices-edit-status",
-            kwargs={"pk": invoice.pk, "status": "PAID", "view": "list"},
+            kwargs={"pk": invoice.pk, "status": "SENT", "view": "list"},
         )
     )
     assert response.status_code == 204
 
     invoice.refresh_from_db()
-    assert invoice.status == "PAID"
+    assert invoice.status == "SENT"
+
+
+@pytest.mark.parametrize("status", ["PAID", "VOID", "anything"])
+def test_invoices_edit_status_takes_only_the_menu_statuses(client, invoice, status):
+    """Paid comes from applying payments and Void from its own action, which
+    also releases the invoice's entries; neither is set by address."""
+    before = invoice.status
+    url = reverse(
+        "invoicing:invoices-edit-status",
+        kwargs={"pk": invoice.pk, "status": status, "view": "list"},
+    )
+
+    assert client.post(url).status_code == 400
+    assert client.get(url).status_code == 405
+    invoice.refresh_from_db()
+    assert invoice.status == before
 
 
 def _edit_status(client, invoice, status):

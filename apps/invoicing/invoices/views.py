@@ -49,7 +49,7 @@ from .functions.send_invoice import (
     send_invoice,
     send_reminder,
 )
-from .models import Invoice
+from .models import UNSENT_STATUSES, Invoice
 
 
 @login_required
@@ -638,7 +638,10 @@ def invoices_add(request):
 def invoices_edit(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
 
-    if invoice.status == "VOID":
+    # Only an invoice that has not gone out can be edited: its dates decide
+    # which entries it holds, and saving regenerates its PDF. The page offers
+    # Edit for Draft and Approved only; this holds the request to the same.
+    if invoice.status not in UNSENT_STATUSES:
         return HttpResponse(status=403)
 
     if request.method == "POST":
@@ -662,6 +665,7 @@ def invoices_edit(request, pk):
 
 
 @login_required
+@require_POST
 def invoices_delete(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
 
@@ -683,6 +687,7 @@ def invoices_void_confirm(request, pk):
 
 
 @login_required
+@require_POST
 def invoices_void(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
 
@@ -830,11 +835,18 @@ def order_by_invoices(request, order):
     return HttpResponse(status=204, headers={"HX-Trigger": "invoicesChanged"})
 
 
+# The statuses the status menu offers. Paid is set by applying payments
+# and Void by its own action (which also releases the invoice's entries),
+# so neither can be set from here.
+SETTABLE_STATUSES = ("DRAFT", "APPROVED", "SENT", "DEFERRED", "UNCOLLECTIBLE")
+
+
 @login_required
+@require_POST
 def invoices_edit_status(request, pk, status, view):
     invoice = get_object_or_404(Invoice, pk=pk)
 
-    if invoice.status == "VOID":
+    if invoice.status == "VOID" or status not in SETTABLE_STATUSES:
         return HttpResponse(status=400)
 
     # A sent invoice — one actually emailed and logged in its transmission

@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods, require_POST
 
 import apps.trust.trust as trust
 from apps.contacts.models import Contact
@@ -301,25 +302,7 @@ def edit(request, id):
 
 
 @login_required
-def toggle_entered(request, id):
-    trust_view = request.session.get("trust_view", "summary")
-    transaction = get_object_or_404(Transaction, pk=id)
-
-    if transaction.entered == 1:
-        transaction.entered = 0
-    else:
-        transaction.entered = 1
-    transaction.save()
-
-    if trust_view == "history":
-        return HttpResponse(status=204, headers={"HX-Trigger": "trustHistoryChanged"})
-    elif trust_view == "client":
-        return HttpResponse(status=204, headers={"HX-Trigger": "trustClientChanged"})
-    else:
-        return HttpResponse(status=204, headers={"HX-Trigger": "trustChanged"})
-
-
-@login_required
+@require_POST
 def toggle_confirmed(request, id):
     trust_view = request.session.get("trust_view", "summary")
     transaction = get_object_or_404(Transaction, pk=id)
@@ -339,10 +322,11 @@ def toggle_confirmed(request, id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def delete(request, id):
     trust_view = request.session.get("trust_view", "summary")
 
-    Transaction.objects.get(pk=id).delete()
+    get_object_or_404(Transaction, pk=id).delete()
 
     if trust_view == "history":
         return HttpResponse(status=204, headers={"HX-Trigger": "trustHistoryChanged"})

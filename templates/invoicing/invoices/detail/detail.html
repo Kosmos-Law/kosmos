@@ -47,6 +47,7 @@
           <button type="button"
                   class="btn-icon confirm"
                   data-href="{% url 'invoicing:invoices-delete' invoice.id %}"
+                  data-method="post"
                   data-confirm-title="Delete Voided Invoice"
                   data-confirm-message="Voided invoices are normally kept for audit trail purposes. Only delete if the invoice was created in error. This cannot be undone."
                   data-confirm-text="Delete">
