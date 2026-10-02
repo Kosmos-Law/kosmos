@@ -9,9 +9,14 @@
       </div>
     </div>
     <div class="modal-body">
+      {% if not matters %}<p class="modal-note">There are no open matters to assign this contact to.</p>{% endif %}
+      {% comment %}
+        Sent with htmx so a refusal (nothing chosen, already on the matter)
+        can be said in a toast with the dialog still open.
+      {% endcomment %}
       <form id="contact-assign-form"
-            action="{{ action }}"
-            method="post"
+            hx-post="{{ action }}"
+            hx-swap="none"
             class="form-responsive form-spacious"
             role="form">
         {% csrf_token %}
@@ -36,7 +41,10 @@
       </form>
     </div>
     <div class="modal-footer">
-      <button type="submit" form="contact-assign-form" class="btn btn-success">Submit</button>
+      <button type="submit"
+              form="contact-assign-form"
+              class="btn btn-success"
+              {% if not matters or not groups or not roles %}disabled{% endif %}>Submit</button>
     </div>
   </div>
 </div>

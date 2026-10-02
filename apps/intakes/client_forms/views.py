@@ -377,7 +377,7 @@ def intake_form_add(request, id):
         schema_snapshot=copy.deepcopy(template.schema),
         recipient_email=intake.email or "",
     )
-    return _refresh(f"{template.name} added — send it when you're ready")
+    return _refresh(f"{template.name} added. Send it when you're ready.")
 
 
 @login_required
@@ -634,7 +634,7 @@ def form_submission_status(request, sub_id, status):
     if status == "lock":
         submission.status = "CLOSED"
         submission.closed_at = timezone.now()
-        message = "Form locked — the client can no longer edit it"
+        message = "Form locked. The client can no longer edit it."
     elif status == "reopen":
         submission.status = submission.reopened_status
         submission.closed_at = None
@@ -644,7 +644,7 @@ def form_submission_status(request, sub_id, status):
         # so the URL stops working without touching the uuid.
         submission.status = "CANCELED"
         submission.closed_at = None
-        message = "Form canceled — its link no longer works"
+        message = "Form canceled. Its link no longer works."
     elif status == "draft":
         submission.status = "DRAFT"
         submission.closed_at = None
@@ -684,4 +684,4 @@ def form_submission_reissue(request, sub_id):
     submission = get_object_or_404(FormSubmission, pk=sub_id)
     submission.uuid = uuid.uuid4()
     submission.save(update_fields=["uuid", "updated_at"])
-    return _refresh("New link issued — the old one no longer works")
+    return _refresh("New link issued. The old one no longer works.")

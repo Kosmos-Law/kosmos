@@ -90,16 +90,16 @@ class IntakeForm(forms.ModelForm):
     def clean_name(self):
         name = self.cleaned_data["name"]
         if len(name) < 2:
-            raise ValidationError("Name must be greater than 2 characters")
+            raise ValidationError("Name must be at least 2 characters.")
         if len(name) > 50:
-            raise ValidationError("Name must be fewer than 50 characters")
+            raise ValidationError("Name must be 50 characters or fewer.")
         return name
 
     def clean_address(self):
         address = self.cleaned_data["address"]
         if address:
             if len(address) > 250:
-                raise ValidationError("Address must be fewer than 250 characters.")
+                raise ValidationError("Address must be 250 characters or fewer.")
         return address
 
     def clean_disputed_property(self):
@@ -107,7 +107,7 @@ class IntakeForm(forms.ModelForm):
         if disputed_property:
             if len(disputed_property) > 250:
                 raise ValidationError(
-                    "Disputed property must be fewer than 250 characters."
+                    "Disputed property must be 250 characters or fewer."
                 )
         return disputed_property
 
@@ -154,3 +154,13 @@ class NoteForm(forms.ModelForm):
         self.renderer = CustomFormRendererCompact()
         if not self.instance.pk and not self.initial.get("type"):
             self.initial["type"] = "Comment"
+
+        # A note filed by the system carries a type staff cannot pick
+        # ("Client Form", say). Offer it on that note's own form, or the
+        # select falls to its first option and saving retypes the note.
+        current = self.instance.type if self.instance.pk else None
+        if current and current not in dict(self.Meta.TYPES):
+            self.fields["type"].widget.choices = [
+                *self.Meta.TYPES,
+                (current, current),
+            ]

@@ -24,13 +24,16 @@ matter-detail assign-contact combobox uses the plain results.html instead.)
             hx-swap="outerHTML">
       <i class="icon-plus"></i> Create new contact
     </button>
-    <button type="button"
-            class="combobox-action"
-            hx-post="{% url 'matters:client-intake-picker' %}"
-            hx-include="#matter-form"
-            hx-target="#htmx-modal-container .modal-dialog"
-            hx-swap="outerHTML">
-      <i class="icon-user-plus"></i> Convert an intake&hellip;
-    </button>
+    {# Intakes are for users with the Intakes permission; the view refuses the rest. #}
+    {% if user.is_admin or user.perm_intakes %}
+      <button type="button"
+              class="combobox-action"
+              hx-post="{% url 'matters:client-intake-picker' %}"
+              hx-include="#matter-form"
+              hx-target="#htmx-modal-container .modal-dialog"
+              hx-swap="outerHTML">
+        <i class="icon-user-plus"></i> Convert an intake&hellip;
+      </button>
+    {% endif %}
   </div>
 {% endif %}

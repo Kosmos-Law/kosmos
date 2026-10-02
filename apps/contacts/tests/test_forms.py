@@ -16,13 +16,30 @@ def test_name(contact_data):
     data["name"] = "a"
     form = ContactForm(data)
     assert not form.is_valid()
-    assert "must be greater" in form.errors["name"][0]
+    assert form.errors["name"][0] == "Name must be at least 2 characters."
 
     data = contact_data
     data["name"] = "s" * 55
     form = ContactForm(contact_data)
     assert not form.is_valid()
-    assert "must be fewer" in form.errors["name"][0]
+    assert form.errors["name"][0] == "Name must be 50 characters or fewer."
+
+
+def test_messages_state_the_limit_that_is_enforced(contact_data):
+    """Each limit is accepted at the number its message names."""
+    at_the_limit = contact_data | {
+        "name": "Al",
+        "address": "s" * 250,
+        "company": "s" * 49,
+    }
+    assert ContactForm(at_the_limit).is_valid()
+    assert ContactForm(contact_data | {"name": "s" * 50}).is_valid()
+
+    form = ContactForm(contact_data | {"name": "s" * 51})
+    assert form.errors["name"][0] == "Name must be 50 characters or fewer."
+
+    form = ContactForm(contact_data | {"company": "s" * 50})
+    assert form.errors["company"][0] == "Company must be fewer than 50 characters."
 
 
 def test_company(contact_data):
@@ -38,7 +55,7 @@ def test_address(contact_data):
     data["address"] = "s" * 255
     form = ContactForm(contact_data)
     assert not form.is_valid()
-    assert "must be fewer" in form.errors["address"][0]
+    assert form.errors["address"][0] == "Address must be 250 characters or fewer."
 
 
 def test_phones_and_email(contact_data):

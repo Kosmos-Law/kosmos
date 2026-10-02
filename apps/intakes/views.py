@@ -1,15 +1,16 @@
 from datetime import datetime
 
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse
+from django.db import transaction
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
-from apps.contacts.models import Contact
+from apps.intakes.access import contact_for_intake
 from apps.intakes.assess import assessment_html
 from apps.intakes.client_forms.models import submissions_for_intake
-from apps.intakes.filter_intakes import IntakeFilter
+from apps.intakes.filter_intakes import ORDER_FIELDS, IntakeFilter
 from apps.intakes.forms import IntakeForm, NoteForm
 from apps.intakes.intakes import get_table_data
 from apps.intakes.models import Intake, Note, UserIntakeView
@@ -99,6 +100,11 @@ def quick_filter_all(request):
 
 @login_required
 def order_by(request, order):
+    # Only a sort the filter knows. Anything else used to sit in the session,
+    # sort nothing, and open the Filter dialog on a validation error.
+    if order.lstrip("-") not in ORDER_FIELDS:
+        return HttpResponseBadRequest("Unknown sort order.")
+
     filter_data = request.session.get("intake_filter", {})
 
     current_order = filter_data.get("order_by", "")
@@ -134,10 +140,7 @@ def detail_index(request, id):
     )
 
     # check whether the intake has been added to contacts
-    try:
-        contact = Contact.objects.filter(intake=intake).get()
-    except ObjectDoesNotExist:
-        contact = None
+    contact = contact_for_intake(intake)
 
     practice_areas = PracticeArea.objects.filter(is_active=True).order_by("name")
 
@@ -166,10 +169,7 @@ def detail(request, id):
     )
 
     # check whether the intake has been added to contacts
-    try:
-        contact = Contact.objects.filter(intake=intake).get()
-    except ObjectDoesNotExist:
-        contact = None
+    contact = contact_for_intake(intake)
 
     practice_areas = PracticeArea.objects.filter(is_active=True).order_by("name")
 
@@ -241,9 +241,14 @@ def edit(request, id):
 
 
 @login_required
+@require_POST
 def delete(request, id):
     intake = get_object_or_404(Intake, pk=id)
-    intake.delete()
+    # The notes go with it. The database only detaches them (SET_NULL), which
+    # left them stored with no intake and no screen that could reach them.
+    with transaction.atomic():
+        Note.objects.filter(intake=intake).delete()
+        intake.delete()
     return redirect("/intakes")
 
 
@@ -316,6 +321,7 @@ def edit_note(request, id):
 
 
 @login_required
+@require_POST
 def delete_note(_, id):
     Note.objects.filter(pk=id).delete()
 
@@ -323,8 +329,13 @@ def delete_note(_, id):
 
 
 @login_required
+@require_POST
 def intake_edit_status(request, pk, status):
     intake = get_object_or_404(Intake, pk=pk)
+
+    # The status arrives in the URL: only the statuses the form offers.
+    if status not in dict(IntakeForm.Meta.STATUSES):
+        return HttpResponseBadRequest("Unknown status.")
 
     intake.status = status
     intake.save()
@@ -335,6 +346,7 @@ def intake_edit_status(request, pk, status):
 
 
 @login_required
+@require_POST
 def intake_edit_importance(request, pk, importance):
     intake = get_object_or_404(Intake, pk=pk)
     intake.importance = importance
@@ -346,6 +358,7 @@ def intake_edit_importance(request, pk, importance):
 
 
 @login_required
+@require_POST
 def intake_edit_practice_area(request, pk, practice_area_id):
     intake = get_object_or_404(Intake, pk=pk)
     practice_area = get_object_or_404(PracticeArea, pk=practice_area_id)

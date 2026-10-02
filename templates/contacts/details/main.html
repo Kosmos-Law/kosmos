@@ -15,34 +15,40 @@
 {{ selected_contact.phone3|phone_number }}{% if selected_contact.phone3_label %} - {{ selected_contact.phone3_label }}{% endif %}{% endif %}
 {{ selected_contact.website }}</div>
   {# djlint:on #}
-  {# Address Block Card #}
-  {% if selected_contact.address %}
+  {% comment %}
+    Address block card. Shown for a company too, so a contact with a company
+    and no address still says where they work; the map buttons need an
+    address.
+  {% endcomment %}
+  {% if selected_contact.address or selected_contact.company %}
     <div class="contact-card">
       <div class="contact-card-content-with-copy">
         <div class="contact-card-text-vertical">
           <span class="strong">{{ selected_contact.name }}</span>
           {% if selected_contact.company %}<span>{{ selected_contact.company }}</span>{% endif %}
-          <span>{{ selected_contact.address|linebreaks }}</span>
+          {% if selected_contact.address %}<span>{{ selected_contact.address|linebreaks }}</span>{% endif %}
         </div>
         <div class="contact-card-buttons">
           <button type="button"
                   class="btn btn-sm action-btn copy-btn card-copy-btn-right"
-                  data-copy="{{ selected_contact.name }}&#10;{% if selected_contact.company %}{{ selected_contact.company }}&#10;{% endif %}{{ selected_contact.address }}"
-                  title="Copy address">
+                  data-copy="{{ selected_contact.name }}{% if selected_contact.company %}&#10;{{ selected_contact.company }}{% endif %}{% if selected_contact.address %}&#10;{{ selected_contact.address }}{% endif %}"
+                  title="{% if selected_contact.address %}Copy address{% else %}Copy name and company{% endif %}">
             <i class="icon-copy"></i>
           </button>
-          <a href="https://www.google.com/maps/search/?api=1&query={{ selected_contact.address|urlencode }}"
-             target="_blank"
-             class="btn btn-sm action-btn card-copy-btn-right"
-             title="Open in Google Maps">
-            <i class="icon-map-pin"></i>
-          </a>
-          <a href="https://www.zillow.com/homes/{{ selected_contact.address|zillow_address }}_rb/"
-             target="_blank"
-             class="btn btn-sm action-btn card-copy-btn-right"
-             title="Search on Zillow">
-            <i class="icon-house"></i>
-          </a>
+          {% if selected_contact.address %}
+            <a href="https://www.google.com/maps/search/?api=1&query={{ selected_contact.address|urlencode }}"
+               target="_blank"
+               class="btn btn-sm action-btn card-copy-btn-right"
+               title="Open in Google Maps">
+              <i class="icon-map-pin"></i>
+            </a>
+            <a href="https://www.zillow.com/homes/{{ selected_contact.address|zillow_address }}_rb/"
+               target="_blank"
+               class="btn btn-sm action-btn card-copy-btn-right"
+               title="Search on Zillow">
+              <i class="icon-house"></i>
+            </a>
+          {% endif %}
         </div>
       </div>
     </div>

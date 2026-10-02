@@ -60,7 +60,7 @@ def test_intake_edit_post(client, intake, practice_area):
 
 
 def test_intake_delete(client, intake):
-    response = client.get(f"/intakes/{intake.id}/delete")
+    response = client.post(f"/intakes/{intake.id}/delete")
     assert response.status_code == 302
     found = Intake.objects.filter(pk=intake.id).exists()
     assert not found
@@ -132,7 +132,7 @@ def test_note_edit_post(client, user, intake, note):
 
 
 def test_note_delete(client, note):
-    response = client.get(f"/intakes/{note.id}/delete-note")
+    response = client.post(f"/intakes/{note.id}/delete-note")
     assert response.status_code == 204
     found = Note.objects.filter(pk=note.id).exists()
     assert not found
@@ -157,7 +157,7 @@ def test_intake_edit_nonexistent(client):
 
 
 def test_intake_delete_nonexistent(client):
-    response = client.get("/intakes/99999/delete")
+    response = client.post("/intakes/99999/delete")
     assert response.status_code == 404
 
 
@@ -168,7 +168,7 @@ def test_note_edit_nonexistent(client):
 
 def test_note_delete_nonexistent(client):
     # Note delete uses .filter().delete() which succeeds silently for nonexistent
-    response = client.get("/intakes/99999/delete-note")
+    response = client.post("/intakes/99999/delete-note")
     assert response.status_code == 204
 
 

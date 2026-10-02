@@ -5,6 +5,14 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.access import matter_access_required
+from apps.contacts.access import (
+    CLIENT_ROW_GUARD_MSG,
+    already_assigned,
+    assignable_roles,
+    is_client_mirror,
+    matter_for_user,
+    relationship_for_user,
+)
 from apps.contacts.functions.load_contacts import load_contacts
 from apps.contacts.models import Contact
 from apps.management.selection import (
@@ -18,29 +26,16 @@ from apps.management.selection import (
 )
 from apps.matters.contacts.filters import MatterContactFilter
 from apps.matters.models import Group, Matter, Relationship, Role
+from utils.toasts import toast_warning
 
 DEFAULT_MATTER_CONTACT_FILTER = {"order_by": "group"}
 
 # HX-Trigger that refreshes the #contacts panel.
 CONTACTS_TRIGGER = "contactsReload"
 
-# The client mirror row (Matter.client in the Client role) is managed via the
-# matter, not the parties list.
-CLIENT_ROW_GUARD_MSG = "The client is managed on the matter, not the parties list."
-
 
 def _selection_key(matter):
     return get_session_key("selected_matter_contacts", matter.id)
-
-
-def _is_client_mirror(relationship):
-    """True only for the row that mirrors Matter.client (that contact in the
-    Client role). Co-clients — the Client role on a different contact — are not
-    mirrors and stay fully editable."""
-    return (
-        relationship.matter.client_id == relationship.contact_id
-        and relationship.role.is_system
-    )
 
 
 def _without_client_mirror(qs, matter):
@@ -246,17 +241,11 @@ def contact_sort(request, id, order):
 def assign(request, id):
     matter = get_object_or_404(Matter, pk=id)
     groups = Group.objects.for_matter(matter)
-    roles = (
-        Role.objects.filter(is_active=True)
-        .exclude(is_system=True)
-        .exclude(name="Client (Invoicing)")
-        .order_by("name")
-    )
 
     context = {
         "matter": matter,
         "groups": groups,
-        "roles": roles,
+        "roles": assignable_roles(),
     }
 
     return render(request, "matters/contacts/assign-modal.html", context)
@@ -281,12 +270,24 @@ def assign_results(request, id):
     return render(request, "matters/contacts/results.html", context)
 
 
+# The four views below name their matter in the POST body or through a party
+# row, not in the URL, so @matter_access_required cannot see it: each looks
+# the matter up through a helper that refuses a matter the user is not on.
+
+
 @login_required
 def assign_store(request):
-    matter = get_object_or_404(Matter, pk=request.POST["matter_id"])
+    matter = matter_for_user(request.POST["matter_id"], request.user)
     contact = get_object_or_404(Contact, pk=request.POST["contact_id"])
     group = get_object_or_404(Group, pk=request.POST["group_id"])
     role = get_object_or_404(Role, pk=request.POST["role_id"])
+
+    if already_assigned(matter, contact, group, role):
+        response = HttpResponse(status=204)
+        return toast_warning(
+            response,
+            f"{contact.name} is already on this matter as {role.name} in {group.name}.",
+        )
 
     Relationship.objects.create(matter=matter, contact=contact, group=group, role=role)
 
@@ -295,23 +296,17 @@ def assign_store(request):
 
 @login_required
 def assign_edit(request, id):
-    relationship = get_object_or_404(Relationship, pk=id)
-    matter = get_object_or_404(Matter, pk=relationship.matter_id)
-    contact = get_object_or_404(Contact, pk=relationship.contact_id)
+    relationship = relationship_for_user(id, request.user)
+    matter = relationship.matter
+    contact = relationship.contact
     groups = Group.objects.for_matter(matter)
-    roles = (
-        Role.objects.filter(is_active=True)
-        .exclude(is_system=True)
-        .exclude(name="Client (Invoicing)")
-        .order_by("name")
-    )
 
     context = {
         "matter": matter,
         "contact": contact,
         "relationship": relationship,
         "groups": groups,
-        "roles": roles,
+        "roles": assignable_roles(),
     }
 
     return render(request, "matters/contacts/assign-role-modal.html", context)
@@ -319,8 +314,8 @@ def assign_edit(request, id):
 
 @login_required
 def assign_update(request, id):
-    relationship = get_object_or_404(Relationship, pk=id)
-    if _is_client_mirror(relationship):
+    relationship = relationship_for_user(id, request.user)
+    if is_client_mirror(relationship):
         return HttpResponseForbidden(CLIENT_ROW_GUARD_MSG)
     relationship.group_id = request.POST.get("group_id")
     relationship.role_id = request.POST.get("role_id")
@@ -330,8 +325,8 @@ def assign_update(request, id):
 
 @login_required
 def assign_delete(request, id):
-    relationship = get_object_or_404(Relationship, pk=id)
-    if _is_client_mirror(relationship):
+    relationship = relationship_for_user(id, request.user)
+    if is_client_mirror(relationship):
         return HttpResponseForbidden(CLIENT_ROW_GUARD_MSG)
     relationship.delete()
     return HttpResponse(status=204, headers={"HX-Trigger": "contactsReload"})
