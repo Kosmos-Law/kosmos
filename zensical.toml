@@ -48,6 +48,9 @@ nav = [
   ] },
   { "Use" = [
     "guide/index.md",
+    { "Getting started" = "guide/getting-started.md" },
+    { "Matters" = "guide/matters.md" },
+    { "Time and expenses" = "guide/time-and-expenses.md" },
   ] },
   { "Develop" = [
     "dev/index.md",
