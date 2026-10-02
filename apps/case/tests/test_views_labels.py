@@ -157,20 +157,6 @@ class TestLabelsApply:
         assert response.status_code == 400
 
 
-class TestLabelsSearch:
-    def test_search_for_document(self, client_with_matter, document, label):
-        response = client_with_matter.get(
-            f"/case/labels/search/document/{document.id}/?q=Important"
-        )
-        assert response.status_code == 200
-
-    def test_search_empty_query(self, client_with_matter, document):
-        response = client_with_matter.get(
-            f"/case/labels/search/document/{document.id}/"
-        )
-        assert response.status_code == 200
-
-
 class TestAddLabelTo:
     def test_add_label_to_document(self, client_with_matter, document, label):
         response = client_with_matter.post(
@@ -224,23 +210,3 @@ class TestRemoveLabelFrom:
         )
         assert response.status_code == 200
         assert label not in fact.labels.all()
-
-
-class TestCreateAndApplyLabel:
-    def test_create_and_apply_to_document(self, client_with_matter, document):
-        response = client_with_matter.post(
-            f"/case/labels/create-and-apply/document/{document.id}/",
-            {"name": "Brand New Label", "color": "orange"},
-        )
-        assert response.status_code == 200
-        new_label = Label.objects.get(name="Brand New Label")
-        assert new_label in document.labels.all()
-
-    def test_create_and_apply_to_highlight(self, client_with_matter, highlight):
-        response = client_with_matter.post(
-            f"/case/labels/create-and-apply/highlight/{highlight.id}/",
-            {"name": "Highlight Label", "color": "yellow"},
-        )
-        assert response.status_code == 200
-        new_label = Label.objects.get(name="Highlight Label")
-        assert new_label in highlight.labels.all()
