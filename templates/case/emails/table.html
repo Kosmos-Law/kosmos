@@ -1,18 +1,32 @@
+{% comment %}
+  The emails a matter holds are listed whether or not a label is linked: a
+  closed matter loses its label and keeps its emails. The note about the
+  missing connection or label sits above the list, never in place of it.
+{% endcomment %}
 {% if not gmail_linked %}
   <p class="detail-text">
     Gmail isn't connected. An admin can connect it under
     <a href="{% url 'settings:integrations-index' %}">Settings &rsaquo; Integrations</a>.
   </p>
 {% elif not matter.gmail_label_name %}
-  <p class="detail-text">
-    No Gmail label is linked to this matter yet. Choose
-    <strong>Link Gmail Label</strong> above, then apply that label to case
-    emails in Gmail. They will sync here automatically.
-  </p>
-{% elif not emails %}
+  {% if emails %}
+    <p class="detail-text">
+      No Gmail label is linked to this matter. The emails synced earlier are
+      kept. New emails will not sync until a label is linked with
+      <strong>Link Gmail Label</strong> above.
+    </p>
+  {% else %}
+    <p class="detail-text">
+      No Gmail label is linked to this matter yet. Choose
+      <strong>Link Gmail Label</strong> above, then apply that label to case
+      emails in Gmail. They will sync here automatically.
+    </p>
+  {% endif %}
+{% endif %}
+{% if not emails %}
   {% if filters_active or keyword %}
     <p class="detail-text">No emails match the current filters.</p>
-  {% else %}
+  {% elif gmail_linked and matter.gmail_label_name %}
     <p class="detail-text">
       No emails synced yet. Apply the
       <strong>{{ matter.gmail_label_short }}</strong> label to case emails in

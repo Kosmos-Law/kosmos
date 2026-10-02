@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.html import format_html
 from django.views.decorators.http import require_POST
 
 import apps.mail.google as mail_google
@@ -211,13 +212,16 @@ def email_importance(request, email_id, value):
 def label_link_modal(request, matter_id):
     """Modal to pick this matter's Gmail label from a live list.
 
-    Labels are read from the requester's own mailbox when connected (any
-    mailbox otherwise); what gets stored is the label NAME — the
-    cross-mailbox contract every account resolves for itself.
+    Labels are read from the requester's own mailbox only: a user who has
+    not connected one is shown no list (never a colleague's labels) and can
+    still create the label named after the matter. What gets stored is the
+    label NAME — the cross-mailbox contract every account resolves for
+    itself.
     """
     matter, _ = get_matter_from_url(request, matter_id)
 
-    labels = mail_google.list_matter_labels(mail_google.account_for(request.user))
+    own_account = mail_google.account_for(request.user)
+    labels = mail_google.list_matter_labels(own_account)
     # Labels already linked to a different matter (prevent mis-linking).
     taken = {
         m.gmail_label_name: m
@@ -225,7 +229,14 @@ def label_link_modal(request, matter_id):
         .exclude(gmail_label_name__isnull=True)
         .exclude(gmail_label_name="")
     }
-    label_rows = [{**label, "taken_by": taken.get(label["name"])} for label in labels]
+    label_rows = [
+        {
+            **label,
+            "taken": label["name"] in taken,
+            "taken_by": _matter_name_for(request.user, taken.get(label["name"])),
+        }
+        for label in labels
+    ]
 
     # "Create a label named after the matter" shortcut: the sync provisions
     # the label in every mailbox, so nobody has to touch Gmail first. Only
@@ -241,11 +252,23 @@ def label_link_modal(request, matter_id):
         "labels": label_rows,
         "current": matter.gmail_label_name,
         "linked": mail_google.check_credentials(),
+        "own_mailbox": own_account is not None,
         "label_root": settings.GMAIL_LABEL_ROOT,
         "suggested_label": suggested,
         "suggested_short": suggested_short,
     }
     return render(request, "case/emails/label-link-modal.html", context)
+
+
+def _matter_name_for(user, matter):
+    """The matter's name when the user may see that matter, else None.
+
+    Another matter holding a label is worth saying; which matter it is, is
+    not something to tell a user who is not on it.
+    """
+    if matter is not None and user.has_matter_access(matter):
+        return str(matter)
+    return None
 
 
 def _queue_resync(matter):
@@ -341,20 +364,28 @@ def label_link(request, matter_id):
         request.POST.get("create_label_name") or request.POST.get("label_name") or ""
     ).strip()
 
-    if label_name:
-        clash = (
-            Matter.objects.exclude(pk=matter.pk)
-            .filter(gmail_label_name=label_name)
-            .first()
-        )
-        if clash:
-            # 200 so HTMX swaps the message into the modal's error slot.
-            return HttpResponse(
-                f'<p class="error-text">“{label_name}” is already '
-                f"linked to {clash}. Unlink it there first.</p>"
-            )
+    # 200 on a refusal so HTMX swaps the message into the modal's error slot.
+    if not label_name:
+        # Nothing chosen is not a request to unlink: saving an empty label
+        # here used to queue a resync that emptied the matter. Unlink is its
+        # own, confirmed action.
+        return HttpResponse('<p class="error-text">Choose a label to link first.</p>')
 
-    matter.gmail_label_name = label_name or None
+    clash = (
+        Matter.objects.exclude(pk=matter.pk).filter(gmail_label_name=label_name).first()
+    )
+    if clash:
+        clash_name = _matter_name_for(request.user, clash) or "another matter"
+        return HttpResponse(
+            format_html(
+                '<p class="error-text">“{}” is already linked to {}. '
+                "Unlink it there first.</p>",
+                label_name,
+                clash_name,
+            )
+        )
+
+    matter.gmail_label_name = label_name
     matter.gmail_label_id = None  # legacy per-mailbox id, no longer stored
     matter.save(update_fields=["gmail_label_id", "gmail_label_name"])
     _queue_resync(matter)
@@ -370,6 +401,8 @@ def label_unlink(request, matter_id):
     matter.gmail_label_id = None
     matter.gmail_label_name = None
     matter.save(update_fields=["gmail_label_id", "gmail_label_name"])
-    _queue_resync(matter)
+    # The user confirmed removing the emails; a resync no longer does that
+    # for a matter with no label (a closed matter keeps its emails).
+    mail_google.remove_matter_emails(matter)
 
     return HttpResponse(status=204, headers={"HX-Refresh": "true"})

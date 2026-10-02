@@ -250,12 +250,15 @@ def test_label_link_sets_fields_and_queues_resync(client, matter, _inline_resync
 
 
 def test_label_unlink_clears_fields(client, matter, _inline_resync):
+    make_email(matter, "m1")
     response = client.post(reverse("case:emails-label-unlink", args=[matter.id]))
     assert response.status_code == 204
     matter.refresh_from_db()
     assert matter.gmail_label_id is None
     assert matter.gmail_label_name is None
-    assert _inline_resync == [matter.id]
+    # Unlink removes the emails itself; it no longer leaves that to a resync.
+    assert Email.objects.filter(matter=matter).count() == 0
+    assert _inline_resync == []
 
 
 # --------------------------------------------------------------------------- #
