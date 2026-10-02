@@ -51,9 +51,9 @@ next day. The Dash shows up to three sections:
 - **Work in Progress**: work that is recorded but not yet billed, as a
   chart and a table of **Hours**, **Gross**, **Comp** and **Net** for each
   matter. It starts on **This Month**. Use the date button on the right to
-  pick another period. You see your own work. With the Reports permission
-  you see the whole firm's, and can switch between **By User** and **By
-  Matter**.
+  pick another period. You see your own work. Administrators, and users
+  with the Reports permission, see the whole firm's and can switch
+  between **By User** and **By Matter**.
 - **Upcoming Events**: the next seven pending events on the matters you
   can see, earliest first. An event whose date has passed stays here
   until it is no longer pending. Click a card to open the event.
@@ -84,7 +84,7 @@ The sidebar on the left is the main menu. Entries appear in this order.
 | **Library** | Notes, kept in folders. | Everyone |
 | **Invoicing** | **Work in Progress**, **Invoices**, **Payments**, **Credits**, **Collection**, **Trust** and **Requests**. | Financial permission |
 | **Intakes** | Prospective clients and their intake records. | Intakes permission |
-| **Reports** | **Activity**, **Revenue**, **Realization**, **Work in Progress**, **Intakes**, **Clients** and **AR Aging**. | Reports permission |
+| **Reports** | **Activity**, **Revenue**, **Realization**, **Work in Progress**, **Intakes**, **Clients** and **AR Aging**. See [Reports](reports.md). | Reports permission, which is off until an administrator switches it on |
 | **Search** | Opens the **Search** window. See [Search](#search). | Everyone |
 | **Settings** | Your profile, appearance, notifications and sign-out. | Everyone |
 | **Shortcuts** | Opens the **Keyboard Shortcuts** list. | Everyone |
@@ -163,7 +163,7 @@ second. These are the ones most worth knowing.
 |---|---|
 | Space, then `n` | **Create New**: a time entry, task, expense, event, contact or intake |
 | Space, then `m` | **Switch Matter**: type part of a name and press Enter |
-| Space, then `g` | **Go to**: jump to a sidebar entry or a tab on the page |
+| Space, then `g` | **Go to**: jump to a sidebar entry from **Dash** to **Reports**, or to a tab on the page |
 | Space, then `f`, `f` | Open **Search** on **All** |
 | Space, then `b` | Narrow or widen the sidebar |
 | `c` and `d` | Inside a matter, change to the **Case** or **Detail** side |
@@ -171,7 +171,8 @@ second. These are the ones most worth knowing.
 
 Good to know:
 
-- Shortcuts do nothing while you type in a field or a pop-up is open.
+- Shortcuts do nothing while you type in a field, or while a dialog or
+  a confirmation prompt is open.
 - **Switch Matter** always opens the matter on its **Detail** side.
 
 ## Make it yours
@@ -207,9 +208,10 @@ Your administrator decides what each person can reach, using five
 permissions: **All Matters**, **Financial**, **Intakes**, **Reports** and
 **Research**. Without **All Matters** you see only the matters you are
 assigned to. Without one of the others, its sidebar entries and tabs are
-not shown to you. **Search** finds only what you may open. If you follow a
-link to a page you may not open, Kosmos shows "You don't have permission
-to access this page."
+not shown to you. **Reports** is switched off for a new user until an
+administrator switches it on. **Search** finds only what you may open. If
+you follow a link to a page you may not open, Kosmos shows "You don't
+have permission to access this page."
 
 If something you need is missing, ask your administrator. Administrators:
 see [Users and permissions](../admin/users.md).

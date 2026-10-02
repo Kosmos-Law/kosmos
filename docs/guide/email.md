@@ -40,14 +40,19 @@ Once any mailbox is connected, the panel also shows:
 
 - How many emails are copied across how many matters, or "No matters are
   linked to a Gmail label yet."
-- A line for each connected mailbox at the firm: its address, its owner,
-  and when it was "last synced" (or "not synced yet").
+- A line for your own mailbox: its address, your name, and when it was
+  "last synced" (or "not synced yet"). An administrator sees a line for
+  every connected mailbox at the firm.
 - "Reconnect this mailbox to enable automatic label setup", with a
   **Reconnect** button on your own mailbox, when the mailbox was connected
-  without permission to create labels. The labels it is missing are listed
-  underneath. Click **Reconnect** and allow the access again.
-- A count of labels that "could not be created yet", with their names.
-  Kosmos tries again every few minutes.
+  without permission to create labels. The line counts the matter labels
+  the mailbox is missing. Click **Reconnect** and allow the access again.
+- A count of labels that "could not be created yet". Kosmos tries again
+  every few minutes.
+
+A label is named after its matter, so the names of the missing labels
+are listed under the count only if you are an administrator or can see
+every matter. Everyone else sees the count alone.
 
 To stop, click **Disconnect** and confirm. Emails that came only from
 your mailbox are removed from their matters. Copies from colleagues'
@@ -70,7 +75,8 @@ open the matter can do this.
 3. Click the **New label** button, which shows the matter's name. Or, to
    use a label that already exists, choose it in the list and click
    **Link & Sync**. (**New label** is not offered when a label with the
-   matter's name already exists. Choose that label in the list.)
+   matter's name already exists in your mailbox. Choose that label in the
+   list.)
 
 The page reloads and the toolbar button now shows the label's name.
 Kosmos creates the label in every connected mailbox that does not have
@@ -80,11 +86,18 @@ The new label is named after the matter (a "/" in the name becomes "-").
 In Gmail it sits under the parent label named on the **Case Email** panel,
 for example "Matters - Open", so it appears as "Rivera v. Northside
 Logistics" nested under that parent. Only labels under the parent are
-listed in **Link Gmail Label**. A label shown as "linked to" another
-matter cannot be chosen: one label serves one matter.
+listed in **Link Gmail Label**, and the list is read from your own
+mailbox. If you have not connected one, the dialog says "Your own Gmail
+mailbox isn't connected, so there are no labels to choose from here." and
+you can still click **New label**. A label shown as "linked to" another
+matter cannot be chosen: one label serves one matter. That matter is
+named if you can see it. Otherwise the list says "linked to another
+matter".
 
 To change the label, click the toolbar button again, choose another and
-click **Link & Sync**. **Unlink** removes the link.
+click **Link & Sync**. If you click **Link & Sync** with no label chosen,
+nothing changes and the dialog says "Choose a label to link first."
+**Unlink** removes the link.
 
 Good to know:
 
@@ -126,9 +139,9 @@ matter shows it once.
 
 To take an email off a matter, remove the label from it in Gmail. It
 leaves the matter at the next sync. Moving a message to Trash or deleting
-it in Gmail removes it from every matter. If a colleague's mailbox still
-has the message under the label, it stays on the matter. There is no
-button in Kosmos that removes a single email.
+it in Gmail removes it from every matter that still has a label linked.
+If a colleague's mailbox still has the message under the label, it stays
+on the matter. There is no button in Kosmos that removes a single email.
 
 !!! note
 
@@ -156,12 +169,13 @@ attachments and the body. Beside the subject are:
 - The importance button (an arrow). Choose from **Highest** to
   **Lowest**. New emails start at **Low**. Importance tells the AI chat
   how much weight an email deserves, and you can sort by it.
-- **Gmail**, which opens the original message in Gmail in a new tab.
+- **Gmail**, which opens the original message in Gmail in a new tab. You
+  see it only on a message that is in your own connected mailbox.
 - **Promote to Document**, or **View Document** once that is done.
 
-Attachments are listed by file name and cannot be opened in Kosmos. Click
-**Gmail** and open them there. Hover over an attachment to see whether
-its text was read.
+Attachments are listed by file name and cannot be opened in Kosmos. If
+you have the **Gmail** button, click it and open them there. Hover over
+an attachment to see whether its text was read.
 
 To find a message:
 
@@ -177,10 +191,6 @@ them or sign out.
 
 Good to know:
 
-- If the list does not change after you click **Apply**, or after
-  **Refresh** finishes, click the **Emails** tab again.
-- **Gmail** opens the message in the mailbox it was copied from. It works
-  only for the person signed in to that mailbox in Google.
 - Opening a message loads any pictures it links to on the internet, so a
   sender who tracks opened mail can see that it was read.
 
@@ -194,8 +204,9 @@ matter even if the email is later removed.
 2. Click **Promote to Document**, then **Promote** in the dialog.
 
 The button changes to **View Document**, which opens the PDF in a new
-tab. The document is on the **Documents** tab in the **Correspondence**
-category, named after the subject and dated with the email's date. See
+tab, and the email's row in the list gains the document icon. The
+document is on the **Documents** tab in the **Correspondence** category,
+named after the subject and dated with the day the email was sent. See
 [Documents](documents.md).
 
 Attachments cannot be promoted. Download the file from Gmail and add it
@@ -204,9 +215,8 @@ on the **Documents** tab.
 Good to know:
 
 - The PDF shows the sender, the first recipient only, the date, the
-  subject and the body. It does not include or list attachments.
-- Check the document's date. For an email sent late in the evening it
-  can be the following day.
+  subject and the body. It does not include or list attachments, and
+  pictures the email loads from the internet are left out.
 
 ## Emails and the AI
 
@@ -227,15 +237,20 @@ Setting a matter's status to **Complete** or **Closed** removes its label
 link, so nothing new is copied. The emails already copied are kept, and
 nothing changes in Gmail. See [Close a matter](matters.md#close-a-matter).
 
+The **Emails** tab goes on listing the kept emails, under a note that
+begins "No Gmail label is linked to this matter. The emails synced
+earlier are kept." While the matter has no label, nothing done to a
+message in Gmail removes it from the matter: not taking the label off,
+not moving it to Trash, not deleting it.
+
 Good to know:
 
-- While no label is linked, the **Emails** tab shows "No Gmail label is
-  linked to this matter yet" in place of the list, although **Count**
-  still shows the kept emails. Link the label again to read them.
-- On such a matter, choose a label before you click **Link & Sync**.
-  Clicking it with nothing chosen removes the kept emails.
-- Kept emails still follow the mailbox they came from. One that is
-  deleted in Gmail, or whose mailbox is disconnected, leaves the matter.
+- If you link a label to such a matter again, its emails follow that
+  label from then on. Kept emails that are not under it in Gmail are
+  removed from the matter.
+- Kept emails still depend on the mailbox they came from. If that
+  mailbox is disconnected, they leave the matter, and connecting it
+  again does not bring them back.
 
 ## Who can see a matter's emails
 
@@ -247,7 +262,7 @@ cannot open the emails of other matters. See
 
 Connecting your mailbox does not let colleagues browse it. They see the
 messages you file under a matter's label, on that matter. On the **Case
-Email** panel they see your mailbox address, when it last synced, and the
-names of any matter labels it is missing. The names of the labels under
-your parent label can also appear in the **Link Gmail Label** list of a
-colleague who has not connected a mailbox.
+Email** panel, only an administrator sees your mailbox's address, when it
+last synced, and the matter labels it is missing. The **Link Gmail
+Label** list shows each person the labels in their own mailbox, never
+yours.

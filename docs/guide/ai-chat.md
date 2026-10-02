@@ -37,7 +37,7 @@ you send your first question.
 | Mode | How it works | Pick it when |
 |---|---|---|
 | **Classic** | Kosmos loads the case file into your question before the AI sees it, and the AI answers in one pass. | You want a quick answer, or the question ranges over the whole matter. |
-| **Agentic** | The AI starts from an index of the case file, then searches and opens documents, emails and notes one step at a time, and shows each step. It can also search published case law. | The matter is large, or the answer turns on reading particular documents closely. A reply can take several minutes. |
+| **Agentic** | The AI starts from an index of the case file, then searches and opens documents, emails and notes one step at a time, and shows each step. With the Research permission, it can also search published case law. | The matter is large, or the answer turns on reading particular documents closely. A reply can take several minutes. |
 
 **Model** lists the Claude and Gemini models of the providers your server
 is connected to. The mode and the model are fixed once the conversation
@@ -49,9 +49,6 @@ Good to know:
 - A conversation belongs to the matter, not to you. Everyone who can open
   the matter can read it and add to it, and each question shows who asked
   it.
-- Send the first question of an **Agentic** conversation from the message
-  box. If you send it from **Compose Prompt**, the conversation is
-  created as **Classic**.
 
 ## Ask a question
 
@@ -104,6 +101,13 @@ matter is given to it. Two things come from outside the matter: the
 firm's library notes (see [Notes](notes.md)), and the names and titles
 of the firm's users, with your own name and email address.
 
+What it is given also depends on who asks. Time entries, with their rates
+and fees, are given for every user who can open the matter, as the
+matter's **Activity** tab shows them. Invoices and the matter's rates are
+given only if you have the Financial permission, and published case law
+is searched only if you have the Research permission (see
+[Permissions](settings.md#permissions)). Ask your administrator.
+
 ### In a Classic conversation
 
 Given with every question:
@@ -114,7 +118,8 @@ Given with every question:
   proceedings;
 - every highlight and every timeline fact (see
   [Timeline, witnesses and highlights](facts.md));
-- up to 20 tasks, the next 15 events and the last 5 past events;
+- up to 20 tasks (open ones first), the next 15 events and the last 5
+  past events;
 - every time entry, with its hours, rate, amount and invoice status, and
   the settlement log;
 - in full, each document, saved case and conversation whose **AI**
@@ -128,7 +133,8 @@ Chosen for each question:
   their attachments (see [Email](email.md));
 - saved cases (**Full Cases** on the **Research** tab, see
   [Research](research.md)) and other conversations set to **Auto**;
-- invoices, only when the question is about billing;
+- invoices, only when the question is about billing and you have the
+  Financial permission;
 - library notes, only when one bears on the question.
 
 If these items come to less than about 30,000 words, and there are no
@@ -143,10 +149,13 @@ tell you that a document exists which it has not read.
 The AI starts with the matter's details, contacts, witnesses and
 proceedings, the highlights and timeline when they are short, and an
 index with one line for each document, email thread, note, saved case,
-earlier conversation, invoice and library note. From there it opens what
-it needs, up to 40 lookups for each question. It can also read the
-matter's tasks, events, settlement log, rates, and time and expense
-entries, and search published case law on CourtListener. What it has read
+earlier conversation and library note. From there it opens what it needs,
+up to 40 lookups for each question. It can also read the matter's tasks,
+events, settlement log, and time, expense and flat-fee entries. With the
+Financial permission, the index lists the matter's invoices as well, and
+the AI can read them and the matter's rates. With the Research
+permission, it can search published case law on CourtListener. Without
+it, the AI works from the cases saved on the matter. What it has read
 stays with the conversation for your later questions.
 
 ### The AI setting
@@ -163,13 +172,17 @@ Documents, saved cases and conversations each have an **AI** column.
 
 - Records of any other matter.
 - The matter's ledger and the client's trust records.
+- Invoices and the matter's rates, unless you have the Financial
+  permission.
 - Anything set to **Never**, and the contents of a document whose text
   has not been extracted.
 
 Good to know:
 
-- The chat does not check the Financial permission. Rates, amounts and
-  invoice totals can appear in a reply to anyone who can open the matter.
+- Permissions are checked when a question is asked, not when a
+  conversation is read. A reply to a colleague who has the Financial
+  permission can quote invoices and rates, and everyone who can open the
+  matter can read that conversation.
 - In a Classic conversation, a follow-up sent within ten minutes works
   from the items chosen for the earlier question, unless the case file
   changed in between. If the AI says it has not seen a document, ask
@@ -187,7 +200,7 @@ word out may be answered in prose only.
 | "Add her as a witness." | "Added witness:" and the name, or "Already on the witness list:" | The **Witnesses** tab |
 | "Save that analysis to a note." | "Created note:" and the title | The matter's notes, with you as author |
 | "Add this to the note on service of process." | "Appended to note:" or "Rewrote note:" and the title ("library note" for one in the Library) | The same note, on the matter or in the Library |
-| "Save these cases." (Agentic only) | "Saved to case law:" and each case | **Full Cases** on the **Research** tab, with what the case was cited for |
+| "Save these cases." (Agentic only, with the Research permission) | "Saved to case law:" and each case | **Full Cases** on the **Research** tab, with what the case was cited for |
 
 A matter chat does not create tasks: use the Plan chat (see
 [Create tasks from the Plan chat](tasks.md#create-tasks-from-the-plan-chat)).
@@ -263,11 +276,12 @@ conversation when a later chat chooses what to load.
 On a server set up for it, Kosmos also keeps two conversations on every
 **Open** matter, rewritten each night: **Auto Summary** (the facts, the
 issues in dispute, each side's position and the key evidence) and **Auto
-Agenda** (next steps, the path to resolution and strategic goals). Both
-are set to **Always**, so every Classic chat on the matter starts with
-them. You can reply in either one to correct it: the next night's version
-takes what you said as guidance, and your messages are then removed from
-the conversation.
+Agenda** (next steps, the path to resolution and strategic goals). The
+nightly run is given no rates, fees or invoices, whoever reads the
+result. Both are set to **Always**, so every Classic chat on the matter
+starts with them. You can reply in either one to correct it: the next
+night's version takes what you said as guidance, and your messages are
+then removed from the conversation.
 
 ## The Plan chat on the Dash
 
@@ -280,9 +294,11 @@ or tell it to create tasks (see
 
 It is given the **Pending** and **Open** matters you can see, your active
 tasks and unassigned ones, pending events up to 30 days ahead that are
-yours or the firm's, your time entries for the last 14 days (hours and
-descriptions, no amounts) and the firm's open and pending intakes. An
-administrator's agenda covers the whole team. It is not given documents,
+yours or the firm's, and your time entries for the last 14 days (hours
+and descriptions, no amounts). Tasks, events and time entries on a matter
+you cannot open are left out. If you have the Intakes permission, it is
+also given the firm's open and pending intakes. An administrator's agenda
+covers the whole team. It is not given documents,
 so it will not analyse a case: it offers a link to the matter's chat
 instead. The trash button discards the chat, and the next one starts
 fresh.

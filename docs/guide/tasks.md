@@ -37,16 +37,17 @@ Overdue tasks are highlighted and completed tasks are struck through.
 | **User** | Who the task is assigned to. Click it to assign someone else. |
 | **Due** | The due date. Click it to pick another date, or **Clear** to remove it. A task with no date shows a calendar icon: click it to set one. |
 
-Click the sort button beside **Matter**, **Description**, **User** or
-**Due** to sort by that column, and click it again to reverse the order.
-The flag button sorts by importance. The list starts sorted by **Due**:
-earliest first, then highest importance, with undated tasks last. Sorted
-any other way, tasks are grouped by status first (**Pending**, **On
-hold**, **In progress**, **Complete**) and sorted inside each group.
+Click the sort button beside **Matter**, **Description**, **Status**,
+**User** or **Due** to sort by that column, and click it again to reverse
+the order. The flag button does the same for importance. The list starts
+sorted by **Due**: earliest first, then highest importance, with undated
+tasks last. Sorted by **Status**, the statuses run in alphabetical order.
+Sorted any other way, tasks are grouped by status first (**Pending**,
+**On hold**, **In progress**, **Complete**) and sorted inside each group.
 
 A matter's **Tasks** tab has the same columns and controls. It starts on
-everyone's tasks that are not **Complete**, with no date limit, and keeps
-its own filters.
+everyone's tasks that are not **Complete**, with no date limit. Each
+matter's tab keeps its own filters.
 
 ### The board
 
@@ -86,6 +87,13 @@ your previous quick task.
 On a matter's **Tasks** tab the box reads **+ Quick Task**: everything
 you type is the description, and the task goes on that matter.
 
+In both boxes the task must be 4 to 200 characters long, not counting the
+matter name and the dash. Outside those limits nothing is added, your
+text stays in the box, and a message says why, for example "A task
+description needs 4 or more characters. This one has 3. Add to it and
+press Enter again." or "A task description is limited to 200 characters.
+This one has 212. Shorten it and press Enter again."
+
 !!! note
 
     If your administrator has switched on **AI Quick Task Entry** under
@@ -113,28 +121,26 @@ The form closes and the new task is at the top of the list.
 
 | Field | Required | Notes |
 |---|---|---|
-| **Matter** | No | Matters that are **Pending** or **Open**. On the **Tasks** page the blank choice is **Admin**. On a matter it starts on that matter, and a task left blank goes on that matter. |
+| **Matter** | No | Matters that are **Pending** or **Open**. On the **Tasks** page the blank choice is **Admin**. On a matter it starts on that matter, and a task left blank goes on that matter. A matter in another status is listed when you open the form from it. |
 | **Task** | Yes | The description: 4 to 200 characters. Kosmos capitalises the first letter. |
 | **User** | Yes | Any active user. Starts as the user whose chip is selected, otherwise you. |
 | **Importance** | Yes | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
-| **Status** | No | **Pending**, **In progress**, **On hold** or **Complete**. |
+| **Status** | No | **Pending** (the default), **In progress**, **On hold** or **Complete**. |
 | **Date due** | No | Starts as today. Clear it for a task with no deadline. |
 | **Date completed** | No | Leave it blank. Kosmos fills it in when the task becomes **Complete**. |
 
 Good to know:
 
-- A new task is always saved as **Pending**, whatever you choose in
-  **Status**. A task added from a board column takes that column's
-  status. Change the status after the task is saved.
-- If **Task** is empty or shorter than four characters, the form can stay
-  open without saying why. Lengthen the text and click **Submit** again.
+- A task added from the plus button on a board column is saved with that
+  column's status, whatever you choose in **Status**. To give it another
+  status, change it after the task is saved.
 
 ## Change a task
 
 - **Edit it.** Click the description. **Edit Task** has the same fields
-  as **Add Task**, and here **Status** is saved. Click **Submit**. On a
-  matter's **Tasks** tab the matter cannot be changed: to move a task to
-  another matter, edit it on the **Tasks** page.
+  as **Add Task**. Click **Submit**. On a matter's **Tasks** tab the
+  matter cannot be changed: to move a task to another matter, edit it on
+  the **Tasks** page.
 - **Change one thing.** In the list, click the importance icon, the
   status, the user or the due date and pick the new value.
 - **Complete it.** Set the status to **Complete**. Kosmos records today
@@ -177,8 +183,9 @@ chips appear on the **Activity** tabs.
 
 **Filter** opens **Filter Tasks** for everything else. Click **Apply**
 to use it. **Restore Defaults** returns to your own open tasks due today
-or earlier. (On a matter's **Tasks** tab, **Restore Defaults** leaves the
-tab's filters alone: it resets the **Tasks** page and takes you there.)
+or earlier. (On a matter's **Tasks** tab, **Restore Defaults** returns
+that tab to everyone's tasks that are not **Complete**, with no date
+limit.)
 
 | Field | What it does |
 |---|---|
@@ -214,8 +221,8 @@ before you delete.
 
 A checklist is a list of steps attached to one task, copied from a
 checklist template. A task has at most one. Templates are kept under
-**Settings → Checklists**, which is shown to administrators and to users
-with the Financial permission (see [Settings](settings.md)). To make one:
+**Settings → Checklists**, which every user can open (see
+[Settings](settings.md#checklists)). To make one:
 
 1. Click the plus button at the right of the toolbar. Enter a **Name**
    and click **Submit**. **Edit Checklist Template** opens.
@@ -234,8 +241,10 @@ template, and remove the checklist from the task.
 Good to know:
 
 - A task cannot be made **Complete** while its checklist has unticked
-  steps. The one exception is **Bulk Update Tasks**, which does not
-  check.
+  steps. Kosmos says "Please complete all checklist items before marking
+  this task as done." When **Bulk Update Tasks** sets several tasks to
+  **Complete**, it leaves such a task unchanged and reports the number,
+  for example "2 task(s) skipped. Complete their checklists first."
 - Changing or deleting a template leaves attached checklists as they are.
 
 ## Create tasks from the Plan chat
@@ -258,28 +267,29 @@ Good to know:
 - There is no step to confirm. The tasks exist as soon as the reply
   appears, so check each line and correct mistakes in the tasks list.
 - A task whose matter the chat cannot match to a **Pending** or **Open**
-  matter is filed under **Admin**. With no user named the task is yours,
-  and with no date named it has no due date.
+  matter that you can open is filed under **Admin**. With no user named
+  the task is yours, and with no date named it has no due date.
 
 ## The daily digest
 
 The digest is one email a day. Switch it on under **Settings →
 Notifications** (see [Make it yours](getting-started.md#make-it-yours)).
-Under **Overdue**, **Today** and **Next 3 Days** it lists the firm's
-tasks that are not **Complete**, not only yours, each with the assigned
-user's initials and the matter.
+Under **Overdue**, **Today** and **Next 3 Days** it lists every task you
+can see that is not **Complete**, not only your own, each with the
+assigned user's initials and the matter.
 
 ## Who sees which tasks
 
-The **Tasks** page shows every task in the firm to everyone who can sign
-in. It opens on your own tasks only because your chip is selected. Anyone
-can edit, reassign, complete or delete any task.
+A task follows its matter. If you can see every matter, the **Tasks**
+page shows you every task in the firm. It opens on your own tasks only
+because your chip is selected. Anyone who can see a task can edit,
+reassign, complete or delete it.
 
 If your administrator has limited you to assigned matters (see
-[Who can see a matter](matters.md#who-can-see-a-matter)), the **Tasks**
-page still lists the tasks on every matter, with the matter names, and
-the matter lists in the task forms still show every **Pending** and
-**Open** matter. The matters themselves stay closed to you: their
-**Tasks** tab and **Overview** show "You don't have permission to access
-this page." Your digest lists only tasks on your assigned matters, which
-leaves out **Admin** tasks.
+[Who can see a matter](matters.md#who-can-see-a-matter)), you see the
+tasks on your matters and the **Admin** tasks, and no others: in the
+list, on the board and in your digest. The matter lists in **Add Task**,
+**Filter Tasks** and **Bulk Update Tasks** show only your matters, and
+the quick-add box matches only their names. The other matters stay closed
+to you: their **Tasks** tab and **Overview** show "You don't have
+permission to access this page."

@@ -16,7 +16,7 @@ permissions.
 |---|---|---|
 | **Profile** | Everyone | Your own name, email address and password. |
 | **Appearance** | Everyone | Your theme and navigation layout. |
-| **Firm** | Administrators | The firm's name, address, email addresses and logo. |
+| **Firm** | Administrators | The firm's name, address, email addresses, logo and its own wording for invoices and reminders. |
 | **Notifications** | Everyone | Your daily digest email. |
 | **Session** | Everyone | Signing out. |
 | **Users** | Administrators | Accounts, roles and hourly rates. |
@@ -28,7 +28,7 @@ permissions.
 | **Claude Desktop** | Everyone | Connecting the Claude Desktop app to Kosmos. |
 | **Intake Forms** | Administrators and users with the Intakes permission | Forms sent to prospective clients. |
 | **Intake Emails** | Administrators and users with the Intakes permission | Ready-made emails for intakes. |
-| **Checklists** | Administrators and users with the Financial permission | Checklist templates for tasks. |
+| **Checklists** | Everyone | Checklist templates for tasks. |
 
 ## Your own settings
 
@@ -53,6 +53,8 @@ details updated" confirms the save.
 | **Invoice BCC** | One or more addresses, separated by commas. Each gets a blind copy of every invoice, payment request and reminder email. |
 | **Intake Email** | Copied on every email you send to a prospective client from an intake, and filled in as **Reply-To** when you write one. |
 | **Jurisdiction** | The firm's default jurisdiction. A matter with no jurisdiction of its own shows "Firm Default" with this value on its **Overview**, and AI chat on that matter works from it. |
+| **Payment Terms** | One sentence in the firm's own words, for example the payment terms in your fee agreement. It is added to the reminder emails for an invoice and for a payment request (not for a trust deposit request). Leave it blank and reminders say nothing about terms. |
+| **Invoice Trust Note** | Printed under **Funds in Trust** on an invoice, when the client has money in trust. Leave it blank and the invoice shows the balance alone. |
 
 To add the logo, click the file chooser beside **Logo** and pick a PNG or
 JPG file of 2 MB or less. It uploads at once: there is nothing to save. To
@@ -74,7 +76,10 @@ or a **Role** to change it. The **Attorney** column shows the user's
 title and, where there is none, "Attorney" or "Staff". The list starts
 with active users only: click **Filter** to narrow it by username, email,
 role or status (**Not Active** or **All** shows deactivated users), then
-**Apply**. **Restore Defaults** returns to active users.
+**Apply**. **Restore Defaults** returns to active users. Click the sort
+button beside **Username**, **E-Mail**, **Role**, **Attorney**, **Rate** or
+**Active** to sort by that column, and again to reverse the order. Sorting
+keeps the filter in place.
 
 ### Add a user
 
@@ -125,14 +130,14 @@ If their email address is wrong, correct it in **Edit User** first.
 
 Good to know:
 
-- A new user starts with all five permissions switched on. Set their
-  permissions before you hand over the password.
+- A new user starts with every permission switched on except
+  **Reports**. Set their permissions before you hand over the password.
 - **Create User** accepts a blank **Email address**, but a user with none
   cannot receive a sign-in code and so cannot sign in.
-- Nothing stops you from changing your own role to **User** or
-  deactivating your own account. If no administrator is left, the person
-  who runs your server has to create one: see
-  [Users and permissions](../admin/users.md).
+- Kosmos does not let the firm be left without an administrator. If you
+  try to make the only active administrator a **User** or **Inactive**,
+  yourself included, it shows "This is the only active administrator.
+  Make another user an administrator first."
 
 ## Permissions
 
@@ -143,9 +148,9 @@ An administrator's row is marked "admin": its switches are on and locked.
 | Permission | What it opens |
 |---|---|
 | **All Matters** | Every matter. Switched off, the user sees only the matters assigned to them. |
-| **Financial** | **Invoicing** (invoices, payments and trust), the **Rates** and **Ledger** tabs of a matter, and the **Financials** figures on a matter's **Overview**. |
+| **Financial** | **Invoicing** (invoices, payments and trust), the **Rates** and **Ledger** tabs of a matter, the **Financials** figures on a matter's **Overview**, and the **Trust** tab of a client's contact page. |
 | **Intakes** | The **Intakes** page, and **Intake Forms** and **Intake Emails** in Settings. |
-| **Reports** | The **Reports** page. |
+| **Reports** | The **Reports** page, and the whole firm's figures under **Work in Progress** on the Dash. This switch starts off for a new user. The other four start on. |
 | **Research** | The **Research** tab in a matter's case file. |
 
 ### Limit a user to assigned matters
@@ -165,10 +170,13 @@ in the dialog or switch **All Matters** back on.
 
 Good to know:
 
-- Assigned matters are not a complete wall. The **Tasks** page, the
-  **Calendar** and **Contacts** still show entries for other matters, and
-  a user with the Financial or Reports permission still sees every
-  matter's invoices and reports. The operator guide has the full list:
+- Assigned matters do not limit the money pages. A user with the
+  Financial permission still sees every matter's invoices, payments and
+  trust under **Invoicing**, and a user with the Reports permission sees
+  every matter in the reports.
+- Contacts belong to the whole firm. A user limited to assigned matters
+  still sees every contact, though not the other matters a contact is
+  on. The operator guide has the full list:
   [Users and permissions](../admin/users.md).
 
 ## Contacts
@@ -243,27 +251,35 @@ through one Google account, and **Case Email**. Everyone else sees only
 
 To connect one, click **Connect**, choose the Google account and approve
 the request. You return to **Integrations** and the button now reads
-**Disconnect**. Disconnecting leaves documents and events already in
-Kosmos in place.
+**Disconnect**. If you see "This Google connection was not started from
+this session. Go back to Settings, Integrations and connect again.",
+click **Connect** again.
+
+To disconnect one, click **Disconnect**, then **Disconnect** again in the
+prompt. Kosmos stops syncing with it for the whole firm until an
+administrator connects it again. Documents and events already in Kosmos
+stay in place.
 
 Under **Case Email**, each user connects their own Gmail mailbox: click
 **Connect** beside **Your Gmail mailbox**. Kosmos creates the case labels
 in that mailbox, and emails you put under a label appear on that matter's
 **Emails** tab. The section then shows your mailbox's address, how many
-emails are synced, when each connected mailbox last synced, and any
-labels a mailbox is missing. **Reconnect** appears for a mailbox that was
-connected before Kosmos could create labels. **Disconnect** removes that
-mailbox's emails from matters. Emails a colleague's mailbox also holds,
-and emails already saved as documents, are kept.
+emails are synced, when your mailbox last synced, and how many labels it
+is missing. The missing labels are named only if you can see every
+matter. An administrator sees these lines for every connected mailbox,
+not only their own. **Reconnect** appears for a mailbox that was
+connected before Kosmos could create labels. **Disconnect** asks you to
+confirm, then removes that mailbox's emails from matters. Emails a
+colleague's mailbox also holds, and emails already saved as documents,
+are kept.
 
 Good to know:
 
 - Whichever **Connect** you click, Google asks for access to calendar,
   contacts, Drive and Gmail together. Kosmos uses only the connection you
   clicked.
-- **Disconnect** beside the three firm-wide connections acts at once,
-  with no confirmation. Connecting with a different Google account
-  replaces the earlier connection.
+- Connecting with a different Google account replaces the earlier
+  connection.
 
 !!! note
 

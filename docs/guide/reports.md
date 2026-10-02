@@ -13,8 +13,11 @@ the top are **Activity**, **Revenue**, **Realization**, **Work in
 Progress**, **Intakes**, **Clients** and **AR Aging**. You need the
 Reports permission for this. Ask your administrator.
 
-Without the permission, **Reports** is not in your sidebar. You still see
-your own work in progress on the Dash. See
+The Reports permission is switched off for a new user until an
+administrator switches it on under **Settings → Permissions**. See
+[Settings](settings.md#permissions). Administrators do not need it.
+Without the permission, **Reports** is not in your sidebar, and on the
+Dash you see your own work in progress, not the firm's. See
 [Getting started](getting-started.md#start-the-day-on-the-dash).
 
 Every report is a screen to read. None has an export, download or print
@@ -27,9 +30,6 @@ Good to know:
   matters, you still see the names and figures of the others here.
 - Reports do not check the Financial permission. Anyone who can open them
   sees payments, invoices and balances.
-- If **Reports** is in your sidebar but the reports do not open, your
-  account lacks a setting that is not on the **Settings** pages. Ask your
-  administrator, who can read [Users and permissions](../admin/users.md).
 
 ## Choose the months
 
@@ -119,17 +119,20 @@ dollars. Below are **Accrued fees**, **Realized (collected)** and
 **Realization rate (hourly)**.
 
 The report starts from time entries on billable matters, at hours times
-rate, in the month of the work. It then places every dollar in one row:
+rate, in the month of the work. Time marked **Entered** that is on no
+invoice is left out, because Kosmos cannot say what became of it. (Comp
+time is the exception: it always counts as a write-down.) The report then
+places every dollar in one row:
 
 | Row | What is in it |
 |---|---|
-| **Collected** | The entry's share of the payments applied to its invoice. |
+| **Collected** | The entry's share of the payments applied to its invoice. An invoice whose status is Paid, with no payment or credit applied to it, counts as collected in full. |
 | **Credits applied** | The entry's share of the credits applied to its invoice. |
-| **Outstanding** | The entry's share of what is still unpaid on its invoice. This includes an invoice that is a draft, or approved and not yet sent. |
+| **Outstanding** | The entry's share of what is still unpaid on its invoice, once the invoice has been sent. |
 | **Deferred** | The unpaid share, when the invoice's status is Deferred. |
 | **Uncollectible** | The unpaid share, when the invoice's status is Uncollectible. |
 | **Write-downs (comp & discount)** | Comp time at its full value, the entry's share of any discount on its invoice, and comp flat fees. |
-| **Unbilled (WIP)** | Time that is on no invoice, including time marked **Entered**. |
+| **Unbilled (WIP)** | Time that is on no invoice, and time on an invoice that is still a draft, or approved and not yet sent. |
 | **Flat fees** | Flat fee entries dated in the month, at their full amount, whether or not they are billed or paid. |
 
 An entry's share is its amount divided by the invoice's total before
@@ -140,7 +143,8 @@ nowhere here.
 - **Accrued fees** is the sum of all the rows.
 - **Realized (collected)** repeats the **Collected** row.
 - **Realization rate (hourly)** is **Collected** divided by **Accrued
-  fees** less the **Flat fees** row.
+  fees** less all flat fees: the **Flat fees** row and the comp flat fees
+  in the write-downs row.
 
 The only control is the pair of month arrows.
 
@@ -189,7 +193,9 @@ heading, and **Practice Areas**. Then come two tables. **Outcomes by
 Month** has the columns **Month**, **Open**, **Pending**, **Accepted**,
 **Referred Out**, **Client Declined**, **Unresponsive** and **Total**.
 **Practice Area by Month** has **Month**, a column for each practice area
-and **Total**. Each cell shows a count and its share of the month.
+and **Total**. The columns are your firm's active practice areas under
+**Settings → Practice Areas**, plus any other practice area an intake in
+the six months has. Each cell shows a count and its share of the month.
 
 How the figures are arrived at:
 
@@ -199,21 +205,12 @@ How the figures are arrived at:
   month.
 - The share converted is the **Accepted** intakes divided by all intakes
   in the six months.
-- In **Practice Areas**, an intake with no practice area is counted as
-  **Unspecified**.
+- An intake with no practice area is counted as **Unspecified**, in the
+  **Practice Areas** chart and in a column of that name in the table.
+- Both tables count every intake dated in the six months, so their
+  **Total** rows agree.
 
 The only control is the pair of month arrows.
-
-Good to know:
-
-- **Practice Area by Month** has a fixed set of columns, which is not
-  your firm's list under **Settings → Practice Areas**. An intake whose
-  practice area is not one of the columns, or that has none, is missing
-  from that table and its totals. The **Practice Areas** chart counts
-  every intake.
-- The last row of **Outcomes by Month** takes its **Total** and its
-  percentages from the practice area table, so they can be wrong. Add up
-  the status columns instead.
 
 ## Clients
 
@@ -282,8 +279,9 @@ Several words appear in more than one place with different meanings.
 | **Fees** | **Clients** | Time on all matters, Admin matters and comp included. |
 | **Work in Progress** | This report and the Dash | Time only, on billable matters, not **Entered** and on no invoice. |
 | **Work in Progress** | A matter's **Overview** and **Ledger** | Time, expenses and flat fees, less comp, including work on draft and approved invoices. |
-| **Unbilled (WIP)** | **Realization** | Time on no invoice, including **Entered** time. Comp is in write-downs. |
-| **Outstanding** | **Realization** | Unpaid time, including on draft and approved invoices. |
+| **Unbilled (WIP)** | **Realization** | Time only, on billable matters, not **Entered** and on no invoice, plus time on draft and approved invoices. Comp is in write-downs. |
+| **Outstanding** | **Realization** | Unpaid time on invoices that have been sent. |
+| **Collected** | **Realization** | Payments applied to time only, in the month the time was worked. A Paid invoice with nothing applied to it counts in full. **Revenue** counts all payments, in the month each arrived. |
 | Amounts owed | **AR Aging** | Time, expenses and flat fees on Sent invoices only. |
 
 ## Reports on one matter

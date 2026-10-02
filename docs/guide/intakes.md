@@ -27,7 +27,7 @@ shows how many match.
 | **Date** | The intake's open date. |
 | **Name** | Click it to open the intake. A note icon beside the name of an open intake means someone else added a note since you last opened it. |
 | **Phone**, **Source** | As recorded on the intake. |
-| **Practice Area** | Click it to choose another. An intake with none shows "None". |
+| **Practice Area** | Click it to choose another. An intake with none shows a dash. |
 | **Status** | **Open**, **Pending**, **Accepted**, **Referred Out**, **Client Declined** or **Unresponsive**. Click it to change it. |
 
 To narrow or reorder the list:
@@ -37,12 +37,13 @@ To narrow or reorder the list:
 - Click **Filter** to open **Filter Intakes**. **Status** is the only
   place to choose **Referred Out**, **Client Declined** or
   **Unresponsive**. **Practice area** and **Source** narrow the list, the
-  two **Date** boxes set a range of open dates, and **Ordering** sets the
-  sort. Click **Apply**. **Restore Defaults** returns to open intakes,
-  newest first.
+  two **Date** boxes set a range of open dates, and **Ordering** sorts by
+  date, name or importance. Click **Apply**. **Restore Defaults** returns
+  to open intakes, newest first.
 - Click the sort button beside **Date** or **Name**. Click it again to
-  reverse the order. (The sort button above the flag column does not sort
-  by importance. It lists the most recently added intakes first.)
+  reverse the order. The sort button above the flag column lists the most
+  important intakes first, and the newest first among intakes of the same
+  importance.
 
 **Search** in the sidebar finds an intake by name, phone or email. See
 [Getting started](getting-started.md#search).
@@ -79,9 +80,10 @@ Click an intake's name. On the left are its details: **Email**, **Phone**,
 **Address**, **Disputed Property**, **Value**, **Status**, **Date**,
 **Area** (the practice area) and **Source**. Click the status or the area
 to change it. Click the value (or the pencil, if there is none), type a
-number and press Enter. The flag beside the name sets the importance. The
-pin button beside an address opens it in Google Maps, and the house button
-beside the value searches Zillow for the property.
+whole number and press Enter. Anything else is refused with "Value must be
+a whole number, with no commas or cents." The flag beside the name sets
+the importance. The pin button beside an address opens it in Google Maps,
+and the house button beside the value searches Zillow for the property.
 
 The three-dot menu has **Edit** (the same form as **Add Intake**), **Send
 email**, and **Add to contacts** or, once that is done, **Open contact**.
@@ -102,8 +104,9 @@ Good to know:
 
 - Leave a blank line between paragraphs. Lines separated by a single line
   break are run together when the note is shown.
-- Do not edit a **Client Form** note. It is rewritten when the form is
-  submitted again, and saving your edit changes its type to **Call In**.
+- A **Client Form** note is rewritten when the form is submitted again,
+  so anything you change in it is lost. Put your own remarks in a separate
+  note.
 
 ### Assessment
 
@@ -178,11 +181,22 @@ inquiry whose email or phone matches an existing intake is added to that
 intake as a note. A questionnaire completed on the website is filed on its
 intake as a **Client Form** note.
 
+If a questionnaire arrives for someone who has no intake yet, Kosmos opens
+one with the source **Internet**. Its practice area is set when the kind
+of dispute chosen on the website has the same name as one of the firm's
+practice areas (capitals, spaces and punctuation are ignored). Otherwise
+the practice area is left empty for you to set.
+
 ## Client forms
 
 A client form is a questionnaire your firm builds once and sends to
 prospective clients. The person fills it in on a web page, with no account
 and no password, and the answers land on their intake.
+
+Your administrator may have loaded sample forms. Each is described as a
+sample in **Settings → Intake Forms**, for example "A sample Client Intake
+form. Review and edit it before use." The samples were written for one
+kind of practice, so read and edit one before you send it.
 
 ### Build a form
 
@@ -279,11 +293,15 @@ The new contact opens. Its **Intake** tab has **View Intake Details**,
 which leads back to the intake. See [Contacts](contacts.md).
 
 You can also do this while opening the matter. On **Add Matter**, type in
-**Client** and click **Convert an intake…**. **Convert an Intake** lists
-the intakes that are not yet contacts, newest first. Click one, complete
-**Add Contact**, and you are back on **Add Matter** with the new contact
-as the client. See
+**Client** and click **Convert an intake…** (shown only to users with the
+Intakes permission). **Convert an Intake** lists the intakes that are not
+yet contacts, newest first. Click one, complete **Add Contact**, and you
+are back on **Add Matter** with the new contact as the client. See
 [Matters](matters.md#add-the-client-while-you-open-the-matter).
+
+An intake becomes one contact only. If someone has already added it,
+Kosmos adds no second contact and says, for example, "This intake is
+already in contacts as Elena Rivera. No second contact was added."
 
 Only the name, address, phone and email carry over. Notes, forms, the
 assessment, the practice area and the property details stay on the intake,
@@ -296,12 +314,14 @@ When an intake goes nowhere, set its **Status** to **Referred Out**,
 everything on it is kept. Forms you sent keep working: cancel them in
 **Forms** if the person should no longer answer.
 
-To delete an intake, open its three-dot menu, click **Edit**, then
-**Delete**, and confirm. Its forms, their answers and its chat are
-deleted, and its notes can no longer be opened. This cannot be undone. A
-contact made from it is kept.
+To delete an intake, open its three-dot menu and click **Edit**, then
+**Delete**. A **Delete Intake** dialog asks "Delete this intake and its
+notes? This cannot be undone." Click **Delete**, and the intakes list
+opens. The intake's notes, its forms and their answers, and its chat are
+deleted with it. A contact made from it is kept.
 
 ## The Intakes report
 
 **Reports → Intakes** counts intakes by outcome and by practice area,
-month by month. See [Reports](reports.md).
+month by month. You need the Reports permission for this. Ask your
+administrator. See [Reports](reports.md#intakes).

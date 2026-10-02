@@ -15,11 +15,15 @@ Kosmos has two kinds of shortcut.
 
 Both kinds do nothing in these cases:
 
-- The cursor is in a field. That includes a text box, a date box and a
-  checkbox you clicked last. Click an empty part of the page first.
-- A dialog is open. Close it first.
+- The cursor is in a field. That includes a text box, a date box, a
+  drop-down list and a checkbox you clicked last. Click an empty part of
+  the page first.
+- A dialog, a confirmation prompt or a palette is open. Close it first.
+  While a palette is open, only its own keys work.
 - Caps Lock is on, or you are holding `Shift`. The letters must be lower
   case.
+- You are holding `Ctrl`, `Cmd` or `Alt`. Those combinations are left to
+  your browser, so `Ctrl` + `C` still copies.
 
 On a Mac, `Cmd` works in place of `Ctrl` in every shortcut on this page,
 except `Ctrl` with the mouse wheel in the document viewer.
@@ -154,11 +158,18 @@ Ordinary editing keys (bold, italic, undo, redo) work as they do
 elsewhere. These are the editor's own. Its menu **More actions → Keyboard
 shortcuts** shows a list too. See [Notes](notes.md).
 
+`Ctrl` + `K`, `Ctrl` + `H`, `Ctrl` + `S` and `Ctrl` + `?` work wherever
+the cursor is in the editor. The keys that change the note itself (the
+headings, lists, highlights and the other formatting keys, `Ctrl` + `D`
+and **Insert source**) work only while the cursor is in the note's text.
+With the cursor in the title or in **Find...**, they do nothing.
+
 | Keys | What it does |
 |---|---|
 | `Ctrl` + `K` | Opens **Search Notes**. `↓` and `↑` move, `Enter` opens the note, `Esc` closes. |
 | `Ctrl` + `H` | Shows or hides the **Search & Replace** bar. `Enter` in **Find...** goes to the next match. `Enter` in **Replace with...** replaces the current match. `Esc` closes the bar. |
 | `Ctrl` + `S` | Saves now. |
+| `Ctrl` + `?` | Opens the editor's **Keyboard Shortcuts** list. |
 | `Ctrl` + `1` to `Ctrl` + `5` | Heading 1 to 5. Press again for normal text. |
 | `F2`, `F3`, `F4` | Heading 2, 3 or 4. |
 | `Ctrl` + `0` | Normal text. |

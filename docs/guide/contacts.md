@@ -55,7 +55,9 @@ Good to know:
   **Unsorted**, and a contact that is not a client is under no **Clients**
   list. Use **Search** when you do not know where a contact is filed.
 - When you open a contact from **Search** or from a matter, the middle
-  list changes to the folder or client list that contact belongs to.
+  list changes to that contact's folder, or to **Unsorted** if it has
+  none. If you were on a **Clients** list and the contact is a client, it
+  changes to the contact's **Clients** list instead.
 
 ## Add a contact
 
@@ -65,7 +67,8 @@ Good to know:
 2. Enter the **Name**.
 3. Fill in the other fields that apply and click **Submit**.
 
-The new contact's page opens on its **Details** tab.
+The new contact's page opens on its **Details** tab, and the middle list
+shows the folder you put it in, or **Unsorted**.
 
 | Field | Required | Notes |
 |---|---|---|
@@ -86,37 +89,35 @@ Good to know:
   Use **Search** before you add someone.
 - Only US numbers are accepted. Any other number is refused with "Enter a
   valid 10-digit US phone number." Put it in **Notes** instead.
-- After you add a contact with no folder, the middle list shows every
-  contact that is not a client, and nothing on the left is highlighted.
-  Click **Unsorted** or a folder to return to a normal list.
 
 ## The contact's page
 
 Click a contact's name. Its page opens with the name and client badge at
 the top. At the top right, the copy button copies all of the contact's
 details (on the **Details** tab only), the cloud button copies the contact
-to Google Contacts (described below), and the pencil button opens **Edit
+to Google Contacts (described below; it is there only when the firm's
+Google account is connected), and the pencil button opens **Edit
 Contact**.
 
 | Tab | What it shows |
 |---|---|
-| **Details** | The address with the name and company above it, and buttons to copy it, open it in Google Maps or look it up on Zillow. Then each email address, each phone number with its kind and buttons to copy or call it, the website, the notes, and **Open Matters**. |
-| **Trust** | **Confirmed Balance** (confirmed trust transactions only) and **Pending Balance** (every trust transaction, confirmed or not). **View Full Trust Ledger** opens the client's trust ledger, which needs the Financial permission. |
-| **Intake** | Whether the contact was created from an intake. If it was, **View Intake Details** opens the intake, which needs the Intakes permission. |
+| **Details** | The name, company and address, with a button to copy them and, when there is an address, buttons to open it in Google Maps or look it up on Zillow. Then each email address, each phone number with its kind and buttons to copy or call it, the website, the notes, and **Open Matters**. |
+| **Trust** | **Confirmed Balance** (confirmed trust transactions only) and **Pending Balance** (every trust transaction, confirmed or not). **View Full Trust Ledger** opens the client's trust ledger. |
+| **Intake** | Whether the contact was created from an intake. If it was, and you have the Intakes permission, **View Intake Details** opens the intake. |
 | **All Matters** | Every matter the contact is on, with **Status**, **Matter** and **ID**: **Open** matters first, then **Pending**, then **Complete** and **Closed**. Click a name to open the matter. |
 | **Related** | The contact's relationships with other contacts. |
 
 **Trust** and **Intake** appear only for a contact with a client badge,
-not for a **Nonclient**. **Assign to Matter** and **Remove from Matter**
-are at the foot of every tab except **Related**.
+not for a **Nonclient**. You need the Financial permission to see
+**Trust**. Ask your administrator. **Assign to Matter** and **Remove from
+Matter** are at the foot of every tab except **Related**.
 
 Good to know:
 
-- **Company** is shown only above the address, so a contact with no
-  **Address** does not show its company on **Details**.
 - **Open Matters** and **All Matters** include every matter that has the
-  contact on its **Contacts** tab in any role. **ID** is the matter's
-  client reference number, or the number Kosmos gave it if it has none.
+  contact on its **Contacts** tab in any role. If you can see only
+  assigned matters, they list only those. **ID** is the matter's client
+  reference number, or the number Kosmos gave it if it has none.
 
 ### Record how two contacts are related
 
@@ -142,28 +143,25 @@ The page reloads and shows the new details.
 ## Delete a contact
 
 1. Open **Edit Contact** and click **Delete**.
-2. Click **OK** when your browser asks "Are you sure you want to delete
-   this record?"
+2. A **Confirm** dialog asks "Delete this contact? It is removed from
+   every matter it is on, and this cannot be undone." Click **Delete**.
 
-The page reloads. The contact is gone from the list, and the right side
-reads "The selected contact could not be found. It may have been deleted."
+The **Contacts** page opens again. The contact is gone from the list, and
+no contact is open on the right.
 
-Deleting is permanent, and Kosmos does not refuse to delete a client.
-Deleted with the contact:
+Kosmos refuses to delete a contact that is the client on a matter
+(whatever the matter's status), has trust activity, or has been sent a
+trust deposit request (the message calls these payment requests). It
+keeps the contact and gives the reason, for example "Elena Rivera was not
+deleted: this contact is the client on 1 matter and has trust activity."
+
+Deleting is permanent. Deleted with the contact:
 
 - its place on every matter's **Contacts** tab;
 - its relationships on other contacts' **Related** tabs;
-- its trust ledger (every trust transaction recorded for the contact) and
-  any trust deposit requests sent to it;
 - its copy in Google Contacts, if it has one.
 
-Matters that named the contact as their client are kept, with **Client**
-left blank. The intake a contact was created from is kept too.
-
-Good to know:
-
-- Any user can delete any contact. Before you delete a client, look at
-  its **Trust** tab. The trust history cannot be brought back.
+The intake a contact was created from is kept.
 
 ## Organize contacts in folders
 
@@ -181,15 +179,16 @@ is in one folder or in none (**Unsorted**).
 - **Delete a folder.** Click the menu button beside the folder, then
   **Delete**. **Delete Folder** opens. For an empty folder, click
   **Delete**. If the folder holds contacts, it says how many and offers
-  **Keep Contacts**, which deletes the folder and moves its contacts to
-  **Unsorted**, and **Delete**.
+  two buttons. **Keep Contacts** deletes the folder and moves its contacts
+  to **Unsorted**. **Delete Folder and Contacts** deletes the folder and,
+  without asking again, the contacts in it, with everything listed under
+  [Delete a contact](#delete-a-contact).
 
-Good to know:
-
-- On a folder that holds contacts, **Delete** deletes the folder and
-  every contact in it, with everything listed under
-  [Delete a contact](#delete-a-contact). It does not ask again. Click
-  **Keep Contacts** unless you mean to delete the people too.
+**Delete Folder and Contacts** never deletes a contact that Kosmos would
+refuse to delete on its own: a client on a matter, or a contact with
+trust activity or a trust deposit request. Those contacts move to
+**Unsorted**, and Kosmos says how many, for example "Kept 2 contacts that
+are clients or have trust activity. Find them under Unsorted."
 
 ## Put a contact on a matter
 
@@ -200,20 +199,27 @@ assignments: see [Contacts](matters.md#contacts) in Matters. You can also
 do it from the contact's page:
 
 1. Click **Assign to Matter**. **Assign Contact to Matter** opens.
-2. Choose the **Matter** (only matters that are **Open** are offered),
-   the **Group** and the **Role**, then click **Submit**.
+2. Choose the **Matter** (only **Open** matters that you can open are
+   offered), the **Group** and the **Role**, then click **Submit**.
 
 The **All Matters** tab opens with the matter in it. To take the contact
-off a matter, click **Remove from Matter**, choose the **Matter** and
-click **Submit**. The contact itself is kept.
+off a matter, click **Remove from Matter**. **Remove Contact from Matter**
+opens. Choose under **Matter** (each choice names a matter and the
+contact's role on it) and click **Submit**. The contact itself is kept.
+
+A contact can hold more than one role on a matter, but Kosmos does not
+put it on a matter twice in the same group and role. It says, for
+example, "Marcus Bell is already on Rivera v. Northside Logistics as
+Witness in Third Parties."
+
+A matter's client is set in **Edit Matter**, not here. **Role** does not
+offer **Client**, and **Remove Contact from Matter** does not offer the
+row that stands for the matter's own client. When that leaves nothing to
+choose, it says "There is no matter to remove this contact from. A
+matter's client is changed in Edit Matter."
 
 Good to know:
 
-- Kosmos does not check whether the contact is already on the matter.
-  Assign it twice and it is on the matter's **Contacts** tab twice.
-- The role **Client** here does not make the contact the matter's client,
-  and removing a client here does not change the matter's client. Set the
-  client in **Edit Matter**.
 - **Group** offers the firm-wide groups only. To use a group made for one
   matter, assign the contact on that matter's **Contacts** tab.
 
@@ -225,21 +231,22 @@ Click **Submit** and the contact is created as a **Potential Client**,
 listed under **Pending**. The intake's menu then offers **Open contact**.
 You can do the same while opening a matter, with **Convert an intake…**
 (see [Matters](matters.md#add-the-client-while-you-open-the-matter)).
-Intakes are described in [Intakes](intakes.md).
+Both need the Intakes permission. Intakes are described in
+[Intakes](intakes.md).
 
 ## Copy a contact to Google Contacts
 
 If an administrator has connected the firm's Google account (see
 [Google integrations](../admin/integrations/google.md)), you can copy
-contacts to it one at a time.
+contacts to it one at a time. The cloud button is shown only while that
+account is connected.
 
 1. Open the contact.
 2. Click the cloud button at the top right, beside the pencil button.
 
-Kosmos adds the contact to the firm's Google Contacts and returns to the
-**Contacts** page with the contact still open. The button is now
-highlighted and shows a crossed-out cloud. Click it again to remove the
-contact from Google Contacts.
+Kosmos adds the contact to the firm's Google Contacts and reloads the
+page. The button is now highlighted and shows a crossed-out cloud. Click
+it again to remove the contact from Google Contacts.
 
 Good to know:
 
@@ -248,13 +255,19 @@ Good to know:
   three phone numbers only.
 - Each time you edit a copied contact, Kosmos replaces the copy in Google
   Contacts, so anything added to it in Google is lost.
-- If the firm's Google account is not connected, the button does nothing.
 
 ## Who can see contacts
 
 Every user can see, add, edit and delete every contact and folder. No
-permission limits this. A user limited to assigned matters still sees
-every contact, and a contact's **All Matters** tab names matters that user
-cannot open. The balances on a contact's **Trust** tab are shown to every
-user, with or without the Financial permission. See
+permission limits this. What a contact's page shows about matters, money
+and intakes does depend on what you can see elsewhere:
+
+- If you can see only assigned matters, **Open Matters** and **All
+  Matters** list only those, and **Assign to Matter** and **Remove from
+  Matter** offer only those.
+- The **Trust** tab is shown only to users with the Financial permission.
+- **View Intake Details** on the **Intake** tab is shown only to users
+  with the Intakes permission.
+
+See
 [What you can and cannot see](getting-started.md#what-you-can-and-cannot-see).

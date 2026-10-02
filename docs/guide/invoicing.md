@@ -61,8 +61,9 @@ Good to know:
   Approved invoices, less any discount on them.
 - **Prior Month** counts every entry dated before the first day of this
   month, not only last month's.
-- The **Totals** row adds the **Trust (Pending)** column as shown, so a
-  client with two matters in the list is counted twice.
+- Every matter of a client shows that client's whole **Trust (Pending)**
+  balance. The **Totals** row counts each client once, so it can be less
+  than the column added up.
 
 ## Create an invoice
 
@@ -77,7 +78,7 @@ invoice is a draft: click **Invoices**, which now shows **Draft**.
 
 | Field | Notes |
 |---|---|
-| **Matter** | Required. Matters with unbilled time or expenses. |
+| **Matter** | Required. Billable matters with unbilled time, expenses or flat fees. |
 | **Limit Date** | The invoice takes work dated on or before this day. Starts as the last day of last month. |
 | **Issue Date** | The date printed on the invoice. Starts as today. |
 | **Message** | Optional. Printed on the invoice under **Client Message**, and offered as the text of the email when you send it. |
@@ -98,8 +99,6 @@ To invoice several matters at once, tick the box beside each matter on
 
 Good to know:
 
-- A matter whose only unbilled work is a flat fee, or time dated before
-  2024, is not in the **Matter** list. Tick it and use **Create Invoices**.
 - A draft takes in new work only when it is saved again: open **Edit
   Invoice** and click **Submit**, or set its status to **Draft** again.
 - Kosmos creates the invoice even when there is nothing to put on it.
@@ -136,14 +135,17 @@ invoice. **Fees** in the list is time only: a flat fee shows in **Total**.
 Under the list, **Total Charges** adds time, flat fees and expenses before
 discounts, for every invoice the list is showing.
 
+If the client has confirmed money in trust, the PDF adds **Funds in
+Trust** with the client's **Retainer Balance**. Under it the PDF prints
+the **Invoice Trust Note** that an administrator has entered on
+**Settings → Firm**. Until a note is entered, the balance prints alone.
+See [Settings](settings.md#firm).
+
 Good to know:
 
 - Nothing takes a single entry off a draft and leaves it unbilled, and
   an earlier **Date limit** does not drop entries. Delete the draft and
   create it again with the limit you want.
-- If the client has confirmed money in trust, the PDF adds **Funds in
-  Trust** with a fixed note that cites a paragraph of a fee agreement.
-  Read it on **Review**. The wording cannot be changed in Kosmos.
 
 ## Move an invoice through its statuses
 
@@ -160,9 +162,15 @@ and choose **Draft**, **Approved**, **Sent**, **Deferred** or
 | **Approved** | Checked and ready to send. Its entries can no longer be edited or deleted, and Kosmos keeps the PDF made now. Still not owed. The pencil button still works. |
 | **Sent** | Issued. On the ledger and in **Balance Due**. Payments and credits can be applied. The pencil button is gone. |
 | **Deferred** | Issued, but not being collected for now. Still in **Balance Due**, shown apart on the ledger, and left out of **Due** on **Collection**. |
-| **Paid** | Set by Kosmos when the payments and credits applied equal the total. Removing one in the **Apply** dialog returns the invoice to **Sent**. |
-| **Uncollectible** | Written off. Out of **Balance Due**. Its entries stay billed. The list still shows the unpaid amount under **Amount Due**. **History** shows **Outstanding** as $0.00. |
+| **Paid** | Set by Kosmos when the payments and credits applied equal the total. Removing one in the **Apply** dialog, or deleting the payment or credit, returns the invoice to **Sent**. |
+| **Uncollectible** | Written off. Out of **Balance Due**. Its entries stay billed. **Amount Due** in the list and **Outstanding** on **History** are $0.00. |
 | **Void** | Cancelled. See [Void an invoice](#void-an-invoice). |
+
+Kosmos makes the invoice's PDF again, and keeps that copy, when you
+choose **Approved** or **Sent** and when an invoice leaves **Draft** for
+any other status. So an invoice that leaves **Draft** loses the draft
+mark, whichever status it goes to. Any other change, such as **Sent** to
+**Deferred**, leaves the kept copy as it is.
 
 On a **Sent** or **Deferred** invoice, **+ Card** and **+ Trust** at the
 top record a payment against it. See [Payments](payments.md).
@@ -171,8 +179,6 @@ Good to know:
 
 - Once an invoice has been emailed from Kosmos it cannot go back to
   **Draft** or **Approved**. To correct it, void it and invoice again.
-- Set a draft to **Approved** before **Deferred** or **Uncollectible**.
-  Going straight there keeps the PDF made while it was a draft.
 
 ## Send an invoice
 
@@ -198,13 +204,15 @@ blind copies go to the **Billing Email** and **Invoice BCC** addresses on
 **Settings → Firm**. See [Settings](settings.md).
 
 After the first email, the send button offers **Resend Invoice** and
-**Send Reminder**. A reminder says how long ago the invoice went out and
-that payment is due on receipt under the fee agreement. That wording is
-fixed, and your message goes above it. A reminder does not change the
-status. Every attempt is kept under **History** → **Delivery History**
-with its **Date**, **Type**, **Sender**, **Recipients** and **Status**
-(**Sent** or **Failed**). A **Sent** invoice emailed more than once shows
-the number of times beside its status.
+**Send Reminder**. A reminder says how long ago the invoice went out.
+After that it carries the **Payment Terms** sentence that an
+administrator has entered on **Settings → Firm**. Until one is entered,
+the reminder states no terms. Your message goes above the reminder's own
+text. A reminder does not change the status. Every attempt is kept under
+**History** → **Delivery History** with its **Date**, **Type**,
+**Sender**, **Recipients** and **Status** (**Sent** or **Failed**). A
+**Sent** invoice emailed more than once shows the number of times beside
+its status.
 
 Good to know:
 
@@ -228,10 +236,9 @@ be edited. Payments and credits applied to it are taken off it and stay
 on the matter, unapplied. It no longer counts in **Balance Due**. Voiding
 cannot be undone, and a void invoice's status cannot be changed.
 
-Good to know:
-
-- A client who opens the link from an earlier email is told "This invoice
-  is paid in full. Thank you." Tell the client it was withdrawn.
+A client who opens the link from an earlier email is told "This invoice
+is no longer open for payment. Please contact us if you have a question
+about it."
 
 ## Delete an invoice
 
@@ -260,19 +267,20 @@ courtesy reduction or a write-off, for example.
 The credit's **Unapplied** amount falls and the invoice's **Amount Due**
 falls with it. The dialog lists the matter's Sent and Deferred invoices
 that still have something due, and under **Current Applications** you can
-remove an application. The **ID** menu also has **Edit** and **Delete**.
+remove an application. A second amount from the same credit to the same
+invoice is added to the first application. The **ID** menu also has
+**Edit** and **Delete**. Removing an application, or deleting the credit,
+sets an invoice it had paid off back to **Sent**.
+
+Once a credit is applied, **Edit** will not make it smaller than the
+amount applied or move it to another matter. Remove the application
+first. The amount must be more than zero.
+
 A credit lowers the matter's **Balance Due** from the day it is added. It
-lowers an invoice's **Amount Due** only once it is applied.
-
-Good to know:
-
-- Deleting a credit leaves an invoice it had paid off marked **Paid**.
-  Remove it under **Current Applications** first, then delete it.
-- Keep the words "Invoice" and "Payment" out of **Detail**, and put the
-  word "Credit" in. Otherwise the matter's **Ledger** treats the line as
-  an invoice or a payment, and its link or menu acts on another record.
-- Apply a credit to an invoice in one step. A second amount from the
-  same credit to the same invoice fails.
+lowers an invoice's **Amount Due** only once it is applied. On the
+matter's **Ledger** the credit is listed under its **Detail**, or as
+"Credit" if you left **Detail** empty. Click it there for **Edit** and
+**Delete**.
 
 ## See who owes money
 
@@ -288,10 +296,10 @@ largest first, ten to a page. Click a matter to open its **Ledger** tab.
 
 A matter is listed when **Due** is more than zero, and **Total Due After
 Deferments** adds every listed matter. The tab has no ages or due dates:
-use **AR Aging** in [Reports](reports.md#ar-aging) for those. Matters
-running low on trust are not here either. Administrators see them under
-**Collections** on the dashboard. See
-[Getting started](getting-started.md).
+use **AR Aging** in [Reports](reports.md#ar-aging) for those. You need
+the Reports permission for it. Matters running low on trust are not here
+either. Administrators see them under **Collections** on the dashboard.
+See [Getting started](getting-started.md).
 
 ## The matter's Ledger
 

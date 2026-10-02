@@ -25,7 +25,8 @@ invoice is its unapplied amount.
    while the invoice is **Sent** or **Deferred**. Use it for a check, a
    wire or any other payment that does not come from trust.
 3. **Add Payment** opens, filled in for this invoice. Set **Payment
-   method** and change **Amount** to what you received.
+   method**. **Amount** starts as what the invoice still owes: change it
+   if you received a different amount.
 4. Click **Submit**.
 
 You are on the **Payments** tab, and the new payment is in the list.
@@ -34,16 +35,14 @@ The invoice is **Paid** if nothing is left owing.
 
 | Field | Required | Notes |
 |---|---|---|
-| **Matter** | Yes | The matter the payment is recorded on. Leave it as the invoice's matter. |
+| **Matter** | Yes | The matter the payment is recorded on. The list holds only the invoice's matter. |
 | **Date** | Yes | The date you received the money. It starts as today. |
-| **Payment method** | Yes | **Check**, **Card**, **ACH / eCheck**, **Trust** or **Wire**. It starts on **Card**. |
-| **Amount** | Yes | In dollars. |
+| **Payment method** | Yes | **Check**, **Card**, **ACH / eCheck**, **Trust** or **Wire**. It starts on **Card**. Choosing **Trust** also records a trust withdrawal: see [Pay an invoice from trust](#pay-an-invoice-from-trust). |
+| **Amount** | Yes | In dollars, and more than zero. It starts as the amount still due on the invoice. |
 | **Detail** | No | A note shown in the **Payments** list, such as a check number. It starts as "Invoice 12", with the invoice's own number. |
 
 Good to know:
 
-- **Amount** starts as the invoice's full total, even when part of the
-  invoice has already been paid. Change it to what you received.
 - If the amount is more than the invoice still owes, the rest stays on
   the payment as unapplied money.
 
@@ -68,8 +67,21 @@ records a withdrawal of the same amount on the client's trust ledger.
 [Pay an invoice from trust](trust.md#pay-an-invoice-from-trust) has the
 details and the cautions.
 
-Choosing **Trust** as the method anywhere else records the payment only.
-Nothing is withdrawn from trust.
+A payment whose method is **Trust** records that withdrawal wherever you
+enter it: under **+ Trust**, under **+ Card**, or in **Add Payment** on
+the **Payments** tab. A payment by any other method records none. The
+withdrawal carries the payment's date and amount. It changes when you
+edit the payment and is deleted when you delete the payment.
+
+Kosmos refuses a trust payment in two cases:
+
+- The amount is more than the client's trust balance, counting deposits
+  and withdrawals that are not confirmed yet. The form says "The client
+  holds $500.00 in trust, which is less than this payment.", with the
+  client's own balance.
+- The matter has no client. Kosmos says "This matter has no client, so
+  there is no trust balance to pay from. Set the client on the matter
+  first."
 
 ## Apply a payment to invoices
 
@@ -94,16 +106,16 @@ invoice, the dialog says "No unpaid invoices found for this matter."
 To undo or change an application, open **Apply** again. **Current
 Applications** lists each invoice the payment is applied to, with
 **Amount Applied**. Click the X at the end of a row and confirm. The
-money goes back to the payment's unapplied amount.
+money goes back to the payment's unapplied amount, and an invoice that
+was **Paid** goes back to **Sent**.
+
+A payment holds one application for each invoice. A further amount for
+an invoice already under **Current Applications** is added to that
+application. To lower an application, remove it and apply the amount you
+want.
 
 Good to know:
 
-- A payment can hold one application for each invoice. To change an
-  amount, or to add to an invoice already under **Current
-  Applications**, remove that application and apply the full amount.
-- When you remove the only payment on a **Paid** invoice, the invoice
-  stays **Paid** with nothing owing. Open the invoice, click its status
-  and choose **Sent** to make it owing again.
 - A payment also becomes unapplied when the invoice it paid is voided.
 
 ## The Payments tab
@@ -152,18 +164,33 @@ from the matter's **Ledger**: click the payment's description, such as
 "Payment by Check". **Edit Payment** on an online payment also shows the
 processor's **Transaction ID**.
 
+Kosmos checks an edit against the payment's applications:
+
+- **Amount** cannot go below what is applied to invoices. The form says
+  "$400.00 of this payment is applied to invoices. Remove an application
+  first to make it smaller.", with the payment's own figure.
+- **Matter** cannot change while any of the payment is applied. The form
+  says "This payment is applied to invoices on its matter. Remove the
+  applications first to move it."
+- **Amount** must be more than zero: "Enter an amount greater than
+  zero."
+
+Deleting removes the payment and its applications. The matter's
+**Balance Due** goes up, a part-paid invoice shows more owing, and an
+invoice that was **Paid** goes back to **Sent**.
+
+A payment by **Trust** keeps its trust withdrawal in step. Editing the
+payment changes the withdrawal's date, amount and description to match
+(and its client, if you move the payment to another client's matter),
+and the new amount is checked against the client's trust balance.
+Changing the method to **Trust** records a withdrawal, changing it to
+another method deletes the withdrawal, and deleting the payment deletes
+the withdrawal with it.
+
 Good to know:
 
-- Editing does not touch the payment's applications. Kosmos does not
-  check a lower **Amount** against what is already applied, and changing
-  **Matter** leaves the payment applied to the old matter's invoices.
-  Remove the applications first.
-- Deleting removes the payment and its applications. The matter's
-  **Balance Due** goes up, and a part-paid invoice shows more owing. An
-  invoice that was **Paid** stays **Paid**: open it, click its status and
-  choose **Sent**.
 - Deleting only removes the record. It does not send money back to the
-  client, and it does not undo a trust withdrawal.
+  client.
 
 ## Let clients pay online
 
@@ -202,6 +229,9 @@ payment the page says "Payment successful. Bank (eCheck) payments take 1–2
 business days to clear." If the payment is declined, the page shows the
 reason, nothing is recorded, and the client can try again. Once the
 invoice is paid, the link shows "This invoice is paid in full. Thank you."
+For an invoice that is **Void** or **Uncollectible**, the link shows
+"This invoice is no longer open for payment. Please contact us if you
+have a question about it."
 
 ### What Kosmos records
 
@@ -258,7 +288,7 @@ moment if that is lower.
 
 | Status | What it means |
 |---|---|
-| **Sent** | Emailed and not yet paid. The link works. |
+| **Sent** | Emailed and not yet paid. The link works. A paid request goes back to **Sent** if its payment or deposit is later returned. |
 | **Paid** | The client paid through the link. |
 | **Canceled** | You canceled it. The link now says "This payment request is no longer active." |
 
@@ -273,8 +303,6 @@ Good to know:
   statement is the matter's whole ledger.
 - A request becomes **Paid** only when it is paid through its link. If
   the client pays another way, record the payment and cancel the request.
-- If a bank payment is returned later, the request still shows **Paid**.
-  Send a new request.
 
 ## Request a trust deposit
 
@@ -309,9 +337,9 @@ apart. Ask your administrator.
 | What happened | What Kosmos does | What you do |
 |---|---|---|
 | A card or bank payment is declined on the payment page. | Shows the client the reason. Nothing is recorded. | Nothing. |
-| A bank payment that was accepted later fails or is returned. | Deletes the payment, sets its invoices back to **Sent**, and emails the people your administrator set up to get server alerts. | Follow up with the client. |
-| An online trust deposit later fails or is returned. | Deletes the deposit if it was not confirmed, and sends the same email. A confirmed deposit is left in place. | Remove a confirmed deposit yourself on the client's trust ledger. |
-| You need to refund a client. | Nothing. Kosmos has no refund button, and a refund made at the processor changes nothing you can see in Kosmos. | Refund in the processor's own website. Then delete or reduce the payment and set the invoice back to **Sent**. |
+| A bank payment that was accepted later fails or is returned. | Deletes the payment, sets its invoices back to **Sent**, and emails the people your administrator set up to get server alerts. A payment request it had paid goes back to **Sent**. | Follow up with the client. Use the request's send button to resend it or send a reminder, or cancel it. |
+| An online trust deposit later fails or is returned. | Deletes the deposit if it was not confirmed, and sends the same email. A confirmed deposit is left in place, with a **Returned** badge beside it on the **Trust** tab's **History** and on the client's ledger. Either way the deposit request goes back to **Sent**. | Correct a **Returned** deposit yourself on the client's trust ledger: see [Online trust deposits](trust.md#online-trust-deposits). |
+| You need to refund a client. | Nothing. Kosmos has no refund button, and a refund made at the processor changes nothing you can see in Kosmos. | Refund in the processor's own website. Then delete the payment: an invoice it had paid goes back to **Sent**. For a part refund, remove the payment's applications, lower its **Amount** and apply it again. |
 
 ## Receipts and notices
 

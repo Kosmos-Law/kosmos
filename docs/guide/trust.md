@@ -20,10 +20,11 @@ You need the Financial permission for the **Trust** tab and everything on
 it. Ask your administrator. Every user with that permission can record,
 edit, confirm and delete any trust transaction.
 
-Two trust figures are shown without that permission: the balances on a
-contact's **Trust** tab (to every user) and **Trust Available (Pending)**
-on the time entry form (to every user who can open the matter). **Low
-Trust Available (Pending)** on the Dash is shown to administrators only.
+One trust figure is shown without that permission: **Trust Available
+(Pending)** on the time entry form, to every user who can open the
+matter. A contact's **Trust** tab needs the Financial permission like the
+rest. **Low Trust Available (Pending)** on the Dash is shown to
+administrators only.
 
 ## The Trust tab
 
@@ -46,15 +47,12 @@ Click the sort button beside any column except **Client ID** to sort by
 it, and again to reverse the order. The list starts sorted by client name.
 There is no search or filter on this view.
 
-A client is listed while its deposits (confirmed or not) differ from its
-confirmed withdrawals. So a client whose money has all been paid out stays
-on the list until the withdrawals are confirmed, then leaves it.
+A client is listed while its **Pending Balance** or **Confirmed Balance**
+is not zero. A client whose money has all been paid out stays on the list
+until every one of its transactions is confirmed, then leaves it.
 
-Good to know:
-
-- In the **Total** row, **Pending Balance** and **Confirmed Balance** add
-  up every transaction in the ledger, including clients who are not
-  listed. **Available (Pending)** adds up the listed clients only.
+The **Total** row adds up every client in the list, not only the page
+shown.
 
 ### History
 
@@ -91,7 +89,7 @@ The form closes and the view refreshes with the new figures.
 | **Type** | Yes | **Deposit** or **Withdrawal**. These are the only two types. |
 | **Method** | No | **ACH**, **Card**, **Wire**, **Transfer** or **Check**. Starts on **Check**. |
 | **Description** | Yes | 255 characters at most. Shown in every list, and the link you click to edit the transaction. |
-| **Amount** | Yes | Digits only, such as 2500.00. A dollar sign or a comma is refused. |
+| **Amount** | Yes | Digits only, such as 2500.00, and more than zero. A dollar sign or a comma is refused. Zero or a negative amount gets "Enter an amount greater than zero." |
 | **Confirmed** | Yes | **No** (the default) or **Yes**. See [Pending and confirmed](#pending-and-confirmed). |
 
 Good to know:
@@ -117,9 +115,9 @@ The withdrawal appears in the **Withdrawal** column and the balances drop.
 
 Good to know:
 
-- Kosmos does not compare a withdrawal with the client's balance. A
-  withdrawal larger than the balance is saved, and the balance then shows
-  as a negative amount.
+- Kosmos does not compare a withdrawal entered here with the client's
+  balance. A withdrawal larger than the balance is saved, and the balance
+  then shows as a negative amount.
 
 ## Pay an invoice from trust
 
@@ -130,31 +128,53 @@ of an invoice. The invoice must be **Sent** or **Deferred**. See
 1. Open the invoice and click **+ Trust** beside its status. **Add
    Payment** opens with **Payment method** set to **Trust** and **Detail**
    set to the invoice number.
-2. Check **Amount**. It starts as the invoice's total, not what is still
-   unpaid.
+2. Check **Date** and **Amount**. **Amount** starts as what the invoice
+   still owes.
 3. Click **Submit**. Kosmos takes you to **Payments**.
 
-Kosmos records two things:
+Kosmos records two things together:
 
 - **A payment on the matter**, with the date, method, amount and detail
   from the form. It is applied to the invoice, up to what the invoice
   still owes. An invoice paid in full becomes **Paid**.
-- **A trust withdrawal for the matter's client**, dated today whatever
-  **Date** you entered, for the whole **Amount**, with the description
-  "Invoice" and its number, no method, and not confirmed.
+- **A trust withdrawal for the matter's client**, with the payment's date
+  and its whole amount. Its description is the payment's **Detail**, or
+  "Payment" and the payment's number if **Detail** is empty. It has no
+  method and is not confirmed.
+
+Kosmos refuses the payment in two cases:
+
+- **The amount is more than the client holds in trust.** The form says
+  "The client holds $500.00 in trust, which is less than this payment.",
+  with the client's own balance. The balance it checks is the client's
+  **Pending Balance**, which counts deposits that are not confirmed yet.
+- **The matter has no client.** The form does not open, and Kosmos says
+  "This matter has no client, so there is no trust balance to pay from.
+  Set the client on the matter first."
+
+The rule follows the payment's method, not the button. A payment by
+**Trust** entered under **+ Card**, or in **Add Payment** on the
+**Payments** tab, records the same withdrawal and meets the same checks.
+A payment by any other method records no withdrawal, even under
+**+ Trust**.
+
+The withdrawal stays linked to its payment. When you edit the payment,
+the withdrawal's date, amount and description change to match. When you
+change the payment's method to something other than **Trust**, or delete
+the payment, the withdrawal is deleted. See
+[Edit or delete a payment](payments.md#edit-or-delete-a-payment).
 
 Good to know:
 
-- The two records are not linked afterwards. If you edit or delete the
-  payment, or void the invoice, the trust withdrawal stays as it is.
-  Correct it yourself on the client's ledger.
-- Only **+ Trust** records a withdrawal, and it does so whichever
-  **Payment method** you leave on the form. Choosing **Trust** as the
-  method under **+ Card**, or in **Add Payment** on the **Payments** tab,
-  records the payment and no withdrawal.
-- Use **+ Trust** only on a matter that has a client. On a matter with no
-  client the withdrawal belongs to no one, and the **Trust** tab stops
-  opening until someone with access to the server removes it.
+- Voiding the invoice does not undo the payment. The payment stays on
+  the matter, unapplied, and the withdrawal stays on the client's ledger.
+  Delete the payment if the money is to count in the client's trust
+  balance again.
+- Make corrections on the payment, not on the withdrawal. If you try to
+  edit or delete the withdrawal on the client's ledger, Kosmos refuses
+  with "This withdrawal was recorded by a payment from trust. Edit or
+  delete the payment (Invoicing, Payments) and the withdrawal follows."
+  You can still mark it confirmed.
 
 ## Pending and confirmed
 
@@ -212,13 +232,15 @@ Good to know:
 - **Trust Available** counts deposits that are not confirmed yet. It can
   be higher than the money that has cleared.
 - On **Work in Progress**, every matter of a client shows that client's
-  whole balance, and the **Total** row adds each row. A client with two
-  matters in the list is counted twice in that total.
+  whole balance. The **Totals** row counts each client once, so it can be
+  less than the column added up.
 
 ## Low-trust warnings
 
-Kosmos warns by colour and by a list on the Dash. It never stops you
-recording time, an invoice or a withdrawal.
+Kosmos warns by colour and by a list on the Dash. The warnings never stop
+you recording time, an invoice or a withdrawal. The one thing Kosmos
+refuses is a payment by **Trust** for more than the client's balance: see
+[Pay an invoice from trust](#pay-an-invoice-from-trust).
 
 - **Overview**, **Ledger** and **Summary**: the trust available figure
   takes a warning colour when it is below 25% of the client's **Pending
@@ -249,9 +271,11 @@ account. **Edit Transaction** shows the processor's **Transaction ID**.
 Good to know:
 
 - If the payment is later returned and the deposit is still unconfirmed,
-  Kosmos deletes the deposit. If you had already confirmed it, the
-  deposit stays in both balances with nothing on the ledger to mark it as
-  returned, and you must record the correction yourself.
+  Kosmos deletes the deposit. If the deposit was already confirmed, it
+  stays in both balances, with a **Returned** badge beside its
+  description on **History** and on the client's ledger. The money is not
+  in trust: record the correction yourself. Either way, the deposit
+  request goes back to **Sent** on the **Requests** tab.
 
 ## Edit or delete a transaction
 
@@ -264,15 +288,15 @@ confirmed or not, including an online deposit.
 2. Change the fields and click **Submit**. Or click **Delete**, then
    confirm "Are you sure you want to delete this record?".
 
-A deleted transaction is gone from every list, balance and export.
+A deleted transaction is gone from every list, balance and export. A
+contact that has trust transactions cannot be deleted. See
+[Contacts](contacts.md#delete-a-contact).
 
 Good to know:
 
 - No screen shows who recorded, changed or deleted a transaction. Kosmos
   keeps that history internally, and the person who runs your Kosmos
   server can retrieve it.
-- Deleting a contact deletes its trust transactions with it. See
-  [Contacts](contacts.md).
 
 ## Export the ledger
 
@@ -292,9 +316,10 @@ ledger, whichever period is showing, oldest first, with **Client ID**,
 ## Trust on a contact and on a matter
 
 A client's contact page has a **Trust** tab showing **Confirmed Balance**
-and **Pending Balance**. **View Full Trust Ledger** opens the client's
-ledger and needs the Financial permission. A contact with no transactions
-shows "This contact has no trust account activity."
+and **Pending Balance**, with **View Full Trust Ledger** to open the
+client's ledger. The tab is there only if you have the Financial
+permission. A contact with no transactions shows "This contact has no
+trust account activity."
 
 A matter's **Ledger** tab shows **Client Trust Balance (Pending)** and
 **Trust Available (Pending)** beside the matter's own totals. Both are the

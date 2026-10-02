@@ -36,7 +36,7 @@ The highlight appears in the panel and is painted on the page.
 
 | Field | Notes |
 |---|---|
-| **Importance** | See "Good to know" below. |
+| **Importance** | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
 | **Color** | **Yellow** (the default), **Green**, **Blue**, **Orange**, **Red** or **Purple**. |
 | **Paragraph number** | Optional. When filled in, the citation gives the paragraph, such as "(Rivera Dep. ¶ 12.)". Otherwise it gives the page, such as "(Rivera Dep. at 34.)". |
 | **Slug** | The name shown in lists and searched by keyword. |
@@ -64,7 +64,9 @@ first, ten to a page. It includes highlights made in court opinions (see
 Click the slug for a menu: **View Detail**, **Edit Highlight**, **View
 Source**, **Copy Text & Citation** and **Copy Link**. **View Source**, and
 the citation under the text, open the document in a new tab at the
-highlight's page with the highlight selected.
+highlight's page with the highlight selected. For a highlight made in a
+court opinion they open the opinion, which needs the Research
+permission.
 
 To narrow the list:
 
@@ -77,8 +79,10 @@ To narrow the list:
 - Click **Filter** for **Filter Highlights**, which adds **Document**,
   **Label** and **Order By**. Click **Apply**. **Restore Defaults** clears
   every filter.
-- Click the sort button beside **Created** or **Highlight**, or the flag
-  to put the most important first.
+- Click the sort button beside **Created**, **Highlight** or **Date**, or
+  the flag to put the most important first. Click the same button again
+  to reverse the order. **Date** sorts by the date in that column, with
+  undated highlights last.
 
 ### Edit or delete a highlight
 
@@ -90,14 +94,10 @@ stays, without that source.
 
 Good to know:
 
-- A new highlight is saved with **High** importance, whatever you choose
-  in **Importance** in **Create Highlight**. Change it afterwards.
 - **Review Highlights** in a document's menu opens this tab showing only
   that document's highlights, and the tab stays that way. Nothing on the
   toolbar shows it. Click **Filter**, set **Document** to **All** and
   click **Apply**.
-- The sort button beside **Date** sorts by the day each highlight was
-  made, not by the document's date.
 
 ## The Timeline
 
@@ -153,8 +153,10 @@ highlights made in documents, not those made in court opinions.
 - Click **Filter** for **Filter Facts**: **Start Date** and **End Date**
   set a date range, and **Keyword**, **Labels**, **Match**, **Importance
   (≥)** and **Order By** repeat the choices above. Click **Apply**.
-- Click the sort button beside **Date and Time** to reverse the order, or
-  the flag to put the most important first.
+  **Restore Defaults** clears every filter.
+- Click the sort button beside **Date and Time** to sort by date, or the
+  flag to put the most important first. Click the same button again to
+  reverse the order.
 
 Kosmos keeps a matter's filters until you change them or sign out.
 
@@ -166,16 +168,18 @@ remove the fact. Its documents and highlights are not affected.
 
 ### Download the chronology
 
-Click **Download PDF** at the right of the toolbar. The file lists each
-fact's date and description. Nothing else on these three tabs can be
-printed or exported, the witness list included.
+Click **Download PDF** at the right of the toolbar. The file holds the
+facts the list is showing, in the order it shows them, each with its
+date, its description and the citations of its sources. To print the
+whole timeline, clear the filters first. When a filter is on, the heading
+ends in "(filtered)" and a line under it gives the count and the filter,
+for example "Showing 4 of 12 facts. Filter: from 2026-03-01; importance
+High or higher." Nothing else on these three tabs can be printed or
+exported, the witness list included.
 
 Good to know:
 
-- The PDF always holds every fact on the matter, whatever filter is on,
-  and leaves out times, sources and labels.
-- **Restore Defaults** in **Filter Facts** does not clear the filter.
-  Empty each field and click **Apply** instead.
+- The PDF leaves out times and labels.
 
 ## Witnesses
 
@@ -225,16 +229,12 @@ witness, choose the name under **All Witnesses** on **Highlights**.
 Choose a level under **Importance**, or click **Filter** for **Filter
 Witnesses**: **Keyword** matches names and **Knowledge**, and
 **Alignment**, **Importance (≥)** and **Order By** narrow and sort the
-list. The sort buttons beside **Alignment**, **Name** and **Affiliation**
-do the same from the table.
+list. Click **Apply**. **Restore Defaults** clears every filter. The sort
+buttons beside **Alignment**, **Name** and **Affiliation** sort from the
+table.
 
 Click a witness's name for **Edit Witness**. Click **Submit** to save, or
 **Delete** and confirm. The highlights the witness was linked to stay.
-
-Good to know:
-
-- **Restore Defaults** in **Filter Witnesses** does not clear the filter.
-  Empty each field and click **Apply** instead.
 
 ## Change several at once
 

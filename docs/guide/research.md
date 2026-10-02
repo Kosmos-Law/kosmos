@@ -9,9 +9,10 @@ worked in a matter's case file before, read [Matters](matters.md) first.
 ## Before you start
 
 Open the matter, click **Case**, then **Research**. You need the Research
-permission to see the tab. Ask your administrator. Your firm must also
-have connected Google Gemini and CourtListener, which an administrator
-does once (see [AI providers and research](../admin/integrations/ai.md)).
+permission to see the tab and to open a case saved from it. Ask your
+administrator. Your firm must also have connected Google Gemini and
+CourtListener, which an administrator does once (see
+[AI providers and research](../admin/integrations/ai.md)).
 
 **Research** has five parts, listed across the top, and opens on **Search**.
 
@@ -72,16 +73,18 @@ in order, and stops twice to wait for you.
    of your searches found it ("Matched 3 queries"), its triage score
    ("Promise 8/10") and the model's reason. Click a case name to read the
    opinion in a new tab.
-6. Tick the cases you want read. The recommended ones (15 at most,
-   always including the three newest) are ticked already. Click **Run
-   briefs**.
+6. Tick the cases you want read, 15 at most. The recommended ones (always
+   including the three newest) are ticked already. The count beside
+   **Run briefs** shows how many are ticked, and the button is off while
+   more than 15 are. Click **Run briefs**.
 
 The page then shows "Briefing cases...", "Chasing citations..." and
 "Writing answer..." in turn, and cards for the cases fill in as they are
 read. The run is finished when that line is gone and **Answer** appears
 above the cases. A run takes several minutes, most of it in briefing,
 because every chosen opinion is fetched and read in full. It runs on the
-server, so you can leave the page and come back. Kosmos does not notify
+server, so you can leave the page and come back: **Research** opens on
+your latest question, at the stage it has reached. Kosmos does not notify
 you: look for **Complete** beside the question in **History**. The two
 points where the run waits for you do not time out.
 
@@ -92,10 +95,9 @@ Good to know:
   Supreme Court. Federal district courts are included for Georgia only.
   **All States** searches every court on CourtListener, federal or not.
 - There is no date range and no setting for the number of cases. You
-  control how many are read when you tick them.
-- Opening **Research** shows an empty search box even when you have a run
-  under way. Click **Search** to bring back your latest question, or pick
-  it in **History**.
+  control how many are read when you tick them, up to 15 in a run. A case
+  you leave out can be briefed afterwards from its card with **Brief
+  case**.
 
 ## Read the results
 
@@ -104,7 +106,9 @@ courts and the time. Below that:
 
 - **Answer** is the model's answer: a direct answer first, then a short
   discussion of each **High** case. There is no **Answer** when no case
-  was rated **High**.
+  was rated **High**. If the model fails to write it, the page shows "The
+  answer could not be written. The briefed cases are listed below. Run
+  the search again for a written answer." in its place.
 - Each case has a card. Click the case name to read the opinion in
   Kosmos, or the button beside it to open it on CourtListener.
   Under the name are the citation, court and date, "Cited 12 times" and
@@ -119,7 +123,7 @@ courts and the time. Below that:
 |---|---|
 | **Briefing** | The case is being read now. |
 | **High**, **Medium** | The model's rating. **High** means the holding bears directly on your question on the same procedural footing. |
-| **Error** | The opinion could not be fetched or briefed. |
+| **Error** | The opinion could not be fetched or briefed. The card gives the reason, and **Brief case** tries again. |
 | **Recent** | Found only among the newest decisions, not among the best matches. |
 | **Citing case** | Found because it cites one of your **High** cases. Hover to see which. |
 | **Cited authority** | Found because one of your **High** cases relies on it. Hover to see which. |
@@ -141,25 +145,32 @@ The model is asked to write every brief under the same headings:
 
 A card with no rating was not read: you did not tick it, or it turned up
 in the citation chase after the four places were taken. It shows
-CourtListener's excerpt and a **Brief case** button. A question run
-before briefs were introduced shows a short summary on each card instead.
+CourtListener's excerpt and a **Brief case** button. Click it and the
+card shows **Briefing**, with a line saying what Kosmos is doing, until
+the brief appears. A question run before briefs were introduced shows a
+short summary on each card instead.
 
 Good to know:
 
-- After you click **Brief case** the card may look unchanged. The brief
-  is being written. Reopen the question after a minute to see it.
-- In the opinion viewer, the highlighter button works only for a case you
-  have [bookmarked](#bookmark-a-case).
+- In the opinion viewer for a case you have not
+  [bookmarked](#bookmark-a-case), the highlighter button is off and the
+  panel says "This case is not saved to the matter, so it cannot be
+  highlighted yet. Bookmark it from the research results, then open it
+  from Full Cases."
 - If a run stops part-way, the question shows "Interrupted before it
   finished. Run the search again." about half an hour later. Nothing
   re-runs it for you: ask the question again.
+- A **Brief case** job that stops keeps its spinner for up to half an
+  hour. The card then shows "Briefing was interrupted. Try again." and
+  the **Brief case** button.
 
 ## Check how later cases treat a case
 
 **Validate** lists the opinions that cite a case and says how each one
 treats it. Click **Validate** on a result card. Or click **Validate** at
 the top of **Research**, type a reporter citation such as 410 U.S. 113,
-and click **Validate**.
+and click **Validate**. Either way the check opens in **Validate** and
+shows "Validating forward citations..." until it is done.
 
 The page shows the case, a summary of about 150 words, and **Forward
 Citations**: up to 20 opinions that cite the case, starting with the ones
@@ -167,19 +178,23 @@ that cite it most often. In each row, "Cited 4 times" is the number of
 times that opinion cites your case. Kosmos assesses the first five and
 marks each **Positive**, **Negative**, **Neutral** or **Distinguished**,
 with two or three sentences of explanation. Click **Assess** on any other
-row to have it assessed. Opening **Validate** with no case chosen lists
-the cases you have validated on this matter.
+row to have it assessed. A row that could not be assessed has no mark. It
+gives the reason, such as "Could not retrieve the citing opinion from
+CourtListener, so its treatment was not assessed.", and **Assess** tries
+again. Opening **Validate** with no case chosen lists the cases you have
+validated on this matter.
+
+Validating a case again keeps the rows and assessments already there and
+adds only citing opinions that were not yet listed. If the check itself
+fails, the page shows "Validation failed. Please try again."
 
 Good to know:
 
 - An assessment is written from the opening pages of the citing opinion,
   not all of it. Treatment that comes late in a long opinion can be
   missed.
-- After you validate a typed citation, the page that opens has no menus
-  and does not update. Go back to the matter and open **Research →
-  Validate**. The case is in the list once the check has finished.
-- Clicking **Validate** again on the same card repeats the check and
-  lists every citing opinion a second time.
+- A check or an assessment that stops keeps its spinner for up to half an
+  hour before its message appears.
 
 ## Go back to an earlier question
 
@@ -194,7 +209,8 @@ finished run. **Error** is a failed one: open it to see why. Any other
 status (**Pending**, **Refining**, **Searching**, **Processing**,
 **Enriching**, **Synthesizing**) means Kosmos is working. A question
 cannot be edited or run again: to narrow or reword it, ask a new one. A
-citation you typed in **Validate** appears in **History** as a question.
+citation you typed in **Validate** is not a question and is not listed
+here: find the case under **Validate**.
 
 Good to know:
 
@@ -212,13 +228,14 @@ you already know, click the **+** button in **Full Cases**, enter its
 reporter citation in **Citation**, click **Look Up**, check the preview
 and click **Add to Matter**.
 
-In **Full Cases**, click a case name for **View Case**, **View on
-CourtListener** and **Delete**. **Delete** removes the case from the
-matter, with any highlights made in it. Use the flag column to set a
-case's importance, from **Highest** to **Lowest**. Tick cases to set
-**AI** or **Labels** for several at once, or to delete them. **View
-Case** opens the opinion, where you can select a passage and click the
-highlighter button to save it as a [highlight](facts.md#highlights).
+In **Full Cases**, type in **Search cases...** to match case names and
+citations. Click a case name for **View Case**, **View on CourtListener**
+and **Delete**. **Delete** removes the case from the matter, with any
+highlights made in it. Use the flag column to set a case's importance,
+from **Highest** to **Lowest**. Tick cases to set **AI** or **Labels** for
+several at once, or to delete them. **View Case** opens the opinion,
+where you can select a passage and click the highlighter button to save
+it as a [highlight](facts.md#highlights).
 
 ### Save a brief
 
@@ -226,19 +243,17 @@ On a result card, click **Save Brief**. Kosmos writes a separate brief
 of the case under **Facts**, **Issue**, **Holding** and **Reasoning**,
 framed by your question. When "Generating Brief..." turns into **View
 Brief**, click it to read the brief. **Case Briefs** lists the briefs you
-have saved, and the trash button there deletes one.
+have saved, and the trash button there deletes one. Saved briefs are your
+own: a colleague's briefs are not shown to you, and each of you can save
+a brief of the same case.
 
 Good to know:
 
 - A saved brief is written from the opening part of the opinion, not the
   whole decision. The **Case brief** on the card is the one written from
   the full text.
-- **Case Briefs** shows only your own. If a colleague has already saved a
-  brief of the same case, your card shows **View Brief** but the brief
-  does not open.
-- On a matter that is not **Open**, **View Case** shows a page-not-found
-  error, and **Delete** and the **AI** and importance settings in **Full
-  Cases** do not work. Bookmarking still works.
+- If the card shows "Brief generation failed", delete the brief in
+  **Case Briefs** and click **Save Brief** again.
 
 ## Use saved cases in AI chat
 

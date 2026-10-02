@@ -40,6 +40,12 @@ the file. If you use **Rotate token** or **Revoke token** under
 **Settings → Claude Desktop**, download the extension again and reinstall
 it (see [Settings](settings.md)).
 
+This page describes version 0.4.0 of the extension. The download dialog,
+**LibreOffice Companion**, names the current version, and **Kosmos →
+Status** in Writer shows the version you have installed (a copy that
+shows none is older). To update, download the file again, install it over
+the old one and restart LibreOffice.
+
 ## Link a draft to a conversation
 
 1. Save the document as an .odt file in the matter's Drive folder, in any
@@ -54,15 +60,18 @@ it (see [Settings](settings.md)).
 The pen button is replaced by a badge with the file's name, and the
 conversation carries a **Draft** badge in the **AI** tab's list.
 
+If the link cannot be made, the pen button stays and a message headed
+**Draft not linked** gives the reason. For example, "That file was not
+found in this matter's Drive folder. Reopen the list and pick the draft
+again." means the file was moved or deleted after the list opened.
+
 Good to know:
 
-- If the pen button is still there after you click a file, the link was
-  not made. Kosmos shows no error. Open the dialog and try again.
 - The dialog reads "Connect Google Drive and link this matter's Drive
   folder to use drafts." when the matter has no Drive folder linked, and
   "No ODT files found in this matter's Drive folder." when there is
-  nothing to pick. In both cases the link to the extension download is
-  not shown.
+  nothing to pick. The link to the extension download is shown in both
+  cases.
 - A conversation holds one draft at a time. Several conversations can
   link the same file.
 
@@ -72,25 +81,33 @@ Good to know:
    your computer.
 2. Choose **Kosmos → Connect to drafting session**.
 
-A message confirms the connection and names the file and the matter, for
-example "Complaint.odt" and "Rivera v. Northside Logistics". Keep the
-document open while you work with the AI.
+A message confirms the connection and names the file, the matter and the
+conversation, for example "Complaint.odt" and "Rivera v. Northside
+Logistics: Complaint draft". Keep the document open while you work with
+the AI.
+
+The document is paired with its link by file name. If you have linked
+more than one file of that name, for example on two matters, Writer first
+lists them, one line for each file with its matter and conversation, and
+asks you to "Choose the matter and conversation this document belongs
+to." Select the line and click **Connect**. **Cancel** leaves the document
+unconnected.
 
 | **Kosmos** menu item | What it does |
 |---|---|
 | **Connect to drafting session** | Pairs the open document with its link in Kosmos and turns on the display of tracked changes. |
 | **Disconnect** | Stops the connection. The AI goes back to reading the copy in Drive. |
-| **Status** | Says whether the document is connected, to which file and matter, and what happened last. |
+| **Status** | Says whether the document is connected, to which file, matter and conversation, and what happened last. It also shows the version of the extension you have installed. |
 
 Good to know:
 
-- The document is paired with its link by file name alone. If you have
-  linked files with the same name on two matters, Writer connects to the
-  one linked most recently. Give drafts distinct names, and read the
-  matter in the confirmation message.
+- A copy of the extension older than 0.4.0 does not ask which file you
+  mean. It connects to the file of that name linked most recently, which
+  may be on another matter. Update the extension, and read the matter in
+  the confirmation message.
 - Only the person who started the conversation can connect Writer to its
-  draft. A colleague can read the chat, but their Writer answers "No
-  draft link found".
+  draft, and only while they can still open the matter. A colleague can
+  read the chat, but their Writer answers "No draft link found".
 - The chat window does not show whether Writer is connected. Use
   **Kosmos → Status** in Writer.
 
@@ -113,13 +130,15 @@ AI is instructed to edit only when you direct it to. A question, or a
 request for suggestions, gets an answer in the chat and leaves the
 document alone.
 
-When the edits are not applied, the reply says why:
+When the edits are not applied, or Kosmos cannot tell, the reply says
+why:
 
 | The reply says | What to do |
 |---|---|
 | "the draft is not connected" | Connect from Writer, then ask again. |
 | "text not found in the document", "ambiguous", or another reason in parentheses | The AI's quote did not match the document. Nothing was changed. Ask again, quoting the passage you mean. |
-| "the LibreOffice companion did not respond in time" | Check **Kosmos → Status**, and look at the document before you ask again, in case the edits arrived late. |
+| "the LibreOffice companion did not respond in time" | Writer did not collect the edits within 30 seconds. Nothing was changed. Check **Kosmos → Status**, then ask again. |
+| "The proposed edits could not be confirmed" | Writer collected the edits and did not report back in time. Look at the document: if the tracked changes are there, they were applied. If they are not, check **Kosmos → Status**, then ask again. |
 | "change recording could not be enabled" | Remove the document's tracked-changes protection in Writer, then ask again. |
 
 Good to know:
@@ -155,18 +174,22 @@ To unlink a draft:
 
 1. In the chat, click the **×** button beside the badge with the file's
    name.
-2. A **Confirm** dialog asks "Unlink this draft from the conversation? The
-   document itself is untouched." Click **Delete**.
+2. An **Unlink Draft** dialog asks "Unlink this draft from the
+   conversation? The document itself is untouched." Click **Unlink**.
 
 The pen button returns. Only the link is removed: the document is not
-deleted or changed, whatever the button's label suggests. Deleting the
-conversation removes its link in the same way.
+deleted or changed. Deleting the conversation removes its link in the
+same way.
 
 Good to know:
 
 - Kosmos cannot rename, move or delete the file. Do that in Drive.
-- If you rename the file, the link keeps the old name and Writer no
-  longer finds it. Unlink the draft and link it again.
+- If you rename the file in Drive, Writer answers "No draft link found"
+  until the link has the new name. The link takes it when Kosmos next
+  reads the file from Drive: that happens when you send a message in the
+  conversation while Writer is not connected and Kosmos's copy is more
+  than five minutes old. To reconnect sooner, unlink the draft and link
+  it again.
 
 ## File the finished document
 

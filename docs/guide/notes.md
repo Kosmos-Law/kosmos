@@ -36,10 +36,10 @@ looking at.
 
 ### Work with folders
 
-1. Click the **+** button beside **Folders**. A form headed **Edit
-   Folder** opens (the same form is used for a new folder).
-2. Choose the **Parent Folder**, or leave it on the root-level choice for
-   a top-level folder.
+1. Click the **+** button beside **Folders**. A form headed **New
+   Folder** opens.
+2. Choose the **Parent Folder**, or choose **None (root level)** for a
+   top-level folder.
 3. Enter the **Folder Name** (50 characters at most) and click **Submit**.
 
 The folder appears in the list. Folders nest four levels deep, and two
@@ -51,13 +51,24 @@ folder: **New note**, **New subfolder**, **Edit** (name and parent),
 folder**. You can also drag a folder onto another folder, or onto
 **Inbox** to make it top-level.
 
-**Delete** asks what to do with what is inside:
+**Delete** opens **Delete Folder**. It counts the subfolders and the notes
+inside, including the notes in subfolders ("This folder and its subfolders
+contain 3 notes."), and asks what to do with them. For an empty folder the
+choice is **Cancel** or **Delete**. Otherwise the buttons depend on what
+is inside.
+
+When there are notes anywhere inside:
 
 | Button | What happens |
 |---|---|
 | **Delete Folder and Notes** | The folder, its notes, every subfolder and the notes in them are deleted. |
-| **Delete Folder, Keep Notes** | The folder is removed. Its notes go to **Inbox** and its subfolders move up one level. |
-| **Delete Folder and Subfolders** | The folder and every subfolder are deleted, with the notes in the subfolders. |
+| **Delete Folder, Keep Notes** | The folder is removed. Its notes go to **Inbox** and its subfolders move up one level, with their notes. |
+
+When there are subfolders and no notes:
+
+| Button | What happens |
+|---|---|
+| **Delete Folder and Subfolders** | The folder and every subfolder are deleted. |
 | **Delete Folder, Keep Subfolders** | The folder is removed and its subfolders move up one level. |
 
 ### Work with notes
@@ -76,11 +87,6 @@ folder menu's **New note** does the same.
   **Importance**, **Move** and a delete button. Dragging a ticked row
   moves every ticked note.
 - **Delete**: click the title, then **Delete**, and confirm.
-
-Good to know:
-
-- **Delete Folder and Subfolders** also deletes the notes inside the
-  subfolders. The dialog does not count them.
 
 ## A matter's Notes tab
 
@@ -105,12 +111,6 @@ text), or **Filter**, which adds **Label** and **Order By**. An **All
 Topics** menu appears when notes on the matter have a topic. The AI can
 set a topic when it creates a note.
 
-Good to know:
-
-- On a matter that is not **Open**, rename a note in the editor instead.
-  **Edit Details** offers open matters only, and saving it with **Matter**
-  left blank fails.
-
 ## The editor
 
 The editor opens in its own browser tab: from **Open** or the **+**
@@ -121,14 +121,15 @@ looked at last.
 ### Find your way around
 
 The left panel has three tabs, shown as icons: **Library** (the library's
-folders and notes), **Matters** (each open matter, with its own folders
-and notes) and **Recent** (the last seven notes you opened). Click a note
-to open it in the middle of the page. Above the list are **New note**,
-**New folder** (on the **Library** tab), **Search notes** and
-**Collapse/Expand all**. The right panel is the **Outline**: the note's
-headings, from Heading 2 down. Click a heading to jump to it. Each panel
-has a button at its outer top corner to hide it, and you can drag a
-panel's inner edge to resize it.
+folders and notes), **Matters** (each open matter you can see, with its
+own folders and notes) and **Recent** (the last seven notes you opened).
+A matter that is not **Open** is listed on **Matters** only while one of
+its notes is open in the editor. Click a note to open it in the middle of
+the page. Above the list are **New note**, **New folder** (on the
+**Library** tab), **Search notes** and **Collapse/Expand all**. The right
+panel is the **Outline**: the note's headings, from Heading 2 down. Click
+a heading to jump to it. Each panel has a button at its outer top corner
+to hide it, and you can drag a panel's inner edge to resize it.
 
 Right-click in the left panel to organise notes without leaving the
 editor:
@@ -144,9 +145,12 @@ can drag a note or folder onto a folder. While you drag, **Move to root**
 (or **Move to matter root**) appears at the bottom of the list. To rename
 a note, click its title at the top of the note, type, and press Enter.
 
-**New note** above the list creates the note at the top level of the
-library, or of the matter if you opened the editor on a matter note. To
-choose where a note goes, right-click the folder or matter instead.
+**New note** above the list follows where you are. On the **Library** tab
+it creates the note at the top level of the library. On the **Matters**
+and **Recent** tabs it creates the note beside the one you have open: at
+the top level of that note's matter, or of the library if the open note
+is a library note. To choose where a note goes, right-click the folder or
+matter instead.
 
 ### Saving
 
@@ -187,8 +191,11 @@ You can also type Markdown and the editor formats it as you go:
 | Ctrl+1 to Ctrl+5 | Heading 1 to 5. Ctrl+0 returns to normal text. |
 | Ctrl+Shift+; | Insert source |
 
-On a Mac, use Cmd in place of Ctrl. **More actions → Keyboard shortcuts**
-lists the rest. See also [Keyboard shortcuts](shortcuts.md).
+On a Mac, use Cmd in place of Ctrl. Saving, the two searches and the
+shortcuts list work wherever the cursor is. The other shortcuts act only
+while the cursor is in the note's text. **More actions → Keyboard
+shortcuts**, or Ctrl+?, lists the rest. See also
+[Keyboard shortcuts](shortcuts.md).
 
 In a matter note, **Insert source** searches the matter's highlights and
 documents and inserts the one you click as a citation. Click a document
@@ -198,13 +205,18 @@ Detail** and **View Source**. See [Documents](documents.md) and
 
 Good to know:
 
-- The editor has no web links. A Markdown link that is pasted or imported
-  keeps its text and loses its address.
-- Some plain text is read as formatting the next time the note opens, and
-  is then saved that way. Text inside angle brackets (an email address
-  copied from a message header, for example) disappears, and a word
-  between two underscores or asterisks turns italic and loses them. Put
-  such text in inline code.
+- The editor has no web links. A Markdown link that is imported becomes
+  its text followed by the address in parentheses, and so does one that
+  is pasted, the next time the note opens.
+- A note is stored as Markdown, so characters that Markdown uses are read
+  as formatting the next time the note opens, even where the editor left
+  them alone as you typed or pasted. Two asterisks on one line (two
+  footnote marks, for example) disappear and the text between them turns
+  italic. A line that begins with `#`, `-` or `>` and a space becomes a
+  heading, a bullet or a quote. To keep such characters as they are, put
+  the text in inline code. Text in angle brackets (an email address
+  copied from a message header) and underscores inside a word (a file
+  name) are kept as typed.
 
 ### Tables
 
@@ -218,6 +230,10 @@ You can also type a table: a line such as `| Name | Date |`, then a line
 `| --- | --- |`, then Enter. A table pasted as plain text in that form, or
 copied from a web page or word processor, becomes a table too. Cells
 cannot be merged and columns cannot be resized.
+
+For a second line inside a cell, press Shift+Enter: the line break is
+kept. Paragraphs made with Enter inside one cell are joined into a single
+line the next time the note opens.
 
 ### Import, export and print
 
@@ -235,8 +251,8 @@ panels).
 - **To another matter**: in the editor, right-click the note and click
   **Properties**. In **Note Properties**, choose the **Matter** and click
   **Move**. Or change **Matter** in **Edit Details** on the Notes tab. The
-  note lands at the top level of the new matter. Only open matters you
-  can see are offered.
+  note lands at the top level of the new matter. Both lists offer the
+  open matters you can see, and the matter the note is on now.
 - **Between a matter and the library**: not possible. Copy the text into
   a new note.
 
@@ -259,18 +275,20 @@ Dragging never carries a note or folder from one matter to another.
 Kosmos does not merge edits, and it does not show you that someone else
 has the note open. The first save wins. If someone else (or the AI) saves
 the note while you have changes of your own, your next save is refused
-and a banner appears: "This note changed in another tab. Editing is
-paused." It says "another tab" even when the other save came from another
-person.
+and a banner appears: "This note was changed somewhere else (another tab,
+another person or the AI). Editing is paused."
+
+While the banner shows, the note and its title are read-only, the
+formatting buttons are hidden, and the disk icon becomes a warning
+triangle. You can still select and copy text.
 
 1. Select your unsaved text and copy it.
-2. Click **Reload latest**. The note is replaced with the saved version.
+2. Click **Reload latest**. The note is replaced with the saved version,
+   and what you had typed but not saved is gone.
 3. Paste your text back where it belongs.
 
 Good to know:
 
-- After the banner appears you can still type, but nothing you type is
-  saved, and **Reload latest** discards it.
 - If you only have the note open to read, it does not refresh when a
   colleague saves. Reload the page to see their changes.
 
