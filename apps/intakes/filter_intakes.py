@@ -22,6 +22,23 @@ SOURCE_CHOICES = (
 )
 
 
+# The sorts the list offers: the column buttons and the Filter dialog's
+# Order By. The order-by view accepts only these.
+ORDER_FIELDS = ("date", "name", "importance")
+
+
+class IntakeOrderingFilter(django_filters.OrderingFilter):
+    """Sorts, then breaks ties newest first. Most intakes share one
+    importance (Normal), so without a tie-break their order is the
+    database's whim and rows can repeat or go missing between pages."""
+
+    def filter(self, qs, value):
+        if not value:
+            return qs
+        ordering = [self.get_ordering_value(param) for param in value]
+        return qs.order_by(*ordering, "-date", "-id")
+
+
 class IntakeFilter(django_filters.FilterSet):
     status = django_filters.ChoiceFilter(
         choices=INTAKE_STATUS_CHOICES, empty_label="All"
@@ -34,14 +51,12 @@ class IntakeFilter(django_filters.FilterSet):
         widget=django_filters.widgets.RangeWidget(attrs={"type": "date"})
     )
     source = django_filters.ChoiceFilter(choices=SOURCE_CHOICES, empty_label="All")
-    order_by = django_filters.OrderingFilter(
-        fields=(
-            ("date", "date"),
-            ("name", "name"),
-        ),
+    order_by = IntakeOrderingFilter(
+        fields=tuple((field, field) for field in ORDER_FIELDS),
         field_labels={
             "date": "Date",
             "name": "Name",
+            "importance": "Importance",
         },
         empty_label=None,
     )
