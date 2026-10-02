@@ -14,6 +14,7 @@ problems answer 200 with an error fragment swapped into #drive-folder-error.
 
 import logging
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
@@ -213,6 +214,7 @@ def drive_folder_modal(request, matter_id):
     context = {
         "matter": matter,
         "linked": linked,
+        "drive_root_name": settings.DRIVE_NOTES_ROOT,
         "root_folders": root_folders,
         "current_folder_id": matter.drive_folder_id,
         "current_folder_name": matter.drive_folder,

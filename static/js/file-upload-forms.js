@@ -11,6 +11,32 @@ let documentDropzone = null;
 let preservedDropzoneFiles = [];
 let markdownDropzone = null;
 
+// Today's date where the user is. toISOString() gives the UTC date, which is
+// already tomorrow in the evening in US time zones.
+const localIsoDate = () => {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
+// A plain message under the dropzone, for a response that is not the form
+// (the web server refusing an oversized upload, a server error). Its body is
+// an HTML error page that must not be written into the dialog.
+const showUploadError = (message) => {
+  const dropzone = document.querySelector("#document-dropzone");
+  if (!dropzone) return;
+  let list = document.querySelector("#upload-error");
+  if (!list) {
+    list = document.createElement("ul");
+    list.id = "upload-error";
+    list.className = "errorlist";
+    dropzone.insertAdjacentElement("afterend", list);
+  }
+  const item = document.createElement("li");
+  item.textContent = message;
+  list.replaceChildren(item);
+};
+
 const initializeDocumentDropzone = () => {
   const dropzoneElement = document.querySelector("#document-dropzone");
   const form = document.querySelector("#file-form");
@@ -85,18 +111,20 @@ const initializeDocumentDropzone = () => {
 
             preview.classList.add("dz-success", "clickable-preview");
 
-            const documentId = form.action.split("/").slice(-2, -1)[0]; // Extract ID from URL
-            const downloadUrl = `/documents/download/${documentId}/`;
+            // The document's real download address, from the template.
+            const downloadUrl = dropzoneElement.dataset.downloadUrl;
 
-            preview.style.cursor = "pointer";
-            preview.title = "Click to download and view current file";
+            if (downloadUrl) {
+              preview.style.cursor = "pointer";
+              preview.title = "Click to download and view current file";
 
-            preview.addEventListener("click", (e) => {
-              // Don't trigger download if clicking the remove button
-              if (!e.target.closest(".dz-remove")) {
-                window.open(downloadUrl, "_blank");
-              }
-            });
+              preview.addEventListener("click", (e) => {
+                // Don't trigger download if clicking the remove button
+                if (!e.target.closest(".dz-remove")) {
+                  window.open(downloadUrl, "_blank");
+                }
+              });
+            }
           }
         }
 
@@ -135,7 +163,7 @@ const initializeDocumentDropzone = () => {
                 dateField.value = isoDateMatch[1];
               } else {
                 // Default to today's date
-                dateField.value = new Date().toISOString().split("T")[0];
+                dateField.value = localIsoDate();
               }
             }
 
@@ -202,6 +230,10 @@ const initializeDocumentDropzone = () => {
                 document.body.dispatchEvent(
                   new CustomEvent("documentsChanged"),
                 );
+              } else if (response.status === 413) {
+                showUploadError("This file is too large to upload.");
+              } else if (!response.ok) {
+                showUploadError("The upload failed. Try again.");
               } else {
                 // Form validation errors - update content
                 return response.text().then((html) => {
