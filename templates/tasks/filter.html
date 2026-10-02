@@ -17,9 +17,22 @@
       </form>
     </div>
     <div class="modal-footer">
-      <button type="button"
-              class="btn btn-secondary"
-              data-href="{% url 'tasks:filter-default' %}">Restore Defaults</button>
+      {% comment %}
+        This dialog is shared with a matter's Tasks tab, which has its own
+        filter. There, Restore Defaults resets that tab's filter in place; on
+        the firm-wide tab it resets the firm-wide one.
+      {% endcomment %}
+      {% if matter %}
+        <button type="button"
+                class="btn btn-secondary"
+                hx-post="{% url 'matters:tasks-filter' matter.id %}"
+                hx-vals='{"restore_defaults": "1"}'
+                hx-swap="none">Restore Defaults</button>
+      {% else %}
+        <button type="button"
+                class="btn btn-secondary"
+                data-href="{% url 'tasks:filter-default' %}">Restore Defaults</button>
+      {% endif %}
       <button type="submit" form="tasks-filter-form" class="btn btn-success">Apply</button>
     </div>
   </div>

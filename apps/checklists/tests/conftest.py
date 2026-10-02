@@ -2,7 +2,7 @@ import pytest
 from django.test import Client
 
 from apps.accounts.models import CustomUser
-from apps.folders.models import Folder
+from apps.checklists.models import ChecklistTemplate, ChecklistTemplateItem
 from apps.matters.models import Matter, PracticeArea
 from apps.tasks.models import Task
 
@@ -14,7 +14,6 @@ def user():
     )
     user.set_password("clawboy")
     user.save()
-
     return user
 
 
@@ -27,64 +26,15 @@ def client(user):
 
 
 @pytest.fixture
-def folder(user):
-    folder = Folder.objects.create(
-        app="agenda",
-        name="Current",
-    )
-    folder.save()
-    return folder
-
-
-@pytest.fixture
 def practice_area():
-    practice_area = PracticeArea.objects.create(name="General", is_active=True)
-    return practice_area
+    return PracticeArea.objects.create(name="General", is_active=True)
 
 
 @pytest.fixture
 def matter(user, practice_area):
-    matter = Matter.objects.create(
-        user=user,
-        name="Sample Test Matter",
-        work_status="Awaiting response from OC",
-        status="Open",
-        practice_area=practice_area,
+    return Matter.objects.create(
+        user=user, name="Sample Test Matter", status="Open", practice_area=practice_area
     )
-    matter.save()
-
-    return matter
-
-
-@pytest.fixture
-def task(user, folder, matter):
-    task = Task.objects.create(
-        user=user,
-        folder=folder,
-        matter=matter,
-        description="Read about Mohandas Gandhi",
-        date_due="2024-12-07",
-        status="Pending",
-    )
-    task.save()
-    return task
-
-
-@pytest.fixture
-def task_data(task, folder, user, matter):
-    exclude_keys = {"_state", "id", "user_id", "folder_id", "matter_id"}
-    task_data = {
-        key: value
-        for key, value in task.__dict__.items()
-        if key not in exclude_keys and value is not None
-    }
-
-    task_data["id"] = task.id
-    task_data["folder"] = folder.id
-    task_data["user"] = user.id
-    task_data["matter"] = matter.id
-
-    return task_data
 
 
 @pytest.fixture
@@ -116,3 +66,38 @@ def restricted_client(restricted):
     client.login(username="Rae", password="clawboy")
     client.get("/dash/")
     return client
+
+
+@pytest.fixture
+def task(user, matter):
+    return Task.objects.create(
+        user=user, matter=matter, description="File the brief", status="Pending"
+    )
+
+
+@pytest.fixture
+def other_task(user, other_matter):
+    return Task.objects.create(
+        user=user, matter=other_matter, description="Their filing", status="Pending"
+    )
+
+
+@pytest.fixture
+def template():
+    template = ChecklistTemplate.objects.create(name="Filing steps")
+    ChecklistTemplateItem.objects.create(
+        template=template, description="Proofread", order=1
+    )
+    ChecklistTemplateItem.objects.create(
+        template=template, description="Serve", order=2
+    )
+    return template
+
+
+@pytest.fixture
+def second_template():
+    template = ChecklistTemplate.objects.create(name="Closing steps")
+    ChecklistTemplateItem.objects.create(
+        template=template, description="Return the file", order=1
+    )
+    return template

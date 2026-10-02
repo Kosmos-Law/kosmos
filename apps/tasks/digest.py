@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.calendar.models import Event
+from apps.tasks.access import sees_all_matters, tasks_for_user
 from apps.tasks.constants import ACTIVE_STATUSES
 from apps.tasks.models import Task
 
@@ -37,19 +38,18 @@ def send_digest_for_user(user):
     """Build and send a single digest email for the given user.
 
     Returns True if an email was sent, False if there was nothing to report.
-    Limited users (perm_all_matters=False) only see items for their matters.
+    A user limited to assigned matters sees the items on those matters and
+    the items on no matter, as on the Dash. An admin sees everything.
     """
     today = timezone.localdate()
     upcoming_end = today + timedelta(days=LOOKAHEAD_DAYS)
 
-    # Scope to user's matters if limited user
-    matter_filter = {}
-    if not user.perm_all_matters:
-        user_matter_ids = list(user.assigned_matters.values_list("id", flat=True))
-        matter_filter = {"matter__id__in": user_matter_ids}
-
     # Events
-    events_qs = Event.objects.select_related("matter").filter(**matter_filter)
+    events_qs = Event.objects.select_related("matter")
+    if not sees_all_matters(user):
+        events_qs = events_qs.filter(
+            Q(matter__isnull=True) | Q(matter__in=user.assigned_matters.all())
+        )
 
     overdue_events = events_qs.filter(
         date__lt=today,
@@ -68,7 +68,7 @@ def send_digest_for_user(user):
     ).order_by("date", "start_time")
 
     # Tasks
-    tasks_qs = Task.objects.select_related("user", "matter").filter(**matter_filter)
+    tasks_qs = tasks_for_user(Task.objects.select_related("user", "matter"), user)
 
     overdue_tasks = tasks_qs.filter(
         date_due__lt=today,

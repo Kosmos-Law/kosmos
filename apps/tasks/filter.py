@@ -2,8 +2,10 @@ import django_filters
 from django import forms
 from django.db.models import F, Q
 
+from apps.accounts.access import filter_matters_for_user
 from apps.accounts.models import CustomUser
 from apps.matters.models import Matter
+from apps.tasks.access import TASK_MATTER_STATUSES
 from apps.tasks.constants import STATUS_CHOICES
 from apps.tasks.models import Task
 
@@ -16,6 +18,18 @@ IMPORTANCE_CHOICES = (
     (2, "Lower"),
     (1, "Lowest"),
 )
+
+
+def matters_for_request(request):
+    """The Matter choices: open matters, limited to the ones the user may see.
+
+    The filter is built with ``request=`` wherever a user is looking at it; a
+    matter that is not theirs is neither listed nor accepted as a value.
+    """
+    matters = Matter.objects.filter(status__in=TASK_MATTER_STATUSES).order_by("name")
+    if request is None:
+        return matters
+    return filter_matters_for_user(matters, request.user)
 
 
 class DateCompletedFilter(django_filters.DateFromToRangeFilter):
@@ -70,6 +84,16 @@ class TasksOrderingFilter(django_filters.OrderingFilter):
                     "description",
                     "id",
                 )
+            if ordering[0] in ("status", "-status"):
+                # Status is the sort itself here: leading with the usual
+                # "-status" would pin the direction and the button could
+                # never reverse it.
+                return qs.order_by(
+                    ordering[0],
+                    F("date_due").asc(nulls_last=True),
+                    "-importance",
+                    "id",
+                )
             return qs.order_by("-status", *ordering, "id")
         except IndexError:
             return qs.order_by("-status", *ordering, "id")
@@ -86,7 +110,7 @@ class TasksFilter(django_filters.FilterSet):
         widget=django_filters.widgets.RangeWidget(attrs={"type": "date"})
     )
     matter = django_filters.ModelChoiceFilter(
-        queryset=Matter.objects.filter(status__in=["Pending", "Open"]).order_by("name"),
+        queryset=matters_for_request,
         empty_label="All",
     )
     user = django_filters.ModelChoiceFilter(

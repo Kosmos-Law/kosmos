@@ -1,6 +1,7 @@
 from django.db.models import F
 from django.utils import timezone
 
+from apps.accounts.access import filter_matters_for_user
 from apps.accounts.models import CustomUser
 from apps.checklists.models import Checklist, UserChecklistView
 from apps.management.pagination import CustomPaginator
@@ -10,6 +11,11 @@ from apps.management.selection import (
     get_session_key,
 )
 from apps.matters.models import Matter
+from apps.tasks.access import (
+    matters_for_task_form,
+    sees_all_matters,
+    tasks_for_user,
+)
 from apps.tasks.constants import (
     ACTIVE_STATUSES,
     BOARD_PAGE_SIZE,
@@ -93,10 +99,27 @@ def resolve_task_filter(request):
     Date presets are semantic: the stored filter_label is re-derived into
     fresh dates on every read, so a session's "Today" never goes stale.
     Returns (tasks, filter_data, user_id, matter_id, importance_value).
+
+    The queryset is limited to the tasks the user may see before any filter
+    is applied, so no filter value can widen it.
     """
     today = timezone.localdate()
+    visible_tasks = tasks_for_user(Task.objects.all(), request.user)
 
     filter_data = request.session.get("tasks_filter", {})
+
+    # A stored matter the user cannot see (set before they lost the matter)
+    # is dropped rather than left to name the matter on the toolbar.
+    stored_matter = filter_data.get("matter")
+    if stored_matter not in (None, "") and not sees_all_matters(request.user):
+        allowed = str(stored_matter).isdigit() and (
+            filter_matters_for_user(
+                Matter.objects.filter(pk=stored_matter), request.user
+            ).exists()
+        )
+        if not allowed:
+            filter_data = {**filter_data, "matter": ""}
+            request.session["tasks_filter"] = filter_data
 
     # Drop the legacy "All Users" sentinel (0) before binding. The user
     # filter is a ModelChoiceFilter and would otherwise fail validation.
@@ -115,7 +138,7 @@ def resolve_task_filter(request):
             "order_by": refreshed.get("order_by", "date_due"),
         }
 
-        filter = TasksFilter(filter_data)
+        filter = TasksFilter(filter_data, queryset=visible_tasks, request=request)
         tasks = filter.qs.select_related("matter", "user")
 
         user_id = filter_data.get("user")
@@ -143,7 +166,7 @@ def resolve_task_filter(request):
         request.session["tasks_filter"] = default_filter
         request.session.modified = True
 
-        filter = TasksFilter(default_filter)
+        filter = TasksFilter(default_filter, queryset=visible_tasks, request=request)
         tasks = filter.qs.select_related("matter", "user")
 
         user_id = request.user.id
@@ -239,7 +262,9 @@ def get_list_data(request):
 
     # Prepend new tasks to the top of the page
     if new_task_ids:
-        new_tasks = list(Task.objects.filter(id__in=new_task_ids))
+        new_tasks = list(
+            tasks_for_user(Task.objects.filter(id__in=new_task_ids), request.user)
+        )
         task_list = new_tasks + list(pagination.get_object_list())
     else:
         task_list = pagination.get_object_list()
@@ -273,9 +298,7 @@ def get_list_data(request):
         "session_key": "tasks_pagination",
         "trigger_key": "tasksListChanged",
         "objects": task_list,
-        "matters": Matter.objects.filter(status__in=["Pending", "Open"]).order_by(
-            "name"
-        ),
+        "matters": matters_for_task_form(request.user),
         "today": today,
         "users": users,
         "importances": list(range(7, 0, -1)),
@@ -332,7 +355,11 @@ def get_board_data(request):
     board_filter["status"] = [value for value, _ in STATUS_CHOICES]
 
     tasks = (
-        TasksFilter(board_filter)
+        TasksFilter(
+            board_filter,
+            queryset=tasks_for_user(Task.objects.all(), request.user),
+            request=request,
+        )
         .qs.select_related("matter", "user")
         .order_by(F("custom_order").asc(nulls_last=True), "date_due", "id")
     )

@@ -14,6 +14,7 @@ import re
 
 from django.utils import timezone
 
+from apps.accounts.access import filter_matters_for_user
 from apps.matters.models import Matter
 
 logger = logging.getLogger(__name__)
@@ -41,9 +42,13 @@ def _today_line():
     return f"Today is {today.strftime('%A')}, {today.isoformat()}."
 
 
-def _matter_lines():
+def _matter_lines(user):
+    # Only the matters the user may see: the model is told to answer with a
+    # name from this list, and its reply is echoed back in a toast.
     names = (
-        Matter.objects.filter(status__in=["Pending", "Open"])
+        filter_matters_for_user(
+            Matter.objects.filter(status__in=["Pending", "Open"]), user
+        )
         .order_by("name")
         .values_list("name", flat=True)
     )
@@ -68,7 +73,7 @@ def interpret_quick_add(text, user, recent_matter=None, model="gemini-flash"):
             hint,
             _today_line(),
             "",
-            _matter_lines(),
+            _matter_lines(user),
         ]
     )
     messages = [{"role": "user", "content": text}]
