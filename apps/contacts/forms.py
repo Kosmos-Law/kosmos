@@ -74,9 +74,9 @@ class ContactForm(forms.ModelForm):
     def clean_name(self):
         name = self.cleaned_data["name"]
         if len(name) < 2:
-            raise ValidationError("Name must be greater than 2 characters")
+            raise ValidationError("Name must be at least 2 characters.")
         if len(name) > 50:
-            raise ValidationError("Name must be fewer than 50 characters")
+            raise ValidationError("Name must be 50 characters or fewer.")
         return name
 
     def clean_company(self):
@@ -90,7 +90,7 @@ class ContactForm(forms.ModelForm):
         address = self.cleaned_data["address"]
         if address:
             if len(address) > 250:
-                raise ValidationError("Address must be fewer than 250 characters.")
+                raise ValidationError("Address must be 250 characters or fewer.")
         return address
 
     def clean_phone1(self):
@@ -139,7 +139,7 @@ class ContactForm(forms.ModelForm):
             if not url_pattern.match(website):
                 raise ValidationError("Enter a valid URL.")
             if len(website) > 255:
-                raise ValidationError("Website URL must be fewer than 255 characters.")
+                raise ValidationError("Website URL must be 255 characters or fewer.")
         return website
 
     def clean_email(self):
