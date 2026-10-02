@@ -39,6 +39,25 @@ class TestNewNoteButton:
             assert f'noteAddUrl: "{library_add}"' in html
 
 
+class TestShortcutsDialog:
+    def test_the_menu_item_the_shortcut_clicks_exists(self, client, note):
+        html = client.get(reverse("notes:note-view", args=[note.id])).content.decode()
+        item = html.split('id="shortcuts-btn"')[1].split(">", 1)[0]
+        assert f'hx-get="{reverse("notes:notes-shortcuts")}"' in item
+
+    def test_dialog_lists_search_and_both_delete_block_keys(self, client):
+        html = client.get(reverse("notes:notes-shortcuts")).content.decode()
+        rows = [" ".join(row.split()) for row in html.split("<tr>")]
+        assert any("<kbd>K</kbd>" in row and "Search notes" in row for row in rows)
+        assert any(
+            "<kbd>D</kbd>" in row
+            and "<kbd>Delete</kbd>" in row
+            and "Delete block" in row
+            for row in rows
+        )
+        assert any("<kbd>?</kbd>" in row and "Show shortcuts" in row for row in rows)
+
+
 class TestConflictBanner:
     def test_banner_covers_saves_by_other_people_and_the_ai(self, client, note):
         html = client.get(

@@ -46,7 +46,10 @@ import {
 } from "./notes/tab-state.js";
 import { setupTreeMenu } from "./notes/tree-menu.js";
 import { connectFormatToolbar } from "./format-toolbar.js";
-import { handleEditorShortcut } from "./editor-shortcuts.js";
+import {
+  handleEditorShortcut,
+  handleSurfaceShortcut,
+} from "./editor-shortcuts.js";
 import { markdownToHtml } from "./notes/markdown.js";
 import {
   TableAutoRender,
@@ -430,22 +433,36 @@ function setupKeyboardShortcuts() {
   if (shortcutsBound) return;
   shortcutsBound = true;
 
+  const actions = {
+    save: () => {
+      if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
+      performAutosave();
+    },
+    openReferences: openReferencePicker,
+    toggleSearch: toggleSearchBar,
+    showShortcuts: () => {
+      // The menu item that opens the dialog; clicking it takes the same
+      // htmx path a mouse click does
+      const btn = document.getElementById("shortcuts-btn");
+      if (btn) btn.click();
+    },
+  };
+
   document.addEventListener("keydown", (e) => {
     // Mid-swap gap: the old editor is destroyed and initEditor is pending
     if (!state.editor) return;
 
-    handleEditorShortcut(state.editor, e, {
-      save: () => {
-        if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
-        performAutosave();
-      },
-      openReferences: openReferencePicker,
-      toggleSearch: toggleSearchBar,
-      showShortcuts: () => {
-        const btn = document.querySelector('[title="Keyboard shortcuts"]');
-        if (btn) btn.click();
-      },
-    });
+    // The listener is on document, but the text shortcuts (formatting,
+    // headings, delete block) belong to the editor's text alone: with the
+    // caret in the title, the Find box, Search Notes or a dialog they
+    // must do nothing. The same goes for an editor that is read-only
+    // (a paused conflict), since TipTap still runs commands on one.
+    const inText = state.editor.view.dom.contains(e.target);
+    if (inText && state.editor.isEditable) {
+      handleEditorShortcut(state.editor, e, actions);
+    } else {
+      handleSurfaceShortcut(e, actions);
+    }
   });
 }
 
