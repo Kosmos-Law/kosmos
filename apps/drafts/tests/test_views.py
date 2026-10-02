@@ -31,9 +31,41 @@ def test_picker_degrades_without_drive(client, conversation, monkeypatch):
     assert b"Connect Google Drive" in response.content
 
 
+@pytest.mark.parametrize("drive_ready,files", [(False, []), (True, [])])
+def test_picker_always_offers_the_extension(
+    client, conversation, monkeypatch, drive_ready, files
+):
+    """A first-time user has no ODT in the folder yet (or no Drive at all)
+    and still has to be able to reach the extension download."""
+    monkeypatch.setattr(
+        "apps.drafts.views.google.check_credentials", lambda: drive_ready
+    )
+    monkeypatch.setattr(services, "list_matter_odt_files", lambda m: files)
+    response = client.get(f"/case/ai/conversations/{conversation.id}/draft/picker/")
+    assert response.status_code == 200
+    assert b"/case/drafts/companion/setup/" in response.content
+
+
+def test_picker_names_the_drive_folder(client, conversation, monkeypatch):
+    monkeypatch.setattr("apps.drafts.views.google.check_credentials", lambda: True)
+    monkeypatch.setattr(
+        services,
+        "list_matter_odt_files",
+        lambda m: [{"id": "f1", "name": "motion.odt", "path": "", "modifiedTime": ""}],
+    )
+    response = client.get(f"/case/ai/conversations/{conversation.id}/draft/picker/")
+    assert b"Drive folder" in response.content
+    assert b"Drafts folder" not in response.content
+
+
 def test_link_and_unlink_cycle(client, conversation, monkeypatch):
     monkeypatch.setattr(
         services, "_fetch_drive_text", lambda fid: ("motion.odt", "TEXT")
+    )
+    monkeypatch.setattr(
+        services,
+        "list_matter_odt_files",
+        lambda m: [{"id": "f1", "name": "motion.odt", "path": "", "modifiedTime": ""}],
     )
     response = client.post(
         f"/case/ai/conversations/{conversation.id}/draft/link/", {"file": "f1"}
@@ -42,6 +74,8 @@ def test_link_and_unlink_cycle(client, conversation, monkeypatch):
     assert response["HX-Trigger"] == "draftLinkChanged"
     assert b"motion.odt" in response.content
     assert DraftLink.objects.filter(conversation=conversation).exists()
+    # The confirmation's button says what it does.
+    assert b'data-confirm-text="Unlink"' in response.content
 
     response = client.post(f"/case/ai/conversations/{conversation.id}/draft/unlink/")
     assert response.status_code == 200
@@ -56,14 +90,35 @@ def test_link_requires_file_param(client, conversation):
 
 
 def test_link_drive_failure_reported(client, conversation, monkeypatch):
+    """The dialog has already closed when the answer arrives: the reason
+    reaches the user as a toast, and the chip is left alone (204)."""
+    import json
+
     def boom(fid):
         raise services.DraftError("Drive is down")
 
     monkeypatch.setattr(services, "_fetch_drive_text", boom)
+    monkeypatch.setattr(
+        services,
+        "list_matter_odt_files",
+        lambda m: [{"id": "f1", "name": "motion.odt", "path": "", "modifiedTime": ""}],
+    )
     response = client.post(
         f"/case/ai/conversations/{conversation.id}/draft/link/", {"file": "f1"}
     )
-    assert response.status_code == 502
+    assert response.status_code == 204
+    toast = json.loads(response["HX-Toast"])
+    assert toast["type"] == "error"
+    assert toast["message"] == "Drive is down"
+    assert not DraftLink.objects.exists()
+
+
+def test_chat_window_can_show_the_toast(client, conversation):
+    """The standalone window has its own page shell: it has to load the
+    toast script itself, or the refusal above is never seen."""
+    response = client.get(f"/case/ai/conversations/{conversation.id}/view/")
+    assert b"js/toasts.js" in response.content
+    assert b'id="toast-container"' in response.content
 
 
 def test_chip_endpoint(client, link):
@@ -89,6 +144,9 @@ def test_companion_setup_modal(client):
     response = client.get("/case/drafts/companion/setup/")
     assert response.status_code == 200
     assert b"kosmos-companion.oxt" in response.content
+    # The control is the pen beside the message box, not a paperclip.
+    assert b"paperclip" not in response.content
+    assert b"pen button" in response.content
 
 
 def test_drafts_tab_is_gone(client, matter):

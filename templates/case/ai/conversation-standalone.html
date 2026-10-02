@@ -29,6 +29,20 @@
     <link rel="stylesheet" href="{% static_v 'css/modals.css' %}" />
     <link rel="stylesheet" href="{% static_v 'css/format-toolbar.css' %}" />
     <link rel="stylesheet" href="{% static_v 'css/apps/case/ai.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/toasts.css' %}" />
+    {% comment %}
+    Toasts (a draft that could not be linked). This window loads neither
+    base.html nor layout.css, whose utility classes place the container
+    in the main application, so it is placed here.
+    {% endcomment %}
+    <style>
+      #toast-container {
+        padding: 0.75rem;
+        position: fixed;
+        right: 0;
+        top: 0;
+      }
+    </style>
     <script>
     /* Match the app's theme (set on <html> before paint to avoid a flash).
        Mirrors the IIFE in base.html; this standalone page has its own <head>. */
@@ -42,6 +56,7 @@
     </script>
   </head>
   <body class="ai-chat-body" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <div id="toast-container"></div>
     <div class="ai-chat-layout">
       <aside class="ai-chat-sidebar" id="historySidebar">
         <div class="ai-sidebar-header">
@@ -150,6 +165,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://unpkg.com/idiomorph@0.3.0/dist/idiomorph-ext.min.js"></script>
     <script src="{% static_v 'js/ai-history-panel.js' %}"></script>
+    <script src="{% static_v 'js/toasts.js' %}"></script>
     <script>
     function scrollToMessage(messageId) {
       const element = document.getElementById(messageId);

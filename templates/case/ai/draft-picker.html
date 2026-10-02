@@ -15,12 +15,7 @@
           drafts.
         </p>
       {% elif files %}
-        <p class="detail-text">
-          Pick an ODT file from this matter's Drafts folder. Uses the
-          <a href="#"
-             hx-get="{% url 'case:draft-companion-setup' %}"
-             hx-target="#htmx-modal-container">LibreOffice companion extension</a>.
-        </p>
+        <p class="detail-text">Pick an ODT file from this matter's Drive folder.</p>
         <ul class="draft-picker-list">
           {% for file in files %}
             <li>
@@ -42,6 +37,16 @@
           there first (any subfolder works), then reopen this list.
         </p>
       {% endif %}
+      {% comment %}
+      Shown in every state: a first-time user has no ODT in the folder yet
+      and still needs the extension.
+      {% endcomment %}
+      <p class="detail-text">
+        Edits are applied through the
+        <a href="#"
+           hx-get="{% url 'case:draft-companion-setup' %}"
+           hx-target="#htmx-modal-container">LibreOffice companion extension</a>.
+      </p>
     </div>
   </div>
 </div>

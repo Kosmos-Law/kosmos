@@ -95,13 +95,33 @@ def _fetch_drive_text(drive_file_id):
     name = meta.get("name", "")
     if not name.lower().endswith(".odt"):
         raise DraftError("Drafts must be .odt files.")
-    return name, convert.to_markdown(content, ".odt")
+    try:
+        text = convert.to_markdown(content, ".odt")
+    except convert.ConversionError as exc:
+        logger.warning("Could not convert draft %s: %s", drive_file_id, exc)
+        raise DraftError(
+            f"{name} could not be read as an ODT document. Open it in "
+            "LibreOffice, save it again, and retry."
+        ) from exc
+    return name, text
 
 
 def create_link(conversation, drive_file_id):
-    """Link the conversation to a Drive ODT, snapshotting its text."""
+    """Link the conversation to a Drive ODT, snapshotting its text.
+
+    The file id comes from the browser, and the firm's Drive credential can
+    read far more than this matter's folder: only a file the picker lists
+    for the conversation's matter may be linked.
+    """
     if getattr(conversation, "draft_link", None):
         raise DraftError("This conversation already has a linked draft.")
+    matter = conversation.matter
+    offered = {f["id"] for f in list_matter_odt_files(matter)} if matter else set()
+    if drive_file_id not in offered:
+        raise DraftError(
+            "That file was not found in this matter's Drive folder. Reopen "
+            "the list and pick the draft again."
+        )
     name, text = _fetch_drive_text(drive_file_id)
     link = DraftLink.objects.create(
         conversation=conversation,
@@ -126,10 +146,15 @@ def refresh_if_stale(link):
     if link.doc_text_at and timezone.now() - link.doc_text_at < STALE_AFTER:
         return
     try:
-        _, text = _fetch_drive_text(link.drive_file_id)
+        name, text = _fetch_drive_text(link.drive_file_id)
     except DraftError as exc:
         logger.warning("Stale-refresh failed for link %s: %s", link.id, exc)
         return
     link.doc_text = text
     link.doc_text_at = timezone.now()
-    link.save(update_fields=["doc_text", "doc_text_at"])
+    if name and name != link.name:
+        # Renamed in Drive. The companion pairs a document with its link by
+        # file name, so every link to this file has to follow the rename.
+        DraftLink.objects.filter(drive_file_id=link.drive_file_id).update(name=name)
+        link.name = name
+    link.save(update_fields=["doc_text", "doc_text_at", "name"])

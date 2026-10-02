@@ -35,6 +35,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from apps.case.ai.access import accessible_matters
 from apps.drafts.models import CompanionRound, CompanionToken, DraftLink
 from apps.drive import convert
 
@@ -64,12 +65,18 @@ def companion_auth(view):
     return wrapper
 
 
+def _user_links(user):
+    """The draft links this token may work with: on conversations the user
+    started, on matters the user can still open. A user taken off a matter
+    keeps their token, so the matter check has to be made on every call."""
+    return DraftLink.objects.filter(
+        conversation__user=user,
+        conversation__matter__in=accessible_matters(user),
+    ).select_related("conversation__matter")
+
+
 def _get_link(request, link_id):
-    return get_object_or_404(
-        DraftLink.objects.select_related("conversation__matter"),
-        pk=link_id,
-        conversation__user=request.companion_user,
-    )
+    return get_object_or_404(_user_links(request.companion_user), pk=link_id)
 
 
 def _json_body(request):
@@ -108,9 +115,7 @@ def _touch(link):
 @require_http_methods(["GET"])
 def api_sessions(request):
     """The token user's draft links, newest first."""
-    links = DraftLink.objects.filter(
-        conversation__user=request.companion_user
-    ).select_related("conversation__matter")
+    links = _user_links(request.companion_user)
     return JsonResponse(
         {
             "sessions": [
