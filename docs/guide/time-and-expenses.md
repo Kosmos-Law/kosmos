@@ -90,8 +90,8 @@ Good to know:
 
 - Codes are case-sensitive, and Kosmos replaces a code wherever those
   characters appear, including inside a longer word. Check the preview.
-- The form opened from a matter's header shows the preview but has no
-  checkbox, and it saves the text as typed, without expanding it.
+  An administrator can end a code with a space ("conf ") so that it only
+  matches at the end of a word.
 
 ## Record an expense
 
@@ -112,10 +112,9 @@ then `n` → **Expense** open the same form.
 
 Good to know:
 
-- When you add an expense, Kosmos replaces `ff`, `fx` and `ml`, each
-  followed by a space, with "Filing fee", "FedEx" and "Mail". It does this
-  inside words too: "staff meeting" becomes "staFiling fee meeting". Read
-  the description in the list after you save.
+- When you add an expense, Kosmos expands `ff`, `fx` and `ml`, typed as
+  words of their own, into "Filing fee", "FedEx" and "Mail": "ff for
+  complaint" is saved as "Filing fee for complaint".
 - The largest amount an expense can hold is $9,999.99.
 
 ## Record a flat fee
@@ -155,8 +154,8 @@ none.
 
 **Time** opens on your own entries for today. **Expenses** and **Flat
 Fees** open on everyone's entries that are not Entered and not on an
-invoice, although the date button reads **All Dates**. Each list shows ten
-entries a page, newest first.
+invoice, which the date button shows as **Work in Progress**. Each list
+shows ten entries a page, newest first.
 
 **Time** has the columns Date, User, Matter, Actions, Hours, Rate and Fee.
 **Expenses** and **Flat Fees** have Date, User, Matter, Description and
@@ -165,8 +164,8 @@ Amount. **User** shows initials, and a matter name opens that matter's
 
 - **Date button.** Choose **All Dates**, **Today**, **Yesterday**, **This
   Week**, **Last Week**, **This Month**, **Last Month** or **Work in
-  Progress**. Weeks start on Monday. **Flat Fees** has no **Last Week** or
-  **Last Month**. **Work in Progress** shows unbilled entries of any date.
+  Progress**. Weeks start on Monday. **Work in Progress** shows unbilled
+  entries of any date.
 - **User chips.** Click **All** or a person's initials. In a firm of more
   than five people, a three-dot button lists everyone and lets you pin up
   to five as chips. Press `[` or `]` to step through users.
@@ -214,20 +213,21 @@ The list refreshes with the change. To change several entries at once:
    entries to, or click **Comp** and choose **Comp** or **Not Comp**.
 
 The selection clears and the list refreshes. To cancel instead, click the
-count at the left of the toolbar. In the sidebar's **Activity** lists you
-need the Financial permission for the tick boxes. Ask your administrator.
-A matter's **Time** list has them for everyone and adds **Category**.
+count at the left of the toolbar. **Matter** and **Comp** need the
+Financial permission. Ask your administrator. Without it, the sidebar's
+**Activity** lists have no tick boxes, and a matter's **Time** list has
+them for **Category** only.
 
 Good to know:
 
 - On **Expenses** and **Flat Fees**, clicking the **Amount** of an entry
-  that is not on an invoice flips its **Entered** setting. Nothing asks
-  you to confirm, and the entry can drop out of the list.
+  that is not on an invoice marks it as entered (or as not entered, if it
+  already is). Hover over the amount to see which. An entered entry
+  drops out of **Work in Progress**.
 - Moving an entry to another matter, singly or in bulk, takes it off any
   draft invoice.
-- In bulk changes on **Time** and **Expenses**, entries on an invoice that
-  is past Draft are skipped, and a message says how many. **Flat Fees**
-  does not skip them.
+- In bulk changes, entries on an invoice that is past Draft are skipped,
+  and a message says how many.
 
 ## What happens once an entry is billed
 
@@ -246,16 +246,13 @@ non-billable matters.
 
 Good to know:
 
-- Two places still open a billed entry for editing: the **Expenses** list
-  on a matter's **Activity** tab, and **Recent Actions** on a matter's
-  **Overview**. Kosmos does not stop the change.
 - You can still change the category of a billed entry.
 
 ## Who sees what
 
-- If you are limited to assigned matters, the lists and their totals hold
-  only those matters' entries. The **Matter** list in a form can still
-  offer other matters, but picking one gives an error under **Matter**.
+- If you are limited to assigned matters, the lists, their totals and
+  their exports hold only those matters' entries, and the **Matter** list
+  in each form offers only those matters.
 - **Rate**, **Fee** and **Amount**, and the totals, are shown to everyone
   who can see an entry. The Financial permission does not hide them.
 - Without the Financial permission, you do not get the tick boxes or the

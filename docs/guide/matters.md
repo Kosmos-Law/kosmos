@@ -22,7 +22,7 @@ Click **Matters** in the sidebar. The list shows 40 matters to a page, and
 | Column | What it shows |
 |---|---|
 | **Matter** | The matter name. Click it to open the matter. An **Admin** badge marks a matter that is not billable. |
-| **Work Status** | A short note on where the matter stands. Click the text to change it, then press Enter. If it is blank, set it on the matter's **Overview**. |
+| **Work Status** | A short note on where the matter stands. Click the text to change it, then press Enter. A matter with none shows a dash: click it to add one. |
 | **Proceeding** | The case number of the matter's primary proceeding. The menu beside it has **Copy Case Number** and **View Proceedings**. |
 
 To narrow or reorder the list:
@@ -33,20 +33,12 @@ To narrow or reorder the list:
 - Type in **Filter list . . .** to match matter names within the current
   filter. Press Enter to open the first match.
 - Click **Filter** to open **Filter Matters**. **Status** is the only
-  place to choose **Closed** or **All**. **Date start** shows matters
-  opened on or after a date. **Ordering** sets the sort. Click **Apply**.
-  **Restore Defaults** returns to open matters sorted by name.
-- Click the sort button beside **Matter** to sort by name. Click it again
-  to reverse the order.
-
-Good to know:
-
-- The sort button beside **Work Status** sorts by each matter's
-  **Description**, which the list does not show.
-- In **Filter Matters**, leave **Practice area** on **All**. Its list is
-  fixed and does not follow the practice areas your firm has set up.
-- Leave **Date end** blank. Kosmos records no closing date when you close
-  a matter, and a date there hides every matter without one.
+  place to choose **Closed** or **All**. **Practice area** lists your
+  firm's practice areas. **Opened on or after** and **Closed on or
+  before** narrow the list by date. **Ordering** sets the sort. Click
+  **Apply**. **Restore Defaults** returns to open matters sorted by name.
+- Click the sort button beside **Matter** or **Work Status** to sort by
+  that column. Click it again to reverse the order.
 
 ## Open a new matter
 
@@ -94,9 +86,8 @@ Good to know:
 
 - A new matter is **Pending** unless you change **Status**, and the list
   starts on **Open**. Click **Pending** in the toolbar to see it.
-- Adding a matter does not assign it to you. If you can see only assigned
-  matters, an administrator must assign the new one before you can open
-  it. See [Who can see a matter](#who-can-see-a-matter).
+- If you can see only assigned matters, a matter you add is assigned to
+  you. See [Who can see a matter](#who-can-see-a-matter).
 
 ## The matter page
 
@@ -111,7 +102,8 @@ timeline, witnesses, notes, emails, AI chat and research.
 ### Overview
 
 **Overview** is the summary of the matter. **Matter Detail** lists its
-status, client, practice area, open date, jurisdiction and billing. Beside
+status, client, practice area, open date, jurisdiction and billing, and
+the date it was closed once it has been. Beside
 it are **Events** (upcoming events), **Tasks** (open tasks) and **Recent
 Actions** (the five latest time entries). Each has a **+** button to add
 one, and you can click a row to edit it. **Financials** shows **Balance
@@ -147,8 +139,9 @@ Good to know:
 **Rates** holds hourly rates that apply only to this matter, set user by
 user in whole dollars. Click **Add Rate**, choose the **User**, enter the
 **Matter rate** and click **Submit**. Click a rate to change or delete it.
-A user with no rate here bills at their standard hourly rate. A matter
-rate fills in on new time entries. It does not change entries already
+A user with no rate here bills at their standard hourly rate, and each
+user can have one rate on a matter. A matter rate fills in on new time
+entries. It does not change entries already
 recorded. You need the Financial permission for this tab. Ask your
 administrator.
 
@@ -202,8 +195,8 @@ Most users can see every matter. An administrator can limit a user to
 assigned matters only. If that is you, other matters are left out of your
 matters list, the matter switcher and the matter choices in forms, and a
 saved link to one shows "You don't have permission to access this page."
-An administrator assigns matters under **Settings → Permissions**. Only
-matters with the status **Open** can be assigned there.
+An administrator assigns matters under **Settings → Permissions**, from
+the matters that are **Pending** or **Open**.
 
 ## Edit a matter and change its status
 
@@ -223,21 +216,16 @@ The **Overview** shows the new details. You can also click the **Status**,
 | **Complete** | The work has ended and the file is being wound up, for example while a trust refund is outstanding. You can still record time and expenses. New task and event forms no longer offer the matter. |
 | **Closed** | Final. The matter is no longer offered when you add a task, event, time entry or expense elsewhere in Kosmos. You can still add time or an expense from the matter's own page. |
 
-Good to know:
-
-- In **Edit Matter**, pick the client from existing contacts. **Create new
-  contact** and **Convert an intake…** return you to an **Add Matter**
-  form, and **Submit** there creates a second matter.
-
 ## Close a matter
 
 Set **Status** to **Complete** or **Closed**, on the **Overview** or in
 **Edit Matter**. Kosmos then does the following at once, with no
 confirmation:
 
-- Marks every proceeding on the matter **Concluded**, including ones that
-  were **Stayed** or **Dismissed**. It does so again each time the matter
-  is saved while it is **Complete** or **Closed**.
+- Records today as the matter's closing date. The **Overview** shows it
+  as **Closed**.
+- Marks the matter's proceedings **Concluded**, except any that are
+  **Dismissed**.
 - Removes the matter's links to its Gmail label and its Google Drive
   folder, so no new emails or documents arrive on the matter.
 
@@ -253,8 +241,9 @@ invoices and the ledger. Nothing in Gmail or Google Drive is changed.
 
 Good to know:
 
-- Reopening a matter restores nothing. Its proceedings stay **Concluded**
-  and the Gmail label and Drive folder must be linked again.
+- Reopening a matter clears its closing date and restores nothing else.
+  Its proceedings stay **Concluded**, and the Gmail label and Drive
+  folder must be linked again.
 
 ## Delete a matter
 
@@ -268,11 +257,9 @@ Only an administrator can delete a matter. Deleting is permanent.
 You return to the matters list and the matter is gone. Deleted with it:
 its time, expense and flat fee entries, tasks, events, documents, notes,
 emails, timeline, witnesses, AI chats, research, proceedings, settlement
-entries, rates, payments and credits, and its list of contacts (the
-contacts themselves are kept).
+entries, rates, invoices, payments and credits, and its list of contacts
+(the contacts themselves are kept).
 
 Good to know:
 
-- The dialog counts invoices, but invoice records are not deleted. They
-  are left with no matter, and their time, expenses and payments are gone.
 - Trust records belong to the client and are not deleted.
