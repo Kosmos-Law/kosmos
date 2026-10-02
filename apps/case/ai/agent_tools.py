@@ -113,9 +113,71 @@ def _read_params(extra: dict | None = None) -> dict:
     return props
 
 
-def build_agent_tools(budget: AgentBudget = DEFAULT_BUDGET) -> list[dict]:
-    """Provider-neutral tool specs for one agent turn."""
+# Tools and sections behind a permission. The specs offered to the model and
+# the executor's handlers are both built for the requesting user, so a tool
+# the user may not use is neither advertised nor run.
+FINANCIAL_TOOLS = ("read_invoice",)
+RESEARCH_TOOLS = (
+    "search_caselaw",
+    "lookup_citation",
+    "read_opinion",
+    "search_in_opinions",
+)
+# Never offered to the agent, whoever asks: read_invoice covers billing
+# questions for the users who may ask them.
+AGENT_WITHHELD_SECTIONS = ("ledger", "trust")
+FINANCIAL_REFUSAL = (
+    "Billing records are not available to this user (no Financial permission)."
+)
+RESEARCH_REFUSAL = (
+    "Case-law research is not available to this user (no Research "
+    "permission). Answer from the case law saved on the matter."
+)
+
+
+def agent_sections(include_financial: bool) -> list[str]:
+    """The matter sections read_matter_section serves to this user."""
+    from apps.case.api import FINANCIAL_SECTIONS, SECTIONS
+
     return [
+        name
+        for name in SECTIONS
+        if name not in AGENT_WITHHELD_SECTIONS
+        and (include_financial or name not in FINANCIAL_SECTIONS)
+    ]
+
+
+def build_agent_tools(
+    budget: AgentBudget = DEFAULT_BUDGET,
+    include_financial: bool = False,
+    include_research: bool = False,
+) -> list[dict]:
+    """Provider-neutral tool specs for one agent turn, for one user: the
+    billing tool and sections need the Financial permission, the
+    CourtListener tools the Research permission."""
+    section_enum = [
+        name
+        for name in (
+            "overview",
+            "contacts",
+            "rates",
+            "activity",
+            "events",
+            "tasks",
+            "proceedings",
+            "settlement",
+            "documents",
+            "highlights",
+            "timeline",
+            "witnesses",
+            "emails",
+        )
+        if include_financial or name not in ("rates", "activity")
+    ]
+    money_sections = (
+        "rates, activity (time and expenses), " if include_financial else ""
+    )
+    tools = [
         {
             "name": "search_materials",
             "description": (
@@ -271,7 +333,7 @@ def build_agent_tools(budget: AgentBudget = DEFAULT_BUDGET) -> list[dict]:
             "name": "read_matter_section",
             "description": (
                 "A structured section of the matter record as text: "
-                "overview, contacts, rates, activity (time and expenses), "
+                f"overview, contacts, {money_sections}"
                 "events, tasks, proceedings, settlement, documents (the "
                 "manifest), highlights, timeline, witnesses, emails (the "
                 "thread manifest). The overview, contacts, witnesses and "
@@ -283,21 +345,7 @@ def build_agent_tools(budget: AgentBudget = DEFAULT_BUDGET) -> list[dict]:
                 "properties": {
                     "section": {
                         "type": "string",
-                        "enum": [
-                            "overview",
-                            "contacts",
-                            "rates",
-                            "activity",
-                            "events",
-                            "tasks",
-                            "proceedings",
-                            "settlement",
-                            "documents",
-                            "highlights",
-                            "timeline",
-                            "witnesses",
-                            "emails",
-                        ],
+                        "enum": section_enum,
                         "description": "Section name.",
                     }
                 },
@@ -461,6 +509,12 @@ def build_agent_tools(budget: AgentBudget = DEFAULT_BUDGET) -> list[dict]:
             },
         },
     ]
+    withheld = set()
+    if not include_financial:
+        withheld.update(FINANCIAL_TOOLS)
+    if not include_research:
+        withheld.update(RESEARCH_TOOLS)
+    return [tool for tool in tools if tool["name"] not in withheld]
 
 
 # ---------------------------------------------------------------------------
@@ -679,8 +733,13 @@ def make_agent_executor(
     budget: AgentBudget = DEFAULT_BUDGET,
     on_event=None,
     is_cancelled=None,
+    user=None,
 ):
     """Build ``execute_batch(calls) -> outcomes`` for one agent turn.
+
+    The executor works for ``user``: the billing tool and sections need
+    their Financial permission and the CourtListener tools their Research
+    permission. With no user, neither is available.
 
     ``calls`` are ``{"id", "name", "input"}``; outcomes are ``{"id",
     "name", "content": json string, "is_error"}`` in the same order.
@@ -695,8 +754,12 @@ def make_agent_executor(
     from apps.mail.ai import format_email_thread, thread_subject
     from apps.notes.models import Note, get_library_notes
 
+    from .access import has_financial_access, has_research_access
     from .models import Conversation
     from .selector import library_folder_path
+
+    include_financial = has_financial_access(user)
+    include_research = has_research_access(user)
 
     lock = threading.Lock()
     state = {"calls": 0, "chars": 0, "n": 0, "turn": 0}
@@ -1411,10 +1474,14 @@ def make_agent_executor(
     def _read_section(tool_input):
         from apps.case.api import FINANCIAL_SECTIONS, SECTIONS
 
-        # The money sections are gated on the user's financial permission,
-        # which the executor does not carry; the agent has read_invoice.
-        allowed = [s for s in SECTIONS if s not in FINANCIAL_SECTIONS]
+        allowed = agent_sections(include_financial)
         section = str(tool_input.get("section") or "")
+        if (
+            section in FINANCIAL_SECTIONS
+            and section not in AGENT_WITHHELD_SECTIONS
+            and not include_financial
+        ):
+            return {"error": FINANCIAL_REFUSAL}, {}
         if section not in allowed:
             return {
                 "error": f"Unknown section. Valid sections: {', '.join(allowed)}."
@@ -1719,6 +1786,18 @@ def make_agent_executor(
         "read_opinion": _read_opinion,
         "search_in_opinions": _grep_opinions,
     }
+
+    def _refusal(message):
+        return lambda tool_input: ({"error": message}, {})
+
+    # A model can still name a tool it was not offered (from an earlier
+    # turn's habit, or a prompt that asks for it): refuse here too.
+    if not include_financial:
+        for tool_name in FINANCIAL_TOOLS:
+            handlers[tool_name] = _refusal(FINANCIAL_REFUSAL)
+    if not include_research:
+        for tool_name in RESEARCH_TOOLS:
+            handlers[tool_name] = _refusal(RESEARCH_REFUSAL)
 
     # -- dispatch -----------------------------------------------------------
 

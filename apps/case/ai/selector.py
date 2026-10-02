@@ -136,7 +136,11 @@ def library_folder_path(folder):
 
 
 def build_manifest(
-    matter, current_conversation=None, include_library=True, include_always=False
+    matter,
+    current_conversation=None,
+    include_library=True,
+    include_always=False,
+    include_invoices=False,
 ):
     """
     Build a lightweight manifest of all ai_context="auto" items.
@@ -144,6 +148,9 @@ def build_manifest(
     With ``include_always`` the "always" documents, cases and emails are
     listed too (flagged ``pinned``): the agent turn's material index covers
     everything the model may read, since nothing is preloaded there.
+
+    Invoices are listed only with ``include_invoices``, which callers set
+    from the requesting user's Financial permission.
 
     Returns:
         tuple: (manifest_items, content_map)
@@ -369,7 +376,10 @@ def build_manifest(
 
     # Invoices — every invoice on the matter is offered to the selector, but
     # only included when the user's question is actually about billing.
-    for invoice in Invoice.objects.filter(matter=matter).order_by("-date_issued"):
+    invoices = Invoice.objects.filter(matter=matter).order_by("-date_issued")
+    if not include_invoices:
+        invoices = invoices.none()
+    for invoice in invoices:
         manifest_items.append(
             ManifestItem(
                 item_type="invoice",

@@ -45,9 +45,10 @@ def text_document(document):
 
 
 @pytest.fixture
-def executor(matter):
+def executor(matter, user):
+    # The executor works for a user: this one holds every permission.
     events = []
-    execute = make_agent_executor(matter, None, on_event=events.append)
+    execute = make_agent_executor(matter, None, on_event=events.append, user=user)
     execute.events = events
     return execute
 

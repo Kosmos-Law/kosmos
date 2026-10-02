@@ -1370,6 +1370,7 @@ def context_preview(request, matter_id):
 
     from apps.case.models import CaseLaw, Document
 
+    from .access import has_financial_access
     from .context import (
         collect_context_items,
         format_contacts,
@@ -1470,7 +1471,9 @@ def context_preview(request, matter_id):
             )
 
     # --- Auto selection pool ---
-    manifest_items, content_map = build_manifest(matter)
+    manifest_items, content_map = build_manifest(
+        matter, include_invoices=has_financial_access(request.user)
+    )
 
     # --- Excluded items (ai_context="never") ---
     excluded_items = []

@@ -19,6 +19,7 @@ import logging
 
 from apps.settings.models import Firm
 
+from .access import has_financial_access, has_research_access
 from .agent_tools import DEFAULT_BUDGET, AgentBudget
 from .agent_working_set import (
     WORKING_SET_MAX_CHARS,
@@ -213,7 +214,9 @@ def format_material_index(items: list[ManifestItem], max_chars=INDEX_MAX_CHARS) 
     return text
 
 
-def build_material_index(matter, conversation) -> list[ManifestItem]:
+def build_material_index(
+    matter, conversation, include_invoices=False
+) -> list[ManifestItem]:
     items, _content = build_manifest(
         matter,
         current_conversation=conversation
@@ -221,6 +224,7 @@ def build_material_index(matter, conversation) -> list[ManifestItem]:
         else None,
         include_library=True,
         include_always=True,
+        include_invoices=include_invoices,
     )
     return items
 
@@ -268,7 +272,14 @@ def build_agent_system(
         or "United States common law"
     )
 
-    items = build_material_index(matter, conversation)
+    # Built for the user who asked: invoices are indexed only with the
+    # Financial permission, and the research method (with the save-caselaw
+    # protocol that depends on it) only with the Research permission, to
+    # match the tools agent.py offers.
+    include_research = has_research_access(user)
+    items = build_material_index(
+        matter, conversation, include_invoices=has_financial_access(user)
+    )
     index_text = format_material_index(items)
 
     segment_a = "\n\n".join(
@@ -277,7 +288,7 @@ def build_agent_system(
             AGENT_PROTOCOL_TEMPLATE.format(
                 max_tool_calls=budget.max_tool_calls, max_chars=budget.max_chars
             ),
-            RESEARCH_PROTOCOL,
+            *([RESEARCH_PROTOCOL] if include_research else []),
             SOURCE_LINKING,
             f"## Current Matter: {matter.name}",
             format_matter_overview(matter),
@@ -310,7 +321,9 @@ def build_agent_system(
 
     tail = [build_request_info(user)]
     if conversation is not None and getattr(conversation, "pk", None):
-        protocol_text, armed = armed_write_protocols(conversation, user_message)
+        protocol_text, armed = armed_write_protocols(
+            conversation, user_message, include_caselaw=include_research
+        )
         if protocol_text:
             tail.append(protocol_text.strip())
             if log:
