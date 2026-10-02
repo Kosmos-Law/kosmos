@@ -218,3 +218,30 @@ def test_detail_nonexistent(client):
 def test_pdf_nonexistent(client):
     response = client.get(reverse("invoicing:invoices-pdf", kwargs={"pk": 99999}))
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "before, after, stored",
+    [
+        ("DRAFT", "DEFERRED", True),  # the draft's copy carries the watermark
+        ("DRAFT", "UNCOLLECTIBLE", True),
+        ("DEFERRED", "SENT", True),
+        ("SENT", "DEFERRED", False),  # the copy the client was sent is kept
+        ("SENT", "UNCOLLECTIBLE", False),
+        ("APPROVED", "DRAFT", False),
+    ],
+)
+def test_a_status_change_stores_the_pdf_only_when_it_must(
+    client, invoice, monkeypatch, before, after, stored
+):
+    calls = []
+    monkeypatch.setattr(
+        "apps.invoicing.invoices.views.store_invoice_pdf",
+        lambda invoice, request: calls.append(invoice.pk),
+    )
+    invoice.status = before
+    invoice.save()
+
+    assert _edit_status(client, invoice, after).status_code == 204
+
+    assert bool(calls) is stored

@@ -12,6 +12,7 @@ from apps.management.pagination import CustomPaginator
 from apps.trust.forms import TransactionForm
 from apps.trust.get_trust_data import get_trust_data
 from apps.trust.models import Transaction
+from utils.toasts import toast_error
 
 
 @login_required
@@ -260,10 +261,23 @@ def add(request, client_id=None):
     return render(request, "trust/form.html", context)
 
 
+def _belongs_to_a_payment():
+    """The refusal for a withdrawal recorded by a payment from trust. It is
+    that payment's other half (see apps/invoicing/payments/trust.py): changed
+    here, the two would disagree. It can still be marked confirmed."""
+    return toast_error(
+        HttpResponse(status=204),
+        "This withdrawal was recorded by a payment from trust. Edit or delete "
+        "the payment (Invoicing, Payments) and the withdrawal follows.",
+    )
+
+
 @login_required
 def edit(request, id):
     trust_view = request.session.get("trust_view", "summary")
     transaction = get_object_or_404(Transaction, pk=id)
+    if transaction.payment_id:
+        return _belongs_to_a_payment()
 
     if request.method == "POST":
         form = TransactionForm(
@@ -326,7 +340,10 @@ def toggle_confirmed(request, id):
 def delete(request, id):
     trust_view = request.session.get("trust_view", "summary")
 
-    get_object_or_404(Transaction, pk=id).delete()
+    transaction = get_object_or_404(Transaction, pk=id)
+    if transaction.payment_id:
+        return _belongs_to_a_payment()
+    transaction.delete()
 
     if trust_view == "history":
         return HttpResponse(status=204, headers={"HX-Trigger": "trustHistoryChanged"})

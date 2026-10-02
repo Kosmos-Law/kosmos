@@ -7,7 +7,10 @@ linked (``Transaction.payment``): changing the payment changes the
 withdrawal, and deleting the payment deletes it.
 
 Every place a payment is saved calls ``sync_trust_withdrawal`` afterwards, so
-the rule does not depend on which screen recorded the payment.
+the rule does not depend on which screen recorded the payment. Deleting a
+payment calls ``delete_trust_withdrawal`` first. The link itself does not
+cascade: a payment removed any other way (with its whole matter) leaves the
+withdrawal on the trust ledger, unlinked.
 """
 
 from decimal import Decimal
@@ -47,3 +50,8 @@ def sync_trust_withdrawal(payment):
     withdrawal.description = payment.detail or f"Payment {payment.id}"
     withdrawal.save()
     return withdrawal
+
+
+def delete_trust_withdrawal(payment):
+    """Remove the withdrawal ``payment`` recorded, ahead of deleting it."""
+    Transaction.objects.filter(payment=payment).delete()
