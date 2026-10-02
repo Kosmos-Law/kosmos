@@ -59,9 +59,17 @@
       open immediately in place via the noteCreated trigger).
       {% endcomment %}
       <div class="panel-actions">
+        {% comment %}
+        No hx-post: this bar is rendered once and outlives note switches,
+        so a URL baked in here would keep creating in the first note's
+        scope. notes-editor.js picks the URL at click time: the library
+        while the Library pane shows, otherwise the open note's own scope
+        (NOTE_DATA.noteAddUrl, re-rendered with every note).
+        {% endcomment %}
         <a href="#"
            class="panel-btn"
-           hx-post="{% if note.matter %}{% url 'case:notes-add' note.matter.id %}{% else %}{% url 'notes:add' %}{% endif %}"
+           id="new-note-btn"
+           data-library-add-url="{% url 'notes:add' %}"
            title="New note"><i class="icon-square-pen"></i></a>
         <a href="#"
            class="panel-btn panel-btn-files-only"

@@ -62,6 +62,7 @@ import {
   enterConflict,
   clearConflict,
   reloadNoteContent,
+  ConflictLock,
 } from "./notes/autosave.js";
 import { broadcast, setupBroadcast } from "./notes/broadcast.js";
 import {
@@ -233,6 +234,7 @@ function initEditor() {
       NoteRef,
       SearchHighlight,
       PlainCopy,
+      ConflictLock,
     ],
     content: initialContent,
     onUpdate() {
@@ -444,6 +446,25 @@ function setupKeyboardShortcuts() {
         if (btn) btn.click();
       },
     });
+  });
+}
+
+// ─── New note (panel header) ─────────────────────────────────────────────────
+
+// Bound once at startup (the button survives note switches), reading the
+// scope at click time: the library while the Library pane is showing,
+// otherwise wherever the open note lives (its matter, or the library).
+// Same instant-create request as the tree menu's New note; the
+// noteCreated trigger opens the result.
+function setupNewNoteButton() {
+  const btn = bindClick("new-note-btn", (e) => {
+    e.preventDefault();
+    const panel = document.querySelector(".note-panel-left");
+    const inLibraryPane = panel && panel.dataset.activePane === "files";
+    const url = inLibraryPane
+      ? btn.dataset.libraryAddUrl
+      : window.NOTE_DATA && window.NOTE_DATA.noteAddUrl;
+    if (url) window.htmx.ajax("POST", url, { swap: "none" });
   });
 }
 
@@ -849,6 +870,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   setupAiWriteToggle();
+  setupNewNoteButton();
   initEditor();
   setupHtmxHandlers();
   setupOutlineCollapseAll();
