@@ -43,7 +43,7 @@ def send_test_digest(request):
     if sent:
         message = f"Test digest sent to {user.email}."
     else:
-        message = "No events or tasks to include — no email sent."
+        message = "No events or tasks to include, so no email was sent."
 
     return render(
         request,

@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import ROLE_OPTIONS, CustomUser
@@ -8,6 +8,7 @@ from apps.matters.models import Matter
 from apps.settings.users.filters import UserFilter
 from apps.settings.users.forms import CreateUserForm, UserForm
 from apps.settings.users.users import DEFAULT_USER_FILTER, get_user_list
+from utils.toasts import toast_error
 
 
 @login_required
@@ -44,9 +45,34 @@ def user_filter(request):
     return render(request, "settings/users/filter.html", {"filter": filter})
 
 
+def _is_last_admin(user):
+    """True when ``user`` is the only active administrator. Settings are
+    open to administrators alone, so a firm with none is locked out of them
+    until someone uses the server's command line."""
+    if not (user.is_admin and user.is_active):
+        return False
+    return (
+        not CustomUser.objects.filter(role="ADMIN", is_active=True)
+        .exclude(pk=user.pk)
+        .exists()
+    )
+
+
+def _last_admin_refusal():
+    response = HttpResponse(status=204)
+    toast_error(
+        response,
+        "This is the only active administrator. "
+        "Make another user an administrator first.",
+    )
+    return response
+
+
 @login_required
 def user_sort(request, order):
-    filter_data = request.session.get("user_filter", {})
+    # Sorting an unfiltered list keeps the list's default (active users
+    # only): start from it, not from an empty filter.
+    filter_data = dict(request.session.get("user_filter") or DEFAULT_USER_FILTER)
 
     current_order = filter_data.get("order_by", "")
 
@@ -66,6 +92,9 @@ def user_sort(request, order):
 def change_role(request, user_id, role):
     if role not in dict(ROLE_OPTIONS):
         return HttpResponseBadRequest()
+    user = get_object_or_404(CustomUser, id=user_id)
+    if role != "ADMIN" and _is_last_admin(user):
+        return _last_admin_refusal()
     CustomUser.objects.filter(id=user_id).update(role=role)
 
     return HttpResponse(status=204, headers={"HX-Trigger": "userListReload"})
@@ -74,7 +103,9 @@ def change_role(request, user_id, role):
 @login_required
 @require_POST
 def switch_status(request, user_id):
-    user = CustomUser.objects.get(id=user_id)
+    user = get_object_or_404(CustomUser, id=user_id)
+    if user.is_active and _is_last_admin(user):
+        return _last_admin_refusal()
 
     user.is_active = not user.is_active
     user.save()
@@ -103,13 +134,16 @@ def add_user(request):
 
 @login_required
 def edit_user(request, user_id):
-    user = CustomUser.objects.get(id=user_id)
+    user = get_object_or_404(CustomUser, id=user_id)
+    was_last_admin = _is_last_admin(user)
 
     if request.method == "POST":
         form = UserForm(request.POST, instance=user)
 
         if form.is_valid():
             user = form.save(commit=False)
+            if was_last_admin and not (user.is_admin and user.is_active):
+                return _last_admin_refusal()
             user.save()
 
             return HttpResponse(status=204, headers={"HX-Trigger": "userListReload"})

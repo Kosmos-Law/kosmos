@@ -23,6 +23,8 @@ class UserFilter(django_filters.FilterSet):
             ("username", "username"),
             ("email", "email"),
             ("role", "role"),
+            ("is_attorney", "is_attorney"),
+            ("user_rate", "user_rate"),
             ("is_active", "is_active"),
         ),
         empty_label=None,

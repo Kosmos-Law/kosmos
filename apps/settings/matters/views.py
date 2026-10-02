@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
 from apps.matters.models import PracticeArea
 from apps.settings.matters.forms import PracticeAreaForm
@@ -99,6 +100,7 @@ def edit_practice_area(request, practice_area_id):
 
 
 @login_required
+@require_POST
 def delete_practice_area(request, practice_area_id):
     PracticeArea.objects.get(id=practice_area_id).delete()
     return HttpResponse(status=204, headers={"HX-Trigger": "practiceAreaListReload"})

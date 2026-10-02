@@ -3,8 +3,9 @@ import json
 import google_auth_oauthlib.flow
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 from googleapiclient.discovery import build
 
 import apps.drive.google as drive_google
@@ -43,9 +44,10 @@ def _get_redirect_uri(request):
     return f"https://{request.get_host()}/settings/google/store"
 
 
-def _create_flow(redirect_uri):
+def _create_flow(redirect_uri, state=None):
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         GOOGLE_TOKEN_PATH,
+        state=state,
         scopes=[
             "https://www.googleapis.com/auth/calendar",
             "https://www.googleapis.com/auth/contacts",
@@ -68,6 +70,16 @@ def _get_auth_url(flow):
         prompt="consent",
         include_granted_scopes="true",
     )
+
+
+def _visible_gmail_accounts(user, gmail_status):
+    """The mailboxes whose sync health the page shows: every one for an
+    administrator, who looks after the firm's connections, and only their
+    own for anyone else."""
+    accounts = gmail_status["accounts"] if gmail_status else []
+    if user.is_admin:
+        return accounts
+    return [account for account in accounts if account.user_id == user.id]
 
 
 @login_required
@@ -93,6 +105,10 @@ def index(request):
         "email_token": email_token,
         "gmail_status": gmail_status,
         "own_gmail_account": GmailAccount.objects.filter(user=request.user).first(),
+        "gmail_accounts": _visible_gmail_accounts(request.user, gmail_status),
+        # A missing label is named after its matter. Someone limited to
+        # assigned matters is told how many, not which.
+        "show_label_names": request.user.is_admin or request.user.perm_all_matters,
         "label_root": settings.GMAIL_LABEL_ROOT,
     }
 
@@ -125,19 +141,28 @@ def google_login(request, app):
 
 @login_required
 def google_store(request):
+    # Google sends back the state this session was given when it started the
+    # connection. A callback without that state did not start here (someone
+    # else's link, or a stale one), and its account must not be connected.
+    state = request.session.pop("state", None)
+    app = request.session.pop("app", None)
+    if not state or not app or request.GET.get("state") != state:
+        return HttpResponseBadRequest(
+            "This Google connection was not started from this session. "
+            "Go back to Settings, Integrations and connect again."
+        )
+    if _forbidden_for(request, app):
+        return HttpResponseForbidden()
+
     redirect_uri = _get_redirect_uri(request)
 
     # Create OAuth2 flow instance
-    flow = _create_flow(redirect_uri)
+    flow = _create_flow(redirect_uri, state=state)
 
     authorization_response = request.build_absolute_uri()
     flow.fetch_token(authorization_response=authorization_response)
 
     google_credentials = flow.credentials.to_json()
-
-    app = request.session["app"]
-    if _forbidden_for(request, app):
-        return HttpResponseForbidden()
 
     if app == "email":
         # Per-user mailbox: the token lands on the requester's GmailAccount,
@@ -174,6 +199,7 @@ def google_store(request):
 
 
 @login_required
+@require_POST
 def google_logout(request, app):
     if _forbidden_for(request, app):
         return HttpResponseForbidden()
