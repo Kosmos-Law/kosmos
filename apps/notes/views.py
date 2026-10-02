@@ -1476,9 +1476,11 @@ def note_folder_edit(request, folder_id):
 def note_folder_delete_confirm(request, folder_id):
     """Show delete confirmation for a note folder."""
     folder = folder_for_user(request.user, folder_id)
-    note_count = Note.objects.filter(folder=folder).count()
     descendants = folder.get_descendants()
     subfolder_count = len(descendants)
+    # Every note the delete can take: deleting the subfolders deletes the
+    # notes inside them too, so they count along with the folder's own
+    note_count = Note.objects.filter(folder__in=[folder, *descendants]).count()
 
     # Editor context (plus the open note's id) rides the querystring so the
     # delete endpoint can redirect if the open note gets deleted with the
