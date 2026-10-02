@@ -1,6 +1,7 @@
 """Markdown extension for rendering note references."""
 
 import re
+from html import escape
 
 from markdown import Extension
 from markdown.preprocessors import Preprocessor
@@ -9,7 +10,12 @@ from apps.case.models import Document, Highlight
 
 
 class NoteReferencePreprocessor(Preprocessor):
-    """Convert [[doc:id|label]] and [[hl:id|label]] to HTML spans."""
+    """Convert [[doc:id|label]] and [[hl:id|label]] to links.
+
+    The link is ours, so it is put in Markdown's HTML stash, which is
+    written out as it stands even when the renderer treats markup in the
+    text as text. What goes inside it (the label, a document's name, a
+    highlight's words) is not ours, and is escaped."""
 
     DOC_PATTERN = re.compile(r"\[\[doc:(\d+)\|([^\]]+)\]\]")
     HL_PATTERN = re.compile(r"\[\[hl:(\d+)\|([^\]]+)\]\]")
@@ -29,13 +35,16 @@ class NoteReferencePreprocessor(Preprocessor):
         try:
             document = Document.objects.get(pk=doc_id)
             citation = document.citation
-            return (
+            return self._stash(
                 f'<a href="/case/documents/view/{doc_id}/" '
                 f'target="_blank" class="note-ref note-ref-document" '
-                f'title="{document.name}">{label} {citation}</a>'
+                f'title="{escape(document.name or "")}">'
+                f"{escape(label)} {escape(citation)}</a>"
             )
         except Document.DoesNotExist:
-            return '<span class="note-ref note-ref-missing">[Missing document]</span>'
+            return self._stash(
+                '<span class="note-ref note-ref-missing">[Missing document]</span>'
+            )
 
     def _replace_highlight(self, match):
         hl_id = int(match.group(1))
@@ -44,13 +53,19 @@ class NoteReferencePreprocessor(Preprocessor):
         try:
             highlight = Highlight.objects.select_related("document").get(pk=hl_id)
             citation = highlight.citation
-            return (
+            return self._stash(
                 f'<a href="/case/highlights/{hl_id}/" '
                 f'target="_blank" class="note-ref note-ref-highlight" '
-                f'title="{highlight.text[:100]}...">{label} {citation}</a>'
+                f'title="{escape((highlight.text or "")[:100])}...">'
+                f"{escape(label)} {escape(citation)}</a>"
             )
         except Highlight.DoesNotExist:
-            return '<span class="note-ref note-ref-missing">[Missing highlight]</span>'
+            return self._stash(
+                '<span class="note-ref note-ref-missing">[Missing highlight]</span>'
+            )
+
+    def _stash(self, markup):
+        return self.md.htmlStash.store(markup)
 
 
 class NoteReferenceExtension(Extension):

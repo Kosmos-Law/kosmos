@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import markdown
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
@@ -15,6 +14,7 @@ from apps.intakes.forms import IntakeForm, NoteForm
 from apps.intakes.intakes import get_table_data
 from apps.intakes.models import Intake, Note, UserIntakeView
 from apps.matters.models import PracticeArea
+from utils.safe_markdown import render_markdown
 
 # The website's client questionnaire arrives as a Markdown table (see
 # api_views.receive_intake), and python-markdown only renders those with the
@@ -23,11 +23,14 @@ NOTE_MARKDOWN_EXTENSIONS = ["tables"]
 
 
 def render_note_markdown(notes):
-    """Render each note's Markdown body for display. `details` is nullable, so
-    an empty note must not reach markdown.markdown() as None."""
+    """Render each note's Markdown body for display.
+
+    A note's text may come from outside the firm (a forwarded email, a
+    website inquiry) and the template emits it with |safe, so it goes
+    through render_markdown, which lets no markup in the text through."""
     for note in notes:
-        note.details = markdown.markdown(
-            note.details or "", extensions=NOTE_MARKDOWN_EXTENSIONS
+        note.details = render_markdown(
+            note.details, extensions=NOTE_MARKDOWN_EXTENSIONS
         )
     return notes
 

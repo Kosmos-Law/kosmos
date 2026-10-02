@@ -7,6 +7,7 @@ from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
 
 from apps.case.notes.markdown_ext import NoteReferenceExtension
+from utils.safe_markdown import UntrustedTextExtension, restore_breaks
 
 register = template.Library()
 
@@ -106,6 +107,10 @@ def render_markdown(text):
             BluebookEllipsisExtension(),
             NoIndentedCodeExtension(),
             NoteReferenceExtension(),
+            # What is rendered here is a model's reply, or matter text shown
+            # back to the user (documents, emails): none of it may become
+            # live markup, since the result is marked safe.
+            UntrustedTextExtension(),
         ],
         extension_configs={
             # Curl quotes/apostrophes for clean copy-paste. Dashes and ellipses
@@ -122,4 +127,4 @@ def render_markdown(text):
             "pymdownx.mark": {"smart_mark": False},
         },
     )
-    return mark_safe(md.convert(text))
+    return mark_safe(restore_breaks(md.convert(text)))

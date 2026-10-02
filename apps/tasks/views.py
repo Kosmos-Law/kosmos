@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 from urllib.parse import urlsplit
 
-import markdown
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -50,6 +49,7 @@ from apps.tasks.services import (
     resolve_matter_name,
 )
 from apps.tasks.tasks import get_board_data, get_list_data
+from utils.safe_markdown import render_markdown
 from utils.toasts import toast_success, toast_warning
 
 logger = logging.getLogger(__name__)
@@ -920,10 +920,11 @@ def tasks_detail(request, id):
     )
     page_notes = pagination.get_object_list()
 
-    # Process markdown in note details
+    # Rendered with markup in the text made inert: the template emits it
+    # with |safe.
     for note in page_notes:
         if note.details:
-            note.details = markdown.markdown(note.details)
+            note.details = render_markdown(note.details)
 
     context = {
         "task": task,
@@ -955,7 +956,7 @@ def tasks_detail_notes(request, id):
 
     for note in page_notes:
         if note.details:
-            note.details = markdown.markdown(note.details)
+            note.details = render_markdown(note.details)
 
     context = {
         "task": task,
