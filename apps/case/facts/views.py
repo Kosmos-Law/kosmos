@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.case.highlights.importance import parse_importance
 from apps.case.models import Document, Fact, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.management.selection import (
@@ -301,9 +302,10 @@ def bulk_facts_importance(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No facts selected.")
 
-    importance = request.POST.get("importance")
-    if importance:
-        _selected_facts_qs(matter, selected).update(importance=int(importance))
+    importance = parse_importance(request.POST.get("importance"))
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
+    _selected_facts_qs(matter, selected).update(importance=importance)
 
     clear_selected_ids(request, key)
     return selection_response("factsChanged")
@@ -571,9 +573,13 @@ def fact_remove_source(request, fact_id):
 
 
 @login_required
+@require_POST
 def fact_importance(request, fact_id, importance):
     """Set fact importance."""
     fact = get_object_or_404(Fact, pk=fact_id)
+    importance = parse_importance(importance)
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
     fact.importance = importance
     fact.save()
     return redirect("case:facts-list", matter_id=fact.matter_id)

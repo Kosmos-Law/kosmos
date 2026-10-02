@@ -21,6 +21,7 @@ from apps.management.selection import (
 
 from .filters import HighlightsFilter
 from .forms import HighlightForm
+from .importance import DEFAULT_IMPORTANCE, parse_importance
 
 
 def get_highlights_data(request, matter, matter_id):
@@ -346,9 +347,13 @@ def highlights_filter_default(request, matter_id):
 
 
 @login_required
+@require_POST
 def highlight_importance(request, highlight_id, importance):
     """Set highlight importance."""
     highlight = get_object_or_404(Highlight, id=highlight_id)
+    importance = parse_importance(importance)
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
     highlight.importance = importance
     highlight.save()
 
@@ -382,6 +387,12 @@ def add_highlight(request, document_id):
 
         paragraph_number = request.POST.get("paragraph_number", "").strip() or None
 
+        importance = parse_importance(
+            request.POST.get("importance", DEFAULT_IMPORTANCE)
+        )
+        if importance is None:
+            return JsonResponse({"error": "Invalid importance."}, status=400)
+
         highlight = Highlight.objects.create(
             document=document,
             slug=slug,
@@ -390,7 +401,7 @@ def add_highlight(request, document_id):
             paragraph_number=paragraph_number,
             coordinates=coordinates,
             color=request.POST.get("color", "yellow"),
-            importance=5,
+            importance=importance,
             created_by=request.user,
         )
 
@@ -589,9 +600,10 @@ def bulk_highlights_importance(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No highlights selected.")
 
-    importance = request.POST.get("importance")
-    if importance:
-        _selected_highlights_qs(matter, selected).update(importance=int(importance))
+    importance = parse_importance(request.POST.get("importance"))
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
+    _selected_highlights_qs(matter, selected).update(importance=importance)
 
     clear_selected_ids(request, key)
     return selection_response("highlightsChanged")

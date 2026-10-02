@@ -148,7 +148,7 @@ class TestFactsSort:
 
 class TestFactImportance:
     def test_set_importance(self, client_with_matter, fact):
-        response = client_with_matter.get(f"/case/facts/{fact.id}/importance/4/")
+        response = client_with_matter.post(f"/case/facts/{fact.id}/importance/4/")
         assert response.status_code == 302
         fact.refresh_from_db()
         assert fact.importance == 4
