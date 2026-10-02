@@ -19,6 +19,7 @@ from apps.case.models import CaseLaw, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.matters.models import Matter
 from utils.safe_json import json_for_script
+from utils.toasts import toast_warning
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,14 @@ def caselaws_index(request, matter_id):
 def caselaws_list(request, matter_id):
     """HTMX partial for case law list."""
     matter, _ = get_matter_from_url(request, matter_id)
+
+    # The "Search cases..." box sends its text here. It is kept with the
+    # rest of the list's filter so sorting and refreshes hold on to it.
+    if "keyword" in request.GET:
+        filter_session_key = get_session_key("caselaws_filter", matter_id)
+        filter_data = request.session.get(filter_session_key, {})
+        filter_data["keyword"] = request.GET["keyword"].strip()
+        request.session[filter_session_key] = filter_data
 
     context = {
         "matter": matter,
@@ -231,10 +240,12 @@ def caselaws_save(request, matter_id):
     if cluster_id:
         existing = CaseLaw.objects.filter(matter=matter, cluster_id=cluster_id).first()
         if existing:
-            # Already exists - redirect to view
-            response = HttpResponse(status=204)
-            response["HX-Redirect"] = f"/case/caselaws/{existing.id}/"
-            return response
+            # Already saved: close the dialog, show the list (which has
+            # the case) and say why nothing was added.
+            response = HttpResponse(
+                status=204, headers={"HX-Trigger": "caselawsChanged"}
+            )
+            return toast_warning(response, "This case is already saved to the matter.")
 
     # Create the case law
     case_law = CaseLaw.objects.create(

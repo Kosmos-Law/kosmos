@@ -67,7 +67,9 @@
                value="{{ keyword }}"
                class="filter-input keyword-input {% if keyword %}toggle-active{% endif %}"
                hx-get="{% url 'case:caselaws-list' matter.id %}"
-               hx-target="#caselaws"
+               hx-target="#caselaws-table"
+               hx-select="#caselaws-table"
+               hx-swap="outerHTML"
                hx-trigger="keyup changed delay:500ms"
                hx-include="this"
                oninput="this.classList.toggle('toggle-active', this.value.trim() !== '')">
@@ -140,8 +142,12 @@
     </table>
   {% else %}
     <div class="empty-state">
-      <p>No case law added yet.</p>
-      <p class="text-muted">Click the + button to look up and add a case.</p>
+      {% if keyword %}
+        <p>No saved cases match "{{ keyword }}".</p>
+      {% else %}
+        <p>No case law added yet.</p>
+        <p class="text-muted">Click the + button to look up and add a case.</p>
+      {% endif %}
     </div>
   {% endif %}
 </div>

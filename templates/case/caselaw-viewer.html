@@ -72,7 +72,7 @@
           <div class="highlights-left">
             <button id="createHighlightBtn"
                     class="btn-icon"
-                    title="Create highlight from selected text">
+                    {% if preview_mode %} disabled title="Save this case to the matter to highlight it" {% else %} title="Create highlight from selected text" {% endif %}>
               <i class="icon-highlighter"></i>
             </button>
             <span id="highlights-count">{{ highlights|length }}</span>
@@ -101,7 +101,13 @@
               </a>
             </div>
           {% empty %}
-            <div class="no-highlights">No highlights yet. Select text and click the Highlight button to create one.</div>
+            {% if preview_mode %}
+              <div class="no-highlights">
+                This case is not saved to the matter, so it cannot be highlighted yet. Bookmark it from the research results, then open it from Full Cases.
+              </div>
+            {% else %}
+              <div class="no-highlights">No highlights yet. Select text and click the Highlight button to create one.</div>
+            {% endif %}
           {% endfor %}
         </div>
       </div>
@@ -238,7 +244,7 @@
 
     // Configuration
     const config = {
-      caselawId: {{ caselaw.id }},
+      caselawId: {{ caselaw.id|default:"null" }},
       csrfToken: "{{ csrf_token }}",
       existingHighlights: {{ highlights_json|safe }},
       initialHighlight: {{ initial_highlight|default:"null" }}
@@ -308,8 +314,10 @@
     });
 
     // Create highlight button
+    // A case that is not saved to the matter has no id to attach a
+    // highlight to: the button is disabled and does nothing.
     document.getElementById('createHighlightBtn').addEventListener('click', function() {
-      if (currentSelection) {
+      if (currentSelection && config.caselawId) {
         showHighlightModal();
       }
     });
