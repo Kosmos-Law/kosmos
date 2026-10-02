@@ -20,20 +20,31 @@ Billing:
 
 - [Time and expenses](time-and-expenses.md): recording time, expenses and
   flat fees, and what happens once an entry is billed.
+- [Invoicing](invoicing.md): turning recorded work into invoices and
+  following them until they are paid.
+- [Taking payments](payments.md): recording money received, and letting
+  clients pay online.
+- [Trust accounting](trust.md): client money held in trust, and the
+  figures Kosmos shows for it.
 - [Reports](reports.md): what each report shows and how its figures are
   arrived at.
+
+Working a case:
+
+- [Documents](documents.md): a matter's documents, the viewer, labels and
+  searching the case file.
+- [Timeline, witnesses and highlights](facts.md): pulling the facts out of
+  the documents and organising them.
+- [Email](email.md): filing correspondence on a matter from Gmail.
+- [Notes](notes.md): the firm's library and the notes kept on a matter.
+- [Drafts](drafts.md): drafting in LibreOffice with the AI's edits as
+  tracked changes.
+- [Research](research.md): researching case law from inside a matter.
+- [AI chat](ai-chat.md): asking an AI model about a matter, and what it
+  can and cannot see.
 
 Looking after Kosmos:
 
 - [Settings](settings.md): the firm's details, users, permissions and the
   lists the rest of Kosmos draws on.
-
-Still to be written: invoicing and payments, trust accounting, documents,
-the fact timeline and witnesses, research, AI chat, notes and drafts, and
-email.
-
-Until those pages exist, two things inside the application help:
-
-- The keyboard shortcut list: **Shortcuts** in the sidebar.
-- The setup steps on **Settings → Claude Desktop**, also described in
-  [Claude Desktop access to Kosmos](../admin/integrations/claude-desktop.md).
+- [Keyboard shortcuts](shortcuts.md): every shortcut, by screen.

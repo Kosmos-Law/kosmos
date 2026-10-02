@@ -56,10 +56,23 @@ nav = [
     ] },
     { "Billing" = [
       { "Time and expenses" = "guide/time-and-expenses.md" },
+      { "Invoicing" = "guide/invoicing.md" },
+      { "Taking payments" = "guide/payments.md" },
+      { "Trust accounting" = "guide/trust.md" },
       { "Reports" = "guide/reports.md" },
+    ] },
+    { "Case work" = [
+      { "Documents" = "guide/documents.md" },
+      { "Timeline, witnesses and highlights" = "guide/facts.md" },
+      { "Email" = "guide/email.md" },
+      { "Notes" = "guide/notes.md" },
+      { "Drafts" = "guide/drafts.md" },
+      { "Research" = "guide/research.md" },
+      { "AI chat" = "guide/ai-chat.md" },
     ] },
     { "Administer" = [
       { "Settings" = "guide/settings.md" },
+      { "Keyboard shortcuts" = "guide/shortcuts.md" },
     ] },
   ] },
   { "Develop" = [

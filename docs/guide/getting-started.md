@@ -154,7 +154,8 @@ Good to know:
 
 ## Keyboard shortcuts
 
-Click **Shortcuts** in the sidebar for the full list. Many start with the
+Click **Shortcuts** in the sidebar for a list inside Kosmos, or see
+[Keyboard shortcuts](shortcuts.md) for every one. Many start with the
 Space bar: press Space, let go, then press the next key within half a
 second. These are the ones most worth knowing.
 
