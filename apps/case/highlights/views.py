@@ -2,6 +2,7 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -69,11 +70,13 @@ def get_highlights_data(request, matter, matter_id):
         if document_id:
             selected_document = documents.filter(id=document_id).first()
 
-        # Handle custom ordering with secondary sorts
+        # Handle custom ordering with secondary sorts. "Date" is the date
+        # the Date column shows: the document's, or the case's filing date.
+        source_date = Coalesce("document__date", "caselaw__date_filed")
         if order_by == "date":
-            highlights = highlights.order_by("created_at", "slug")
+            highlights = highlights.order_by(source_date.asc(nulls_last=True), "slug")
         elif order_by == "-date":
-            highlights = highlights.order_by("-created_at", "slug")
+            highlights = highlights.order_by(source_date.desc(nulls_last=True), "slug")
         elif order_by == "slug":
             highlights = highlights.order_by("slug", "created_at")
         elif order_by == "-slug":
@@ -320,11 +323,10 @@ def highlights_filter_sort(request, matter_id, order):
     filter_data = request.session.get(filter_session_key, {})
     current_order = filter_data.get("order_by", "")
 
-    # Toggle direction if same field
+    # A second click on the same column reverses it, whichever direction
+    # the column starts in (importance starts highest first).
     if current_order == order:
-        filter_data["order_by"] = f"-{order}"
-    elif current_order == f"-{order}":
-        filter_data["order_by"] = order
+        filter_data["order_by"] = order[1:] if order.startswith("-") else f"-{order}"
     else:
         filter_data["order_by"] = order
 

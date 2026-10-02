@@ -374,7 +374,14 @@ def witnesses_filter(request, matter_id):
     filter_obj = WitnessesFilter(filter_data, queryset=queryset)
 
     return render(
-        request, "case/witnesses/filter.html", {"filter": filter_obj, "matter": matter}
+        request,
+        "case/witnesses/filter.html",
+        {
+            "filter": filter_obj,
+            "matter": matter,
+            # Restore Defaults clears this key: the filter is kept per matter.
+            "filter_session_key": filter_session_key,
+        },
     )
 
 
@@ -386,8 +393,10 @@ def witnesses_sort(request, matter_id, order):
 
     current_order = filter_data.get("order_by", "")
 
+    # A second click on the same column reverses it, whichever direction
+    # the column starts in (importance starts highest first).
     if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
+        new_order = order[1:] if order.startswith("-") else f"-{order}"
     else:
         new_order = order
 
