@@ -1,5 +1,6 @@
 // A very small DOM for running the notes editor's plain modules under Node,
-// which has none. It covers only what markdown.js and outline.js touch.
+// which has none. It covers only what markdown.js, outline.js and
+// autosave.js touch.
 //
 // The HTML parser is deliberately browser-like about one thing: any
 // "<name ...>" is a tag, known or not. That is what makes unescaped note
@@ -159,6 +160,10 @@ class Element {
   }
 
   addEventListener() {}
+  dispatchEvent(event) {
+    this.dispatched = [...(this.dispatched || []), event.type];
+    return true;
+  }
   scrollIntoView() {}
 }
 
@@ -209,7 +214,9 @@ export function installDom(elements = {}) {
     getElementById: (id) => elements[id] || null,
     querySelector: () => null,
   };
+  globalThis.document.body = new Element("body");
   globalThis.window = globalThis;
+  globalThis.addEventListener = () => {}; // window.addEventListener
   globalThis.sessionStorage = {
     getItem: (key) => (store.has(key) ? store.get(key) : null),
     setItem: (key, value) => store.set(key, String(value)),
