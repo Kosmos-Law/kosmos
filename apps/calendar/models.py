@@ -43,11 +43,25 @@ class Event(AuditMixin, models.Model):
     # never pushed. The push is needed whenever this is NULL or older than
     # updated_at (a local edit since the last sync) — that single comparison
     # drives create, update, first-connect backfill, and retry-after-failure.
+    # One more state: synced once and now without a google_id. That is an
+    # event removed on Google and kept here (see detached_from_google); it is
+    # never pushed again.
     google_synced_at = models.DateTimeField(null=True, blank=True)
     history = HistoricalRecords(table_name="agenda_historicalevent")
 
     def __str__(self):
         return f"{self.description} : {self.id}"
+
+    @property
+    def detached_from_google(self):
+        """True for an event that was deleted on Google and kept in Kosmos.
+
+        The user took it off their calendar on purpose, so it must not go
+        back as a new Google event. It is told apart from an event that was
+        never pushed (no google_id, no google_synced_at) by still carrying
+        the time of its last sync.
+        """
+        return not self.google_id and self.google_synced_at is not None
 
     class Meta:
         db_table = "app_event"

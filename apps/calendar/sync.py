@@ -28,13 +28,18 @@ SYNC_STATUS = "Pending"
 def push_event(event):
     """Push one event to Google. Returns 'ok' | 'failed' | 'skipped'.
 
-    'skipped' = not connected, or out of scope (not Pending).
+    'skipped' = not connected, out of scope (not Pending), or detached from
+                Google (deleted there and kept here).
     'failed'  = sync attempted but the API call failed; google_synced_at is left
                 behind so reconcile() retries it.
     """
     if not google.check_credentials():
         return "skipped"
     if event.status != SYNC_STATUS:
+        return "skipped"
+    # Deleted on Google and kept here: pushing it would put back what the
+    # user removed, however it is edited afterwards.
+    if event.detached_from_google:
         return "skipped"
 
     if event.google_id:
@@ -105,8 +110,18 @@ def reconcile():
             summary["failed"] += 1
 
     # Pending events never pushed, or edited since their last successful push.
-    needs_push = Event.objects.filter(status=SYNC_STATUS).filter(
-        Q(google_synced_at__isnull=True) | Q(updated_at__gt=F("google_synced_at"))
+    # A synced event with no google_id was deleted on Google and kept here
+    # (Event.detached_from_google); push_event would skip it, so it is left
+    # out of the count as well.
+    needs_push = (
+        Event.objects.filter(status=SYNC_STATUS)
+        .filter(
+            Q(google_synced_at__isnull=True) | Q(updated_at__gt=F("google_synced_at"))
+        )
+        .exclude(
+            Q(google_id__isnull=True) | Q(google_id=""),
+            google_synced_at__isnull=False,
+        )
     )
     for event in needs_push.iterator():
         result = push_event(event)
