@@ -33,3 +33,6 @@ CLAUDE.md
 # app logs (keep dir, ignore log files)
 logs/*
 !logs/.gitkeep
+
+# Documentation site build output (zensical)
+/site/

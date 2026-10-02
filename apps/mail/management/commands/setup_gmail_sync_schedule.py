@@ -8,9 +8,9 @@ class Command(BaseCommand):
         "Create or update the Gmail sync schedules: an incremental history "
         "sync every 2 minutes and a weekly full re-list (early Monday) to "
         "reconcile drift the history feed can't repair. No env gate: the "
-        "sync is read-only and no-ops when no Gmail account is connected, so "
-        "dev inheriting these rows via the nightly prod-to-dev "
-        "copy is harmless."
+        "sync is read-only and no-ops when no Gmail account is connected. "
+        "Superseded by setup_schedules, which installs these with every "
+        "other schedule."
     )
 
     def handle(self, *args, **options):

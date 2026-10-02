@@ -7,10 +7,9 @@ class Command(BaseCommand):
     help = (
         "Create or update the auto-thread schedules: incremental refreshes "
         "six nights a week, a full rebuild early Monday (Sunday night). "
-        "Times are America/New_York; nights when qcluster is down are "
-        "skipped (catch_up is off). The default 1:30am finishes well before "
-        "the 08:30 UTC prod-to-dev copy in both EDT and EST, so dev wakes "
-        "up with the fresh auto chats."
+        "Nights when qcluster is down are skipped (catch_up is off). "
+        "Superseded by setup_schedules, which installs these with every "
+        "other schedule."
     )
 
     def add_arguments(self, parser):

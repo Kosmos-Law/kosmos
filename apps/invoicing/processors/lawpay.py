@@ -103,13 +103,21 @@ class LawPayProcessor(PaymentProcessor):
     def account_id_for(self, *, method, trust=False):
         """Deposit account id for a charge: trust vs operating × card vs eCheck.
         Invoices/balances are operating (trust=False); a trust deposit passes
-        trust=True. Returns "" to let the gateway auto-select."""
+        trust=True. An operating charge may return "" to let the gateway
+        auto-select. A trust charge may not: the gateway's own choice could be
+        the operating account, so a missing trust id is an error."""
         if trust:
-            return (
+            account_id = (
                 self.trust_echeck_account_id
                 if method == BANK
                 else self.trust_card_account_id
             )
+            if not account_id:
+                kind = "ECHECK" if method == BANK else "CARD"
+                raise ProcessorConfigError(
+                    f"LAWPAY_TRUST_{kind}_ACCOUNT_ID is not configured."
+                )
+            return account_id
         return (
             self.operating_echeck_account_id
             if method == BANK
@@ -123,9 +131,16 @@ class LawPayProcessor(PaymentProcessor):
             reference=f"Invoice {invoice.id}",
         )
 
+    def trust_unavailable_reason(self) -> str:
+        if not self.trust_card_account_id:
+            return "LAWPAY_TRUST_CARD_ACCOUNT_ID is not configured."
+        return ""
+
     def client_config_for(
         self, *, amount_cents, reference, trust=False
     ) -> ClientConfig:
+        if trust and self.trust_unavailable_reason():
+            raise ProcessorConfigError(self.trust_unavailable_reason())
         return ClientConfig(
             processor=self.name,
             public_key=self.public_key,

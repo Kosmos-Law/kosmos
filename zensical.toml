@@ -1,0 +1,120 @@
+# Documentation site. Pages live in docs/; see docs/dev/writing-docs.md.
+#   uvx zensical@0.0.67 serve
+#   uvx zensical@0.0.67 build --strict
+# The version is pinned in .github/workflows/docs.yaml.
+
+[project]
+site_name = "Kosmos"
+site_description = "Documentation for Kosmos, practice management for small law firms."
+site_url = "https://kosmos-law.github.io/kosmos/"
+repo_url = "https://github.com/Kosmos-Law/kosmos"
+repo_name = "Kosmos-Law/kosmos"
+edit_uri = "edit/dev/docs/"
+
+nav = [
+  { "Home" = "index.md" },
+  { "Run Kosmos" = [
+    "admin/index.md",
+    { "Install" = [
+      { "Install with the script" = "admin/install.md" },
+      { "Install by hand" = "admin/install-manual.md" },
+      { "Configuration" = "admin/configuration.md" },
+    ] },
+    { "Integrations" = [
+      { "Outgoing email" = "admin/integrations/email.md" },
+      { "File storage" = "admin/integrations/storage.md" },
+      { "AI providers and research" = "admin/integrations/ai.md" },
+      { "Online payments" = "admin/integrations/payments.md" },
+      { "Google Workspace" = "admin/integrations/google.md" },
+      { "Gmail sync" = "admin/integrations/gmail.md" },
+      { "Intakes from email" = "admin/integrations/inbound-email.md" },
+      { "Drafting with LibreOffice" = "admin/integrations/libreoffice.md" },
+      { "Claude Desktop" = "admin/integrations/claude-desktop.md" },
+    ] },
+    { "Operate" = [
+      { "Background worker" = "admin/worker.md" },
+      { "Monitoring" = "admin/monitoring.md" },
+      { "Backup and restore" = "admin/backup.md" },
+      { "Upgrading" = "admin/upgrading.md" },
+      { "Troubleshooting" = "admin/troubleshooting.md" },
+    ] },
+    { "Access and security" = [
+      { "Users and permissions" = "admin/users.md" },
+      { "Security checklist" = "admin/security.md" },
+    ] },
+  ] },
+  { "Use Kosmos" = [
+    "guide/index.md",
+  ] },
+  { "Develop Kosmos" = [
+    "dev/index.md",
+    { "Conventions" = [
+      { "CSS theming" = "dev/frontend/theming.md" },
+      { "Writing documentation" = "dev/writing-docs.md" },
+      { "Squashing migrations" = "dev/squashing-migrations.md" },
+    ] },
+    { "Subsystems" = [
+      { "Agentic chat" = "dev/subsystems/ai/agent-chat.md" },
+      { "Research tab" = "dev/subsystems/ai/research-tab.md" },
+      { "MCP server and JSON APIs" = "dev/subsystems/mcp.md" },
+    ] },
+  ] },
+  { "Reference" = [
+    "reference/index.md",
+    { "Environment variables" = "reference/environment.md" },
+    { "Management commands" = "reference/commands.md" },
+    { "Scheduled jobs" = "reference/schedules.md" },
+    { "Permissions" = "reference/permissions.md" },
+  ] },
+  { "Decisions" = [
+    "decisions/index.md",
+    { "Research chat (retired)" = "decisions/research-chat-retired.md" },
+    { "Claude Desktop roadmap" = "decisions/claude-desktop-roadmap.md" },
+  ] },
+]
+
+[project.theme]
+language = "en"
+logo = "assets/kosmos-mark.svg"
+favicon = "assets/kosmos-mark.svg"
+features = [
+  "content.action.edit",
+  "content.code.copy",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.path",
+  "navigation.sections",
+  "navigation.tabs",
+  "navigation.top",
+  "search.highlight",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[project.markdown_extensions]
+admonition = {}
+attr_list = {}
+md_in_html = {}
+tables = {}
+toc.permalink = true
+pymdownx.details = {}
+pymdownx.highlight.anchor_linenums = true
+pymdownx.inlinehilite = {}
+pymdownx.superfences = {}
+pymdownx.tabbed.alternate_style = true

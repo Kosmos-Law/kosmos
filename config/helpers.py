@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 import django_filters
 import pytz
+from django.conf import settings
 from django.db.models import Model
 from django.db.models.query import F, QuerySet
 from django.forms.models import model_to_dict
@@ -39,7 +40,7 @@ def dump(result):
 def timestamp_to_eastern(timestamp):
     dt = datetime.fromtimestamp(timestamp)
     dt = dt.replace(tzinfo=timezone.utc)
-    tz = pytz.timezone("US/Eastern")
+    tz = pytz.timezone(settings.TIME_ZONE)
     dt = dt.astimezone(tz)
     return dt
 

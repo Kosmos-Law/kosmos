@@ -14,6 +14,7 @@ On a successful charge the payment is recorded and applied to the invoice (see
 """
 
 import json
+import logging
 import os
 from dataclasses import replace
 from decimal import Decimal
@@ -35,11 +36,18 @@ from apps.invoicing.pay.balance import (
     request_charge_cents,
 )
 from apps.invoicing.pay.recording import record_payment
-from apps.invoicing.processors import ChargeError, get_processor
+from apps.invoicing.processors import (
+    ChargeError,
+    PaymentError,
+    ProcessorConfigError,
+    get_processor,
+)
 from apps.invoicing.processors.base import ClientConfig
 from apps.invoicing.requests.models import PaymentRequest
 from utils.ratelimit import rate_limited
 from utils.signing import read_payment_token, read_request_token
+
+logger = logging.getLogger(__name__)
 
 
 def _to_cents(amount):
@@ -93,6 +101,17 @@ def _unavailable(request, reason, *, status):
     return render(
         request, "invoicing/pay/unavailable.html", {"reason": reason}, status=status
     )
+
+
+NOT_AVAILABLE = "Online payment is not available right now. Please contact us."
+
+
+def _processor_unavailable(request, exc):
+    """The processor cannot serve this page as configured (a missing key or
+    account id, or a deposit it cannot route). Tell the client plainly and
+    leave the detail in the log for the firm."""
+    logger.error("Payment page unavailable: %s", exc)
+    return _unavailable(request, NOT_AVAILABLE, status=503)
 
 
 def _unavailable_for(request, exc):
@@ -160,8 +179,11 @@ def pay_page(request, token):
             )
         return _unavailable(request, "This payment link is invalid.", status=404)
 
-    processor = get_processor()
-    config = processor.client_config(invoice)
+    try:
+        processor = get_processor()
+        config = processor.client_config(invoice)
+    except PaymentError as exc:
+        return _processor_unavailable(request, exc)
     matter = invoice.matter
     from apps.settings.models import Firm
 
@@ -221,7 +243,11 @@ def pay_charge(request, token):
             {"success": False, "error": "Missing payment details."}, status=400
         )
 
-    processor = get_processor()
+    try:
+        processor = get_processor()
+    except ProcessorConfigError as exc:
+        logger.error("Charge refused, processor misconfigured: %s", exc)
+        return JsonResponse({"success": False, "error": NOT_AVAILABLE}, status=503)
     # Serialize per-invoice: lock the row, re-check the balance, charge, record —
     # all atomically. A rapid double-submit (or two tabs) then can't both charge,
     # because the second waits for the lock and finds the invoice already paid.
@@ -263,6 +289,9 @@ def pay_charge(request, token):
                     record_payment(locked, result)
     except ChargeError as exc:
         return JsonResponse({"success": False, "error": str(exc)}, status=402)
+    except ProcessorConfigError as exc:
+        logger.error("Charge refused, processor misconfigured: %s", exc)
+        return JsonResponse({"success": False, "error": NOT_AVAILABLE}, status=503)
 
     if already_paid:
         return JsonResponse(
@@ -390,25 +419,34 @@ def balance_pay_page(request, token):
             request, "This payment request is no longer active.", status=410
         )
 
-    processor = get_processor()
+    try:
+        processor = get_processor()
+    except PaymentError as exc:
+        return _processor_unavailable(request, exc)
     charge_cents = request_charge_cents(pay_request)
     from apps.settings.models import Firm
 
     company = Firm.objects.first()
     if pay_request.is_trust:
         client = pay_request.client
-        config = processor.client_config_for(
-            amount_cents=charge_cents,
-            reference=f"Trust deposit · Client {client.id}",
-            trust=True,
-        )
+        try:
+            config = processor.client_config_for(
+                amount_cents=charge_cents,
+                reference=f"Trust deposit · Client {client.id}",
+                trust=True,
+            )
+        except PaymentError as exc:
+            return _processor_unavailable(request, exc)
         page_title, subtitle, amount_label = "Trust Deposit", "Trust deposit", "Deposit"
         # The trust summary row already IS the client — no separate top row.
         client_name, summary_label, summary_value = "", "Client", client.name
     else:
         matter = pay_request.matter
         open_invoices = matter_open_invoices(matter)
-        config = _balance_config(processor, open_invoices, charge_cents, matter)
+        try:
+            config = _balance_config(processor, open_invoices, charge_cents, matter)
+        except PaymentError as exc:
+            return _processor_unavailable(request, exc)
         page_title, subtitle, amount_label = (
             "Pay Account Balance",
             "Account balance",
@@ -487,7 +525,11 @@ def balance_charge(request, token):
             {"success": False, "error": "Missing payment details."}, status=400
         )
 
-    processor = get_processor()
+    try:
+        processor = get_processor()
+    except ProcessorConfigError as exc:
+        logger.error("Charge refused, processor misconfigured: %s", exc)
+        return JsonResponse({"success": False, "error": NOT_AVAILABLE}, status=503)
     # Lock the request row to serialize concurrent submits — the second waits and
     # then finds the request already settled. The status + balance recheck under
     # the lock is the double-charge guard (mirrors the per-invoice flow).
@@ -535,6 +577,9 @@ def balance_charge(request, token):
                     req.save(update_fields=["status", "payment", "trust_transaction"])
     except ChargeError as exc:
         return JsonResponse({"success": False, "error": str(exc)}, status=402)
+    except ProcessorConfigError as exc:
+        logger.error("Charge refused, processor misconfigured: %s", exc)
+        return JsonResponse({"success": False, "error": NOT_AVAILABLE}, status=503)
 
     if already_paid:
         return JsonResponse(

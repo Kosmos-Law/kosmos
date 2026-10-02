@@ -94,8 +94,8 @@ Q_CLUSTER = {
     "timeout": 600,  # 10 minutes for OCR tasks
     "retry": 900,
     # A failing task stops after this many attempts instead of looping
-    # forever (an OCR task retried every 15 minutes for days on prod,
-    # 2026-08-25, snowballing history writes until the disk filled).
+    # forever. Without the cap, one task that can never succeed is retried
+    # every 15 minutes indefinitely, and its history writes can fill a disk.
     "max_attempts": 10,
     "queue_limit": 50,
     "bulk": 10,
@@ -174,8 +174,9 @@ DATABASES = {
 # counters. Under the default cap a mid-run cull could evict a research
 # run's live status (the trail flashing back to "Checking...") or, worse,
 # a finished run's completion payload before the browser polled it.
-# Per-process is fine here: gunicorn runs a single worker and AI requests
-# run on threads inside it.
+# It is per-process: each gunicorn worker and the qcluster worker has its
+# own copy, so anything that must be seen across processes cannot live here
+# (see ai_status below). Rate-limit counts are therefore per worker.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -217,7 +218,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "America/New_York"
+# The firm's time zone: dates shown in the app, schedule times and the
+# zone events are written to Google Calendar in.
+TIME_ZONE = env("TIME_ZONE", default="America/New_York")
 
 USE_I18N = True
 
@@ -322,8 +325,8 @@ ADMINS = env("ADMINS")
 # faithful copy (cover message + attached PDF) of what each client received.
 # Comma-separated; leave empty to disable.
 # Note: invoice-email config — Reply-To, the contact address shown in the body,
-# and the BCC list — all come from the Company settings record
-# (apps.settings.Company), so the firm manages them in the UI in one place.
+# and the BCC list — all come from the Firm settings record
+# (apps.settings.Firm), so the firm manages them in the UI in one place.
 
 # set cookies (sessions) to last for two months
 # default is two weeks, multiplying by four to get two months
@@ -366,7 +369,7 @@ LOGGING = {
     "root": {"handlers": ["console", "file"], "level": "WARNING"},
     "loggers": {
         # Bot-driven bad Host headers are benign; drop them instead of dumping a
-        # full traceback per hit (this was chf's 117 MB error-log flood).
+        # full traceback per hit, which floods the error log.
         "django.security.DisallowedHost": {"handlers": ["null"], "propagate": False},
     },
 }
@@ -410,6 +413,10 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 
 # Google Gemini API Configuration
 GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
+
+# Days after a matter closes before the weekly purge deletes its AI chats
+# (apps/case/ai/purge.py). 0 keeps them indefinitely.
+CHAT_RETENTION_DAYS = env.int("CHAT_RETENTION_DAYS", default=180)
 
 # Save-time semantic re-indexing (apps/case/ai/semantic.py); tests turn
 # it off so every model save does not enqueue an embedding task.

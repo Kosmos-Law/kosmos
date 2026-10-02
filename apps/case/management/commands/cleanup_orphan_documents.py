@@ -7,20 +7,34 @@ from apps.case.models import Document, Highlight
 
 
 class Command(BaseCommand):
-    help = "Delete document records whose files are missing from storage"
+    help = (
+        "List document records whose files are missing from storage, and "
+        "with --apply delete them (and their highlights). Reports only by "
+        "default."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
+            "--apply",
+            action="store_true",
+            help="Delete the listed records. Without this nothing is changed.",
+        )
+        parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="List orphan documents without deleting them",
+            help="List without deleting. This is the default; kept for old habits.",
         )
 
     def _clear_outline_references(self, highlight_ids):
-        """Remove references from outlines tables that lack CASCADE."""
+        """Remove references from a legacy outlines table that lacks CASCADE.
+        The table is left over from a removed app and exists only in databases
+        old enough to have had it, so check before touching it."""
         if not highlight_ids:
             return
         with connection.cursor() as cursor:
+            cursor.execute("SELECT to_regclass('outlines_outlineitem_highlights')")
+            if cursor.fetchone()[0] is None:
+                return
             cursor.execute(
                 "DELETE FROM outlines_outlineitem_highlights "
                 "WHERE highlight_id = ANY(%s)",
@@ -28,7 +42,7 @@ class Command(BaseCommand):
             )
 
     def handle(self, *args, **options):
-        dry_run = options["dry_run"]
+        apply = options["apply"] and not options["dry_run"]
         orphans = []
 
         for doc in Document.objects.all().order_by("id"):
@@ -47,8 +61,8 @@ class Command(BaseCommand):
 
         self.stdout.write(f"\nFound {len(orphans)} orphan document(s).")
 
-        if dry_run:
-            self.stdout.write("Dry run — no records deleted.")
+        if not apply:
+            self.stdout.write("Nothing deleted. Run again with --apply to delete.")
             return
 
         orphan_ids = [doc.id for doc in orphans]

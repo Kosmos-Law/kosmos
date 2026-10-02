@@ -91,21 +91,21 @@ def add_event(event):
             end_datetime = datetime.combine(event.date, event.end_time)
             new_event["start"] = {
                 "dateTime": start_datetime.isoformat(),
-                "timeZone": "US/Eastern",
+                "timeZone": settings.TIME_ZONE,
             }
             new_event["end"] = {
                 "dateTime": end_datetime.isoformat(),
-                "timeZone": "US/Eastern",
+                "timeZone": settings.TIME_ZONE,
             }
         else:
             # All-day event - use date format
             new_event["start"] = {
                 "date": str(event.date),
-                "timeZone": "US/Eastern",
+                "timeZone": settings.TIME_ZONE,
             }
             new_event["end"] = {
                 "date": str(event.date + timedelta(days=1)),
-                "timeZone": "US/Eastern",
+                "timeZone": settings.TIME_ZONE,
             }
 
         # Map the free-text location to Google's location field; fall back to
@@ -236,11 +236,11 @@ def edit_event(event):
             end_datetime = datetime.combine(event.date, event.end_time)
             revised_event["start"] = {
                 "dateTime": start_datetime.isoformat(),
-                "timeZone": "US/Eastern",
+                "timeZone": settings.TIME_ZONE,
             }
             revised_event["end"] = {
                 "dateTime": end_datetime.isoformat(),
-                "timeZone": "US/Eastern",
+                "timeZone": settings.TIME_ZONE,
             }
         else:
             # All-day event - use date format

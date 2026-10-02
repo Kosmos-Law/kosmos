@@ -1,9 +1,10 @@
 """Select the active payment processor from settings.
 
-    PAYMENT_PROCESSOR = "fake"   # or "lawpay"
+    PAYMENT_PROCESSOR = "fake"   # or "none", "lawpay", "stripe", "confido"
 
-The default is "fake" so dev/CI and the test suite run without any processor
-credentials. The real `LawPayProcessor` is registered here once it exists.
+The default is "fake" so development and the test suite run without any
+processor credentials. "fake" records payments although no money moves, so a
+production install that takes no online payments should set "none".
 """
 
 from django.conf import settings
@@ -18,6 +19,11 @@ def get_processor(name: str | None = None) -> PaymentProcessor:
 
     if name == "fake":
         return FakeProcessor()
+
+    if name == "none":
+        from .none import DisabledProcessor
+
+        return DisabledProcessor()
 
     if name == "lawpay":
         # Imported lazily so the package needn't import `requests` unless the

@@ -1,0 +1,15 @@
+# Rotation for the application's and gunicorn's log files. Installed as
+# /etc/logrotate.d/kosmos by scripts/install.sh --prod.
+#
+# copytruncate matters: Django and gunicorn keep these files open, so a
+# rotation that renamed the file would leave them writing to the old one.
+@APP_DIR@/logs/*.log {
+    weekly
+    rotate 12
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su @USER@ @USER@
+}

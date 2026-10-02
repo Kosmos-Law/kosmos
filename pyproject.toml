@@ -40,7 +40,6 @@ dependencies = [
     "ocrmypdf==16.12.0",
     # AI clients
     "anthropic==1.0.0",
-    "openai==2.9.0",
     # Legal citation parsing
     "eyecite==2.7.6",
     # Build tools (needed by some packages)

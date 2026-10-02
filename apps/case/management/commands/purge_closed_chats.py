@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.case.ai.purge import DEFAULT_RETENTION_DAYS, purge_closed_chats
@@ -8,16 +9,19 @@ class Command(BaseCommand):
         "Delete AI chat history (conversations, messages and their history "
         "rows) for matters closed longer than the retention window. Chats "
         "are working notes with no lasting value once a matter closes; the "
-        "client file lives in Drive and Gmail. Scheduled weekly via "
-        "setup_chat_purge_schedule."
+        "client file lives in Drive and Gmail. Scheduled weekly by "
+        "setup_schedules."
     )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--days",
             type=int,
-            default=DEFAULT_RETENTION_DAYS,
-            help=f"Retention window after closing (default {DEFAULT_RETENTION_DAYS}).",
+            default=None,
+            help=(
+                "Retention window after closing, in days (default: "
+                f"CHAT_RETENTION_DAYS, or {DEFAULT_RETENTION_DAYS} when that is 0)."
+            ),
         )
         parser.add_argument(
             "--dry-run",
@@ -26,7 +30,12 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        stats = purge_closed_chats(days=options["days"], dry_run=options["dry_run"])
+        days = options["days"]
+        if days is None:
+            # CHAT_RETENTION_DAYS=0 switches the scheduled purge off; a purge
+            # run by hand still needs a window, so fall back to the default.
+            days = settings.CHAT_RETENTION_DAYS or DEFAULT_RETENTION_DAYS
+        stats = purge_closed_chats(days=days, dry_run=options["dry_run"])
         prefix = "[dry-run] " if options["dry_run"] else ""
         self.stdout.write(
             self.style.SUCCESS(

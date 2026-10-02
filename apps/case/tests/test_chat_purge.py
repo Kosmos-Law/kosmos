@@ -62,6 +62,30 @@ def test_dry_run_deletes_nothing():
     assert Message.objects.count() == 2
 
 
+def test_scheduled_purge_uses_the_configured_retention(settings):
+    from apps.case.ai.purge import scheduled_purge_closed_chats
+
+    _matter_with_chat("Closed 200 days", closed_days_ago=200)
+
+    settings.CHAT_RETENTION_DAYS = 365
+    assert scheduled_purge_closed_chats()["conversations"] == 0
+    assert Conversation.objects.count() == 1
+
+    settings.CHAT_RETENTION_DAYS = 180
+    assert scheduled_purge_closed_chats()["conversations"] == 1
+    assert Conversation.objects.count() == 0
+
+
+def test_scheduled_purge_is_off_when_retention_is_zero(settings):
+    from apps.case.ai.purge import scheduled_purge_closed_chats
+
+    _matter_with_chat("Closed long ago", closed_days_ago=2000)
+    settings.CHAT_RETENTION_DAYS = 0
+
+    assert scheduled_purge_closed_chats() is None
+    assert Conversation.objects.count() == 1
+
+
 @pytest.mark.parametrize("status", ["Closed", "Complete"])
 def test_close_unlinks_mirrors(status):
     from apps.drive.models import DriveFolderMapping, DriveMatterState

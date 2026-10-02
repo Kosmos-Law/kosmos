@@ -14,6 +14,7 @@ from config import health
 urlpatterns = [
     path("health/live/", health.live, name="health-live"),
     path("health/ready/", health.ready, name="health-ready"),
+    path("health/worker/", health.worker, name="health-worker"),
     path("", tasks_index, name="tasks-index"),
     # Admin. Its sign-in form is replaced first: Django's own takes a
     # password alone and would skip the emailed code.

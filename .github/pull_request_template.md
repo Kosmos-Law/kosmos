@@ -8,7 +8,7 @@
 
 ## Changes Made
 
-## <!-- List the specific changes made in this PR -->
+<!-- List the specific changes made in this PR -->
 
 ## Screenshots
 
@@ -20,7 +20,7 @@
 - [ ] Ran `pre-commit run --all-files` with no errors
 - [ ] Self-reviewed the code for any obvious issues
 - [ ] Tested changes locally
-- [ ] Updated documentation if needed
+- [ ] Updated the documentation in `docs/`, or none is needed
 
 ## Additional Notes
 

@@ -25,7 +25,7 @@ CLAUDE.md / .mcp.json, which belong to Claude Code):
           "command": "uv",
           "args": ["run", "--script", "/path/to/kosmos_notes_mcp.py"],
           "env": {
-            "KOSMOS_URL": "https://kosmos.craiglegal.law",
+            "KOSMOS_URL": "https://kosmos.example.com",
             "KOSMOS_TOKEN": "<your token from Kosmos settings>"
           }
         }
@@ -44,7 +44,9 @@ import urllib.request
 
 from mcp.server import MCPServer
 
-KOSMOS_URL = os.environ.get("KOSMOS_URL", "https://kosmos.craiglegal.law").rstrip("/")
+# No default: the script is the same file for every firm, so the address of
+# the firm's own server has to come from the config block.
+KOSMOS_URL = os.environ.get("KOSMOS_URL", "").rstrip("/")
 KOSMOS_TOKEN = os.environ.get("KOSMOS_TOKEN", "")
 
 READ_TRUNCATE_CHARS = 40_000
@@ -79,6 +81,11 @@ def _request(path, payload=None, **params):
     user how to reissue a token and the note-write 403 explains the
     editor toggle, so both must reach the conversation.
     """
+    if not KOSMOS_URL:
+        raise RuntimeError(
+            "KOSMOS_URL is not set. Copy the config block from Settings -> "
+            "Claude Desktop in Kosmos, which fills it in."
+        )
     url = f"{KOSMOS_URL}/{path}"
     query = {k: v for k, v in params.items() if v is not None and v != ""}
     if query:

@@ -52,6 +52,6 @@ controls) and `apps/case/tests/test_courtlistener_throttle.py`.
 
 ## Successor
 
-The agentic chat mode (docs/agent-chat.md, 2026-08-23) is the tool-loop
+The agentic chat mode ([Agentic chat](../dev/subsystems/ai/agent-chat.md), 2026-08-23) is the tool-loop
 successor: matter materials instead of CourtListener, chosen per
 conversation instead of per turn.

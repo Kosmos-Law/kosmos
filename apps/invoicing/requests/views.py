@@ -10,6 +10,7 @@ from django.urls import reverse
 
 from apps.contacts.models import Contact
 from apps.invoicing.pay.balance import matter_balance_cents
+from apps.invoicing.processors import ProcessorConfigError, get_processor
 from apps.invoicing.requests.filters import PaymentRequestFilter
 from apps.invoicing.requests.models import PaymentRequest, PaymentRequestTransmission
 from apps.invoicing.requests.send import (
@@ -247,6 +248,19 @@ def requests_matter_fields(request):
     )
 
 
+def _trust_requests_unavailable():
+    """An error to show staff when the configured processor cannot put a
+    deposit in the trust account, or '' when it can. Sending the request
+    anyway would hand the client a link that cannot be paid."""
+    try:
+        reason = get_processor().trust_unavailable_reason()
+    except ProcessorConfigError as exc:
+        reason = str(exc)
+    if reason:
+        return f"Trust deposit requests cannot be sent: {reason}"
+    return ""
+
+
 def _trust_clients():
     return Contact.objects.active_or_pending_clients().order_by("name")
 
@@ -270,9 +284,11 @@ def requests_new_trust(request):
         amount_raw = (request.POST.get("amount") or "").strip()
         client = _trust_clients().filter(pk=client_id).first() if client_id else None
 
-        error = ""
+        error = _trust_requests_unavailable()
         amount = None
-        if not client:
+        if error:
+            pass
+        elif not client:
             error = "Please select a client."
         elif not amount_raw:
             error = "Enter a deposit amount."
@@ -346,7 +362,7 @@ def requests_new_trust(request):
         "cc": "",
         "message": "",
         "amount": "",
-        "error": "",
+        "error": _trust_requests_unavailable(),
         "next": next_tab,
     }
     return render(request, "invoicing/requests/trust_form.html", context)

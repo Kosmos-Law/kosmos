@@ -68,6 +68,8 @@
             {% endif %}
             Thank you.
           </div>
+        {% elif config.processor == 'none' %}
+          <div class="pay-alert info">Online payment is not available. Please contact us to arrange payment.</div>
         {% else %}
           <div x-data='payForm({ chargeUrl: "{{ charge_url|escapejs }}", dev: {{ dev_mode|yesno:"true,false" }}, publicKey: "{{ config.public_key|escapejs }}", processor: "{{ config.processor|escapejs }}", echeck: {{ config.echeck|yesno:"true,false" }}, iframeFont: "Arial, &#39;Helvetica Neue&#39;, sans-serif", stripeFont: "&#39;Noto Sans&#39;, sans-serif", stripeFontUrl: "https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&display=swap" })'>
             <!-- Result states -->
@@ -247,7 +249,7 @@
       </div>
     </div>
   </div>
-  {% if not is_paid %}
+  {% if not is_paid and config.processor != 'none' %}
     {% if config.processor == 'stripe' %}
       <script src="https://js.stripe.com/v3/"></script>
     {% elif not dev_mode %}
