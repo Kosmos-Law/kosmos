@@ -2,22 +2,78 @@
 
 import { escapeHtml } from "./state.js";
 
-function formatInline(text) {
-  const codePlaceholders = [];
-  text = text.replace(/`([^`]+)`/g, (_m, code) => {
-    codePlaceholders.push("<code>" + escapeHtml(code) + "</code>");
-    return "\x00CODE" + (codePlaceholders.length - 1) + "\x00";
-  });
+// Reference chips are stored as [[doc:12|label]] / [[hl:34|label]].
+const REF_TOKEN = /\[\[(doc|hl):(\d+)\|([^\]]+)\]\]/g;
+const REF_TYPES = { doc: "document", hl: "highlight" };
 
-  text = text
+// A letter, digit or underscore: what an underscore must NOT touch on its
+// outer side to count as emphasis (see formatInline).
+const WORD = "[\\p{L}\\p{N}_]";
+// Underscore emphasis, CommonMark-style: the run opens after a non-word
+// character and closes before one, and its inside neither starts nor ends
+// with a space or another underscore. So Smith_Depo_Vol1.pdf,
+// snake_case_names and blanks like "Signed: ______" stay literal text.
+const underscoreRun = (marks) =>
+  new RegExp(
+    `(?<!${WORD})${marks}(?=[^\\s_])(.+?)(?<=[^\\s_])${marks}(?!${WORD})`,
+    "gu",
+  );
+const UNDERSCORE_BOLD_ITALIC = underscoreRun("___");
+const UNDERSCORE_BOLD = underscoreRun("__");
+const UNDERSCORE_ITALIC = underscoreRun("_");
+
+// One line of stored markdown -> editor HTML.
+//
+// The stored text is plain text plus markdown marks: nothing in it is HTML.
+// So everything is escaped before the marks are turned into tags;
+// otherwise "<jsmith@example.com>" or "x<y" reads as a tag and the editor
+// silently drops it, and the next save writes the note back without it.
+// Pieces that must come through exactly (code spans, reference chips, link
+// addresses) are lifted out first and put back last, so neither the
+// escaping nor the emphasis rules can touch them.
+function formatInline(text) {
+  // NUL marks the held pieces below; stored text never contains one
+  // (the database refuses it), so drop any that arrive by paste
+  text = text.replace(/\x00/g, "");
+  const held = [];
+  const hold = (html) => {
+    held.push(html);
+    return "\x00" + (held.length - 1) + "\x00";
+  };
+
+  text = text.replace(/`([^`]+)`/g, (_m, code) =>
+    hold("<code>" + escapeHtml(code) + "</code>"),
+  );
+
+  text = text.replace(REF_TOKEN, (_m, kind, id, label) =>
+    hold(
+      '<span class="note-ref" data-type="' +
+        REF_TYPES[kind] +
+        '" data-id="' +
+        id +
+        '">' +
+        escapeHtml(label) +
+        "</span>",
+    ),
+  );
+
+  // The editor has no link mark, so a markdown link can't stay a link; it
+  // becomes its text followed by the address in parentheses, which keeps
+  // the address when the note is saved again.
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, address) =>
+    label === address
+      ? hold(escapeHtml(address))
+      : label + " (" + hold(escapeHtml(address)) + ")",
+  );
+
+  text = escapeHtml(text)
     .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-    .replace(/___(.+?)___/g, "<strong><em>$1</em></strong>")
+    .replace(UNDERSCORE_BOLD_ITALIC, "<strong><em>$1</em></strong>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/__(.+?)__/g, "<strong>$1</strong>")
+    .replace(UNDERSCORE_BOLD, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/_(.+?)_/g, "<em>$1</em>")
+    .replace(UNDERSCORE_ITALIC, "<em>$1</em>")
     .replace(/~~(.+?)~~/g, "<s>$1</s>")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/g==(.+?)==/g, '<mark data-color="mark-green">$1</mark>')
     .replace(/r==(.+?)==/g, '<mark data-color="mark-red">$1</mark>')
     .replace(/p==(.+?)==/g, '<mark data-color="mark-purple">$1</mark>')
@@ -26,10 +82,13 @@ function formatInline(text) {
     .replace(/a==(.+?)==/g, '<mark data-color="mark-gray">$1</mark>')
     .replace(/==(.+?)==/g, "<mark>$1</mark>");
 
-  return text.replace(
-    /\x00CODE(\d+)\x00/g,
-    (_m, idx) => codePlaceholders[parseInt(idx)],
-  );
+  // Last held first: a held piece can contain an earlier one (a code span
+  // inside a chip's label), never a later one. The function form keeps a
+  // "$" in the held text from being read as a replacement pattern.
+  for (let i = held.length - 1; i >= 0; i--) {
+    text = text.replaceAll("\x00" + i + "\x00", () => held[i]);
+  }
+  return text;
 }
 
 // GFM pipe tables. Rows must carry outer pipes (| a | b |) — that's what
@@ -72,9 +131,18 @@ export function alignsToSeparator(aligns) {
   );
 }
 
+// Cells split on unescaped pipes. A reference token carries a pipe of its
+// own ([[doc:1|label]]) which is syntax, not a cell boundary (the save
+// side leaves it unescaped for the same reason).
 export function splitPipeRow(line) {
   const inner = line.trim().replace(/^\|/, "").replace(/\|$/, "");
-  return inner.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
+  const cells = [""];
+  const piece = /\[\[(?:doc|hl):\d+\|[^\]]+\]\]|\\\||\||[^|\\[]+|[\\[]/g;
+  for (const [part] of inner.matchAll(piece)) {
+    if (part === "|") cells.push("");
+    else cells[cells.length - 1] += part === "\\|" ? "|" : part;
+  }
+  return cells.map((c) => c.trim());
 }
 
 export function buildTableHtml(header, rows, aligns) {
@@ -126,15 +194,6 @@ function buildBlockquote(lines, minDepth) {
 
 export function markdownToHtml(md) {
   if (!md) return "<p></p>";
-
-  md = md.replace(
-    /\[\[doc:(\d+)\|([^\]]+)\]\]/g,
-    '<span class="note-ref" data-type="document" data-id="$1">$2</span>',
-  );
-  md = md.replace(
-    /\[\[hl:(\d+)\|([^\]]+)\]\]/g,
-    '<span class="note-ref" data-type="highlight" data-id="$1">$2</span>',
-  );
 
   const lines = md.split(/\r?\n/);
   const parsed = [];

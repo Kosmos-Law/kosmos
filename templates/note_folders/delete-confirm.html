@@ -2,6 +2,9 @@
 extra_qs carries "context=editor&note=<id>" when opened from the editor's
 tree context menu, so the delete endpoint can redirect if the open note is
 deleted along with the folder. Empty on the Notes tab.
+
+note_count is every note the delete can take: the folder's own and those
+in its subfolders, at any depth.
 {% endcomment %}
 <div class="modal-dialog modal-md">
   <div class="modal-content">
@@ -15,9 +18,17 @@ deleted along with the folder. Empty on the Notes tab.
     </div>
     <div class="modal-body">
       <p>Delete folder "{{ folder.name }}"?</p>
-      {% if note_count > 0 %}<p>This folder contains {{ note_count }} note{{ note_count|pluralize }}.</p>{% endif %}
       {% if subfolder_count > 0 %}
         <p>This folder contains {{ subfolder_count }} subfolder{{ subfolder_count|pluralize }}.</p>
+      {% endif %}
+      {% if note_count > 0 %}
+        <p>
+          {% if subfolder_count > 0 %}
+            This folder and its subfolders contain {{ note_count }} note{{ note_count|pluralize }}.
+          {% else %}
+            This folder contains {{ note_count }} note{{ note_count|pluralize }}.
+          {% endif %}
+        </p>
       {% endif %}
     </div>
     <div class="modal-footer">

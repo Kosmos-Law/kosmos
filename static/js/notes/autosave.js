@@ -1,9 +1,16 @@
 // Autosave, save status, and multi-tab conflict handling for the editor
 //
 // Every save carries base_version — the exact updated_at string this tab
-// last received — and the server 409s if another tab saved since. A 409
-// (or a broadcast save landing while we're dirty) pauses editing behind
-// a banner until the user reloads; a clean tab just reloads silently.
+// last received — and the server 409s if anyone saved since (another tab,
+// another person, or the AI). A 409 (or a broadcast save landing while
+// we're dirty) pauses editing behind a banner until the user reloads; a
+// clean tab just reloads silently.
+//
+// A save that fails outright (network down, server error) is retried a
+// few times on its own, so text typed just before the user stops typing
+// isn't left unsaved until the next keystroke.
+
+import { Extension, Plugin, PluginKey } from "../vendor/tiptap.bundle.js";
 
 import { state, getCSRFToken } from "./state.js";
 import { htmlToMarkdown } from "./markdown.js";
@@ -22,13 +29,32 @@ export function isClean() {
   return getMarkdownContent() === state.lastSavedContent;
 }
 
+const RETRY_DELAY_MS = 5000;
+const MAX_RETRIES = 3;
+let retries = 0;
+
 export function scheduleAutosave() {
   if (window.NOTE_DATA && window.NOTE_DATA.readOnly) return;
   if (state.conflict) return;
   if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
   updateSaveStatus("unsaved");
 
+  retries = 0; // a fresh edit gets a fresh run of retries
   state.autosaveTimer = setTimeout(performAutosave, 2000);
+}
+
+// After a failed save: try again shortly, a bounded number of times, each
+// wait longer than the last. The timer is the autosave timer, so an edit
+// or a note switch in the meantime replaces it.
+function scheduleRetry(noteId) {
+  // The user moved to another note while the request was out: the failed
+  // save was the old note's, and this buffer is not it
+  if (!window.NOTE_DATA || window.NOTE_DATA.id !== noteId) return;
+  updateSaveStatus("unsaved");
+  if (state.conflict || retries >= MAX_RETRIES) return;
+  retries++;
+  if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
+  state.autosaveTimer = setTimeout(performAutosave, RETRY_DELAY_MS * retries);
 }
 
 export function performAutosave() {
@@ -42,6 +68,7 @@ export function performAutosave() {
   }
 
   updateSaveStatus("saving");
+  const noteId = window.NOTE_DATA.id;
 
   const formData = new FormData();
   formData.append("content", content);
@@ -68,6 +95,7 @@ export function performAutosave() {
     })
     .then((data) => {
       if (data && data.saved) {
+        retries = 0;
         state.lastSavedContent = content;
         window.NOTE_DATA.updatedAt = data.updated_at;
         updateSaveStatus("saved");
@@ -79,15 +107,45 @@ export function performAutosave() {
         });
       }
     })
-    .catch(() => updateSaveStatus("unsaved"));
+    .catch(() => scheduleRetry(noteId));
 }
 
 // ─── Conflict state ──────────────────────────────────────────────────────────
+
+// The banner says editing is paused, so it has to be: nothing typed past
+// this point could be saved, and "Reload latest" would throw it away. The
+// text stays selectable, so what was typed before the conflict can still
+// be copied out. Everything locked here lives in the content partial or is
+// reset by initEditor, so the reload's swap restores it.
+//
+// setEditable(false) only stops typing; TipTap still applies programmatic
+// commands (format buttons, table bar, replace, import) to a non-editable
+// editor. ConflictLock refuses every change to the document while the
+// conflict stands, whichever path it comes by.
+export const ConflictLock = Extension.create({
+  name: "conflictLock",
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("conflictLock"),
+        filterTransaction: (tr) => !(state.conflict && tr.docChanged),
+      }),
+    ];
+  },
+});
 
 export function enterConflict() {
   if (state.conflict) return;
   state.conflict = true;
   if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
+  if (state.editor) state.editor.setEditable(false);
+  const title = document.getElementById("note-title");
+  if (title) title.readOnly = true;
+  // Dead buttons would mislead: the format cluster goes while the banner
+  // is up (setupToolbar re-shows it when the reloaded note initializes)
+  const cluster = document.querySelector(".note-toolbar .format-toolbar");
+  if (cluster) cluster.style.display = "none";
   const banner = document.getElementById("note-conflict-banner");
   if (banner) banner.hidden = false;
   updateSaveStatus("conflict");
@@ -120,7 +178,7 @@ function updateSaveStatus(status) {
   if (status === "conflict") {
     icon.className = "icon-triangle-alert";
     btn.classList.add("active");
-    btn.title = "Changed in another tab — reload to continue";
+    btn.title = "This note was changed somewhere else. Reload to continue.";
     return;
   }
 

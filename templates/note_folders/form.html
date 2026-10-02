@@ -1,7 +1,13 @@
 <div class="modal-dialog modal-md">
   <div class="modal-content">
     <div class="modal-header">
-      <h1 class="modal-title">Edit Folder</h1>
+      <h1 class="modal-title">
+        {% if edit %}
+          Edit Folder
+        {% else %}
+          New Folder
+        {% endif %}
+      </h1>
       <div>
         <button type="button" @click="$dispatch('close-modal')">
           <i class="icon-x"></i>

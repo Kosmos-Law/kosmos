@@ -1,7 +1,6 @@
 from django import forms
 
-from apps.accounts.access import filter_matters_for_user
-from apps.matters.models import Matter
+from apps.notes.access import matters_for_note_form
 from apps.notes.models import Note
 from config.settings import CustomFormRendererCompact
 
@@ -22,8 +21,13 @@ class NoteForm(forms.ModelForm):
         kwargs.pop("matter", None)
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        # Limit matter choices to open matters
-        queryset = Matter.objects.filter(status="Open").order_by("name")
-        if user:
-            queryset = filter_matters_for_user(queryset, user)
-        self.fields["matter"].queryset = queryset
+        # Open matters the user may see, plus the note's own matter whatever
+        # its status: without it the field opens blank on a matter that is
+        # not Open and a plain rename cannot be saved
+        self.fields["matter"].queryset = matters_for_note_form(
+            user, include_id=self.instance.matter_id
+        )
+        # This form edits matter notes only; a note never leaves for the
+        # library from here
+        self.fields["matter"].required = True
+        self.fields["matter"].empty_label = None
