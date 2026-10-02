@@ -80,3 +80,34 @@ def client_with_matter(client, matter):
     session.save()
     client.matter = matter
     return client
+
+
+@pytest.fixture
+def other_matter(practice_area):
+    """A matter the restricted user is not assigned to."""
+    return Matter.objects.create(
+        name="Unassigned Matter", status="Open", practice_area=practice_area
+    )
+
+
+@pytest.fixture
+def restricted(matter):
+    """A user limited to assigned matters, assigned only ``matter``."""
+    user = CustomUser.objects.create(
+        username="Rae",
+        email="rae@example.com",
+        user_rate=150,
+        perm_all_matters=False,
+    )
+    user.set_password("clawboy")
+    user.save()
+    matter.members.add(user)
+    return user
+
+
+@pytest.fixture
+def restricted_client(restricted):
+    client = Client()
+    client.login(username="Rae", password="clawboy")
+    client.get("/dash/")
+    return client

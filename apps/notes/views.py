@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 from watson import search as watson
 
 from apps.accounts.access import filter_matters_for_user
@@ -27,6 +27,12 @@ from apps.management.selection import (
 )
 from apps.matters.models import Matter
 
+from .access import (
+    folder_for_user,
+    matter_for_user,
+    note_for_user,
+    visible_notes_q,
+)
 from .filters import NotesFilter
 from .forms import NoteFolderForm, NoteFolderMoveForm, NoteForm
 from .models import Note, NoteFolder, NoteView
@@ -188,14 +194,23 @@ def get_editor_file_tree(request, note):
     navigation. active_pane is only the fallback for tabs with no stored
     pane choice.
     """
-    open_matters = list(Matter.objects.filter(status="Open").order_by("name"))
+    # The Matters pane names matters, folders and note titles, so it lists
+    # only the matters this user may see
+    open_matters = list(
+        filter_matters_for_user(
+            Matter.objects.filter(status="Open"), request.user
+        ).order_by("name")
+    )
     if note.matter and note.matter not in open_matters:
         # Closed matter opened directly: surface it so the active pill exists
+        # (the caller has already checked the user may see this note)
         open_matters.append(note.matter)
     matter_ids = {m.id for m in open_matters}
 
     folders_by_matter = {}
-    for f in NoteFolder.objects.order_by(Lower("name")):
+    for f in NoteFolder.objects.filter(
+        Q(matter__isnull=True) | Q(matter_id__in=matter_ids)
+    ).order_by(Lower("name")):
         folders_by_matter.setdefault(f.matter_id, []).append(f)
 
     notes_by_scope = {}  # matter_id -> {folder_id: [Note]}
@@ -225,7 +240,10 @@ def get_editor_file_tree(request, note):
         "active_pane": "matters" if note.matter_id else "files",
         "recent_notes": [
             nv.note
-            for nv in NoteView.objects.filter(user=request.user)
+            # A note viewed before the user left its matter drops out
+            for nv in NoteView.objects.filter(
+                visible_notes_q(request.user, "note__"), user=request.user
+            )
             .select_related("note", "note__matter")
             .order_by("-viewed_at")[:7]
         ],
@@ -969,17 +987,19 @@ def notes_launch(request):
     note the user can reach, and finally creates a fresh untitled note so
     the editor always has something to open.
     """
+    # Only notes still within reach: a note viewed before the user left its
+    # matter must not be the landing note
     nv = (
-        NoteView.objects.filter(user=request.user)
+        NoteView.objects.filter(visible_notes_q(request.user, "note__"))
+        .filter(user=request.user)
         .select_related("note")
         .order_by("-viewed_at")
         .first()
     )
     note = nv.note if nv else None
     if note is None:
-        accessible = filter_matters_for_user(Matter.objects.all(), request.user)
         note = (
-            Note.objects.filter(Q(matter__isnull=True) | Q(matter__in=accessible))
+            Note.objects.filter(visible_notes_q(request.user))
             .order_by("-updated_at")
             .first()
         )
@@ -1005,12 +1025,7 @@ def _get_note(request, note_id, **filters):
     matter notes require access to their matter (404 either way, so denial
     doesn't confirm existence). Every /notes/<id>/... view goes through
     here — the routes serve both kinds of note."""
-    note = get_object_or_404(
-        Note.objects.select_related("matter"), pk=note_id, **filters
-    )
-    if note.matter_id and not request.user.has_matter_access(note.matter):
-        raise Http404
-    return note
+    return note_for_user(request.user, note_id, **filters)
 
 
 @login_required
@@ -1241,18 +1256,29 @@ def reference_search(request, note_id):
 
 @login_required
 def reference_citations(request, note_id):
-    """Return current citations for references."""
+    """Current citation labels for the note's references.
+
+    Only documents and highlights of the note's own matter are answered: a
+    citation carries the document's name, so an id from another matter gets
+    no label. Library notes have no matter and so no references.
+    """
     from apps.case.models import Document, Highlight
 
-    doc_ids = request.GET.getlist("doc")
-    hl_ids = request.GET.getlist("hl")
-
+    note = _get_note(request, note_id)
     citations = {}
+    if note.matter_id is None:
+        return JsonResponse(citations)
 
-    for doc in Document.objects.filter(id__in=doc_ids):
+    doc_ids = [i for i in request.GET.getlist("doc") if i.isdigit()]
+    hl_ids = [i for i in request.GET.getlist("hl") if i.isdigit()]
+
+    for doc in Document.objects.filter(id__in=doc_ids, matter_id=note.matter_id):
         citations[f"doc:{doc.id}"] = doc.citation
 
-    for hl in Highlight.objects.filter(id__in=hl_ids).select_related("document"):
+    highlights = Highlight.objects.filter(id__in=hl_ids).filter(
+        Q(document__matter_id=note.matter_id) | Q(caselaw__matter_id=note.matter_id)
+    )
+    for hl in highlights.select_related("document", "caselaw"):
         citations[f"hl:{hl.id}"] = hl.citation
 
     return JsonResponse(citations)
@@ -1337,12 +1363,12 @@ def note_folder_add(request):
     matter_id = request.GET.get("matter", "")
     parent = matter = None
     if parent_id.isdigit():
-        parent = get_object_or_404(NoteFolder, pk=parent_id)
+        parent = folder_for_user(request.user, parent_id)
         matter = parent.matter
         if not parent.can_have_children():
             return HttpResponse("Maximum folder depth (4 levels) exceeded.", status=400)
     elif matter_id.isdigit():
-        matter = get_object_or_404(Matter, pk=matter_id)
+        matter = matter_for_user(request.user, matter_id)
 
     siblings = NoteFolder.objects.filter(parent=parent, matter=matter).values_list(
         "name", flat=True
@@ -1395,7 +1421,7 @@ def _note_folder_add_tab(request):
 @require_POST
 def note_folder_rename(request, folder_id):
     """Name-only update (the tree's inline rename); parent/matter untouched."""
-    folder = get_object_or_404(NoteFolder, pk=folder_id)
+    folder = folder_for_user(request.user, folder_id)
     name = request.POST.get("name", "").strip()
     if not name:
         return HttpResponse("Name cannot be empty.", status=400)
@@ -1410,7 +1436,7 @@ def note_folder_rename(request, folder_id):
 def note_folder_edit(request, folder_id):
     """Edit a note folder (editor context menu with ?context=editor, or the
     Notes-tab sidebar kebab)."""
-    folder = get_object_or_404(NoteFolder, pk=folder_id)
+    folder = folder_for_user(request.user, folder_id)
     editor = request.GET.get("context") == "editor"
 
     if request.method == "POST":
@@ -1445,7 +1471,7 @@ def note_folder_edit(request, folder_id):
 @login_required
 def note_folder_delete_confirm(request, folder_id):
     """Show delete confirmation for a note folder."""
-    folder = get_object_or_404(NoteFolder, pk=folder_id)
+    folder = folder_for_user(request.user, folder_id)
     note_count = Note.objects.filter(folder=folder).count()
     descendants = folder.get_descendants()
     subfolder_count = len(descendants)
@@ -1464,9 +1490,13 @@ def note_folder_delete_confirm(request, folder_id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def note_folder_delete(request, folder_id):
-    """Delete a note folder with options for subfolders and notes."""
-    folder = get_object_or_404(NoteFolder, pk=folder_id)
+    """Delete a note folder with options for subfolders and notes.
+
+    The options ride the query string (the confirm dialog sends hx-delete,
+    which carries no body)."""
+    folder = folder_for_user(request.user, folder_id)
     delete_notes = request.GET.get("delete_notes")
     delete_subfolders = request.GET.get("delete_subfolders")
 
@@ -1526,11 +1556,11 @@ def note_folder_delete(request, folder_id):
 @require_POST
 def note_folder_reparent(request, folder_id):
     """Re-parent a folder (editor tree drag-and-drop). 204, or 400 with a reason."""
-    folder = get_object_or_404(NoteFolder, pk=folder_id)
+    folder = folder_for_user(request.user, folder_id)
     dest_id = request.POST.get("destination") or None
     if dest_id is not None and not dest_id.isdigit():
         return HttpResponse("Invalid destination.", status=400)
-    destination = get_object_or_404(NoteFolder, pk=dest_id) if dest_id else None
+    destination = folder_for_user(request.user, dest_id) if dest_id else None
 
     error = validate_folder_move(folder, destination)
     if error:
@@ -1573,7 +1603,7 @@ def note_move(request, note_id):
 
     folder_id = request.POST.get("destination")
     if folder_id:
-        folder = get_object_or_404(NoteFolder, pk=folder_id)
+        folder = folder_for_user(request.user, folder_id)
         if folder.matter_id != note.matter_id:
             return HttpResponse(
                 "Notes cannot move into another matter's folders.", status=400
