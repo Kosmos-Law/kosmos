@@ -34,7 +34,7 @@ signals so the choice is informed. Mirrors the query-variant gate.
     {% endif %}
     {% if ruled_out %}
       <details class="research-ruled-out">
-        <summary>Ruled out at triage ({{ ruled_out|length }}) — selectable if the triage call looks wrong</summary>
+        <summary>Ruled out at triage ({{ ruled_out|length }}). Select any the triage got wrong.</summary>
         {% for result in ruled_out %}
           {% include "case/research/case-selection-row.html" with checked=False %}
         {% endfor %}
