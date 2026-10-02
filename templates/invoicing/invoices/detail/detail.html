@@ -104,6 +104,11 @@
              hx-trigger="previewChanged from:body"
              hx-get="{% url 'invoicing:invoice-pdf-preview' invoice.id %}"
              hx-target="this">{% include "invoicing/invoices/preview/preview.html" %}</div>
+      {% elif subapp == "ledger" %}
+        <div id="ledger"
+             hx-trigger="matterLedgerChanged from:body"
+             hx-get="{% url 'matters:ledger-list' matter.id %}"
+             hx-target="this">{% include "matters/ledger/list.html" %}</div>
       {% elif subapp == "history" %}
         {% include "invoicing/invoices/detail/history-content.html" %}
       {% endif %}

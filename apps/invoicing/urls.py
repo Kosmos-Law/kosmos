@@ -22,6 +22,7 @@ from apps.invoicing.invoices.views import (
     invoice_flat_fee_entries_index,
     invoice_history_index,
     invoice_ledes_98b,
+    invoice_ledger_index,
     invoice_tab_content,
     invoice_time_bulk_update_comp,
     invoice_time_clear_selection,
@@ -196,6 +197,11 @@ urlpatterns = [
         "invoicing/invoices-detail/<int:pk>/history-index/",
         invoice_history_index,
         name="invoice-history-index",
+    ),
+    path(
+        "invoicing/invoices-detail/<int:pk>/ledger-index/",
+        invoice_ledger_index,
+        name="invoice-ledger-index",
     ),
     path(
         "invoicing/invoices-detail/<int:pk>/pdf-preview-index/",

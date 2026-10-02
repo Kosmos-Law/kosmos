@@ -29,6 +29,41 @@ def test_invoices_detail(client, invoice):
     assert response.context["invoice"].value["final_total"] == 60
 
 
+def test_invoice_ledger_tab(client, invoice):
+    """The Ledger tab shows the invoice's matter ledger. The draft's own work
+    (0.2h at $300) is work in progress, broken out under its invoice."""
+    for url in (
+        reverse("invoicing:invoice-ledger-index", kwargs={"pk": invoice.pk}),
+        reverse(
+            "invoicing:invoice-tab-content", kwargs={"pk": invoice.pk, "tab": "ledger"}
+        ),
+    ):
+        response = client.get(url)
+        assert response.status_code == 200
+        assertTemplateUsed(response, "matters/ledger/list.html")
+        assert response.context["subapp"] == "ledger"
+        assert response.context["matter"] == invoice.matter
+        assert response.context["work_in_progress"] == 60
+        assert response.context["total_cost"] == 60
+        assert f"On Invoice {invoice.pk}" in response.content.decode()
+
+
+def test_invoice_ledger_tab_requires_matter_access(client, user, invoice):
+    # update(), not save(): the fixture instance predates the dash check-in.
+    type(user).objects.filter(pk=user.pk).update(perm_all_matters=False)
+
+    detail = client.get(reverse("invoicing:invoices-detail", kwargs={"pk": invoice.pk}))
+    assert detail.status_code == 200
+    ledger_url = reverse("invoicing:invoice-ledger-index", kwargs={"pk": invoice.pk})
+    assert ledger_url not in detail.content.decode()
+    assert client.get(ledger_url).status_code == 403
+
+    invoice.matter.members.add(user)
+    detail = client.get(reverse("invoicing:invoices-detail", kwargs={"pk": invoice.pk}))
+    assert ledger_url in detail.content.decode()
+    assert client.get(ledger_url).status_code == 200
+
+
 def test_invoices_add_get(client):
     response = client.get(reverse("invoicing:invoices-add"))
     assert response.status_code == 200

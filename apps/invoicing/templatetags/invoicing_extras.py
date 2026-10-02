@@ -34,3 +34,11 @@ def firm_strip(name):
     # non-whitespace), so trim any trailing separator chars: "Craig Legal, LLC"
     # -> base "Craig Legal," -> "Craig Legal".
     return conditional_escape(re.sub(r"[\s,]+$", "", m.group(1)))
+
+
+@register.filter
+def ledger_visible_to(invoice, user):
+    """Whether ``user`` may open the invoice's matter ledger (the invoice
+    detail page's Ledger tab): the invoice has a matter and the user can reach
+    it. The financial permission is already required for all of invoicing."""
+    return invoice.matter is not None and user.has_matter_access(invoice.matter)
