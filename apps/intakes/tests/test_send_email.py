@@ -10,8 +10,8 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def firm():
     return Firm.objects.create(
-        name="Craig Legal, LLC",
-        email="james@example.com",
+        name="Example Law, LLC",
+        email="office@example.com",
         intake_email="intakes@example.com",
     )
 
@@ -39,9 +39,9 @@ def test_modal_prefills_reply_to_with_intake_inbox(client, intake, firm):
 
 
 def test_modal_reply_to_falls_back_to_firm_email(client, intake):
-    Firm.objects.create(name="Craig Legal", email="james@example.com")
+    Firm.objects.create(name="Example Law", email="office@example.com")
     response = client.get(f"/intakes/{intake.id}/send-email")
-    assert b'value="james@example.com"' in response.content
+    assert b'value="office@example.com"' in response.content
 
 
 def test_send_happy_path(client, user, intake, firm, template):
@@ -57,7 +57,7 @@ def test_send_happy_path(client, user, intake, firm, template):
     assert sent.to == [intake.email]
     assert sent.cc == ["intakes@example.com"]
     assert "intakes@example.com" in sent.reply_to[0]
-    assert "Craig Legal" in sent.from_email
+    assert "Example Law" in sent.from_email
     assert sent.subject == "Regarding your inquiry"
     assert sent.body.startswith("Dear Mr. Gandhi,")
     # Multipart: HTML alternative carries the same text with line breaks
@@ -81,7 +81,7 @@ def test_send_uses_posted_reply_to(client, intake, firm):
     )
     sent = mail.outbox[0]
     assert "paralegal@example.com" in sent.reply_to[0]
-    assert "Craig Legal" in sent.reply_to[0]  # display name still applied
+    assert "Example Law" in sent.reply_to[0]  # display name still applied
 
 
 def test_blank_reply_to_falls_back_to_intake_inbox(client, intake, firm):
@@ -105,7 +105,7 @@ def test_invalid_reply_to_rerenders_with_error(client, intake, firm):
 
 
 def test_no_cc_when_intake_email_unset(client, intake, template):
-    Firm.objects.create(name="Craig Legal", email="james@example.com")
+    Firm.objects.create(name="Example Law", email="office@example.com")
     client.post(
         f"/intakes/{intake.id}/send-email/send",
         {"subject": "S", "body": "B"},

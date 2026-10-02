@@ -1,9 +1,9 @@
 """Create the starter intake form templates.
 
-The bundled forms are transcribed from the Craig Legal website's live
-questionnaires — the inquiry form, the client intake, onboarding, and the
-eleven dispute supplements — so a fresh environment has something realistic to
-send without anyone rebuilding it by hand.
+The bundled forms are sample questionnaires (an inquiry form, a client
+intake, onboarding, and eleven dispute supplements) so a fresh environment has
+something realistic to send without anyone building it by hand. They were
+written for one kind of practice: a firm reviews and edits them before use.
 
 Safe to re-run. By default an existing form is left alone, because staff edits
 in the builder outrank the seed; `--replace` overwrites the questions of the

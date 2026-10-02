@@ -175,11 +175,56 @@ def test_assign_from_the_dialog_goes_to_all_matters(
 
 
 # -----------------------------------------------------
+# assign: the group belongs to the matter
+# -----------------------------------------------------
+def test_assign_refuses_another_matters_own_group(
+    client, contact, matter, party_role, practice_area
+):
+    elsewhere = Matter.objects.create(
+        name="Elsewhere", status="Open", practice_area=practice_area
+    )
+    theirs = Group.objects.create(
+        name="Elsewhere's Insurers",
+        order=Group.MATTER_GROUP_ORDER_BASE + 1,
+        matter=elsewhere,
+    )
+    data = {"matter_id": matter.id, "group_id": theirs.id, "role_id": party_role.id}
+
+    response = client.post(f"/contacts/{contact.id}/assign/store", data)
+
+    assert response.status_code == 404
+    assert not Relationship.objects.filter(matter=matter, contact=contact).exists()
+
+
+def test_assign_accepts_the_matters_own_group(client, contact, matter, party_role):
+    own = Group.objects.create(
+        name="Insurers", order=Group.MATTER_GROUP_ORDER_BASE + 1, matter=matter
+    )
+    data = {"matter_id": matter.id, "group_id": own.id, "role_id": party_role.id}
+
+    response = client.post(f"/contacts/{contact.id}/assign/store", data)
+
+    assert response.status_code == 302
+    assert Relationship.objects.filter(matter=matter, group=own).exists()
+
+
+# -----------------------------------------------------
 # empty dropdowns
 # -----------------------------------------------------
 def test_assign_with_nothing_chosen_is_answered(client, contact):
     response = client.post(
         f"/contacts/{contact.id}/assign/store", {}, HTTP_HX_REQUEST="true"
+    )
+
+    assert response.status_code == 204
+    assert "Choose a matter" in _toast(response)
+
+
+def test_assign_with_ids_that_are_not_numbers_is_answered(client, contact):
+    data = {"matter_id": "abc", "group_id": "1", "role_id": "1"}
+
+    response = client.post(
+        f"/contacts/{contact.id}/assign/store", data, HTTP_HX_REQUEST="true"
     )
 
     assert response.status_code == 204

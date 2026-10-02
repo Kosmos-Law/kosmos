@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +17,7 @@ from apps.intakes.intakes import get_table_data
 from apps.intakes.models import Intake, Note, UserIntakeView
 from apps.matters.models import PracticeArea
 from utils.safe_markdown import render_markdown
+from utils.toasts import toast_error
 
 # The website's client questionnaire arrives as a Markdown table (see
 # api_views.receive_intake), and python-markdown only renders those with the
@@ -349,6 +351,12 @@ def intake_edit_status(request, pk, status):
 @require_POST
 def intake_edit_importance(request, pk, importance):
     intake = get_object_or_404(Intake, pk=pk)
+    # The number arrives in the URL: hold it to the model's own range
+    # (Lowest to Highest), which save() does not check.
+    try:
+        Intake._meta.get_field("importance").run_validators(importance)
+    except ValidationError:
+        return HttpResponseBadRequest("Unknown importance.")
     intake.importance = importance
     intake.save(update_fields=["importance"])
     # Both surfaces show importance: the list and the detail sidebar
@@ -380,13 +388,26 @@ def value_edit(request, pk):
 
 
 @login_required
+@require_POST
 def value_update(request, pk):
     intake = get_object_or_404(Intake, pk=pk)
-    value = request.POST.get("value", "")
-    intake.value = int(value) if value else None
-    intake.save()
-    context = {"intake": intake}
-    return render(request, "intakes/value-display.html", context)
+    value = request.POST.get("value", "").strip()
+    problem = None
+    if not value:
+        intake.value = None
+    else:
+        # A whole number the column can hold. Anything else leaves the value
+        # as it was: the display comes back unchanged, with the reason.
+        try:
+            number = int(value)
+            Intake._meta.get_field("value").run_validators(number)
+            intake.value = number
+        except (ValueError, ValidationError):
+            problem = "Value must be a whole number, with no commas or cents."
+    if not problem:
+        intake.save()
+    response = render(request, "intakes/value-display.html", {"intake": intake})
+    return toast_error(response, problem) if problem else response
 
 
 @login_required

@@ -13,6 +13,7 @@ from apps.contacts.access import (
     is_client_mirror,
     matter_for_user,
     matters_for_user,
+    posted_ids,
     relationship_for_user,
     relationships_for_user,
 )
@@ -283,16 +284,16 @@ def assign(request, id):
 @require_POST
 def assign_store(request, id):
     contact = get_object_or_404(Contact, pk=id)
-    matter_id = request.POST.get("matter_id")
-    group_id = request.POST.get("group_id")
-    role_id = request.POST.get("role_id")
     # An empty dropdown sends nothing (no open matter to offer, say).
-    if not (matter_id and group_id and role_id):
+    ids = posted_ids(request, "matter_id", "group_id", "role_id")
+    if ids is None:
         return _back_to_matters(request, id, "Choose a matter, a group and a role.")
 
-    matter = matter_for_user(matter_id, request.user)
-    group = get_object_or_404(Group, pk=group_id)
-    role = get_object_or_404(assignable_roles(), pk=role_id)
+    matter = matter_for_user(ids["matter_id"], request.user)
+    # A firm-wide group or one of this matter's own: another matter's group
+    # would file the contact under a heading this matter does not have.
+    group = get_object_or_404(Group.objects.for_matter(matter), pk=ids["group_id"])
+    role = get_object_or_404(assignable_roles(), pk=ids["role_id"])
 
     if already_assigned(matter, contact, group, role):
         return _back_to_matters(
@@ -334,14 +335,15 @@ def remove(request, id):
 @login_required
 @require_POST
 def remove_store(request):
-    relationship_id = request.POST.get("relationship_id")
-    if not relationship_id:
+    ids = posted_ids(request, "relationship_id")
+    if ids is None:
         # Nothing to choose from: the contact id rides along so the answer
         # can still name where to go back to.
-        contact = get_object_or_404(Contact, pk=request.POST.get("contact_id"))
+        back = posted_ids(request, "contact_id")
+        contact = get_object_or_404(Contact, pk=back["contact_id"] if back else None)
         return _back_to_matters(request, contact.id, "Choose a matter.")
 
-    relationship = relationship_for_user(relationship_id, request.user)
+    relationship = relationship_for_user(ids["relationship_id"], request.user)
     contact_id = relationship.contact_id
     if is_client_mirror(relationship):
         return HttpResponseForbidden(CLIENT_ROW_GUARD_MSG)

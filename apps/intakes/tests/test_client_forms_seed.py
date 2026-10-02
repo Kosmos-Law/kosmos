@@ -1,10 +1,13 @@
 import copy
+import pathlib
+import re
 
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import Client as DjangoClient
 
+from apps.intakes.client_forms import models
 from apps.intakes.client_forms.links import form_path
 from apps.intakes.client_forms.models import seed_templates
 from apps.intakes.client_forms.render import render_blocks
@@ -30,11 +33,42 @@ class TestSeedData:
             keys = [field["key"] for field in form["schema"]]
             assert len(keys) == len(set(keys)), form["key"]
 
-    def test_the_craig_legal_questionnaires_are_all_present(self):
+    def test_the_sample_questionnaires_are_all_present(self):
         keys = {form["key"] for form in seed_templates()}
         assert {"inquiry", "intake", "onboarding"} <= keys
-        # One supplement per dispute nature the website offers.
+        # One supplement per kind of dispute the intake form lists.
         assert sum(1 for key in keys if key.startswith("supplement_")) == 11
+
+
+class TestSeedDataBelongsToNoFirm:
+    """The forms ship to every firm that installs the application, so they
+    are samples: no firm's name, and no way to reach one."""
+
+    @staticmethod
+    def _texts(form):
+        yield from (form["name"], form["description"], form["intro_text"])
+        for field in form["schema"]:
+            yield from (field.get("label", ""), field.get("help", ""))
+            yield field.get("placeholder", "")
+            for option in field.get("options") or []:
+                yield option["label"]
+
+    def test_each_form_is_described_as_a_sample(self):
+        for form in seed_templates():
+            assert form["description"] == (
+                f"A sample {form['name']} form. Review and edit it before use."
+            )
+
+    def test_no_form_carries_contact_details(self):
+        reachable = re.compile(r"@|https?:|www\.|\.com\b|\.law\b|\d{3}[-.) ]+\d{3}")
+        for form in seed_templates():
+            for text in self._texts(form):
+                assert not reachable.search(text), (form["key"], text)
+
+    def test_the_file_is_named_for_what_it_is(self):
+        seed_dir = pathlib.Path(models.__file__).parent / "seed_data"
+
+        assert [path.name for path in seed_dir.iterdir()] == ["sample_forms.json"]
 
 
 class TestSeedCommand:
