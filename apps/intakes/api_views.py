@@ -33,22 +33,27 @@ def seam_protected(view):
     return wrapper
 
 
-# The website questionnaire's dispute natures, mapped onto the firm's
-# practice areas (rows seeded by matters migration 0048)
-DISPUTE_TO_PRACTICE_AREA = {
-    "boundary": "Boundary",
-    "easement": "Easement",
-    "quiet_title": "Title",
-    "contract": "Purchase / Sale",
-    "hoa": "HOA",
-    "landlord": "LLT-L",
-    "tenant": "LLT-T",
-    "construction": "Construction",
-    "fraud": "Fraud",
-    "commercial": "Commercial",
-    "collections": "Collections",
-    "other": "General",
-}
+def _name_key(text):
+    """A name reduced to its letters and digits, lower-cased, so that
+    "quiet_title", "Quiet Title" and "quiet-title" all compare equal."""
+    return "".join(ch for ch in str(text or "").casefold() if ch.isalnum())
+
+
+def practice_area_for(dispute_nature):
+    """The firm's own practice area for the website's dispute type, or None.
+
+    The website sends the dispute type as a short key ("boundary",
+    "quiet_title"). Practice areas are the firm's to name (Settings), so the
+    key is matched against the active ones by name, ignoring case, spaces and
+    punctuation. No table of names lives here: a key that matches no practice
+    area leaves the intake's practice area empty, for staff to set."""
+    wanted = _name_key(dispute_nature)
+    if not wanted:
+        return None
+    for area in PracticeArea.objects.filter(is_active=True).order_by("name"):
+        if _name_key(area.name) == wanted:
+            return area
+    return None
 
 
 @csrf_exempt
@@ -228,12 +233,7 @@ def receive_intake(request):
             # intakes (intake records are born here, not there), every
             # new push carries intake_id and this branch should be
             # unreachable; it stays for old cl rows without a binding.
-            area_name = DISPUTE_TO_PRACTICE_AREA.get(data.get("dispute_nature", ""))
-            practice_area = (
-                PracticeArea.objects.filter(name=area_name).first()
-                if area_name
-                else None
-            )
+            practice_area = practice_area_for(data.get("dispute_nature"))
             intake = Intake.objects.create(
                 name=full_name,
                 phone=data.get("phone_number", ""),

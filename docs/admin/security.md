@@ -321,7 +321,8 @@ The role and permission switches are described in
 [Users and permissions](users.md), and every check is listed in the
 [permissions matrix](../reference/permissions.md). Before you rely on them:
 
-- A new user has every permission until you switch some off.
+- A new user has every permission except Reports until you switch some
+  off. Reports starts off, because it shows the whole firm's figures.
 - Restricting a user to assigned matters closes those matters' pages, case
   workspace and document downloads to everyone else, and leaves them out
   of search. It does not filter the task list, the calendar or contacts,

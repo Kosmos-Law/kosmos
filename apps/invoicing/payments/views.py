@@ -1,10 +1,16 @@
 import json
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.shortcuts import HttpResponse, get_object_or_404, render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
-from apps.invoicing.applications.models import PaymentApplication
+from apps.invoicing.applications.models import (
+    PaymentApplication,
+    apply_to_invoice,
+    delete_with_applications,
+)
 from apps.invoicing.invoices.models import Invoice
 from apps.invoicing.payments.get_payment_data import get_payment_data
 from apps.matters.models import Matter
@@ -12,6 +18,7 @@ from apps.matters.models import Matter
 from .filters import PaymentFilter
 from .forms import PaymentForm
 from .models import Payment
+from .trust import delete_trust_withdrawal, sync_trust_withdrawal
 
 
 @login_required
@@ -62,7 +69,9 @@ def payments_add(request):
     form.fields["matter"].queryset = matters
 
     if request.method == "POST" and form.is_valid():
-        form.save()
+        with transaction.atomic():
+            payment = form.save()
+            sync_trust_withdrawal(payment)
 
         return HttpResponse(status=204, headers={"HX-Trigger": "paymentsChanged"})
 
@@ -70,8 +79,12 @@ def payments_add(request):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def payments_delete(_, pk):
-    Payment.objects.get(pk=pk).delete()
+    payment = get_object_or_404(Payment, pk=pk)
+    with transaction.atomic():
+        delete_trust_withdrawal(payment)
+        delete_with_applications(payment, payment.applications.all())
 
     return HttpResponse(
         status=204,
@@ -96,7 +109,9 @@ def payments_edit(request, pk):
         form = PaymentForm(request.POST, instance=payment, use_required_attribute=False)
 
         if form.is_valid():
-            form.save()
+            with transaction.atomic():
+                payment = form.save()
+                sync_trust_withdrawal(payment)
 
             return HttpResponse(
                 status=204,
@@ -209,8 +224,8 @@ def payments_apply(request, pk):
         # Create applications and track affected invoices
         affected_invoices = set()
         for invoice, amount_applied in applications_to_create:
-            PaymentApplication.objects.create(
-                payment=payment, invoice=invoice, amount_applied=amount_applied
+            apply_to_invoice(
+                PaymentApplication, "payment", payment, invoice, amount_applied
             )
             affected_invoices.add(invoice)
 
@@ -252,6 +267,7 @@ def payments_apply(request, pk):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def payments_delete_application(request, pk):
     """Delete a payment application and update invoice status if needed."""
     application = get_object_or_404(PaymentApplication, pk=pk)

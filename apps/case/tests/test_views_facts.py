@@ -148,25 +148,10 @@ class TestFactsSort:
 
 class TestFactImportance:
     def test_set_importance(self, client_with_matter, fact):
-        response = client_with_matter.get(f"/case/facts/{fact.id}/importance/4/")
+        response = client_with_matter.post(f"/case/facts/{fact.id}/importance/4/")
         assert response.status_code == 302
         fact.refresh_from_db()
         assert fact.importance == 4
-
-
-class TestFactInlineEdit:
-    def test_edit_description_get(self, client_with_matter, fact):
-        response = client_with_matter.get(f"/case/facts/{fact.id}/edit-description/")
-        assert response.status_code == 200
-
-    def test_update_description(self, client_with_matter, fact):
-        response = client_with_matter.post(
-            f"/case/facts/{fact.id}/update-description/",
-            {"description": "Inline updated"},
-        )
-        assert response.status_code == 200
-        fact.refresh_from_db()
-        assert fact.description == "Inline updated"
 
 
 class TestFactSources:
@@ -214,14 +199,6 @@ class TestFactSources:
         )
         assert response.status_code == 200
         assert highlight not in fact.highlights.all()
-
-
-class TestFactsPrint:
-    def test_print_view(self, client_with_matter, fact):
-        matter_id = client_with_matter.matter.id
-        response = client_with_matter.get(f"/case/{matter_id}/facts/print/")
-        assert response.status_code == 200
-        assertTemplateUsed(response, "case/facts/print.html")
 
 
 class TestFactsSelection:

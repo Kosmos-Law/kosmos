@@ -1,5 +1,5 @@
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from simple_history.models import HistoricalRecords
 
 from apps.invoicing.credits.models import Credit
@@ -53,9 +53,7 @@ class PaymentApplication(AuditMixin, models.Model):
         super().delete(*args, **kwargs)
         # After deletion, check if invoice should revert to SENT
         invoice.refresh_from_db()
-        if invoice.status == "PAID" and invoice.amount_remaining > 0:
-            invoice.status = "SENT"
-            invoice.save()
+        invoice.reopen_if_no_longer_covered()
 
     class Meta:
         db_table = "app_invoicing_payment_application"
@@ -117,9 +115,7 @@ class CreditApplication(AuditMixin, models.Model):
         super().delete(*args, **kwargs)
         # After deletion, check if invoice should revert to SENT
         invoice.refresh_from_db()
-        if invoice.status == "PAID" and invoice.amount_remaining > 0:
-            invoice.status = "SENT"
-            invoice.save()
+        invoice.reopen_if_no_longer_covered()
 
     class Meta:
         db_table = "app_invoicing_credit_application"
@@ -134,3 +130,32 @@ class CreditApplication(AuditMixin, models.Model):
                 name="unique_credit_invoice_application",
             )
         ]
+
+
+def apply_to_invoice(model, source_field, source, invoice, amount):
+    """Record ``amount`` of a payment or credit against an invoice.
+
+    One source has one application per invoice (a database constraint), so a
+    further amount for an invoice it already pays is added to that
+    application; a second row would be refused by the database."""
+    application = model.objects.filter(
+        **{source_field: source, "invoice": invoice}
+    ).first()
+    if application is None:
+        return model.objects.create(
+            **{source_field: source, "invoice": invoice, "amount_applied": amount}
+        )
+    application.amount_applied += amount
+    application.save()
+    return application
+
+
+def delete_with_applications(source, applications):
+    """Delete a payment or credit, taking its applications off one by one.
+
+    A cascade would remove the applications without running their delete
+    hook, and the invoices they paid would stay Paid."""
+    with transaction.atomic():
+        for application in list(applications):
+            application.delete()
+        source.delete()

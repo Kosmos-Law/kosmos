@@ -1,9 +1,15 @@
 from django.core.exceptions import ObjectDoesNotExist
 
 import apps.contacts.google as google
+from apps.contacts.access import (
+    CLIENT_LISTS,
+    can_see_trust,
+    matters_for_user,
+    relationships_for_user,
+)
 from apps.contacts.models import Contact
 from apps.folders.models import CLIENT_FOLDERS, Folder
-from apps.matters.models import Matter, Relationship
+from apps.matters.models import Relationship
 from apps.trust.models import Transaction
 from apps.trust.trust import get_confirmed_client_balance, get_pending_client_balance
 
@@ -13,6 +19,13 @@ def get_list_data(request):
     folders = Folder.objects.filter(app="contacts").order_by("name")
     client_status = request.session.get("contacts_client_status")
     selected_folder_id = request.session.get("contacts_selected_folder_id")
+
+    # Only the lists the sidebar offers. Anything else in the session (an
+    # older "Nonclient", a typed address) would show a list with no entry
+    # highlighted, so it is dropped.
+    if client_status and client_status not in CLIENT_LISTS:
+        client_status = None
+        request.session["contacts_client_status"] = None
 
     if selected_folder_id:
         try:
@@ -58,9 +71,11 @@ def get_list_data(request):
             # relationship), and a party can hold a second role besides — but
             # these lists show only the matter, so extra rows read as duplicate
             # links with nothing to tell them apart.
+            #
+            # A user limited to assigned matters sees only those here.
             relationships = {}
-            for relationship in Relationship.objects.filter(
-                contact=selected_contact
+            for relationship in relationships_for_user(
+                Relationship.objects.filter(contact=selected_contact), request.user
             ).select_related("matter"):
                 relationships.setdefault(relationship.matter_id, relationship)
 
@@ -68,8 +83,10 @@ def get_list_data(request):
             # the Client system group/role were missing skip the mirror, and the
             # matter would otherwise not show here at all. Matter.client stays
             # canonical, so a stand-in relationship represents it.
-            for matter in Matter.objects.filter(client=selected_contact).exclude(
-                id__in=list(relationships)
+            for matter in (
+                matters_for_user(request.user)
+                .filter(client=selected_contact)
+                .exclude(id__in=list(relationships))
             ):
                 relationships[matter.id] = Relationship(
                     contact=selected_contact, matter=matter
@@ -105,10 +122,13 @@ def get_list_data(request):
     else:
         google_logged_in = False
 
+    # Balances are worked out only for a user who may see them: the Trust tab
+    # is theirs alone, and nothing else on the page should carry the numbers.
+    show_trust = can_see_trust(request.user)
     trust = False
     confirmed_balance = 0
     pending_balance = 0
-    if selected_contact:
+    if selected_contact and show_trust:
         if Transaction.objects.filter(contact=selected_contact).exists():
             trust = True
             confirmed_balance = get_confirmed_client_balance(selected_contact.id)
@@ -126,6 +146,7 @@ def get_list_data(request):
         "google_logged_in": google_logged_in,
         "relationships": relationships,
         "open_matters": open_matters,
+        "show_trust": show_trust,
         "trust": trust,
         "confirmed_balance": confirmed_balance,
         "pending_balance": pending_balance,

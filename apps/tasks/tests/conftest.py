@@ -85,3 +85,34 @@ def task_data(task, folder, user, matter):
     task_data["matter"] = matter.id
 
     return task_data
+
+
+@pytest.fixture
+def other_matter(practice_area):
+    """An open matter nobody is assigned to."""
+    return Matter.objects.create(
+        name="Unassigned Matter", status="Open", practice_area=practice_area
+    )
+
+
+@pytest.fixture
+def restricted(matter):
+    """A user limited to assigned matters, assigned only ``matter``."""
+    user = CustomUser.objects.create(
+        username="Rae",
+        email="rae@example.com",
+        user_rate=150,
+        perm_all_matters=False,
+    )
+    user.set_password("clawboy")
+    user.save()
+    matter.members.add(user)
+    return user
+
+
+@pytest.fixture
+def restricted_client(restricted):
+    client = Client()
+    client.login(username="Rae", password="clawboy")
+    client.get("/dash/")
+    return client

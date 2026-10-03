@@ -74,7 +74,7 @@ def test_edit_post(client, folder, contact):
 
 
 def test_delete(client, contact):
-    response = client.get(f"/contacts/{contact.id}/delete")
+    response = client.delete(f"/contacts/{contact.id}/delete")
     assert response.status_code == 204
     found = Contact.objects.filter(pk=contact.id).exists()
     assert not found
@@ -170,5 +170,5 @@ def test_edit_nonexistent(client):
 
 
 def test_delete_nonexistent(client):
-    response = client.get("/contacts/99999/delete")
+    response = client.delete("/contacts/99999/delete")
     assert response.status_code == 404

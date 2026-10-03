@@ -19,7 +19,16 @@
     </span>
   {% elif document.ocr_status == 'failed' %}
     <span class="app-badge ocr-badge badge-red"
-          title="{{ document.ocr_error|truncatechars:100 }}">ocr failed</span>
+          title="{{ document.ocr_error|truncatechars:100 }}">
+      ocr failed:
+      <button type="button"
+              class="ocr-action-btn"
+              onclick="event.stopPropagation(); event.preventDefault();"
+              hx-post="{% url 'case:retry-ocr' document.id %}"
+              {% if hide_on_bypass %}hx-vals='{"hide_on_bypass": "1"}'{% endif %}
+              hx-target="closest .ocr-badge"
+              hx-swap="outerHTML">Retry</button>
+    </span>
   {% elif document.ocr_status == 'extracted' and not hide_on_bypass %}
     <span class="app-badge ocr-badge badge-yellow">
       ocr bypassed:

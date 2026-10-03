@@ -20,6 +20,6 @@ urlpatterns = [
     path(
         "folders/delete/<int:folder_id>/confirm", delete_confirm, name="delete-confirm"
     ),
-    path("folders/delete/<str:folder_id>", delete, name="delete"),
+    path("folders/delete/<int:folder_id>", delete, name="delete"),
     path("folders/unsorted/", unsorted, name="unsorted"),
 ]

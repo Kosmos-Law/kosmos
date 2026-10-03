@@ -4,8 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
-from apps.invoicing.applications.models import CreditApplication
+from apps.invoicing.applications.models import (
+    CreditApplication,
+    apply_to_invoice,
+    delete_with_applications,
+)
 from apps.invoicing.credits.filters import CreditsFilter
 from apps.invoicing.credits.forms import CreditsForm
 from apps.invoicing.credits.get_credits_data import get_credits_data
@@ -98,8 +103,10 @@ def credits_edit(request, pk):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def credits_delete(_, pk):
-    Credit.objects.get(pk=pk).delete()
+    credit = get_object_or_404(Credit, pk=pk)
+    delete_with_applications(credit, credit.applications.all())
 
     return HttpResponse(
         status=204,
@@ -249,8 +256,8 @@ def credits_apply(request, pk):
         # Create applications and track affected invoices
         affected_invoices = set()
         for invoice, amount_applied in applications_to_create:
-            CreditApplication.objects.create(
-                credit=credit, invoice=invoice, amount_applied=amount_applied
+            apply_to_invoice(
+                CreditApplication, "credit", credit, invoice, amount_applied
             )
             affected_invoices.add(invoice)
 
@@ -292,6 +299,7 @@ def credits_apply(request, pk):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def credits_delete_application(request, pk):
     """Delete a credit application and update invoice status if needed."""
     application = get_object_or_404(CreditApplication, pk=pk)

@@ -9,7 +9,6 @@ when the AI takes a position, and lists follow-up questions worth asking.
 import json
 import logging
 
-import markdown
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -17,6 +16,7 @@ from django.views.decorators.http import require_http_methods
 
 from apps.intakes.models import Intake, Note
 from apps.matters.models import PracticeArea
+from utils.safe_markdown import render_markdown
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ def run_assessment(intake):
 def assessment_html(intake):
     """The stored assessment rendered for the pane (notes render the same
     way in the detail views)."""
-    return markdown.markdown(intake.assessment) if intake.assessment else ""
+    return render_markdown(intake.assessment)
 
 
 @login_required

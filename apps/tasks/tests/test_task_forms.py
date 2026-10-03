@@ -23,6 +23,13 @@ def test_description_too_short(task_data):
     assert "4 or more" in form.errors["description"][0]
 
 
+def test_description_too_short_message_reads_cleanly(task_data):
+    data = task_data.copy()
+    data["description"] = "abc"
+    form = TaskForm(data)
+    assert form.errors["description"] == ["Description must be 4 or more characters."]
+
+
 def test_description_too_long(task_data):
     data = task_data.copy()
     data["description"] = "a" * 201  # 201 chars, max is 200

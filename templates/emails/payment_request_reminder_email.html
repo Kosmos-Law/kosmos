@@ -181,8 +181,8 @@
                   {% if is_trust %}
                     a request for a trust deposit.
                   {% else %}
-                    a payment request for your outstanding balance. Per the terms of your
-                    attorney-client agreement, payment of invoices is due upon receipt.
+                    a payment request for your outstanding balance.
+                    {% if payment_terms %}{{ payment_terms }}{% endif %}
                   {% endif %}
                 </p>
                 {% if not is_trust %}

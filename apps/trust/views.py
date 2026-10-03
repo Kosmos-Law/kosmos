@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods, require_POST
 
 import apps.trust.trust as trust
 from apps.contacts.models import Contact
@@ -11,6 +12,7 @@ from apps.management.pagination import CustomPaginator
 from apps.trust.forms import TransactionForm
 from apps.trust.get_trust_data import get_trust_data
 from apps.trust.models import Transaction
+from utils.toasts import toast_error
 
 
 @login_required
@@ -259,10 +261,23 @@ def add(request, client_id=None):
     return render(request, "trust/form.html", context)
 
 
+def _belongs_to_a_payment():
+    """The refusal for a withdrawal recorded by a payment from trust. It is
+    that payment's other half (see apps/invoicing/payments/trust.py): changed
+    here, the two would disagree. It can still be marked confirmed."""
+    return toast_error(
+        HttpResponse(status=204),
+        "This withdrawal was recorded by a payment from trust. Edit or delete "
+        "the payment (Invoicing, Payments) and the withdrawal follows.",
+    )
+
+
 @login_required
 def edit(request, id):
     trust_view = request.session.get("trust_view", "summary")
     transaction = get_object_or_404(Transaction, pk=id)
+    if transaction.payment_id:
+        return _belongs_to_a_payment()
 
     if request.method == "POST":
         form = TransactionForm(
@@ -301,25 +316,7 @@ def edit(request, id):
 
 
 @login_required
-def toggle_entered(request, id):
-    trust_view = request.session.get("trust_view", "summary")
-    transaction = get_object_or_404(Transaction, pk=id)
-
-    if transaction.entered == 1:
-        transaction.entered = 0
-    else:
-        transaction.entered = 1
-    transaction.save()
-
-    if trust_view == "history":
-        return HttpResponse(status=204, headers={"HX-Trigger": "trustHistoryChanged"})
-    elif trust_view == "client":
-        return HttpResponse(status=204, headers={"HX-Trigger": "trustClientChanged"})
-    else:
-        return HttpResponse(status=204, headers={"HX-Trigger": "trustChanged"})
-
-
-@login_required
+@require_POST
 def toggle_confirmed(request, id):
     trust_view = request.session.get("trust_view", "summary")
     transaction = get_object_or_404(Transaction, pk=id)
@@ -339,10 +336,14 @@ def toggle_confirmed(request, id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def delete(request, id):
     trust_view = request.session.get("trust_view", "summary")
 
-    Transaction.objects.get(pk=id).delete()
+    transaction = get_object_or_404(Transaction, pk=id)
+    if transaction.payment_id:
+        return _belongs_to_a_payment()
+    transaction.delete()
 
     if trust_view == "history":
         return HttpResponse(status=204, headers={"HX-Trigger": "trustHistoryChanged"})

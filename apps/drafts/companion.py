@@ -7,7 +7,20 @@ document with its draft link by filename, and polls this API:
     GET  sessions/              the token user's draft links, newest first
     POST <link>/hello/          register + push the document (odt_b64)
     GET  <link>/ops/            pick up the next pending edit round
-    POST <link>/rounds/<id>/    report the round's outcome (+ document)
+    POST <link>/rounds/<id>/    claim the round ({"claim": true}), or
+                                report its outcome (+ document)
+
+Two versions of the extension are in use and both must keep working, since
+a user's installed copy only changes when they download it again:
+
+    0.3.0  collects a round from ops/ and applies it at once, then reports.
+    0.4.0  collects a round, claims it, applies it only if the claim is
+           granted, then reports. It claims only when the round it was
+           handed says "claim": true, so it also works against a server
+           that predates the claim.
+
+The protocol therefore only ever grows: no path, method or key that 0.3.0
+uses may change, and anything new must be optional for the client.
 
 Every call refreshes companion_seen; while that is fresh the chat worker
 routes edit rounds here (chat._apply_via_companion). Document pushes are ODT
@@ -35,13 +48,16 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from apps.case.ai.access import accessible_matters
 from apps.drafts.models import CompanionRound, CompanionToken, DraftLink
 from apps.drive import convert
 
 logger = logging.getLogger(__name__)
 
 COMPANION_SRC = Path(__file__).resolve().parent / "companion_src"
-EXTENSION_VERSION = "0.3.0"
+# Also declared in companion_src/description.xml (LibreOffice reads the
+# version from there); test_companion checks the two agree.
+EXTENSION_VERSION = "0.4.0"
 
 
 def companion_auth(view):
@@ -64,12 +80,18 @@ def companion_auth(view):
     return wrapper
 
 
+def _user_links(user):
+    """The draft links this token may work with: on conversations the user
+    started, on matters the user can still open. A user taken off a matter
+    keeps their token, so the matter check has to be made on every call."""
+    return DraftLink.objects.filter(
+        conversation__user=user,
+        conversation__matter__in=accessible_matters(user),
+    ).select_related("conversation__matter")
+
+
 def _get_link(request, link_id):
-    return get_object_or_404(
-        DraftLink.objects.select_related("conversation__matter"),
-        pk=link_id,
-        conversation__user=request.companion_user,
-    )
+    return get_object_or_404(_user_links(request.companion_user), pk=link_id)
 
 
 def _json_body(request):
@@ -108,9 +130,7 @@ def _touch(link):
 @require_http_methods(["GET"])
 def api_sessions(request):
     """The token user's draft links, newest first."""
-    links = DraftLink.objects.filter(
-        conversation__user=request.companion_user
-    ).select_related("conversation__matter")
+    links = _user_links(request.companion_user)
     return JsonResponse(
         {
             "sessions": [
@@ -120,6 +140,12 @@ def api_sessions(request):
                     "matter": link.conversation.matter.name
                     if link.conversation.matter
                     else "",
+                    # Let the extension tell apart links to different files
+                    # of the same name, and name them to the user (0.4.0;
+                    # 0.3.0 ignores both). Links to one file are siblings
+                    # and need no telling apart.
+                    "file": link.drive_file_id,
+                    "conversation": link.conversation.title,
                 }
                 for link in links
             ]
@@ -167,23 +193,58 @@ def api_ops(request, link_id):
     )
     if round_ is None:
         return JsonResponse({"status": "drafting", "round": None})
-    round_.delivered_at = timezone.now()
-    round_.save(update_fields=["delivered_at"])
+    # Conditional, so a round the chat worker expired a moment ago (or one
+    # a second poller just took) is not handed out.
+    collected = CompanionRound.objects.filter(
+        pk=round_.pk, status="pending", delivered_at__isnull=True
+    ).update(delivered_at=timezone.now())
+    if not collected:
+        return JsonResponse({"status": "drafting", "round": None})
     return JsonResponse(
-        {"status": "drafting", "round": {"id": round_.id, "edits": round_.edits}}
+        {
+            "status": "drafting",
+            "round": {
+                "id": round_.id,
+                "edits": round_.edits,
+                # Asks a 0.4.0 extension to claim before applying. 0.3.0
+                # ignores the key and applies straight away.
+                "claim": True,
+            },
+        }
     )
 
 
 @companion_auth
 @require_http_methods(["POST"])
 def api_result(request, link_id, round_id):
-    """Record a round's outcome and the resulting document."""
+    """Record a round's outcome and the resulting document, or answer a
+    claim.
+
+    A claim ({"claim": true}, sent by 0.4.0 just before it applies) is
+    granted only while the chat worker is still waiting on the round, and
+    restarts that wait. A refused claim tells the extension to leave the
+    document alone: the chat has already said the edits were not applied.
+
+    An outcome is recorded for a pending round, and also for a collected
+    round the worker has since given up on: the edits are in the document
+    by then, and the record should say so.
+    """
     link = _get_link(request, link_id)
     round_ = get_object_or_404(
         CompanionRound, pk=round_id, link__in=link.sibling_links()
     )
     payload = _json_body(request)
-    if round_.status == "pending":
+    if payload.get("claim"):
+        granted = CompanionRound.objects.filter(
+            pk=round_.pk, status="pending", delivered_at__isnull=False
+        ).update(delivered_at=timezone.now())
+        _touch(link)
+        return JsonResponse({"status": "drafting", "apply": bool(granted)})
+
+    late = round_.status == "expired" and round_.delivered_at is not None
+    if late:
+        logger.info("Companion round %s reported after its wait ran out", round_.id)
+    if round_.status == "pending" or late:
         if payload.get("ok"):
             round_.status = "applied"
             round_.result = payload.get("results") or []

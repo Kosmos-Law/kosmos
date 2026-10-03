@@ -58,3 +58,17 @@ class TransactionForm(forms.ModelForm):
         # edits keep whatever the transaction already has.
         if not self.instance.pk:
             self.fields["method"].initial = "Check"
+
+    def clean_amount(self):
+        amount = self.cleaned_data.get("amount")
+        if amount is None or amount <= 0:
+            raise forms.ValidationError("Enter an amount greater than zero.")
+        return amount
+
+    def clean_type(self):
+        """The ledger adds deposits and subtracts withdrawals; a transaction
+        of any other type would count in no balance at all."""
+        kind = self.cleaned_data.get("type")
+        if kind not in dict(self.Meta.TYPE_CHOICES):
+            raise forms.ValidationError("Choose Deposit or Withdrawal.")
+        return kind

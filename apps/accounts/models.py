@@ -41,7 +41,9 @@ class CustomUser(AbstractUser):
     perm_all_matters = models.BooleanField(default=True)
     perm_financial = models.BooleanField(default=True)
     perm_intakes = models.BooleanField(default=True)
-    perm_reports = models.BooleanField(default=True)
+    # Off until an administrator turns it on: the reports show the whole
+    # firm's revenue, whatever matters or other permissions a user has.
+    perm_reports = models.BooleanField(default=False)
     perm_research = models.BooleanField(default=True)
     history = HistoricalRecords()
 

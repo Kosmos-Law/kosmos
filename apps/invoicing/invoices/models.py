@@ -109,6 +109,24 @@ class Invoice(AuditMixin, models.Model):
         still be returned, which reverts the invoice to unpaid."""
         return self.applications.filter(payment__processor_status="pending").exists()
 
+    def reopen_if_no_longer_covered(self):
+        """After a payment or credit is taken off: a Paid invoice that is no
+        longer covered goes back to Sent.
+
+        ``amount_remaining`` alone cannot decide this. It counts a Paid
+        invoice with no allocations as paid in full (invoices from before
+        allocations existed look like that), so an invoice whose *last*
+        allocation was just removed would stay Paid. Removing an allocation
+        proves the invoice is not one of those, hence the explicit check."""
+        if self.status != "PAID":
+            return
+        has_allocations = (
+            self.applications.exists() or self.credit_applications.exists()
+        )
+        if not has_allocations or self.amount_remaining > 0:
+            self.status = "SENT"
+            self.save(update_fields=["status"])
+
     @property
     def amount_remaining(self):
         """

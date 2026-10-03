@@ -159,6 +159,7 @@ def get_unbilled_data(request):
     total_flat_fees = 0
     total_activity = 0
     total_trust = 0
+    clients_counted = set()
 
     for matter in matters_list:
         # Get trust balance for this matter's client
@@ -182,7 +183,11 @@ def get_unbilled_data(request):
         total_flat_fees += matter.unbilled_flat_fees
         total_expenses += matter.unbilled_expenses
         total_activity += matter.total_activity
-        total_trust += matter.trust_balance
+        # Trust belongs to the client, not the matter: a client with three
+        # matters in the list has one balance, counted once.
+        if matter.client_id and matter.client_id not in clients_counted:
+            clients_counted.add(matter.client_id)
+            total_trust += matter.trust_balance
 
     # Handle sorting
     order_by = filter_data.get(

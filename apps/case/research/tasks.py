@@ -123,6 +123,123 @@ def reap_stale_queries(matter, user):
     )
 
 
+def _now():
+    from django.utils import timezone
+
+    return timezone.now()
+
+
+def _stale_cutoff():
+    return _now() - timedelta(minutes=RESEARCH_STALE_MINUTES)
+
+
+def _stamp(model, pk, **fields):
+    """A write that also bumps updated_at, the heartbeat the single-job
+    reapers below read (queryset .update() skips auto_now)."""
+    return model.objects.filter(pk=pk).update(updated_at=_now(), **fields)
+
+
+# While a run is in one of these, its "pending" rows are the run's own
+# (queued for the pipeline, or waiting at the selection gate) and the
+# whole-run reaper above covers them.
+RUN_OWNS_PENDING_STATUSES = ACTIVE_QUERY_STATUSES + ["refined", "selecting"]
+
+BRIEF_INTERRUPTED = "Briefing was interrupted. Try again."
+ASSESS_INTERRUPTED = "The assessment was interrupted. Try again."
+ASSESS_FETCH_FAILED = (
+    "Could not retrieve the citing opinion from CourtListener, so its "
+    "treatment was not assessed."
+)
+ASSESS_FAILED = "Could not analyze how this opinion treats the case."
+ANSWER_FAILED = (
+    "The answer could not be written. The briefed cases are listed below. "
+    "Run the search again for a written answer."
+)
+
+
+def start_single_brief(result_id):
+    """Mark a result as briefing and queue the task, unless it is already
+    briefing. Marked here, before the queue, so the card the click
+    re-renders already shows the job (the task used to mark it, after the
+    card had been drawn). Returns whether a job was started."""
+    started = (
+        ResearchResult.objects.filter(pk=result_id)
+        .exclude(relevance="pending")
+        .update(
+            relevance="pending",
+            status_message="Queued for briefing",
+            updated_at=_now(),
+        )
+    )
+    if started:
+        summarize_result(result_id)
+    return bool(started)
+
+
+def start_review(result_id, launcher=None):
+    """Mark a result as validating and queue the task (review_result unless
+    another launcher is given), unless a validation is already running:
+    two at once would each list the citing opinions."""
+    started = (
+        ResearchResult.objects.filter(pk=result_id)
+        .exclude(verify_status="verifying")
+        .update(verify_status="verifying", updated_at=_now())
+    )
+    if started:
+        (launcher or review_result)(result_id)
+    return bool(started)
+
+
+def start_citation_assessment(verification):
+    """Queue the assessment of one citing opinion. A failed earlier attempt
+    (a message, no verdict) is cleared first so the row polls again."""
+    fields = {} if verification.treatment else {"summary": "", "treatment": ""}
+    _stamp(CitationVerification, verification.pk, **fields)
+    verification.refresh_from_db()
+    assess_single_citation(verification.pk)
+
+
+def reap_stale_result(result):
+    """Give a lost single-case job a terminal state.
+
+    Brief case and Validate each run as one task on one result. When the
+    task is lost (a qcluster restart), nothing moves the row off "pending"
+    or "verifying" and its card polls forever. Past the stale window the
+    row is flagged, so the card stops polling, says why, and offers the
+    button again. Returns the result, refreshed if it changed."""
+    if result.updated_at >= _stale_cutoff():
+        return result
+    changed = 0
+    if (
+        result.relevance == "pending"
+        and result.query.status not in RUN_OWNS_PENDING_STATUSES
+    ):
+        changed += ResearchResult.objects.filter(
+            pk=result.pk, relevance="pending"
+        ).update(relevance="error", status_message=BRIEF_INTERRUPTED)
+    if result.verify_status == "verifying":
+        changed += ResearchResult.objects.filter(
+            pk=result.pk, verify_status="verifying"
+        ).update(verify_status="error")
+    if changed:
+        result.refresh_from_db()
+    return result
+
+
+def reap_stale_briefs(briefs):
+    """Flag saved briefs (a CaseBrief queryset) whose generation was lost,
+    so their spinners end in "Brief generation failed"."""
+    briefs.filter(
+        status__in=["pending", "generating"], updated_at__lt=_stale_cutoff()
+    ).update(status="error")
+
+
+def assessment_lost(verification):
+    """True when a single-citation assessment was queued long ago and never
+    wrote an outcome: its row should stop polling and offer Assess again."""
+    return not verification.summary and verification.updated_at < _stale_cutoff()
+
+
 def refine_research_query(query_id):
     """Queue query refinement; pauses at status=refined for user review."""
     _queue("_refine_and_pause", query_id, "ResearchRefine")
@@ -889,9 +1006,7 @@ def _summarize_result(result_id):
     except ResearchResult.DoesNotExist:
         return
 
-    ResearchResult.objects.filter(pk=result_id).update(
-        relevance="pending", status_message="Briefing..."
-    )
+    _stamp(ResearchResult, result_id, relevance="pending", status_message="Briefing...")
 
     try:
         question = result.query.query_text if result.query_id else ""
@@ -1320,8 +1435,10 @@ def _generate_final_answer(query_id):
         _update_query(query_id, status="complete", final_summary=response_text.strip())
 
     except Exception:
+        # The briefs are still worth showing, so the run completes; the
+        # message tells the user why there is no answer above them.
         logger.exception("Error generating final answer for query %s", query_id)
-        _update_query(query_id, status="complete")
+        _update_query(query_id, status="complete", error_message=ANSWER_FAILED)
 
     # Clean up opinion text to save space
     ResearchResult.objects.filter(query_id=query_id).update(opinion_text="")
@@ -1344,7 +1461,7 @@ def _review_result(result_id):
     except ResearchResult.DoesNotExist:
         return
 
-    ResearchResult.objects.filter(pk=result_id).update(verify_status="verifying")
+    _stamp(ResearchResult, result_id, verify_status="verifying")
 
     try:
         if not result.cluster_id:
@@ -1368,10 +1485,13 @@ def _review_result(result_id):
             ResearchResult.objects.filter(pk=result_id).update(verify_status="error")
             return
 
-        # Generate 150-word case summary
-        opinion = fetch_opinion(opinion_id)
-        if opinion.found:
-            _generate_review_summary(result_id, result, opinion.plain_text)
+        # Generate 150-word case summary, once: validating again reuses
+        # the stored one (the opinion has not changed, and each one costs
+        # an opinion fetch and a model call).
+        if not result.review_summary:
+            opinion = fetch_opinion(opinion_id)
+            if opinion.found:
+                _generate_review_summary(result_id, result, opinion.plain_text)
 
         # Fetch forward citations (top 20 by depth)
         forward_cites = get_forward_citations(opinion_id, limit=20)
@@ -1379,29 +1499,46 @@ def _review_result(result_id):
             ResearchResult.objects.filter(pk=result_id).update(verify_status="complete")
             return
 
-        # Create CitationVerification records for all with metadata
-        for i, cite in enumerate(forward_cites, 1):
+        # Create CitationVerification records for all with metadata.
+        # Validating a case a second time keeps the rows (and assessments)
+        # already there and adds only citing cases not yet listed.
+        listed = list(
+            CitationVerification.objects.filter(result_id=result_id).values_list(
+                "cluster_id", flat=True
+            )
+        )
+        seen = set(listed)
+        position = len(listed)
+        for cite in forward_cites:
             citing_id = cite["citing_opinion_id"]
             citing_meta = _get_opinion_metadata(citing_id)
+            citing_cluster = citing_meta.get("cluster_id")
+            # A citing opinion whose metadata could not be read cannot be
+            # matched against the list, so a repeat run leaves it out.
+            if citing_cluster in seen or (listed and citing_cluster is None):
+                continue
+            if citing_cluster is not None:
+                seen.add(citing_cluster)
+            position += 1
 
             CitationVerification.objects.create(
                 result_id=result_id,
-                position=i,
+                position=position,
                 case_name=citing_meta.get("case_name", ""),
                 citation=citing_meta.get("citation", ""),
                 court=citing_meta.get("court", ""),
                 date_filed=citing_meta.get("date_filed", ""),
-                cluster_id=citing_meta.get("cluster_id"),
+                cluster_id=citing_cluster,
                 courtlistener_url=citing_meta.get("courtlistener_url", ""),
                 depth=cite["depth"],
                 summary="",
             )
 
-        # Assess top 5 by depth
+        # Assess top 5 by depth (those a previous run has not assessed)
         top_verifications = CitationVerification.objects.filter(
             result_id=result_id
         ).order_by("position")[:5]
-        _assess_citations(result, top_verifications)
+        _assess_citations(result, [v for v in top_verifications if not v.summary])
 
         ResearchResult.objects.filter(pk=result_id).update(verify_status="complete")
 
@@ -1434,31 +1571,42 @@ def _generate_review_summary(result_id, result, opinion_text):
         logger.exception("Error generating review summary for result %s", result_id)
 
 
+def _citing_opinion_text(verification):
+    """Plain text of a citing case's lead opinion, or "" when CourtListener
+    cannot supply it."""
+    if not verification.cluster_id:
+        return ""
+    cluster = fetch_cluster(verification.cluster_id)
+    if not cluster:
+        return ""
+    sub_opinions = cluster.get("sub_opinions", [])
+    if not sub_opinions:
+        return ""
+    try:
+        citing_opinion_id = int(sub_opinions[0].rstrip("/").split("/")[-1])
+    except (ValueError, IndexError):
+        return ""
+    citing_opinion = fetch_opinion(citing_opinion_id)
+    return citing_opinion.plain_text if citing_opinion.found else ""
+
+
 def _assess_citations(result, verifications):
     """Generate AI treatment summaries for a set of CitationVerification records."""
     query_text = result.query.query_text if result.query_id else ""
 
     for v in verifications:
-        if not v.cluster_id:
+        opinion_text = _citing_opinion_text(v)
+        if not opinion_text:
+            # An empty summary means "not assessed yet" and keeps the row
+            # polling, so a failed fetch is written down as an outcome. The
+            # blank treatment marks it as not assessed: the row shows the
+            # message without a verdict and offers Assess again.
+            CitationVerification.objects.filter(pk=v.id).update(
+                treatment="", summary=ASSESS_FETCH_FAILED
+            )
             continue
 
-        # Get opinion_id from cluster
-        cluster = fetch_cluster(v.cluster_id)
-        if not cluster:
-            continue
-        sub_opinions = cluster.get("sub_opinions", [])
-        if not sub_opinions:
-            continue
-        try:
-            citing_opinion_id = int(sub_opinions[0].rstrip("/").split("/")[-1])
-        except (ValueError, IndexError):
-            continue
-
-        citing_opinion = fetch_opinion(citing_opinion_id)
-        if not citing_opinion.found:
-            continue
-
-        truncated = citing_opinion.plain_text[:8000]
+        truncated = opinion_text[:8000]
         system_prompt = (
             "You are a legal research assistant. Respond ONLY with valid JSON."
         )
@@ -1489,8 +1637,11 @@ def _assess_citations(result, verifications):
             summary = parsed.get("summary", "")
         except Exception:
             logger.exception("Error summarizing forward citation %s", v.id)
-            summary = "Could not analyze treatment."
+            treatment = ""
+            summary = ASSESS_FAILED
 
+        if not summary:
+            treatment, summary = "", ASSESS_FAILED
         CitationVerification.objects.filter(pk=v.id).update(
             treatment=treatment, summary=summary
         )
@@ -1514,6 +1665,9 @@ def _assess_single_citation(verification_id):
         _assess_citations(v.result, [v])
     except Exception:
         logger.exception("Error assessing citation %s", verification_id)
+        CitationVerification.objects.filter(pk=verification_id, summary="").update(
+            treatment="", summary=ASSESS_FAILED
+        )
 
 
 def _review_more_citations(result_id):
@@ -1523,7 +1677,7 @@ def _review_more_citations(result_id):
     except ResearchResult.DoesNotExist:
         return
 
-    ResearchResult.objects.filter(pk=result_id).update(verify_status="verifying")
+    _stamp(ResearchResult, result_id, verify_status="verifying")
 
     try:
         unassessed = CitationVerification.objects.filter(
@@ -1679,7 +1833,7 @@ def _generate_brief(brief_id):
     except CaseBrief.DoesNotExist:
         return
 
-    CaseBrief.objects.filter(pk=brief_id).update(status="generating")
+    _stamp(CaseBrief, brief_id, status="generating")
 
     try:
         # Get opinion text — try the linked result first, otherwise fetch fresh

@@ -75,13 +75,22 @@ def build_service():
         return False
 
 
+def event_title(event):
+    """The title an event carries on Google: "Matter - Description", or the
+    description alone for an event on no matter."""
+    description = event.description or ""
+    if event.matter_id:
+        return f"{event.matter.name} - {description}"
+    return description
+
+
 @best_effort(default=None)
 def add_event(event):
     service = build_service()
 
     if service:
         new_event = {
-            "summary": f"{event.matter} - {event.description}",
+            "summary": event_title(event),
         }
 
         # Handle timed events vs all-day events
@@ -226,7 +235,7 @@ def edit_event(event):
 
     if service:
         revised_event = {
-            "summary": f"{event.matter} - {event.description}",
+            "summary": event_title(event),
         }
 
         # Handle timed events vs all-day events
@@ -316,6 +325,7 @@ def sync_from_google():
         created_count = 0
         updated_count = 0
         deleted_count = 0
+        detached_count = 0
         skipped_count = 0
 
         for google_event in google_events:
@@ -327,6 +337,8 @@ def sync_from_google():
                     updated_count += 1
                 elif result == "deleted":
                     deleted_count += 1
+                elif result == "detached":
+                    detached_count += 1
                 elif result == "skipped":
                     skipped_count += 1
             except Exception as e:
@@ -341,7 +353,8 @@ def sync_from_google():
 
         logger.info(
             f"Sync completed: {created_count} created, {updated_count} updated, "
-            f"{deleted_count} deleted, {skipped_count} skipped"
+            f"{deleted_count} deleted, {detached_count} kept and detached, "
+            f"{skipped_count} skipped"
         )
 
     except Exception as e:
@@ -360,7 +373,7 @@ def sync_from_google():
 def _process_google_event(google_event):
     """
     Process a single Google Calendar event.
-    Returns: 'created', 'updated', 'deleted', or 'skipped'
+    Returns: 'created', 'updated', 'deleted', 'detached', or 'skipped'
     """
     from apps.calendar.models import Event, PendingGoogleDeletion
 
@@ -369,11 +382,17 @@ def _process_google_event(google_event):
 
     # Handle deleted events
     if status == "cancelled":
-        deleted = Event.objects.filter(google_id=google_id).delete()
-        if deleted[0] > 0:
-            logger.info(f"Deleted event {google_id}")
-            return "deleted"
-        return "skipped"
+        result = "skipped"
+        for local_event in Event.objects.filter(google_id=google_id):
+            if _kept_when_deleted_on_google(local_event):
+                _detach(local_event)
+                logger.info("Kept event %s, deleted on Google", google_id)
+                result = "detached"
+            else:
+                local_event.delete()
+                logger.info(f"Deleted event {google_id}")
+                result = "deleted"
+        return result
 
     # Parse Google event data
     try:
@@ -390,15 +409,12 @@ def _process_google_event(google_event):
         # Kosmos wins: if the local event has edits not yet pushed to Google
         # (never synced, or edited since the last successful push), don't let
         # Google overwrite it — the next reconcile() will push our version up.
-        local_dirty = local_event.google_synced_at is None or (
-            local_event.updated_at
-            and local_event.updated_at > local_event.google_synced_at
-        )
-        if local_dirty:
+        if _has_unpushed_edits(local_event):
             logger.info("Local event %s has unpushed edits; skipping", google_id)
             return "skipped"
 
         # Google is newer - update local
+        event_data.update(_title_fields(google_event, local_event))
         for field, value in event_data.items():
             setattr(local_event, field, value)
         local_event.save()
@@ -415,7 +431,11 @@ def _process_google_event(google_event):
             logger.info("Skipping create of %s — pending deletion", google_id)
             return "skipped"
 
-        # Event doesn't exist locally - create it
+        # Event doesn't exist locally - create it. Google has no status to
+        # give it; without one the event matches no status filter and shows
+        # nowhere, so it starts Pending like any new event.
+        event_data.update(_title_fields(google_event))
+        event_data["status"] = "Pending"
         event_data["google_id"] = google_id
         new_event = Event.objects.create(**event_data)
         # A pulled event is in sync by definition; stamp synced_at == updated_at
@@ -425,31 +445,146 @@ def _process_google_event(google_event):
         return "created"
 
 
+def _has_unpushed_edits(event):
+    """True when the event was never pushed, or edited since its last push."""
+    return event.google_synced_at is None or bool(
+        event.updated_at and event.updated_at > event.google_synced_at
+    )
+
+
+def _kept_when_deleted_on_google(event):
+    """Whether a deletion on Google leaves the event in Kosmos.
+
+    A deletion on Google removes the event here only when Kosmos holds
+    nothing Google did not: the event is still open and has no edits waiting
+    to be pushed. A Complete or Missed event is the firm's record of what
+    happened, and unpushed edits are work Google never saw; both stay.
+    """
+    return event.status in ("Complete", "Missed") or _has_unpushed_edits(event)
+
+
+def _detach(event):
+    """Cut a kept event loose from the Google event that was deleted.
+
+    Clearing google_id stops it matching that Google event again. Keeping a
+    google_synced_at marks it as detached rather than never pushed (see
+    Event.detached_from_google), so neither a later edit nor reconcile()
+    sends it back to Google as a new event. .update() so the event's own
+    updated_at and history are untouched.
+    """
+    from apps.calendar.models import Event
+
+    Event.objects.filter(pk=event.pk).update(
+        google_id=None, google_synced_at=F("updated_at")
+    )
+
+
+def _fit_description(text):
+    """Cut a description taken from a Google title to what the column holds.
+
+    Google's title is unbounded; saving one longer than the column failed
+    that event's pull on every sync. The cut falls on a word boundary where
+    the text has one.
+    """
+    from apps.calendar.models import Event
+
+    limit = Event._meta.get_field("description").max_length
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    if not text[limit].isspace():
+        whole_words = cut.rpartition(" ")[0].rstrip()
+        if whole_words:
+            cut = whole_words
+    return cut.rstrip()
+
+
+def _matter_named_in(title):
+    """The matter a "Matter - Description" title names, with the rest of the
+    title, or (None, None).
+
+    The whole text before a " - " must be a matter's name (case aside). A
+    matter name may itself hold " - ", so every such break is tried. Several
+    matches are settled only when exactly one of them is Open; otherwise
+    nothing is matched, because a guess here moves an event between matters.
+    """
+    from apps.matters.models import Matter
+
+    parts = title.split(" - ")
+    found = []
+    for i in range(1, len(parts)):
+        name = " - ".join(parts[:i]).strip()
+        rest = " - ".join(parts[i:]).strip()
+        if not name:
+            continue
+        for matter in Matter.objects.filter(name__iexact=name):
+            found.append((matter, rest))
+
+    if len(found) > 1:
+        found = [pair for pair in found if pair[0].status == "Open"]
+    if len(found) == 1:
+        return found[0]
+    return None, None
+
+
+def _title_fields(google_event, local_event=None):
+    """The matter and description to take from an event's title on Google,
+    the description cut to fit its column."""
+    fields = _read_title(google_event, local_event)
+    if "description" in fields:
+        fields["description"] = _fit_description(fields["description"])
+    return fields
+
+
+def _read_title(google_event, local_event=None):
+    """The matter and description an event's title on Google gives.
+
+    For an event Kosmos already holds, the title is read only when it was
+    changed on Google. Kosmos writes that title itself, so reading back an
+    unchanged one could only re-derive what is already stored, and deriving
+    a matter from text is how events moved to the wrong matter.
+    """
+    title = (google_event.get("summary") or "").strip()
+
+    if local_event is None:
+        matter, description = _matter_named_in(title)
+        if matter:
+            return {"matter": matter, "description": description}
+        return {"description": title}
+
+    if title == event_title(local_event).strip():
+        return {}
+
+    # Still under the event's own matter: only the description was edited.
+    if local_event.matter_id:
+        prefix = f"{local_event.matter.name} - "
+        if title.casefold().startswith(prefix.casefold()):
+            return {"description": title[len(prefix) :].strip()}
+
+    matter, description = _matter_named_in(title)
+    if matter:
+        return {"matter": matter, "description": description}
+
+    # No matter named: the matter stays as it is. A title that still ends
+    # with the stored description was not retitled on Google. It differs
+    # only in a prefix Kosmos wrote earlier (a matter since renamed, or the
+    # "None - " once sent for an event on no matter), so nothing changes.
+    stored = local_event.description or ""
+    if stored and title.endswith(f" - {stored}"):
+        return {}
+    return {"description": title}
+
+
 def _parse_google_event(google_event):
     """
     Parse Google Calendar event into local Event model fields.
-    Extracts: date, start_time, end_time, description, event_type, location
-    Note: matter, party, status, user_id cannot be determined from Google data
+    Extracts: date, start_time, end_time, event_type, location
+    Note: party, status, user_id cannot be determined from Google data. The
+    matter and description come from the title: see _title_fields.
     """
     from apps.calendar.models import Event
-    from apps.matters.models import Matter
 
     event_data = {}
-
-    # Parse summary (format: "Matter - Description")
-    summary = google_event.get("summary", "")
-    if " - " in summary:
-        matter_name, description = summary.split(" - ", 1)
-        # Try to find matter by name
-        try:
-            matter = Matter.objects.filter(name__icontains=matter_name).first()
-            if matter:
-                event_data["matter"] = matter
-        except Exception:
-            pass
-        event_data["description"] = description
-    else:
-        event_data["description"] = summary
 
     # Parse date and times
     start = google_event.get("start", {})
@@ -480,8 +615,12 @@ def _parse_google_event(google_event):
     # Parse location: a bare meeting-type value maps to event_type (legacy
     # data), anything else is treated as a free-text location. Google's
     # location is unbounded; truncate to our column limit so a long value
-    # can't fail the whole sync run.
-    location = google_event.get("location", "")
+    # can't fail the whole sync run. The location is always set, to nothing
+    # when Google holds no free text, so one removed there is removed here.
+    # The meeting type is left as it is: it is Kosmos's own classification,
+    # and Google only ever shows it in place of a missing location.
+    location = google_event.get("location") or ""
+    event_data["location"] = None
     if location in ["Zoom", "Virtual", "Phone", "In-person"]:
         event_data["event_type"] = location
     elif location:

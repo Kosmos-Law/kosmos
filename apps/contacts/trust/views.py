@@ -1,12 +1,16 @@
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render
 
+from apps.contacts.access import can_see_trust
 from apps.contacts.contacts import get_list_data
 
 
 @login_required
 def index(request, contact_id):
     """Contact detail - Trust tab"""
+    if not can_see_trust(request.user):
+        raise PermissionDenied
     request.session["selected_contact_id"] = contact_id
     context = get_list_data(request)
     context["contact_subapp"] = "trust"

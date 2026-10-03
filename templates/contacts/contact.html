@@ -27,14 +27,23 @@
             <i class="icon-copy"></i>
           </button>
         {% endif %}
-        <a href="{% url 'contacts:toggle-google-sync' id=selected_contact.id %}"
-           class="btn-icon {% if selected_contact.google_id %}toggle-active{% endif %}">
-          {% if selected_contact.google_id %}
-            <i class="icon-cloud-off"></i>
-          {% else %}
-            <i class="icon-cloud-upload"></i>
-          {% endif %}
-        </a>
+        {% comment %}
+          Copies the contact to Google Contacts, or removes the copy. Shown
+          only when a Google account is connected: without one it did nothing.
+        {% endcomment %}
+        {% if google_logged_in %}
+          <button type="button"
+                  class="btn-icon {% if selected_contact.google_id %}toggle-active{% endif %}"
+                  title="{% if selected_contact.google_id %}Remove from Google Contacts{% else %}Copy to Google Contacts{% endif %}"
+                  hx-post="{% url 'contacts:toggle-google-sync' id=selected_contact.id %}"
+                  hx-swap="none">
+            {% if selected_contact.google_id %}
+              <i class="icon-cloud-off"></i>
+            {% else %}
+              <i class="icon-cloud-upload"></i>
+            {% endif %}
+          </button>
+        {% endif %}
         <a href="#"
            hx-get="{% url 'contacts:edit' id=selected_contact.id %}"
            hx-target="#htmx-modal-container"
@@ -52,9 +61,11 @@
         <a href="{% url 'contacts:detail-details' selected_contact.id %}">Details</a>
       </li>
       {% if selected_contact.client_status == 'Current' or selected_contact.client_status == 'Pending' or selected_contact.client_status == 'Former' %}
-        <li {% if contact_subapp == 'trust' %}class="active"{% endif %}>
-          <a href="{% url 'contacts:detail-trust' selected_contact.id %}">Trust</a>
-        </li>
+        {% if show_trust %}
+          <li {% if contact_subapp == 'trust' %}class="active"{% endif %}>
+            <a href="{% url 'contacts:detail-trust' selected_contact.id %}">Trust</a>
+          </li>
+        {% endif %}
         <li {% if contact_subapp == 'intake' %}class="active"{% endif %}>
           <a href="{% url 'contacts:detail-intake' selected_contact.id %}">Intake</a>
         </li>

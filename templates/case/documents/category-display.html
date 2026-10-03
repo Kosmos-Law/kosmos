@@ -8,25 +8,25 @@
     <li>
       <a class="dropdown-item {% if document.category == 'Correspondence' %}active{% endif %}"
          href="#"
-         hx-get="{% url 'case:document-category' document.id 'Correspondence' %}"
+         hx-post="{% url 'case:document-category' document.id 'Correspondence' %}"
          hx-target="#documents">Correspondence</a>
     </li>
     <li>
       <a class="dropdown-item {% if document.category == 'Discovery' %}active{% endif %}"
          href="#"
-         hx-get="{% url 'case:document-category' document.id 'Discovery' %}"
+         hx-post="{% url 'case:document-category' document.id 'Discovery' %}"
          hx-target="#documents">Discovery</a>
     </li>
     <li>
       <a class="dropdown-item {% if document.category == 'Evidence' %}active{% endif %}"
          href="#"
-         hx-get="{% url 'case:document-category' document.id 'Evidence' %}"
+         hx-post="{% url 'case:document-category' document.id 'Evidence' %}"
          hx-target="#documents">Evidence</a>
     </li>
     <li>
       <a class="dropdown-item {% if document.category == 'Record' %}active{% endif %}"
          href="#"
-         hx-get="{% url 'case:document-category' document.id 'Record' %}"
+         hx-post="{% url 'case:document-category' document.id 'Record' %}"
          hx-target="#documents">Record</a>
     </li>
   </ul>

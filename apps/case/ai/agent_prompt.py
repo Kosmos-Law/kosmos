@@ -19,6 +19,7 @@ import logging
 
 from apps.settings.models import Firm
 
+from .access import has_financial_access, has_research_access
 from .agent_tools import DEFAULT_BUDGET, AgentBudget
 from .agent_working_set import (
     WORKING_SET_MAX_CHARS,
@@ -127,7 +128,16 @@ Every material you may read, one per line: handle, name, category, date,
 size, importance (1 low to 7 high), and "pinned" when the attorney marked
 it always relevant. Use the handle's id with the matching tool
 (doc: read_document, thread: read_email_thread, note: and lib: read_note,
-case: read_caselaw, conv: read_conversation, inv: read_invoice)."""
+case: read_caselaw, conv: read_conversation{invoice_tool})."""
+# Named only to a user who is offered the tool (the Financial permission).
+INDEX_INVOICE_TOOL = ", inv: read_invoice"
+
+
+def _index_header(include_invoices: bool) -> str:
+    return INDEX_HEADER.format(
+        invoice_tool=INDEX_INVOICE_TOOL if include_invoices else ""
+    )
+
 
 GROUPS = [
     ("document", "Documents"),
@@ -168,8 +178,8 @@ def _item_line(item: ManifestItem, with_description: bool) -> str:
     return line
 
 
-def _render_index(items, desc_kinds, collapsed) -> str:
-    parts = [INDEX_HEADER]
+def _render_index(items, desc_kinds, collapsed, include_invoices=False) -> str:
+    parts = [_index_header(include_invoices)]
     for kind, title in GROUPS:
         group = [i for i in items if i.item_type == kind]
         if not group:
@@ -195,25 +205,30 @@ def _render_index(items, desc_kinds, collapsed) -> str:
 ALL_KINDS = tuple(kind for kind, _ in GROUPS)
 
 
-def format_material_index(items: list[ManifestItem], max_chars=INDEX_MAX_CHARS) -> str:
+def format_material_index(
+    items: list[ManifestItem], max_chars=INDEX_MAX_CHARS, include_invoices=False
+) -> str:
     """The index as prompt text, degrading gracefully on huge matters:
     non-document descriptions go first (document summaries are the agent's
     main triage signal, so they survive longest), then all descriptions,
     then the conversation and invoice groups collapse to a count with a
-    search pointer."""
+    search pointer. ``include_invoices`` says whether the reader is offered
+    read_invoice, so the header names only tools they have."""
     for desc_kinds, collapsed in (
         (ALL_KINDS, ()),
         (("document",), ()),
         ((), ()),
         ((), COLLAPSIBLE),
     ):
-        text = _render_index(items, desc_kinds, collapsed)
+        text = _render_index(items, desc_kinds, collapsed, include_invoices)
         if len(text) <= max_chars:
             return text
     return text
 
 
-def build_material_index(matter, conversation) -> list[ManifestItem]:
+def build_material_index(
+    matter, conversation, include_invoices=False
+) -> list[ManifestItem]:
     items, _content = build_manifest(
         matter,
         current_conversation=conversation
@@ -221,6 +236,7 @@ def build_material_index(matter, conversation) -> list[ManifestItem]:
         else None,
         include_library=True,
         include_always=True,
+        include_invoices=include_invoices,
     )
     return items
 
@@ -268,8 +284,16 @@ def build_agent_system(
         or "United States common law"
     )
 
-    items = build_material_index(matter, conversation)
-    index_text = format_material_index(items)
+    # Built for the user who asked: invoices are indexed only with the
+    # Financial permission, and the research method (with the save-caselaw
+    # protocol that depends on it) only with the Research permission, to
+    # match the tools agent.py offers.
+    include_research = has_research_access(user)
+    include_invoices = has_financial_access(user)
+    items = build_material_index(
+        matter, conversation, include_invoices=include_invoices
+    )
+    index_text = format_material_index(items, include_invoices=include_invoices)
 
     segment_a = "\n\n".join(
         [
@@ -277,7 +301,7 @@ def build_agent_system(
             AGENT_PROTOCOL_TEMPLATE.format(
                 max_tool_calls=budget.max_tool_calls, max_chars=budget.max_chars
             ),
-            RESEARCH_PROTOCOL,
+            *([RESEARCH_PROTOCOL] if include_research else []),
             SOURCE_LINKING,
             f"## Current Matter: {matter.name}",
             format_matter_overview(matter),
@@ -310,7 +334,9 @@ def build_agent_system(
 
     tail = [build_request_info(user)]
     if conversation is not None and getattr(conversation, "pk", None):
-        protocol_text, armed = armed_write_protocols(conversation, user_message)
+        protocol_text, armed = armed_write_protocols(
+            conversation, user_message, include_caselaw=include_research
+        )
         if protocol_text:
             tail.append(protocol_text.strip())
             if log:

@@ -27,49 +27,49 @@
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:highlight-importance' highlight.id 7 %}?context=viewer"
+         hx-post="{% url 'case:highlight-importance' highlight.id 7 %}?context=viewer"
          hx-target="#importance-{{ highlight.id }}"
          hx-swap="outerHTML"><i class="icon-chevrons-up importance-7"></i> Highest</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:highlight-importance' highlight.id 6 %}?context=viewer"
+         hx-post="{% url 'case:highlight-importance' highlight.id 6 %}?context=viewer"
          hx-target="#importance-{{ highlight.id }}"
          hx-swap="outerHTML"><i class="icon-chevron-up importance-6"></i> Higher</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:highlight-importance' highlight.id 5 %}?context=viewer"
+         hx-post="{% url 'case:highlight-importance' highlight.id 5 %}?context=viewer"
          hx-target="#importance-{{ highlight.id }}"
          hx-swap="outerHTML"><i class="icon-chevron-up importance-5"></i> High</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:highlight-importance' highlight.id 4 %}?context=viewer"
+         hx-post="{% url 'case:highlight-importance' highlight.id 4 %}?context=viewer"
          hx-target="#importance-{{ highlight.id }}"
          hx-swap="outerHTML"><i class="icon-equal"></i> Normal</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:highlight-importance' highlight.id 3 %}?context=viewer"
+         hx-post="{% url 'case:highlight-importance' highlight.id 3 %}?context=viewer"
          hx-target="#importance-{{ highlight.id }}"
          hx-swap="outerHTML"><i class="icon-chevron-down importance-3"></i> Low</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:highlight-importance' highlight.id 2 %}?context=viewer"
+         hx-post="{% url 'case:highlight-importance' highlight.id 2 %}?context=viewer"
          hx-target="#importance-{{ highlight.id }}"
          hx-swap="outerHTML"><i class="icon-chevron-down importance-2"></i> Lower</a>
     </li>
     <li>
       <a class="dropdown-item"
          href="#"
-         hx-get="{% url 'case:highlight-importance' highlight.id 1 %}?context=viewer"
+         hx-post="{% url 'case:highlight-importance' highlight.id 1 %}?context=viewer"
          hx-target="#importance-{{ highlight.id }}"
          hx-swap="outerHTML"><i class="icon-chevrons-down importance-1"></i> Lowest</a>
     </li>

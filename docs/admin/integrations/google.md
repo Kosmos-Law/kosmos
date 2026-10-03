@@ -66,11 +66,20 @@ Kosmos while it was disconnected are pushed first. To sync by hand:
 python manage.py sync_calendar
 ```
 
+An event deleted in Google Calendar is deleted in Kosmos only while it is
+**Pending** and has no edits waiting to be pushed. An event marked
+**Complete** or **Missed**, or one edited in Kosmos since the last sync, is
+kept: it is detached from Google and is not published there again.
+
 ## Google Contacts
 
-Once connected, contacts created in Kosmos are added to the connected
-Google account, and removed from it when they are deleted in Kosmos.
-There is nothing to configure.
+Once connected, each contact's page shows a cloud button. Clicking it
+copies that contact to the connected Google account, and clicking it again
+removes the copy. Nothing is copied automatically: a contact reaches Google
+only when someone clicks its button. A copied contact is updated in Google
+when it is edited in Kosmos and removed from Google when it is deleted in
+Kosmos. Changes made in Google are not brought back. There is nothing to
+configure.
 
 ## Google Drive
 

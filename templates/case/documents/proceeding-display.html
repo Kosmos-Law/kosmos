@@ -19,14 +19,14 @@
       <li>
         <a class="dropdown-item {% if not document.proceeding %}active{% endif %}"
            href="#"
-           hx-get="{% url 'case:document-proceeding' document.id 0 %}"
+           hx-post="{% url 'case:document-proceeding' document.id 0 %}"
            hx-target="#documents">-</a>
       </li>
       {% for proc in proceedings %}
         <li>
           <a class="dropdown-item {% if document.proceeding.id == proc.id %}active{% endif %}"
              href="#"
-             hx-get="{% url 'case:document-proceeding' document.id proc.id %}"
+             hx-post="{% url 'case:document-proceeding' document.id proc.id %}"
              hx-target="#documents">{{ proc.display_name }}</a>
         </li>
       {% endfor %}

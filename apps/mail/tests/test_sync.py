@@ -225,10 +225,14 @@ def test_resync_matter_link_and_unlink(matter, fake_gmail):
     assert stats["removed"] == 1
     assert Email.objects.get().gmail_id == "m2"
 
-    # Unlink: all synced rows dropped.
+    # No label: the resync leaves the matter's emails alone (a closed
+    # matter keeps them). Removing them is the Unlink action's own step.
     matter.gmail_label_name = None
     stats = google.resync_matter(matter)
-    assert stats["removed"] == 1
+    assert stats["removed"] == 0
+    assert Email.objects.count() == 1
+
+    assert google.remove_matter_emails(matter) == 1
     assert Email.objects.count() == 0
 
 

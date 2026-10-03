@@ -1,7 +1,6 @@
 from django.urls import path
 
 from apps.tasks.views import (
-    clear_tasks,
     tasks_add,
     tasks_add_note,
     tasks_add_quick,
@@ -87,7 +86,6 @@ urlpatterns = [
         name="delete-note",
     ),
     path("tasks/filter/", tasks_filter, name="filter"),
-    path("tasks/clear/", clear_tasks, name="clear"),
     path("tasks/list/", tasks_list, name="list"),
     path("tasks/view-mode/<str:mode>/", tasks_set_view_mode, name="view-mode"),
     path("tasks/board/move/", tasks_board_move, name="board-move"),

@@ -4,6 +4,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
+from apps.case.facts.sorting import (
+    filterset_sort_keys,
+    stored_sort_key,
+    with_valid_sort,
+)
+from apps.case.highlights.importance import parse_importance
 from apps.case.models import Highlight, Witness
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.management.selection import (
@@ -18,11 +24,15 @@ from apps.management.selection import (
 from .filters import WitnessesFilter
 from .forms import WitnessForm
 
+SORT_KEYS = filterset_sort_keys(WitnessesFilter)
+
 
 def get_witnesses_data(request, matter, matter_id):
     """Get witnesses data with filters applied from session."""
     filter_session_key = get_session_key("witnesses_filter", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
+    filter_data = with_valid_sort(
+        request.session.get(filter_session_key, {}), SORT_KEYS
+    )
 
     witnesses = []
     if matter:
@@ -36,9 +46,7 @@ def get_witnesses_data(request, matter, matter_id):
             witnesses = queryset
 
     # Get current sort order
-    current_order = filter_data.get("order_by", "name")
-    if isinstance(current_order, list):
-        current_order = current_order[0] if current_order else "name"
+    current_order = stored_sort_key(filter_data, SORT_KEYS, "name")
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -253,9 +261,10 @@ def bulk_witnesses_importance(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No witnesses selected.")
 
-    importance = request.POST.get("importance")
-    if importance:
-        _selected_witnesses_qs(matter, selected).update(importance=int(importance))
+    importance = parse_importance(request.POST.get("importance"))
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
+    _selected_witnesses_qs(matter, selected).update(importance=importance)
 
     clear_selected_ids(request, key)
     return selection_response("witnessesChanged")
@@ -322,18 +331,25 @@ def bulk_witnesses_affiliation(request, matter_id):
 
 
 @login_required
+@require_POST
 def witness_importance(request, witness_id, importance):
     """Set witness importance."""
     witness = get_object_or_404(Witness, pk=witness_id)
+    importance = parse_importance(importance)
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
     witness.importance = importance
     witness.save()
     return redirect("case:witnesses-list", matter_id=witness.matter_id)
 
 
 @login_required
+@require_POST
 def witness_alignment(request, witness_id, alignment):
     """Set witness alignment."""
     witness = get_object_or_404(Witness, pk=witness_id)
+    if alignment not in {value for value, _ in Witness.ALIGNMENT_CHOICES}:
+        return HttpResponse(status=400, content="Invalid alignment.")
     witness.alignment = alignment
     witness.save()
     return redirect("case:witnesses-list", matter_id=witness.matter_id)
@@ -365,20 +381,32 @@ def witnesses_filter(request, matter_id):
     filter_obj = WitnessesFilter(filter_data, queryset=queryset)
 
     return render(
-        request, "case/witnesses/filter.html", {"filter": filter_obj, "matter": matter}
+        request,
+        "case/witnesses/filter.html",
+        {
+            "filter": filter_obj,
+            "matter": matter,
+            # Restore Defaults clears this key: the filter is kept per matter.
+            "filter_session_key": filter_session_key,
+        },
     )
 
 
 @login_required
 def witnesses_sort(request, matter_id, order):
     """Sort witnesses by field, toggling asc/desc."""
+    if order not in SORT_KEYS:
+        return HttpResponse(status=400, content="Invalid sort.")
+
     filter_session_key = get_session_key("witnesses_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 
     current_order = filter_data.get("order_by", "")
 
+    # A second click on the same column reverses it, whichever direction
+    # the column starts in (importance starts highest first).
     if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
+        new_order = order[1:] if order.startswith("-") else f"-{order}"
     else:
         new_order = order
 

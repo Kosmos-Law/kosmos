@@ -3,7 +3,7 @@
 
 Dear {{ client_name|default:"Client" }},
 
-{% if cover_message %}{{ cover_message }}{% else %}This is a friendly reminder about the form we sent you. Anything you have already filled in has been saved — the link picks up where you left off.{% endif %}
+{% if cover_message %}{{ cover_message }}{% else %}This is a friendly reminder about the form we sent you. Anything you have already filled in has been saved, and the link picks up where you left off.{% endif %}
 
 Open your form: {{ form_url }}
 

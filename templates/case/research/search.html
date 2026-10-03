@@ -5,7 +5,9 @@
   {% endif %}
 </div>
 <div id="research-results">
-  {% if active_query and active_query.status != "refined" and active_query.status != "pending" and active_query.status != "refining" %}
+  {% if active_query.status == "error" and not active_query.structured_query %}
+    {% comment %}Failed before any search ran: the message is shown above, once.{% endcomment %}
+  {% elif active_query and active_query.status != "refined" and active_query.status != "pending" and active_query.status != "refining" %}
     {% include "case/research/results.html" with query=active_query %}
   {% endif %}
 </div>

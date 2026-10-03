@@ -1,10 +1,12 @@
 from django import forms
+from django.db.models import Q
 
-from apps.accounts.access import filter_matters_for_user
 from apps.case.models import Document
 from apps.matters.models import Matter
 from apps.matters.proceedings.models import Proceeding
 from config.settings import CustomFormRendererCompact
+
+from .access import open_matters_for_user
 
 
 class ProceedingChoiceField(forms.ModelChoiceField):
@@ -58,11 +60,27 @@ class FilesForm(forms.ModelForm):
         self.renderer = CustomFormRendererCompact()
         self.matter = matter
 
-        # Populate matter choices with open matters, filtered by user access
-        queryset = Matter.objects.filter(status="Open").order_by("name")
+        # Matter choices: the Open matters the user may see, plus the matter
+        # the document is on (or is being added to) whatever its status. The
+        # field has no blank choice, so a document whose own matter were
+        # missing from the list would be moved to the first one on Submit.
+        current_id = self.instance.matter_id if self.instance.pk else None
+        if current_id is None and matter:
+            current_id = matter.pk
         if user:
-            queryset = filter_matters_for_user(queryset, user)
+            queryset = open_matters_for_user(user, include_id=current_id)
+        else:
+            queryset = Matter.objects.filter(
+                Q(status="Open") | Q(pk=current_id)
+            ).order_by("name")
         self.fields["matter"].queryset = queryset
+
+        # A document that came from Google Drive follows its folder there:
+        # the sync puts it back on the folder's matter, so its matter is
+        # shown and cannot be changed here. (A disabled field also ignores
+        # whatever is posted for it.)
+        if self.instance.pk and self.instance.is_drive_synced:
+            self.fields["matter"].disabled = True
 
         # If matter provided (new document), set it as initial
         if matter:

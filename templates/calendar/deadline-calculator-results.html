@@ -1,16 +1,22 @@
-<table class="deadline-calculator-results">
-  <tr>
-    <th>Deadline</th>
-    <td {% if not results.next_workday %}class="strong"{% endif %}>{{ results.deadline|date:"Y-m-d" }}</td>
-  </tr>
-  <tr>
-    <th>Weekday</th>
-    <td>{{ results.deadline_weekday }}</td>
-  </tr>
-  {% if results.next_workday %}
+{% if error %}
+  <ul class="errorlist">
+    <li>{{ error }}</li>
+  </ul>
+{% else %}
+  <table class="deadline-calculator-results">
     <tr>
-      <th>Next Business Day</th>
-      <td class="strong">{{ results.next_workday|date:"Y-m-d" }}</td>
+      <th>Deadline</th>
+      <td {% if not results.next_workday %}class="strong"{% endif %}>{{ results.deadline|date:"Y-m-d" }}</td>
     </tr>
-  {% endif %}
-</table>
+    <tr>
+      <th>Weekday</th>
+      <td>{{ results.deadline_weekday }}</td>
+    </tr>
+    {% if results.next_workday %}
+      <tr>
+        <th>Next Business Day</th>
+        <td class="strong">{{ results.next_workday|date:"Y-m-d" }}</td>
+      </tr>
+    {% endif %}
+  </table>
+{% endif %}

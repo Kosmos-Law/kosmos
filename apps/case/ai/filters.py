@@ -14,6 +14,8 @@ class ConversationFilter(django_filters.FilterSet):
             ("title", "title"),
             ("created_at", "created_at"),
             ("last_activity", "last_activity"),
+            # The list's AI column (Auto / Always / Never).
+            ("ai_context", "ai_context"),
         ],
         label="Order By",
     )

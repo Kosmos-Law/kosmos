@@ -1,4 +1,10 @@
-{# Shared toolbar for the matter Events tab's list and calendar views — the main calendar's toolbar minus the matter dropdown (the matter is implicit). #}
+{% comment %}
+Shared toolbar for the matter Events tab's list and calendar views: the main
+calendar's toolbar minus the matter dropdown (the matter is implicit) and the
+Filter button. That button opens the firm Calendar's filter, which this tab
+does not read; the tab filters by status (the dropdown here) and sorts by its
+column headers, and has nothing else to offer a dialog.
+{% endcomment %}
 <div class="toolbar mobile-min-toolbar">
   <div class="toolbar-left">
     <div class="filter-tools">
@@ -22,11 +28,6 @@
           <i class="icon-calendar"></i>
         </button>
       </div>
-      <button type="button"
-              hx-get="{% url 'calendar:filter' %}"
-              hx-target="#htmx-modal-container">
-        <i class="icon-list-filter with-text"></i>Filter
-      </button>
       {% include "matters/events/status-dropdown.html" %}
     </div>
   </div>

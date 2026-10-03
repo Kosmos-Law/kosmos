@@ -22,7 +22,7 @@ All are fields on `CustomUser`
 | All Matters | `perm_all_matters` | on | Off limits the user to matters they are a member of (`Matter.members`). |
 | Financial | `perm_financial` | on | |
 | Intakes | `perm_intakes` | on | |
-| Reports | `perm_reports` | on | |
+| Reports | `perm_reports` | off | The one switch that starts off: the reports show the whole firm's figures. An administrator turns it on for each user who needs it. |
 | Research | `perm_research` | on | |
 | (not in Settings) | `is_staff`, `is_superuser` | off (on from `createsuperuser`) | Django's own flags. Needed for `/admin/` in addition to the Admin role. |
 | Status | `is_active` | on | Off refuses sign-in, ends existing sessions and rejects the user's API token. |
@@ -148,13 +148,23 @@ names a record, and the record leads to a matter (`MATTER_LOOKUPS` and
 | The URL carries none of these keywords (`/case/`, `/case/no-matter/`) | Not refused here. |
 | A request with no session (including the token APIs under `/case/api/` and `/case/drafts/companion/api/`) | Not checked here. The view or its token check decides. |
 
+Outside `/matters/<id>/` and `/case/`, membership is checked in the view,
+through each application's own access module:
+
+| Area | What a restricted user gets | Location |
+|---|---|---|
+| Tasks (`/tasks/…`, the matter Tasks tab, the daily digest) | Tasks on their matters and tasks on no matter; another matter's task is refused (403); the form's matter list is theirs | `apps/tasks/access.py` |
+| Calendar (`/events/…`, the matter Events tab, the calendar feed) | Events on their matters and events on no matter; another matter's event is refused (403) | `apps/calendar/access.py` |
+| A contact's matters, and assigning a contact to a matter | Only their matters are listed; assigning to or removing from another matter is refused (403) | `apps/contacts/access.py` |
+| Time, expense and flat-fee entries | Entries on their matters | `apps/activity/access.py` |
+| Notes | Notes on their matters, and library notes | `apps/notes/access.py` |
+
 Not checked against matter membership (sign-in only):
 
 | Area | Paths | Location |
 |---|---|---|
 | Matter switcher partial | `/matters/<id>/switcher` (matter name) | `apps/matters/views.py:575` |
-| Tasks and calendar | `/tasks/…`, `/events/…` | `apps/tasks/tasks.py`, `apps/calendar/events.py` |
-| Contacts | `/contacts/…` | `apps/contacts/` |
+| Contacts (the contact's own record; contacts are firm-wide) | `/contacts/…` | `apps/contacts/` |
 | Contacts in in-app search results | `/search/…` | `apps/search/views.py` |
 | Invoicing, trust and reports (for a user who holds those flags) | `/invoicing/…`, `/reports/…` | |
 

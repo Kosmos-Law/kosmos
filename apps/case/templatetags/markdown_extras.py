@@ -2,11 +2,13 @@ import re
 
 import markdown
 from django import template
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
 
 from apps.case.notes.markdown_ext import NoteReferenceExtension
+from utils.safe_markdown import UntrustedTextExtension, restore_breaks
 
 register = template.Library()
 
@@ -106,6 +108,10 @@ def render_markdown(text):
             BluebookEllipsisExtension(),
             NoIndentedCodeExtension(),
             NoteReferenceExtension(),
+            # What is rendered here is a model's reply, or matter text shown
+            # back to the user (documents, emails): none of it may become
+            # live markup, since the result is marked safe.
+            UntrustedTextExtension(),
         ],
         extension_configs={
             # Curl quotes/apostrophes for clean copy-paste. Dashes and ellipses
@@ -122,4 +128,18 @@ def render_markdown(text):
             "pymdownx.mark": {"smart_mark": False},
         },
     )
-    return mark_safe(md.convert(text))
+    return mark_safe(restore_breaks(md.convert(text)))
+
+
+@register.filter
+def marked_excerpt(text):
+    """A search excerpt from the case-law service, with its ``<mark>`` tags
+    kept and everything else shown as text. The excerpt is someone else's
+    HTML, so it is escaped whole and only the marks are put back."""
+    if not text:
+        return ""
+    escaped = escape(text)
+    escaped = escaped.replace("&lt;mark&gt;", "<mark>").replace(
+        "&lt;/mark&gt;", "</mark>"
+    )
+    return mark_safe(escaped)

@@ -89,14 +89,13 @@ def build_service(account):
 
 
 def account_for(user):
-    """The user's own connected mailbox, else any mailbox, else None.
+    """The user's own connected mailbox, or None.
 
-    Label pickers only need *some* mailbox to read label names from (the
-    name is the contract), but prefer the user's own so a picker never
-    stalls on a colleague's expired token.
+    A label picker reads label names from a mailbox. It never falls back to
+    a colleague's: the names in someone else's mailbox are theirs, not
+    something every user of the picker should be shown.
     """
-    own = GmailAccount.objects.filter(user=user).first()
-    return own or GmailAccount.objects.order_by("id").first()
+    return GmailAccount.objects.filter(user=user).first()
 
 
 # --------------------------------------------------------------------------- #
@@ -340,9 +339,19 @@ def _remove_email(account, matter, gmail_id, stats, dry_run):
 
 def _remove_everywhere(account, gmail_id, stats, dry_run):
     """Trashed/deleted in this mailbox: drop this account's rows across all
-    matters (gmail_ids are mailbox-local, so cross-matter — not
-    cross-account — removal is what "everywhere" means)."""
-    qs = Email.objects.filter(gmail_id=gmail_id).filter(_account_scope(account))
+    label-linked matters (gmail_ids are mailbox-local, so cross-matter — not
+    cross-account — removal is what "everywhere" means).
+
+    A matter with no label is left alone. It is no longer synced: that is
+    the state of a closed matter whose emails were kept, and tidying a
+    mailbox afterwards must not empty its file.
+    """
+    qs = (
+        Email.objects.filter(gmail_id=gmail_id)
+        .filter(_account_scope(account))
+        .exclude(matter__gmail_label_name__isnull=True)
+        .exclude(matter__gmail_label_name="")
+    )
     if dry_run:
         stats["removed"] += qs.count()
         return
@@ -562,9 +571,13 @@ def resync_matter(matter):
     account resolves the (possibly new) label name to its own label id,
     ingests what's under it, and reconciles its own rows. An account that
     can't resolve the name contributes nothing — and, because this is an
-    explicit re-link, its rows from any previous label are removed. If the
-    matter is unlinked, drops all its synced emails. No-op when nothing is
-    connected. Returns a stats dict.
+    explicit re-link, its rows from any previous label are removed. No-op
+    when nothing is connected. Returns a stats dict.
+
+    A matter with no label is left exactly as it is. Having no label is the
+    normal state of a closed matter whose emails were kept, so "no label"
+    must never be read as "remove everything": removing a matter's emails
+    is its own, explicit step (``remove_matter_emails``).
     """
     if not check_credentials():
         return None
@@ -572,8 +585,6 @@ def resync_matter(matter):
     stats = _new_stats()
 
     if not matter.gmail_label_name:
-        deleted, _ = Email.objects.filter(matter=matter).delete()
-        stats["removed"] += deleted
         return stats
 
     for account in GmailAccount.objects.all():
@@ -612,6 +623,17 @@ def resync_matter(matter):
         deleted, _ = stale.delete()
         stats["removed"] += deleted
     return stats
+
+
+def remove_matter_emails(matter):
+    """Drop every synced email on the matter. Returns the number removed.
+
+    Only the Unlink action calls this, after the user has confirmed it. A
+    Document promoted from one of these emails is a separate record and
+    stays.
+    """
+    deleted, _ = Email.objects.filter(matter=matter).delete()
+    return deleted
 
 
 def resync_matter_by_id(matter_id):

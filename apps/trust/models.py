@@ -34,10 +34,29 @@ class Transaction(AuditMixin, models.Model):
         max_length=64, blank=True, default="", db_index=True
     )
     processor_status = models.CharField(max_length=20, blank=True, default="")
+    # Set on the withdrawal that a payment by Trust makes (see
+    # apps/invoicing/payments/trust.py). The two are one movement of money:
+    # deleting the payment on its own screen deletes its withdrawal. That is
+    # done there, on purpose, and not by a cascade: a trust ledger row must
+    # never disappear as a side effect (of deleting a whole matter, say).
+    payment = models.OneToOneField(
+        "invoicing.Payment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="trust_withdrawal",
+    )
     history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.description} : {self.id}"
+
+    @property
+    def fell_through(self):
+        """An online deposit the processor later returned, failed or voided.
+        One that was already confirmed is kept on the ledger for staff to
+        reconcile by hand (see pay/reconcile.py): the lists flag it."""
+        return self.processor_status in ("failed", "returned", "voided")
 
     class Meta:
         db_table = "app_trust"

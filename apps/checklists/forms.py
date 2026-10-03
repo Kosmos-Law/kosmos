@@ -39,7 +39,7 @@ class ChecklistFolderForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["name"].required = True
         self.fields["parent"].required = False
-        self.fields["parent"].empty_label = "— None (root level) —"
+        self.fields["parent"].empty_label = "None (root level)"
 
         qs = ChecklistFolder.objects.filter(depth__lt=3).order_by("name")
         if exclude_folder and exclude_folder.pk:

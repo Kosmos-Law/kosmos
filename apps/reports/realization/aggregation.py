@@ -35,7 +35,7 @@ from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.flat_fees.models import FlatFeeEntry
 from apps.activity.time.models import TimeEntry
 from apps.invoicing.applications.models import CreditApplication, PaymentApplication
-from apps.invoicing.invoices.models import Invoice
+from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
 from apps.reports.activity.aggregation import _window_months
 
 
@@ -150,6 +150,11 @@ def _invoice_facts(invoice_ids):
         remainder = final - collected - credited
         if remainder < 0:
             remainder = Decimal(0)
+        # An invoice marked Paid with nothing applied to it is from before
+        # payments were applied to invoices: it is paid in full (the same
+        # rule Invoice.amount_remaining uses).
+        if status == "PAID" and paid == 0:
+            collected, remainder = final, Decimal(0)
         if status == "DEFERRED":
             seg = DEFERRED
         elif status == "UNCOLLECTIBLE":
@@ -159,6 +164,9 @@ def _invoice_facts(invoice_ids):
         else:
             seg = OUTSTANDING
         facts[iid] = {
+            # A draft or approved invoice has not been sent: its work is
+            # still work in progress, as everywhere else in Kosmos.
+            "unsent": status in UNSENT_STATUSES,
             "net": net,
             "discount": discount,
             "collected": collected,
@@ -183,7 +191,7 @@ def build_realization_context(request):
     entries = list(
         TimeEntry.objects.filter(
             date__gte=window_start, date__lt=window_end, matter__billable=True
-        ).values("date", "hours", "rate", "comp", "invoice_id")
+        ).values("date", "hours", "rate", "comp", "invoice_id", "entered")
     )
     invoice_ids = {
         e["invoice_id"] for e in entries if not e["comp"] and e["invoice_id"]
@@ -200,11 +208,15 @@ def build_realization_context(request):
             buckets[WRITEDOWNS][idx] += fee
             continue
         if not e["invoice_id"]:
-            buckets[UNBILLED][idx] += fee
+            # Time marked Entered was billed outside Kosmos: it is not work
+            # in progress, and Kosmos cannot say what became of it, so it is
+            # left out of the report (as the Work in Progress report does).
+            if not e["entered"]:
+                buckets[UNBILLED][idx] += fee
             continue
         f = facts.get(e["invoice_id"])
-        if not f or f["net"] <= 0:
-            buckets[UNBILLED][idx] += fee  # fallback; shouldn't occur
+        if not f or f["net"] <= 0 or f.get("unsent"):
+            buckets[UNBILLED][idx] += fee
             continue
 
         share = fee / f["net"]
@@ -220,12 +232,19 @@ def build_realization_context(request):
             date__gte=window_start, date__lt=window_end, matter__billable=True
         ).values("date", "amount", "comp")
     )
+    # Comp flat fees sit in the write-downs row, but they are not hourly
+    # fees: tracked apart so the hourly rate's denominator can leave them out.
+    flat_writedowns = [Decimal(0)] * n
     for fe in flat_entries:
         amt = Decimal(fe["amount"] or 0)
         if amt <= 0 or not fe["date"]:
             continue
         idx = month_index[(fe["date"].year, fe["date"].month)]
-        buckets[WRITEDOWNS if fe["comp"] else FLATFEES][idx] += amt
+        if fe["comp"]:
+            buckets[WRITEDOWNS][idx] += amt
+            flat_writedowns[idx] += amt
+        else:
+            buckets[FLATFEES][idx] += amt
 
     # Table rows (skip wholly-empty segments) + per-month and grand totals.
     month_totals = [Decimal(0)] * n
@@ -253,7 +272,7 @@ def build_realization_context(request):
     # band, excluded from the denominator), per month and overall.
     collected = buckets[COLLECTED]
     flat = buckets[FLATFEES]
-    hourly_totals = [month_totals[i] - flat[i] for i in range(n)]
+    hourly_totals = [month_totals[i] - flat[i] - flat_writedowns[i] for i in range(n)]
     realization_cells = [
         {
             "pct": (collected[i] / hourly_totals[i] * 100)
@@ -294,6 +313,8 @@ def build_realization_context(request):
                 Decimal(e["hours"] or 0) * Decimal(e["rate"] or 0)
                 for e in entries
                 if Decimal(e["hours"] or 0) * Decimal(e["rate"] or 0) > 0
+                # Entered, uninvoiced time is left out of the report above.
+                and not (e["entered"] and not e["invoice_id"] and not e["comp"])
             ),
             Decimal(0),
         )

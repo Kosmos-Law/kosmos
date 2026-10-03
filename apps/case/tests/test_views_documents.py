@@ -144,26 +144,26 @@ class TestDocumentInlineEdit:
         assert str(document.date) == "2024-03-15"
 
     def test_edit_category(self, client_with_matter, document):
-        response = client_with_matter.get(
+        response = client_with_matter.post(
             f"/case/documents/{document.id}/category/Discovery/"
         )
-        assert response.status_code == 302  # Redirects to list
+        assert response.status_code == 200  # The refreshed list
         document.refresh_from_db()
         assert document.category == "Discovery"
 
     def test_edit_importance(self, client_with_matter, document):
-        response = client_with_matter.get(
+        response = client_with_matter.post(
             f"/case/documents/{document.id}/importance/4/"
         )
-        assert response.status_code == 302  # Redirects to list
+        assert response.status_code == 200  # The refreshed list
         document.refresh_from_db()
         assert document.importance == 4
 
     def test_edit_proceeding(self, client_with_matter, document, proceeding):
-        response = client_with_matter.get(
+        response = client_with_matter.post(
             f"/case/documents/{document.id}/proceeding/{proceeding.id}/"
         )
-        assert response.status_code == 302  # Redirects to list
+        assert response.status_code == 200  # The refreshed list
         document.refresh_from_db()
         assert document.proceeding == proceeding
 

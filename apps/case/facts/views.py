@@ -2,8 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
+from apps.case.highlights.importance import parse_importance
 from apps.case.models import Document, Fact, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.management.selection import (
@@ -15,6 +17,7 @@ from apps.management.selection import (
     toggle_id,
 )
 
+from .access import label_for_matter, source_for_fact
 from .filters import (
     LABELS_MODE_ALL,
     LABELS_MODE_ANY,
@@ -24,6 +27,9 @@ from .filters import (
 )
 from .forms import FactForm
 from .generate_pdf import generate_facts_pdf
+from .sorting import filterset_sort_keys, stored_sort_key, with_valid_sort
+
+SORT_KEYS = filterset_sort_keys(FactsFilter)
 
 
 def labels_mode_from(filter_data):
@@ -56,7 +62,9 @@ def label_filter_options(matter, filter_data):
 def get_facts_data(request, matter, matter_id):
     """Get facts data with filters applied from session."""
     filter_session_key = get_session_key("facts_filter", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
+    filter_data = with_valid_sort(
+        request.session.get(filter_session_key, {}), SORT_KEYS
+    )
 
     facts = []
     if matter:
@@ -70,9 +78,7 @@ def get_facts_data(request, matter, matter_id):
             facts = queryset
 
     # Get current sort order
-    current_order = filter_data.get("order_by", "date")
-    if isinstance(current_order, list):
-        current_order = current_order[0] if current_order else "date"
+    current_order = stored_sort_key(filter_data, SORT_KEYS, "date")
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -95,6 +101,7 @@ def get_facts_data(request, matter, matter_id):
 
     return {
         "facts": facts,
+        "facts_filter_data": filter_data,
         "selected_facts": selected_facts,
         "all_selected": all_selected,
         "label_options": label_options,
@@ -119,6 +126,33 @@ def get_facts_data(request, matter, matter_id):
             else ""
         ),
     }
+
+
+def describe_facts_filter(data):
+    """The filter in force on the Facts tab, one phrase per condition, from
+    what get_facts_data returned. Empty when every fact is shown. The sort
+    order is not a filter and is not described."""
+    filter_data = data["facts_filter_data"]
+    parts = []
+    if data["keyword"]:
+        parts.append(f'keyword "{data["keyword"]}"')
+    for key, word in (("date_start", "from"), ("date_end", "to")):
+        # Only a date the filter itself would accept is in force.
+        try:
+            day = parse_date(str(filter_data.get(key) or ""))
+        except ValueError:
+            day = None
+        if day:
+            parts.append(f"{word} {day.isoformat()}")
+    if data["active_labels"]:
+        names = [option["name"] for option in data["active_labels"]]
+        joiner = " and " if data["labels_mode"] == LABELS_MODE_ALL else " or "
+        parts.append(f"label {joiner.join(names)}")
+    if data["importance_value"] == 7:
+        parts.append("importance Highest")
+    elif data["selected_importance"]:
+        parts.append(f"importance {data['selected_importance']} or higher")
+    return parts
 
 
 @login_required
@@ -300,9 +334,10 @@ def bulk_facts_importance(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No facts selected.")
 
-    importance = request.POST.get("importance")
-    if importance:
-        _selected_facts_qs(matter, selected).update(importance=int(importance))
+    importance = parse_importance(request.POST.get("importance"))
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
+    _selected_facts_qs(matter, selected).update(importance=importance)
 
     clear_selected_ids(request, key)
     return selection_response("factsChanged")
@@ -400,7 +435,7 @@ def bulk_facts_label_action(request, matter_id):
     if not selected:
         return HttpResponse(status=400, content="No facts selected.")
 
-    label = get_object_or_404(Label, id=request.POST.get("label_id"))
+    label = label_for_matter(matter, request.POST.get("label_id"))
     action = request.POST.get("action")
     facts = _selected_facts_qs(matter, selected)
 
@@ -419,22 +454,6 @@ def bulk_facts_label_action(request, matter_id):
 
 
 @login_required
-def facts_print(request, matter_id):
-    """Print view for facts."""
-    matter, matters = get_matter_from_url(request, matter_id)
-
-    facts = []
-    if matter:
-        facts = Fact.objects.filter(matter=matter).order_by("date", "time")
-
-    context = {
-        "matter": matter,
-        "facts": facts,
-    }
-    return render(request, "case/facts/print.html", context)
-
-
-@login_required
 def facts_pdf(request, matter_id):
     """Generate PDF for facts."""
     import os
@@ -442,7 +461,15 @@ def facts_pdf(request, matter_id):
 
     matter, matters = get_matter_from_url(request, matter_id)
 
-    file = generate_facts_pdf(matter.id, request)
+    # The button sits on the filtered list, so the PDF is that list: the
+    # same facts in the same order, and it says which filter was in force.
+    data = get_facts_data(request, matter, matter_id)
+    file = generate_facts_pdf(
+        matter.id,
+        request,
+        facts=data["facts"],
+        filter_summary=describe_facts_filter(data),
+    )
 
     current_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -454,29 +481,6 @@ def facts_pdf(request, matter_id):
     os.unlink(file.name)
 
     return response
-
-
-@login_required
-def facts_edit_description(request, fact_id):
-    """Inline edit fact description."""
-    fact = get_object_or_404(Fact, pk=fact_id)
-    matter = fact.matter
-    context = {"fact": fact, "matter": matter}
-    return render(request, "case/facts/edit-description.html", context)
-
-
-@login_required
-def facts_update_description(request, fact_id):
-    """Update fact description inline."""
-    fact = get_object_or_404(Fact, pk=fact_id)
-    fact.description = request.POST.get("description")
-    fact.save()
-
-    context = {
-        "matter": fact.matter,
-        "fact": fact,
-    } | _fact_selection_context(request, fact)
-    return render(request, "case/facts/fact-row.html", context)
 
 
 @login_required
@@ -531,14 +535,12 @@ def fact_add_source(request, fact_id):
     matter = fact.matter
 
     source_type = request.POST.get("type")
-    source_id = request.POST.get("id")
+    source = source_for_fact(fact, source_type, request.POST.get("id"))
 
     if source_type == "document":
-        document = get_object_or_404(Document, pk=source_id)
-        fact.documents.add(document)
+        fact.documents.add(source)
     elif source_type == "highlight":
-        highlight = get_object_or_404(Highlight, pk=source_id)
-        fact.highlights.add(highlight)
+        fact.highlights.add(source)
 
     context = {
         "matter": matter,
@@ -557,12 +559,12 @@ def fact_remove_source(request, fact_id):
     source_type = request.POST.get("type")
     source_id = request.POST.get("id")
 
+    # Looked up among the fact's own sources, so an id from elsewhere is a
+    # plain 404 and never reveals whether that record exists.
     if source_type == "document":
-        document = get_object_or_404(Document, pk=source_id)
-        fact.documents.remove(document)
+        fact.documents.remove(get_object_or_404(fact.documents, pk=source_id))
     elif source_type == "highlight":
-        highlight = get_object_or_404(Highlight, pk=source_id)
-        fact.highlights.remove(highlight)
+        fact.highlights.remove(get_object_or_404(fact.highlights, pk=source_id))
 
     context = {
         "matter": matter,
@@ -572,9 +574,13 @@ def fact_remove_source(request, fact_id):
 
 
 @login_required
+@require_POST
 def fact_importance(request, fact_id, importance):
     """Set fact importance."""
     fact = get_object_or_404(Fact, pk=fact_id)
+    importance = parse_importance(importance)
+    if importance is None:
+        return HttpResponse(status=400, content="Invalid importance.")
     fact.importance = importance
     fact.save()
     return redirect("case:facts-list", matter_id=fact.matter_id)
@@ -615,6 +621,8 @@ def facts_filter(request, matter_id):
             "filter": filter_obj,
             "matter": matter,
             "label_options": label_filter_options(matter, filter_data),
+            # Restore Defaults clears this key: the filter is kept per matter.
+            "filter_session_key": filter_session_key,
         },
     )
 
@@ -661,13 +669,18 @@ def facts_filter_labels_mode(request, matter_id, mode):
 @login_required
 def facts_sort(request, matter_id, order):
     """Sort facts by field, toggling asc/desc."""
+    if order not in SORT_KEYS:
+        return HttpResponse(status=400, content="Invalid sort.")
+
     filter_session_key = get_session_key("facts_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 
     current_order = filter_data.get("order_by", "")
 
+    # A second click on the same column reverses it, whichever direction
+    # the column starts in (importance starts highest first).
     if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
+        new_order = order[1:] if order.startswith("-") else f"-{order}"
     else:
         new_order = order
 

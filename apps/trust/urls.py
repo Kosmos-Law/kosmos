@@ -11,7 +11,6 @@ from apps.trust.views import (
     history_index,
     order_by,
     toggle_confirmed,
-    toggle_entered,
     trust_index,
     trust_list,
 )
@@ -33,6 +32,5 @@ urlpatterns = [
     path("invoicing/trust/add/<int:client_id>", add, name="add-with-client"),
     path("invoicing/trust/<int:id>/edit", edit, name="edit"),
     path("invoicing/trust/<int:id>/delete", delete, name="delete"),
-    path("invoicing/trust/<int:id>/entered", toggle_entered, name="entered"),
     path("invoicing/trust/<int:id>/confirmed", toggle_confirmed, name="confirmed"),
 ]

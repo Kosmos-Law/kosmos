@@ -1,14 +1,15 @@
 {% load markdown_extras %}
-<form method="post"
-      action="{% url 'case:research-review-lookup' matter.id %}"
+<form hx-post="{% url 'case:research-review-lookup' matter.id %}"
+      hx-target="#research"
+      hx-swap="innerHTML"
+      hx-disabled-elt="#research-validate-submit"
       class="research-review-lookup">
-  {% csrf_token %}
   <input type="text"
          name="citation"
          placeholder="Enter a citation to review (e.g., 410 U.S. 113)"
          value="{{ lookup_citation|default:'' }}"
          required>
-  <button type="submit" class="btn btn-success">
+  <button type="submit" id="research-validate-submit" class="btn btn-success">
     <i class="icon-search"></i> Validate
   </button>
 </form>

@@ -77,6 +77,10 @@
                  hx-target="#htmx-modal-container"
                  data-bs-toggle="modal"
                  data-bs-target="#htmx-modal-container">{{ transaction.description }}</a>
+              {% if transaction.fell_through %}
+                <span class="app-badge badge-red"
+                      title="The processor reported this deposit as {{ transaction.processor_status }} after it was confirmed. The money is not in trust: correct the ledger by hand.">Returned</span>
+              {% endif %}
             </td>
             <td class="method">{{ transaction.get_method_display }}</td>
             <td class="amount">

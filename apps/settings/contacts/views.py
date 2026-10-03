@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import models
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.contacts.models import RelationshipType
 from apps.matters.models import Group, Role
@@ -115,6 +115,7 @@ def edit_role(request, role_id):
 
 
 @login_required
+@require_POST
 def delete_role(request, role_id):
     role = Role.objects.get(id=role_id)
     if role.is_system:
@@ -203,6 +204,7 @@ def edit_group(request, group_id):
 
 
 @login_required
+@require_POST
 def delete_group(request, group_id):
     group = Group.objects.get(id=group_id)
     if group.is_system:
@@ -299,6 +301,7 @@ def edit_relationship_type(request, type_id):
 
 
 @login_required
+@require_POST
 def delete_relationship_type(request, type_id):
     RelationshipType.objects.get(id=type_id).delete()
     return HttpResponse(

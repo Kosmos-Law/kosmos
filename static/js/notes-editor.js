@@ -46,7 +46,10 @@ import {
 } from "./notes/tab-state.js";
 import { setupTreeMenu } from "./notes/tree-menu.js";
 import { connectFormatToolbar } from "./format-toolbar.js";
-import { handleEditorShortcut } from "./editor-shortcuts.js";
+import {
+  handleEditorShortcut,
+  handleSurfaceShortcut,
+} from "./editor-shortcuts.js";
 import { markdownToHtml } from "./notes/markdown.js";
 import {
   TableAutoRender,
@@ -63,6 +66,7 @@ import {
   clearConflict,
   reloadNoteContent,
 } from "./notes/autosave.js";
+import { ConflictLock } from "./notes/conflict-lock.js";
 import { broadcast, setupBroadcast } from "./notes/broadcast.js";
 import {
   SearchHighlight,
@@ -233,6 +237,7 @@ function initEditor() {
       NoteRef,
       SearchHighlight,
       PlainCopy,
+      ConflictLock,
     ],
     content: initialContent,
     onUpdate() {
@@ -428,22 +433,55 @@ function setupKeyboardShortcuts() {
   if (shortcutsBound) return;
   shortcutsBound = true;
 
+  const actions = {
+    save: () => {
+      if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
+      performAutosave();
+    },
+    openReferences: openReferencePicker,
+    toggleSearch: toggleSearchBar,
+    showShortcuts: () => {
+      // The menu item that opens the dialog; clicking it takes the same
+      // htmx path a mouse click does
+      const btn = document.getElementById("shortcuts-btn");
+      if (btn) btn.click();
+    },
+  };
+
   document.addEventListener("keydown", (e) => {
     // Mid-swap gap: the old editor is destroyed and initEditor is pending
     if (!state.editor) return;
 
-    handleEditorShortcut(state.editor, e, {
-      save: () => {
-        if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
-        performAutosave();
-      },
-      openReferences: openReferencePicker,
-      toggleSearch: toggleSearchBar,
-      showShortcuts: () => {
-        const btn = document.querySelector('[title="Keyboard shortcuts"]');
-        if (btn) btn.click();
-      },
-    });
+    // The listener is on document, but the text shortcuts (formatting,
+    // headings, delete block) belong to the editor's text alone: with the
+    // caret in the title, the Find box, Search Notes or a dialog they
+    // must do nothing. The same goes for an editor that is read-only
+    // (a paused conflict), since TipTap still runs commands on one.
+    const inText = state.editor.view.dom.contains(e.target);
+    if (inText && state.editor.isEditable) {
+      handleEditorShortcut(state.editor, e, actions);
+    } else {
+      handleSurfaceShortcut(e, actions);
+    }
+  });
+}
+
+// ─── New note (panel header) ─────────────────────────────────────────────────
+
+// Bound once at startup (the button survives note switches), reading the
+// scope at click time: the library while the Library pane is showing,
+// otherwise wherever the open note lives (its matter, or the library).
+// Same instant-create request as the tree menu's New note; the
+// noteCreated trigger opens the result.
+function setupNewNoteButton() {
+  const btn = bindClick("new-note-btn", (e) => {
+    e.preventDefault();
+    const panel = document.querySelector(".note-panel-left");
+    const inLibraryPane = panel && panel.dataset.activePane === "files";
+    const url = inLibraryPane
+      ? btn.dataset.libraryAddUrl
+      : window.NOTE_DATA && window.NOTE_DATA.noteAddUrl;
+    if (url) window.htmx.ajax("POST", url, { swap: "none" });
   });
 }
 
@@ -849,6 +887,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   setupAiWriteToggle();
+  setupNewNoteButton();
   initEditor();
   setupHtmxHandlers();
   setupOutlineCollapseAll();

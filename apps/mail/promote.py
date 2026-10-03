@@ -10,6 +10,7 @@ error) can touch it, which is what makes it safe to carry highlights.
 import os
 
 from django.core.files.base import ContentFile
+from django.utils import timezone
 from django_q.tasks import async_task
 
 from apps.case.documents.mbox import (
@@ -60,7 +61,9 @@ def promote_email(email, user, base_url):
         name=(email.subject or "(no subject)")[:100],
         description=generate_email_description(metadata),
         category="Correspondence",
-        date=email.date.date() if email.date else None,
+        # The day it was sent where the firm is, not the UTC day (which is
+        # already tomorrow in the evening in US time zones).
+        date=timezone.localtime(email.date).date() if email.date else None,
         created_by=user,
     )
     document.save()

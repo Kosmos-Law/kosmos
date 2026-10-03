@@ -1,13 +1,20 @@
 <div class="note-canvas">
   {% comment %}
-  Shown when another tab saved this note under our feet (autosave 409 or
-  a broadcast from the saving tab while we're dirty). Lives inside the
-  content partial so any note switch naturally resets it.
+  Shown when this note was saved somewhere else under our feet: another
+  tab, another person, or the AI (autosave 409, or a broadcast from the
+  saving tab while we're dirty). The editor is read-only while it shows
+  (autosave.js enterConflict). Lives inside the content partial so any
+  note switch naturally resets it.
   {% endcomment %}
   <div id="note-conflict-banner" class="note-conflict-banner" hidden>
     <i class="icon-triangle-alert"></i>
-    <span>This note changed in another tab. Editing is paused.</span>
-    <button type="button" id="note-conflict-reload" class="btn-secondary">Reload latest</button>
+    <span>This note was changed somewhere else (another tab, another person or the AI). Editing is paused.</span>
+    <button type="button"
+            id="note-conflict-reload"
+            class="btn-secondary"
+            title="Loads the latest version. Text you typed here that was not saved is not kept: copy it first if you need it.">
+      Reload latest
+    </button>
   </div>
   <div class="note-header">
     <input type="text"
@@ -45,6 +52,7 @@
     autosaveUrl: "{% url 'notes:note-autosave' note.id %}",
     titleUrl: "{% url 'notes:note-title' note.id %}",
     contentPartialUrl: "{% url 'notes:note-content-partial' note.id %}",
+    noteAddUrl: "{% if note.matter_id %}{% url 'case:notes-add' note.matter_id %}{% else %}{% url 'notes:add' %}{% endif %}",
     updatedAt: "{{ note.updated_at.isoformat }}",
     aiWriteUrl: "{% url 'notes:note-ai-write' note.id %}",
     aiWriteUntil: "{% if note.ai_write_until %}{{ note.ai_write_until.isoformat }}{% endif %}",

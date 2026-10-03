@@ -72,7 +72,8 @@ its status.
 ### Add the client while you open the matter
 
 1. In **Client**, type the client's name. Two choices appear under the
-   results: **Create new contact** and **Convert an intake…**.
+   results: **Create new contact** and **Convert an intake…**. (You see
+   **Convert an intake…** only if you have the Intakes permission.)
 2. Click **Create new contact** to open **Add Contact** with the name you
    typed. Or click **Convert an intake…** and pick the intake: its name,
    address, phone and email are copied into **Add Contact**.
@@ -120,12 +121,13 @@ cluster they belong to) and a **Role** (what they are on this matter).
 2. In **Contact**, type a name and click the contact in the results.
 3. Choose a **Group** and a **Role**, then click **Assign**.
 
-The contact appears in the table. Click its group or role to open **Edit
-Assignment**: **Update** saves a change and **Remove** takes the contact
-off the matter (the contact itself is kept). Click **Groups** to add a
-group for this matter only, such as a set of co-defendants. An
-administrator maintains the firm-wide groups and roles under **Settings →
-Contacts**.
+The contact appears in the table. If the contact is already on the matter
+with the same group and role, Kosmos says so and adds nothing. Click the
+contact's group or role to open **Edit Assignment**: **Update** saves a
+change and **Remove** takes the contact off the matter (the contact
+itself is kept). Click **Groups** to add a group for this matter only,
+such as a set of co-defendants. An administrator maintains the firm-wide
+groups and roles under **Settings → Contacts**.
 
 Good to know:
 
@@ -195,6 +197,8 @@ Most users can see every matter. An administrator can limit a user to
 assigned matters only. If that is you, other matters are left out of your
 matters list, the matter switcher and the matter choices in forms, and a
 saved link to one shows "You don't have permission to access this page."
+Their tasks and events are left out of **Tasks** and the **Calendar**,
+and a contact's page lists only your matters.
 An administrator assigns matters under **Settings → Permissions**, from
 the matters that are **Pending** or **Open**.
 
@@ -213,8 +217,8 @@ The **Overview** shows the new details. You can also click the **Status**,
 |---|---|
 | **Pending** | Not yet under way. You can add tasks, events, time and expenses, but the matter is not in the matter switcher. |
 | **Open** | Active work. The matter appears everywhere. |
-| **Complete** | The work has ended and the file is being wound up, for example while a trust refund is outstanding. You can still record time and expenses. New task and event forms no longer offer the matter. |
-| **Closed** | Final. The matter is no longer offered when you add a task, event, time entry or expense elsewhere in Kosmos. You can still add time or an expense from the matter's own page. |
+| **Complete** | The work has ended and the file is being wound up, for example while a trust refund is outstanding. You can still record time and expenses. A new task or event form offers the matter only when you open the form from the matter's own page. |
+| **Closed** | Final. The matter is no longer offered when you add a task, event, time entry or expense elsewhere in Kosmos. You can still add them from the matter's own page. |
 
 ## Close a matter
 
@@ -262,4 +266,7 @@ entries, rates, invoices, payments and credits, and its list of contacts
 
 Good to know:
 
-- Trust records belong to the client and are not deleted.
+- Trust records belong to the client and are not deleted. That includes
+  the withdrawal Kosmos recorded on the client's trust ledger for a
+  payment by Trust on this matter: the payment is deleted and the
+  withdrawal stays, so the client's trust balance does not change.

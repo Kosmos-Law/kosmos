@@ -345,7 +345,6 @@ urlpatterns = [
         facts.facts_sort,
         name="facts-sort",
     ),
-    path("case/<int:matter_id>/facts/print/", facts.facts_print, name="facts-print"),
     path("case/<int:matter_id>/facts/pdf/", facts.facts_pdf, name="facts-pdf"),
     path(
         "case/<int:matter_id>/facts/toggle-select/<int:fact_id>/",
@@ -676,6 +675,11 @@ urlpatterns = [
     # Emails (matter-scoped, synced from Gmail via apps.mail)
     path("case/<int:matter_id>/emails/", mail.emails_index, name="emails-index"),
     path("case/<int:matter_id>/emails/list/", mail.emails_list, name="emails-list"),
+    path(
+        "case/<int:matter_id>/emails/list/items/",
+        mail.emails_list_items,
+        name="emails-list-items",
+    ),
     path(
         "case/<int:matter_id>/emails/label/link/",
         mail.label_link_modal,
@@ -1056,16 +1060,6 @@ urlpatterns = [
     path("case/facts/<int:fact_id>/edit/", facts.facts_edit, name="facts-edit"),
     path("case/facts/<int:fact_id>/delete/", facts.facts_delete, name="facts-delete"),
     path(
-        "case/facts/<int:fact_id>/edit-description/",
-        facts.facts_edit_description,
-        name="facts-edit-description",
-    ),
-    path(
-        "case/facts/<int:fact_id>/update-description/",
-        facts.facts_update_description,
-        name="facts-update-description",
-    ),
-    path(
         "case/facts/<int:fact_id>/sources/",
         facts.fact_sources_modal,
         name="fact-sources",
@@ -1139,11 +1133,6 @@ urlpatterns = [
         name="labels-apply-modal-action",
     ),
     path(
-        "case/labels/search/<str:object_type>/<int:object_id>/",
-        labels.labels_search,
-        name="labels-search",
-    ),
-    path(
         "case/labels/add-to/<str:object_type>/<int:object_id>/",
         labels.add_label_to,
         name="add-label-to",
@@ -1152,11 +1141,6 @@ urlpatterns = [
         "case/labels/remove-from/<str:object_type>/<int:object_id>/",
         labels.remove_label_from,
         name="remove-label-from",
-    ),
-    path(
-        "case/labels/create-and-apply/<str:object_type>/<int:object_id>/",
-        labels.labels_create_and_apply,
-        name="labels-create-and-apply",
     ),
     # AI conversation operations
     path(

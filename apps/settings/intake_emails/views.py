@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
 from apps.intakes.models import IntakeEmailTemplate
 from apps.settings.intake_emails.forms import IntakeEmailTemplateForm
@@ -56,6 +57,7 @@ def edit_email_template(request, template_id):
 
 
 @login_required
+@require_POST
 def delete_email_template(request, template_id):
     IntakeEmailTemplate.objects.get(id=template_id).delete()
     return HttpResponse(

@@ -1,10 +1,15 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from apps.accounts.access import filter_matters_for_user
 from apps.accounts.models import CustomUser
 from apps.matters.models import Matter
-from apps.tasks.constants import BULK_STATUS_CHOICES, FORM_STATUS_CHOICES
+from apps.tasks.access import matters_for_task_form
+from apps.tasks.constants import (
+    BULK_STATUS_CHOICES,
+    DESCRIPTION_MIN_LENGTH,
+    FORM_STATUS_CHOICES,
+    NO_CHANGE,
+)
 from apps.tasks.models import Task, TaskNote
 from config.settings import CustomFormRendererCompact
 
@@ -60,22 +65,29 @@ class TaskForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
+        # The matter the form was opened from: offered whatever its status.
+        include_matter = kwargs.pop("include_matter", None)
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
         self.fields["importance"].initial = 4
         # Customize user field to display title case usernames
         self.fields["user"].label_from_instance = lambda obj: obj.username.title()
         if user:
-            self.fields["matter"].queryset = filter_matters_for_user(
-                self.fields["matter"].queryset, user
+            # Built once, for the user: the same list is what the select
+            # offers and what a posted matter id is checked against.
+            self.fields["matter"].queryset = matters_for_task_form(
+                user, include_id=include_matter or self.instance.matter_id
             )
 
     def clean_description(self):
-        description = self.cleaned_data["description"]
-        if len(description) < 4:
-            raise ValidationError("Description must be 4 or more  characters.")
+        # An empty description arrives as None (the column is nullable).
+        description = self.cleaned_data.get("description") or ""
+        if len(description) < DESCRIPTION_MIN_LENGTH:
+            raise ValidationError(
+                f"Description must be {DESCRIPTION_MIN_LENGTH} or more characters."
+            )
         if len(description) > 200:
-            raise ValidationError("Description is limited to 200 character.")
+            raise ValidationError("Description is limited to 200 characters.")
         return description
 
     def clean_matter(self):
@@ -90,7 +102,7 @@ class BulkTasksForm(forms.Form):
     STATUS_CHOICES = BULK_STATUS_CHOICES
 
     IMPORTANCE_CHOICES = [
-        ("", "— No change —"),
+        ("", NO_CHANGE),
         ("7", "Highest"),
         ("6", "Higher"),
         ("5", "High"),
@@ -112,13 +124,13 @@ class BulkTasksForm(forms.Form):
     user = forms.ModelChoiceField(
         queryset=CustomUser.objects.filter(is_active=True).order_by("username"),
         required=False,
-        empty_label="— No change —",
+        empty_label=NO_CHANGE,
         label="User",
     )
     matter = forms.ModelChoiceField(
         queryset=Matter.objects.filter(status__in=["Pending", "Open"]).order_by("name"),
         required=False,
-        empty_label="— No change —",
+        empty_label=NO_CHANGE,
         label="Matter",
     )
 
@@ -129,9 +141,7 @@ class BulkTasksForm(forms.Form):
         self.renderer = CustomFormRendererCompact()
         self.fields["user"].label_from_instance = lambda obj: obj.username.title()
         if user:
-            self.fields["matter"].queryset = filter_matters_for_user(
-                self.fields["matter"].queryset, user
-            )
+            self.fields["matter"].queryset = matters_for_task_form(user)
 
 
 class TaskNoteForm(forms.ModelForm):

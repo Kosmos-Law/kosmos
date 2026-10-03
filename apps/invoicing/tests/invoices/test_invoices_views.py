@@ -96,13 +96,29 @@ def test_invoices_edit_status(client, invoice):
     response = client.post(
         reverse(
             "invoicing:invoices-edit-status",
-            kwargs={"pk": invoice.pk, "status": "PAID", "view": "list"},
+            kwargs={"pk": invoice.pk, "status": "SENT", "view": "list"},
         )
     )
     assert response.status_code == 204
 
     invoice.refresh_from_db()
-    assert invoice.status == "PAID"
+    assert invoice.status == "SENT"
+
+
+@pytest.mark.parametrize("status", ["PAID", "VOID", "anything"])
+def test_invoices_edit_status_takes_only_the_menu_statuses(client, invoice, status):
+    """Paid comes from applying payments and Void from its own action, which
+    also releases the invoice's entries; neither is set by address."""
+    before = invoice.status
+    url = reverse(
+        "invoicing:invoices-edit-status",
+        kwargs={"pk": invoice.pk, "status": status, "view": "list"},
+    )
+
+    assert client.post(url).status_code == 400
+    assert client.get(url).status_code == 405
+    invoice.refresh_from_db()
+    assert invoice.status == before
 
 
 def _edit_status(client, invoice, status):
@@ -202,3 +218,30 @@ def test_detail_nonexistent(client):
 def test_pdf_nonexistent(client):
     response = client.get(reverse("invoicing:invoices-pdf", kwargs={"pk": 99999}))
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "before, after, stored",
+    [
+        ("DRAFT", "DEFERRED", True),  # the draft's copy carries the watermark
+        ("DRAFT", "UNCOLLECTIBLE", True),
+        ("DEFERRED", "SENT", True),
+        ("SENT", "DEFERRED", False),  # the copy the client was sent is kept
+        ("SENT", "UNCOLLECTIBLE", False),
+        ("APPROVED", "DRAFT", False),
+    ],
+)
+def test_a_status_change_stores_the_pdf_only_when_it_must(
+    client, invoice, monkeypatch, before, after, stored
+):
+    calls = []
+    monkeypatch.setattr(
+        "apps.invoicing.invoices.views.store_invoice_pdf",
+        lambda invoice, request: calls.append(invoice.pk),
+    )
+    invoice.status = before
+    invoice.save()
+
+    assert _edit_status(client, invoice, after).status_code == 204
+
+    assert bool(calls) is stored

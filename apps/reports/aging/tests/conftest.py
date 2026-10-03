@@ -15,7 +15,7 @@ from apps.matters.models import Matter, PracticeArea
 @pytest.fixture
 def user():
     user = CustomUser.objects.create(
-        username="Ollie", email="testuser@example.com", user_rate=100, is_staff=True
+        username="Ollie", email="testuser@example.com", user_rate=100, perm_reports=True
     )
     user.set_password("clawboy")
     user.save()

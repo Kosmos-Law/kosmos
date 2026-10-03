@@ -36,11 +36,43 @@ document.addEventListener('click', async function(e) {
   if (confirmed) {
     // Navigate to the link's href or data-href (for buttons)
     const href = confirmLink.getAttribute('href') || confirmLink.dataset.href;
-    if (href) {
+    if (!href) return;
+    // An action that changes or deletes something is marked
+    // data-method="post": it goes as a POST with the CSRF token, which a
+    // plain link from elsewhere cannot do. Downloads stay ordinary links.
+    if ((confirmLink.dataset.method || '').toLowerCase() === 'post') {
+      postTo(href);
+    } else {
       window.location.href = href;
     }
   }
 });
+
+// The CSRF token the page was rendered with (base.html puts it on <body>
+// for htmx).
+function csrfToken() {
+  try {
+    const headers = JSON.parse(document.body.getAttribute('hx-headers') || '{}');
+    return headers['X-CSRFToken'] || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+// Navigate to a URL with POST, as a form submission would: the browser
+// follows the view's redirect.
+function postTo(url) {
+  const form = document.createElement('form');
+  form.method = 'post';
+  form.action = url;
+  const token = document.createElement('input');
+  token.type = 'hidden';
+  token.name = 'csrfmiddlewaretoken';
+  token.value = csrfToken();
+  form.appendChild(token);
+  document.body.appendChild(form);
+  form.submit();
+}
 
 // Handle buttons with data-href attribute (navigate without confirmation)
 document.addEventListener('click', function(e) {
@@ -178,9 +210,24 @@ const leader = {
 
   isEditable(el) {
     const tag = el.tagName;
-    return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
   }
 };
+
+// Text for use inside innerHTML. A matter's name or a tab's label is data,
+// and must not be read as markup.
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value == null ? '' : String(value);
+  return div.innerHTML;
+}
+
+// A confirmation prompt is open. It is not one of the dialogs that set
+// "modal-open" on the body, so it is looked for by itself.
+function confirmPromptOpen() {
+  const prompt = document.querySelector('.confirm-modal-overlay');
+  return !!prompt && prompt.offsetParent !== null;
+}
 
 // ==========================================================================
 //  Search Tab Switcher
@@ -242,7 +289,7 @@ const commandPalette = {
     this.items.forEach((item, i) => {
       const li = document.createElement('li');
       li.className = 'cmd-palette-item' + (i === 0 ? ' active' : '');
-      li.innerHTML = `<i class="${item.icon}"></i><span>${item.label}</span>`;
+      li.innerHTML = `<i class="${item.icon}"></i><span>${escapeHtml(item.label)}</span>`;
       li.addEventListener('click', () => this.select(i));
       li.addEventListener('mouseenter', () => this.highlight(i));
       list.appendChild(li);
@@ -277,7 +324,7 @@ const commandPalette = {
   },
 
   getMatterId() {
-    const match = window.location.pathname.match(/^\/(?:matters|case)\/(\d+)/);
+    const match = window.location.pathname.match(/^\/(?:matters|case)\/(?:select-matter\/)?(\d+)/);
     return match ? match[1] : null;
   },
 
@@ -408,7 +455,7 @@ const matterSwitcher = {
     this.filtered.forEach((m, i) => {
       const li = document.createElement('li');
       li.className = 'cmd-palette-item' + (i === this.activeIndex ? ' active' : '');
-      li.innerHTML = `<i class="icon-briefcase-business"></i><span>${m.name}</span>`;
+      li.innerHTML = `<i class="icon-briefcase-business"></i><span>${escapeHtml(m.name)}</span>`;
       li.addEventListener('click', () => this.select(i));
       li.addEventListener('mouseenter', () => this.highlight(i));
       list.appendChild(li);
@@ -562,7 +609,7 @@ const navSwitcher = {
       const li = document.createElement('li');
       li.className = 'cmd-palette-item' + (i === this.activeIndex ? ' active' : '');
       const icon = item.group === 'Nav' ? 'icon-layout-grid' : 'icon-columns-2';
-      li.innerHTML = `<i class="${icon}"></i><span>${item.label}</span><span class="cmd-palette-group">${item.group}</span>`;
+      li.innerHTML = `<i class="${icon}"></i><span>${escapeHtml(item.label)}</span><span class="cmd-palette-group">${escapeHtml(item.group)}</span>`;
       li.addEventListener('click', () => this.select(i));
       li.addEventListener('mouseenter', () => this.highlight(i));
       list.appendChild(li);
@@ -622,19 +669,28 @@ const navSwitcher = {
 // ==========================================================================
 
 function getMatterId() {
-  const match = window.location.pathname.match(/^\/(?:matters|case)\/(\d+)/);
+  const match = window.location.pathname.match(/^\/(?:matters|case)\/(?:select-matter\/)?(\d+)/);
   return match ? match[1] : null;
 }
 
 document.addEventListener('keydown', function(event) {
+  // Pages for people who are not signed in (a client's payment page, an
+  // intake form) load this file for its helpers, not for staff shortcuts.
+  if (document.body.dataset.shortcuts === 'off') return;
+
   // Let overlays handle their own keys first
   if (commandPalette.handleKeydown(event)) return;
   if (matterSwitcher.handleKeydown(event)) return;
   if (navSwitcher.handleKeydown(event)) return;
 
+  // A palette that is open owns the keyboard: a key it does not use must
+  // not act on the page behind it.
+  if (commandPalette.overlay || matterSwitcher.overlay || navSwitcher.overlay) return;
+
   // Skip all shortcut handling when in editable fields or modals
   if (leader.isEditable(event.target)) return;
   if (document.body.classList.contains('modal-open')) return;
+  if (confirmPromptOpen()) return;
 
   // Space — activate leader key
   if (event.key === ' ' && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -652,7 +708,7 @@ document.addEventListener('keydown', function(event) {
       'n': () => commandPalette.open(),
       'm': () => matterSwitcher.open(),
       'g': () => navSwitcher.open(),
-      'b': () => document.getElementById('sidebar-toggle').click(),
+      'b': () => { const toggle = document.getElementById('sidebar-toggle'); if (toggle) toggle.click(); },
       'ff': () => htmx.ajax('GET', '/search/?scope=all', { target: '#htmx-modal-container' }),
       'fm': () => htmx.ajax('GET', '/search/?scope=matters', { target: '#htmx-modal-container' }),
       'fp': () => htmx.ajax('GET', '/search/?scope=proceedings', { target: '#htmx-modal-container' }),
@@ -673,6 +729,10 @@ document.addEventListener('keydown', function(event) {
     }
     return;
   }
+
+  // The keys below are bare letters. With Ctrl, Cmd or Alt held they are
+  // the browser's (Ctrl+C copies; it must not open the Case side).
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
 
   // i — focus the visible text input on list views
   if (event.key === 'i') {
@@ -919,6 +979,9 @@ document.addEventListener('keydown', function(event) {
                  active.tagName === 'SELECT' || active.isContentEditable)) return;
   const modal = document.getElementById('htmx-modal-container');
   if (modal && modal.childElementCount > 0) return;
+  if (document.body.dataset.shortcuts === 'off') return;
+  if (confirmPromptOpen()) return;
+  if (commandPalette.overlay || matterSwitcher.overlay || navSwitcher.overlay) return;
 
   const prev = event.key === '[';
   const host = document.querySelector('[data-cycle-next-url]');

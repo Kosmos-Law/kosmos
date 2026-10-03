@@ -139,7 +139,7 @@ request. Admin rows are shown switched on and cannot be changed.
 | **All Matters** | Access to matters they are not assigned to. See [Limit a user to certain matters](#limit-a-user-to-certain-matters). |
 | **Financial** | Everything under `/invoicing/` (invoices, unbilled work, payments, credits, payment requests, the trust ledger), the Rates and Ledger tabs of a matter, the balance and trust figures on a matter's Overview, bulk "change matter" and "comp" on time and expense lists, and the ledger, trust and invoice reads in the [Claude Desktop](integrations/claude-desktop.md) connection. |
 | **Intakes** | Everything under `/intakes/`, including the intake form builder, and the intake email templates under **Settings → Intake Emails**. |
-| **Reports** | Everything under `/reports/`, and the firm-wide breakdown in the dashboard's Unbilled Time section (they see their own figures instead). |
+| **Reports** | Everything under `/reports/`, and the firm-wide breakdown in the dashboard's Work in Progress section (they see their own figures instead). This switch starts off for a new user; the other four start on. |
 | **Research** | The Research tab in a matter's case navigation, and the research pages and actions behind it. |
 
 The server refuses these by address (HTTP 403), not only in the menus.
@@ -162,19 +162,25 @@ can open only the matters they are a member of.
    user.
 2. Click the pencil icon that appears beside the switch (**Manage matter
    access**).
-3. In the dialog, click a matter under **Open Matters** to assign it. Click
-   a matter under **Assigned** to remove it. Each click saves immediately.
+3. In the dialog, click a matter under **Pending and Open Matters** to
+   assign it. Click a matter under **Assigned** to remove it. Each click
+   saves immediately.
 4. To undo the restriction, click **Grant All Matters** in the dialog, or
    switch **All Matters** back on.
 
-The dialog lists open matters only. Creating a matter does not make its
-creator a member: a restricted user who adds a matter cannot open it until
-an admin assigns it to them.
+The dialog lists pending and open matters only. A restricted user who
+adds a matter is made a member of it, so they can open what they create.
 
 For a restricted user, Kosmos then:
 
 - leaves other matters out of the matter list, the matter switchers, and
-  the matter choices in task, time, expense, document and note forms;
+  the matter choices in task, event, time, expense, document and note
+  forms;
+- leaves other matters' tasks and events out of the task list and board,
+  the calendar and the daily digest (tasks and events on no matter stay),
+  and refuses one that is asked for directly;
+- lists only their matters on a contact's page, and refuses to assign a
+  contact to, or remove one from, another matter;
 - answers HTTP 403 for another matter's pages under `/matters/<id>/`;
 - answers HTTP 403 for anything in another matter's case workspace under
   `/case/`: its documents (including downloads and the viewer),
@@ -191,12 +197,11 @@ For a restricted user, Kosmos then:
 
 !!! warning
 
-    Matter membership is not a complete wall. The task list, the calendar
-    and contacts are not filtered by membership. A restricted user can
-    therefore see that another matter exists, its name, and the tasks and
-    events entered for it. A user who also holds **Financial** or
-    **Reports** sees every matter's invoices and reports. Do not use this
-    setting as an ethical screen between people inside the firm.
+    Matter membership is not a complete wall. Contacts are firm-wide: a
+    restricted user can open any contact, including another matter's
+    client. A user who also holds **Financial** or **Reports** sees every
+    matter's invoices and reports. Do not use this setting as an ethical
+    screen between people inside the firm.
 
 ## Settings on one user that affect others
 

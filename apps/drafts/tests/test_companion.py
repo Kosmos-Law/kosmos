@@ -3,6 +3,7 @@
 import base64
 import io
 import json
+import re
 import zipfile
 
 import pytest
@@ -147,6 +148,27 @@ def test_oxt_download_is_personalized_zip(client, user, settings):
     config = json.loads(archive.read("config.json"))
     assert config["server"] == "https://kosmos.example"
     assert config["token"] == CompanionToken.for_user(user).key
+    # The version is declared twice: LibreOffice reads description.xml,
+    # the extension's Status message and the setup dialog read the server's.
+    assert config["version"] == companion.EXTENSION_VERSION
+    declared = re.search(
+        r'<version value="([^"]+)"/>', archive.read("description.xml").decode()
+    )
+    assert declared.group(1) == companion.EXTENSION_VERSION == "0.4.0"
+
+
+def test_setup_dialog_names_the_version_and_how_to_update(client):
+    html = client.get("/case/drafts/companion/setup/").content.decode()
+    assert f"Current version: {companion.EXTENSION_VERSION}" in html
+    assert "install it over the" in html
+
+
+def test_sessions_name_the_file_and_the_conversation(api, link):
+    """So the extension can tell apart links to different files of one
+    name, and say which matter and conversation each belongs to."""
+    data = json.loads(api.get("/case/drafts/companion/api/sessions/").content)
+    assert data["sessions"][0]["conversation"] == "Drafting the motion"
+    assert data["sessions"][0]["file"] == "file1"
 
 
 @pytest.fixture

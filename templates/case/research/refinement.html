@@ -59,6 +59,17 @@
       <span>Refining query...</span>
     </div>
   </div>
+{% elif query.status == "error" and not query.structured_query %}
+  {% comment %}
+  The run failed before any search was proposed, so there are no results
+  to load and nothing below would say why the screen went quiet.
+  {% endcomment %}
+  <div class="research-refinement-card">
+    <div class="research-error">
+      <i class="icon-alert-triangle"></i>
+      {{ query.error_message|default:"The search could not be prepared. Run it again." }}
+    </div>
+  </div>
 {% elif query.structured_query %}
   <div class="research-refinement-card"
        hx-get="{% url 'case:research-results' matter.id query.id %}"

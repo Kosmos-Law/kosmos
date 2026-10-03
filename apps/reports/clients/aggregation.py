@@ -96,7 +96,15 @@ def build_clients_context(request):
     if sort_by == "client_name":
         client_data.sort(key=lambda x: x["client_name"].lower(), reverse=reverse_sort)
     else:
-        client_data.sort(key=lambda x: x[sort_by], reverse=reverse_sort)
+        # The sort column arrives in the address: one that is not a column
+        # of the table falls back to the client's name.
+        if client_data and sort_by not in client_data[0]:
+            sort_by = "client_name"
+            client_data.sort(
+                key=lambda x: x["client_name"].lower(), reverse=reverse_sort
+            )
+        else:
+            client_data.sort(key=lambda x: x[sort_by], reverse=reverse_sort)
 
     # Donut: top N clients by billings, with the rest folded into "All others".
     ranked = sorted(

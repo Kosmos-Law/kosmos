@@ -14,6 +14,7 @@ problems answer 200 with an error fragment swapped into #drive-folder-error.
 
 import logging
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
@@ -54,15 +55,33 @@ def _other_linked_matters(matter):
     )
 
 
-def _root_folder_rows(matter):
-    """Folders under the Drive root, marking those linked to other matters."""
+def _matter_name_for(user, matter):
+    """What to call another matter that holds a folder: its name when the
+    user is on that matter, otherwise "another matter"."""
+    if user.has_matter_access(matter):
+        return str(matter)
+    return "another matter"
+
+
+def _root_folder_rows(matter, user):
+    """Folders under the Drive root, marking those linked to other matters.
+
+    ``taken_by`` is what the dialog shows after "linked to": a matter the
+    user is not on is not named.
+    """
     others = list(_other_linked_matters(matter))
     by_id = {m.drive_folder_id: m for m in others if m.drive_folder_id}
     by_name = {m.drive_folder: m for m in others if m.drive_folder}
     rows = []
     for folder in drive_google.list_root_folders():
         taken = by_id.get(folder["id"]) or by_name.get(folder["name"])
-        rows.append({"id": folder["id"], "name": folder["name"], "taken_by": taken})
+        rows.append(
+            {
+                "id": folder["id"],
+                "name": folder["name"],
+                "taken_by": _matter_name_for(user, taken) if taken else None,
+            }
+        )
     return rows
 
 
@@ -200,7 +219,7 @@ def drive_folder_modal(request, matter_id):
     root_folders = []
     rows, live = [], None
     if linked:
-        root_folders = _root_folder_rows(matter)
+        root_folders = _root_folder_rows(matter, request.user)
         service, root_id = _service_and_root()
         if service and root_id and matter.drive_folder and not matter.drive_folder_id:
             # Link made before folder ids were stored: resolve it now.
@@ -213,6 +232,7 @@ def drive_folder_modal(request, matter_id):
     context = {
         "matter": matter,
         "linked": linked,
+        "drive_root_name": settings.DRIVE_NOTES_ROOT,
         "root_folders": root_folders,
         "current_folder_id": matter.drive_folder_id,
         "current_folder_name": matter.drive_folder,
@@ -311,7 +331,8 @@ def drive_folder_save(request, matter_id):
     clash = _other_linked_matters(matter).filter(drive_folder_id=folder_id).first()
     if clash:
         return _error(
-            f'"{clash.drive_folder}" is already linked to {clash}. Unlink it there first.'
+            f'"{clash.drive_folder}" is already linked to '
+            f"{_matter_name_for(request.user, clash)}. Unlink it there first."
         )
 
     service, root_id = _service_and_root()
@@ -330,7 +351,8 @@ def drive_folder_save(request, matter_id):
     )
     if name_clash:
         return _error(
-            f'"{folder_meta.get("name")}" is already linked to {name_clash}. Unlink it there first.'
+            f'"{folder_meta.get("name")}" is already linked to '
+            f"{_matter_name_for(request.user, name_clash)}. Unlink it there first."
         )
 
     proceedings = _proceedings(matter)

@@ -1,7 +1,8 @@
 """Views for linking a draft to a case AI conversation.
 
-The chat window's paperclip button opens the picker (the matter's Drive ODT
-files); choosing one creates the DraftLink and the chip partial swaps in.
+The chat window's draft button (the pen in the input row) opens the picker
+(the matter's Drive ODT files); choosing one creates the DraftLink and the
+chip partial swaps in.
 The companion setup modal (extension download) is reachable from the picker.
 """
 
@@ -14,14 +15,29 @@ from django.views.decorators.http import require_http_methods
 
 from apps.case.ai.models import Conversation
 from apps.drafts import services
+from apps.drafts.companion import EXTENSION_VERSION
 from apps.drafts.models import CompanionToken
 from apps.drive import google
+from utils.toasts import toast_error
 
 logger = logging.getLogger(__name__)
 
 
 def _get_conversation(conv_id):
-    return get_object_or_404(Conversation.objects.select_related("matter"), pk=conv_id)
+    """A matter conversation. Membership of its matter is checked centrally
+    from the URL; an intake or agenda chat (no matter, so that check passes
+    it) has no drafts and is not found here."""
+    return get_object_or_404(
+        Conversation.objects.select_related("matter"),
+        pk=conv_id,
+        matter__isnull=False,
+    )
+
+
+def _link_refused(message):
+    """Leave the chip as it is and say why. 204 keeps HTMX from swapping
+    an empty body into the chip; the toast carries the reason."""
+    return toast_error(HttpResponse(status=204), message, title="Draft not linked")
 
 
 def _chip_response(request, conversation):
@@ -63,7 +79,7 @@ def draft_link(request, conv_id):
     try:
         services.create_link(conversation, drive_file_id)
     except services.DraftError as exc:
-        return HttpResponse(str(exc), status=502)
+        return _link_refused(str(exc))
     conversation.refresh_from_db()
     return _chip_response(request, conversation)
 
@@ -97,5 +113,8 @@ def draft_companion_setup(request):
     return render(
         request,
         "case/ai/companion-setup.html",
-        {"token": CompanionToken.for_user(request.user)},
+        {
+            "token": CompanionToken.for_user(request.user),
+            "extension_version": EXTENSION_VERSION,
+        },
     )

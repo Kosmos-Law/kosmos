@@ -52,7 +52,7 @@ class NoteFolderForm(forms.ModelForm):
         self.matter = matter
         self.fields["name"].required = True
         self.fields["parent"].required = False
-        self.fields["parent"].empty_label = "— None (root level) —"
+        self.fields["parent"].empty_label = "None (root level)"
 
         qs = NoteFolder.objects.filter(depth__lt=3, matter=matter).order_by("name")
         if exclude_folder and exclude_folder.pk:

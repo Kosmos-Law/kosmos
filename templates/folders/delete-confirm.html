@@ -12,6 +12,9 @@
       <p>Delete folder "{{ folder.name }}"?</p>
       {% if contact_count > 0 %}
         <p>This folder contains {{ contact_count }} contact{{ contact_count|pluralize }}.</p>
+        <p>
+          Keep the contacts and they move to Unsorted. Delete them and they are gone for good, except any that are clients or have trust activity: those are always kept.
+        </p>
       {% endif %}
     </div>
     <div class="modal-footer">
@@ -21,7 +24,7 @@
                 class="btn btn-success">Keep Contacts</button>
         <button hx-delete="{% url 'folders:delete' folder.id %}?delete_contacts=true"
                 hx-target="#folders"
-                class="btn-icon">Delete</button>
+                class="btn btn-danger">Delete Folder and Contacts</button>
       {% else %}
         <button hx-delete="{% url 'folders:delete' folder.id %}"
                 hx-target="#folders"

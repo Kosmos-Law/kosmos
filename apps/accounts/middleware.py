@@ -39,7 +39,16 @@ class PermissionMiddleware:
     # the tab in the navigation is not a gate: the URL has to refuse too.
     PERMISSION_PATTERNS = [
         (re.compile(r"^/matters/\d+/(rates|ledger)(/|$)"), "perm_financial"),
-        (re.compile(r"^/case/(\d+/)?(tab/)?research/"), "perm_research"),
+        # Saved cases and the case viewer belong to the Research tab: they
+        # are reached only from it, under /case/<matter>/caselaws/,
+        # /case/caselaws/<case>/ and /case/<matter>/viewer/cluster/<id>/.
+        (
+            re.compile(
+                r"^/case/(\d+/)?(tab/)?(research|caselaws)/"
+                r"|^/case/\d+/viewer/cluster/"
+            ),
+            "perm_research",
+        ),
     ]
 
     # Where matter membership is enforced from the URL alone. /matters/ and

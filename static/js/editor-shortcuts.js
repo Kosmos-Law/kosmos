@@ -6,6 +6,13 @@
 // untouched. The caller owns the binding scope: the notes editor binds on
 // document (its editor is the whole page), the prompt modal binds on the
 // modal root so the listener dies with the modal.
+//
+// Two tiers. handleEditorShortcut acts on the editor's text (formatting,
+// headings, delete block), so a caller bound wider than the editor must
+// only call it while focus is in that text: Ctrl+D with the caret in a
+// title or search box must not delete a paragraph of the note.
+// handleSurfaceShortcut is the part that is safe from anywhere on the
+// surface (save, search bar, shortcuts dialog).
 
 const HEADING_KEYS = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 };
 const FKEY_HEADINGS = { F2: 2, F3: 3, F4: 4 };
@@ -26,9 +33,40 @@ const HIGHLIGHT_COLORS = {
   6: "mark-orange",
 };
 
+// Surface-level actions: they change nothing in the text, so they work
+// wherever focus is. Returns true when the event was handled.
+export function handleSurfaceShortcut(e, actions = {}) {
+  const mod = e.ctrlKey || e.metaKey;
+
+  // Save: Ctrl+S
+  if (mod && e.key === "s" && actions.save) {
+    e.preventDefault();
+    actions.save();
+    return true;
+  }
+
+  // Show shortcuts: Ctrl+?
+  if (mod && e.key === "?" && actions.showShortcuts) {
+    e.preventDefault();
+    actions.showShortcuts();
+    return true;
+  }
+
+  // Search and replace: Ctrl+H
+  if (mod && e.key === "h" && actions.toggleSearch) {
+    e.preventDefault();
+    actions.toggleSearch();
+    return true;
+  }
+
+  return false;
+}
+
 // Returns true when the event was handled (and defaultPrevented).
 export function handleEditorShortcut(editor, e, actions = {}) {
   const mod = e.ctrlKey || e.metaKey;
+
+  if (handleSurfaceShortcut(e, actions)) return true;
 
   // Tab inside code blocks
   if (e.key === "Tab" && !mod && editor.isActive("codeBlock")) {
@@ -52,13 +90,6 @@ export function handleEditorShortcut(editor, e, actions = {}) {
     } else {
       editor.chain().focus().insertContent("    ").run();
     }
-    return true;
-  }
-
-  // Save: Ctrl+S
-  if (mod && e.key === "s" && actions.save) {
-    e.preventDefault();
-    actions.save();
     return true;
   }
 
@@ -133,13 +164,6 @@ export function handleEditorShortcut(editor, e, actions = {}) {
     return true;
   }
 
-  // Show shortcuts: Ctrl+?
-  if (mod && e.key === "?" && actions.showShortcuts) {
-    e.preventDefault();
-    actions.showShortcuts();
-    return true;
-  }
-
   // Highlight shortcuts: Alt+key
   const lowerKey = e.key.toLowerCase();
   if (e.altKey && !mod && lowerKey in HIGHLIGHT_COLORS) {
@@ -157,13 +181,6 @@ export function handleEditorShortcut(editor, e, actions = {}) {
   if (e.altKey && !mod && (lowerKey === "c" || e.key === "`")) {
     e.preventDefault();
     editor.chain().focus().unsetHighlight().run();
-    return true;
-  }
-
-  // Search and replace: Ctrl+H
-  if (mod && e.key === "h" && actions.toggleSearch) {
-    e.preventDefault();
-    actions.toggleSearch();
     return true;
   }
 

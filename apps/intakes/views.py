@@ -1,20 +1,23 @@
 from datetime import datetime
 
-import markdown
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
-from apps.contacts.models import Contact
+from apps.intakes.access import contact_for_intake
 from apps.intakes.assess import assessment_html
 from apps.intakes.client_forms.models import submissions_for_intake
-from apps.intakes.filter_intakes import IntakeFilter
+from apps.intakes.filter_intakes import ORDER_FIELDS, IntakeFilter
 from apps.intakes.forms import IntakeForm, NoteForm
 from apps.intakes.intakes import get_table_data
 from apps.intakes.models import Intake, Note, UserIntakeView
 from apps.matters.models import PracticeArea
+from utils.safe_markdown import render_markdown
+from utils.toasts import toast_error
 
 # The website's client questionnaire arrives as a Markdown table (see
 # api_views.receive_intake), and python-markdown only renders those with the
@@ -23,11 +26,14 @@ NOTE_MARKDOWN_EXTENSIONS = ["tables"]
 
 
 def render_note_markdown(notes):
-    """Render each note's Markdown body for display. `details` is nullable, so
-    an empty note must not reach markdown.markdown() as None."""
+    """Render each note's Markdown body for display.
+
+    A note's text may come from outside the firm (a forwarded email, a
+    website inquiry) and the template emits it with |safe, so it goes
+    through render_markdown, which lets no markup in the text through."""
     for note in notes:
-        note.details = markdown.markdown(
-            note.details or "", extensions=NOTE_MARKDOWN_EXTENSIONS
+        note.details = render_markdown(
+            note.details, extensions=NOTE_MARKDOWN_EXTENSIONS
         )
     return notes
 
@@ -96,6 +102,11 @@ def quick_filter_all(request):
 
 @login_required
 def order_by(request, order):
+    # Only a sort the filter knows. Anything else used to sit in the session,
+    # sort nothing, and open the Filter dialog on a validation error.
+    if order.lstrip("-") not in ORDER_FIELDS:
+        return HttpResponseBadRequest("Unknown sort order.")
+
     filter_data = request.session.get("intake_filter", {})
 
     current_order = filter_data.get("order_by", "")
@@ -131,10 +142,7 @@ def detail_index(request, id):
     )
 
     # check whether the intake has been added to contacts
-    try:
-        contact = Contact.objects.filter(intake=intake).get()
-    except ObjectDoesNotExist:
-        contact = None
+    contact = contact_for_intake(intake)
 
     practice_areas = PracticeArea.objects.filter(is_active=True).order_by("name")
 
@@ -163,10 +171,7 @@ def detail(request, id):
     )
 
     # check whether the intake has been added to contacts
-    try:
-        contact = Contact.objects.filter(intake=intake).get()
-    except ObjectDoesNotExist:
-        contact = None
+    contact = contact_for_intake(intake)
 
     practice_areas = PracticeArea.objects.filter(is_active=True).order_by("name")
 
@@ -238,9 +243,14 @@ def edit(request, id):
 
 
 @login_required
+@require_POST
 def delete(request, id):
     intake = get_object_or_404(Intake, pk=id)
-    intake.delete()
+    # The notes go with it. The database only detaches them (SET_NULL), which
+    # left them stored with no intake and no screen that could reach them.
+    with transaction.atomic():
+        Note.objects.filter(intake=intake).delete()
+        intake.delete()
     return redirect("/intakes")
 
 
@@ -313,6 +323,7 @@ def edit_note(request, id):
 
 
 @login_required
+@require_POST
 def delete_note(_, id):
     Note.objects.filter(pk=id).delete()
 
@@ -320,8 +331,13 @@ def delete_note(_, id):
 
 
 @login_required
+@require_POST
 def intake_edit_status(request, pk, status):
     intake = get_object_or_404(Intake, pk=pk)
+
+    # The status arrives in the URL: only the statuses the form offers.
+    if status not in dict(IntakeForm.Meta.STATUSES):
+        return HttpResponseBadRequest("Unknown status.")
 
     intake.status = status
     intake.save()
@@ -332,8 +348,15 @@ def intake_edit_status(request, pk, status):
 
 
 @login_required
+@require_POST
 def intake_edit_importance(request, pk, importance):
     intake = get_object_or_404(Intake, pk=pk)
+    # The number arrives in the URL: hold it to the model's own range
+    # (Lowest to Highest), which save() does not check.
+    try:
+        Intake._meta.get_field("importance").run_validators(importance)
+    except ValidationError:
+        return HttpResponseBadRequest("Unknown importance.")
     intake.importance = importance
     intake.save(update_fields=["importance"])
     # Both surfaces show importance: the list and the detail sidebar
@@ -343,6 +366,7 @@ def intake_edit_importance(request, pk, importance):
 
 
 @login_required
+@require_POST
 def intake_edit_practice_area(request, pk, practice_area_id):
     intake = get_object_or_404(Intake, pk=pk)
     practice_area = get_object_or_404(PracticeArea, pk=practice_area_id)
@@ -364,13 +388,26 @@ def value_edit(request, pk):
 
 
 @login_required
+@require_POST
 def value_update(request, pk):
     intake = get_object_or_404(Intake, pk=pk)
-    value = request.POST.get("value", "")
-    intake.value = int(value) if value else None
-    intake.save()
-    context = {"intake": intake}
-    return render(request, "intakes/value-display.html", context)
+    value = request.POST.get("value", "").strip()
+    problem = None
+    if not value:
+        intake.value = None
+    else:
+        # A whole number the column can hold. Anything else leaves the value
+        # as it was: the display comes back unchanged, with the reason.
+        try:
+            number = int(value)
+            Intake._meta.get_field("value").run_validators(number)
+            intake.value = number
+        except (ValueError, ValidationError):
+            problem = "Value must be a whole number, with no commas or cents."
+    if not problem:
+        intake.save()
+    response = render(request, "intakes/value-display.html", {"intake": intake})
+    return toast_error(response, problem) if problem else response
 
 
 @login_required

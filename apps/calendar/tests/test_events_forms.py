@@ -28,11 +28,11 @@ def test_description_too_short(matter, event_data):
 def test_description_too_long(matter, event_data):
     data = event_data.copy()
     data["matter"] = matter.id
-    data["description"] = "a" * 201  # 201 chars, max is 200
+    data["description"] = "a" * 256  # 256 chars, max is 255
     form = EventForm(data)
     assert not form.is_valid()
     assert "description" in form.errors
-    assert "200 character" in form.errors["description"][0]
+    assert "255 characters" in form.errors["description"][0]
 
 
 # -----------------------------------------------------

@@ -30,6 +30,11 @@
          hx-trigger="notesChanged from:body, visibilitychange[document.visibilityState === 'visible'] from:document"
          hx-get="{% url 'case:notes-list' matter.id %}"
          hx-target="this">{% include tab_template %}</div>
+  {% elif subapp == "emails" %}
+    <div id="emails"
+         hx-trigger="emailsChanged from:body"
+         hx-get="{% url 'case:emails-list' matter.id %}"
+         hx-target="this">{% include tab_template %}</div>
   {% elif subapp == "labels" %}
     <div id="labels"
          hx-trigger="labelsChanged from:body"
@@ -44,6 +49,11 @@
     <div id="ai-conversations"
          hx-trigger="conversationsChanged from:body"
          hx-get="{% url 'case:ai-list' matter.id %}"
+         hx-target="this">{% include tab_template %}</div>
+  {% elif subapp == "research" %}
+    <div id="research"
+         hx-trigger="researchChanged from:body"
+         hx-get="{% url 'case:research-list' matter.id %}"
          hx-target="this">{% include tab_template %}</div>
   {% else %}
     {% include tab_template %}

@@ -17,6 +17,9 @@ import json
 import logging
 import re
 import time
+from datetime import timedelta
+
+from django.utils import timezone
 
 from apps.drafts.models import CompanionRound
 from apps.drive.redline import (
@@ -30,10 +33,18 @@ logger = logging.getLogger(__name__)
 
 DRAFT_EDITS_RE = re.compile(r"```draft-edits\s*\n(.*?)```", re.DOTALL)
 
-# How long the worker waits for a connected companion to apply a round. The
-# extension polls every ~2.5 s and application itself is sub-second, so a
-# healthy companion answers well inside this.
+# How long the worker waits for a connected companion to pick a round up.
+# The extension polls every ~2.5 s, so a healthy companion collects it well
+# inside this. A round nobody collected is expired, and is then never
+# handed out.
 COMPANION_WAIT_SECONDS = 30
+# Once a companion has the round, how long the worker waits for its outcome.
+# Application is usually sub-second, but the edits are then in the user's
+# document whether or not this wait has run out, so it is generous: giving
+# up early is what told users "not applied" about edits that were. The
+# clock starts when the round is collected and restarts when the extension
+# claims it (0.4.0 and later claim just before applying).
+COMPANION_APPLY_SECONDS = 90
 
 DRAFT_PREAMBLE = """A DRAFT DOCUMENT is linked to this conversation (a work in progress,
 not a filed or executed instrument). The attorney has it open in
@@ -199,12 +210,7 @@ def _apply_via_companion(link, edits):
     round_ = CompanionRound.objects.create(
         link=link, edits=[edit_to_dict(e) for e in edits]
     )
-    deadline = time.monotonic() + COMPANION_WAIT_SECONDS
-    while time.monotonic() < deadline:
-        time.sleep(0.5)
-        round_.refresh_from_db()
-        if round_.status != "pending":
-            break
+    _wait_for_companion(round_)
 
     if round_.status == "applied":
         count = len(edits)
@@ -223,11 +229,58 @@ def _apply_via_companion(link, edits):
             f"**The proposed edits were not applied** ({detail}). "
             "The document is unchanged."
         )
-    round_.status = "expired"
-    round_.save(update_fields=["status"])
-    logger.warning("Companion round %s expired for link %s", round_.id, link.id)
+    logger.warning(
+        "Companion round %s expired for link %s (%s)",
+        round_.id,
+        link.id,
+        "collected, no outcome reported" if round_.delivered_at else "not collected",
+    )
+    if round_.delivered_at is None:
+        return (
+            "**The proposed edits were not applied**: the LibreOffice companion "
+            "did not respond in time. Check that the document is still open and "
+            "connected, then ask again."
+        )
     return (
-        "**The proposed edits were not applied**: the LibreOffice companion "
-        "did not respond in time. Check that the document is still open and "
+        "**The proposed edits could not be confirmed**: the LibreOffice "
+        "companion collected them but did not report back in time. Look at "
+        "the document: if the tracked changes are there, they were applied. "
+        "If they are not, check that the document is still open and "
         "connected, then ask again."
     )
+
+
+def _wait_for_companion(round_):
+    """Block until the round has an outcome, or expire it.
+
+    Two clocks. A round no companion has collected expires after
+    COMPANION_WAIT_SECONDS; api_ops will not hand out an expired round, so
+    "not applied" is then true. A collected round is in the extension's
+    hands and gets COMPANION_APPLY_SECONDS from its delivered_at stamp.
+
+    Each expiry is a conditional update, so a companion that collects or
+    claims the round at the same moment wins and the wait goes on.
+    """
+    pickup_deadline = time.monotonic() + COMPANION_WAIT_SECONDS
+    # A ceiling on the whole wait, whatever a misbehaving client stamps.
+    hard_deadline = pickup_deadline + 2 * COMPANION_APPLY_SECONDS
+    pending = CompanionRound.objects.filter(pk=round_.pk, status="pending")
+    while True:
+        time.sleep(0.5)
+        round_.refresh_from_db()
+        if round_.status != "pending":
+            return
+        if time.monotonic() >= hard_deadline:
+            expired = pending.update(status="expired")
+        elif round_.delivered_at is None:
+            if time.monotonic() < pickup_deadline:
+                continue
+            expired = pending.filter(delivered_at__isnull=True).update(status="expired")
+        else:
+            cutoff = timezone.now() - timedelta(seconds=COMPANION_APPLY_SECONDS)
+            if round_.delivered_at > cutoff:
+                continue
+            expired = pending.filter(delivered_at__lte=cutoff).update(status="expired")
+        if expired:
+            round_.refresh_from_db()
+            return

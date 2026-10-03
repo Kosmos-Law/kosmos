@@ -254,6 +254,21 @@ class TestConversationListFilter:
             )
         return conv
 
+    def test_sort_by_the_ai_column(self, client, matter, user):
+        """The AI column's sort button: its key has to be one the filter
+        orders by, or the click changes nothing."""
+        for title, state in (("A", "never"), ("B", "always"), ("C", "auto")):
+            conv = self._conv(matter, user, title)
+            conv.ai_context = state
+            conv.save()
+
+        def order():
+            response = client.get(f"/case/{matter.id}/ai/sort/ai_context/", follow=True)
+            return [c.ai_context for c in response.context["conversations"]]
+
+        assert order() == ["never", "auto", "always"]
+        assert order() == ["always", "auto", "never"]
+
     def test_keyword_matches_title(self, client, matter, user):
         self._conv(matter, user, "Deposition prep")
         self._conv(matter, user, "Billing question")
@@ -442,6 +457,28 @@ class TestActivityLog:
         assert "Activity (2 steps)" in html
         assert "Case file gathered: 1 fact" in html
 
+    def test_error_reply_says_error_once(self, client, matter, user):
+        """The workers lead their failure message with "Error:"; the chat
+        message must not say it twice."""
+        from django.urls import reverse
+
+        from apps.case.ai.status import status_cache
+
+        conversation = Conversation.objects.create(
+            matter=matter, title="C", user=user, llm="gemini-pro-latest"
+        )
+        Message.objects.create(
+            conversation=conversation, role="user", content="Hello?", user=user
+        )
+        status_cache.set(
+            f"ai_status_{conversation.id}",
+            {"status": "error", "message": "Error: quota exceeded"},
+            timeout=60,
+        )
+        client.get(reverse("case:ai-status", args=[conversation.id]))
+        reply = conversation.messages.get(role="assistant").content
+        assert reply == "Error: Unable to get response. quota exceeded"
+
     def test_missing_status_entry_reports_interruption(self, client, matter, user):
         """A dead run (the process died and the status entry expired with
         no heartbeat left to refresh it) must not poll 'Checking...'
@@ -569,6 +606,46 @@ class TestAgentKind:
             {"kind": "research", "llm": "claude-opus", "title": "T"},
         )
         assert response.context["conversation"].kind == "classic"
+
+    def test_compose_prompt_form_carries_kind(self, client, matter, _no_worker):
+        """The expanded editor posts its own form. A first message sent
+        from it creates the conversation, so the form has to say which
+        mode the window was opened in."""
+        import re
+
+        from django.urls import reverse
+
+        response = client.get(
+            reverse("case:ai-prompt-editor", args=[matter.id]),
+            {"conversation_id": "", "llm": "claude-opus", "kind": "agent"},
+        )
+        html = response.content.decode()
+        field = re.search(r'<input type="hidden" name="kind" value="([^"]*)">', html)
+        assert field and field.group(1) == "agent"
+
+        # What that form then posts.
+        client.post(
+            reverse("case:ai-send", args=[matter.id]),
+            {
+                "conversation_id": "",
+                "llm": "claude-opus",
+                "kind": field.group(1),
+                "title": "",
+                "message": "Hello",
+            },
+        )
+        assert Conversation.objects.get().kind == "agent"
+
+    def test_chat_window_passes_kind_to_the_compose_form(self, client, matter):
+        from django.urls import reverse
+
+        response = client.get(
+            reverse("case:ai-new-conversation-view", args=[matter.id]),
+            {"kind": "agent", "llm": "claude-opus", "title": "T"},
+        )
+        html = response.content.decode()
+        assert "const kind = 'agent';" in html
+        assert "'&kind=' + kind" in html
 
     def test_modal_defaults_to_classic(self, client, matter):
         import re

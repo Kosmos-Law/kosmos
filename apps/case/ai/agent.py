@@ -20,6 +20,7 @@ heartbeat reports it).
 import logging
 import time
 
+from .access import has_financial_access, has_research_access
 from .agent_prompt import build_agent_history, build_agent_system
 from .agent_state import AgentRunState, AgentStatusWriter
 from .agent_tools import DEFAULT_BUDGET, build_agent_tools, make_agent_executor
@@ -123,13 +124,19 @@ def run_agent_request(
             f"History: {len(history)} messages; orientation ~{prompt_tokens:,} tokens"
         )
 
-        tools = build_agent_tools(budget)
+        # The tools are offered, and run, for the user who asked.
+        tools = build_agent_tools(
+            budget,
+            include_financial=has_financial_access(user),
+            include_research=has_research_access(user),
+        )
         execute_batch = make_agent_executor(
             matter,
             conversation,
             budget,
             on_event=writer.tool_event,
             is_cancelled=writer.is_cancelled,
+            user=user,
         )
         state.tool_usage = execute_batch.usage
 

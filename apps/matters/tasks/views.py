@@ -1,11 +1,10 @@
-import json
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.accounts.access import matter_access_required
 from apps.accounts.models import CustomUser
@@ -23,9 +22,11 @@ from apps.management.selection import (
 from apps.matters.models import Matter
 from apps.tasks.constants import (
     ACTIVE_STATUSES,
+    CHECKLIST_INCOMPLETE_MESSAGE,
     STATUS_BY_SLUG,
     STATUS_COMPLETE,
     STATUS_PENDING,
+    checklist_skip_message,
     coerce_status,
     status_is_custom,
 )
@@ -38,6 +39,7 @@ from apps.tasks.models import (
 )
 from apps.tasks.services import (
     detect_filter_label,
+    quick_add_refusal,
     quick_date_filters,
     refresh_date_preset,
 )
@@ -47,13 +49,22 @@ from utils.toasts import toast_warning
 TASKS_TRIGGER = "tasksListChanged"
 
 
+def filter_key(matter_id):
+    """The session key holding one matter's Tasks tab filter.
+
+    One key per matter, as the case tabs do it: a filter set on one matter
+    does not follow the user to the next.
+    """
+    return get_session_key("matter_tasks_filter", matter_id)
+
+
 def get_matter_tasks_data(request, matter_id):
     """Get filtered task data for a specific matter"""
     matter = get_object_or_404(Matter, pk=matter_id)
     today = timezone.localdate()
 
-    # Get filter data from session, but ensure it's scoped to this matter
-    filter_data = request.session.get("matter_tasks_filter", {})
+    # Each matter's Tasks tab keeps its own filter.
+    filter_data = request.session.get(filter_key(matter_id), {})
 
     # Check if we have meaningful filter data (more than just the matter key)
     has_existing_filter = any(key != "matter" for key in filter_data.keys())
@@ -72,7 +83,7 @@ def get_matter_tasks_data(request, matter_id):
             "order_by": filter_data.get("order_by", "date_due"),
             "matter": matter_id,
         }
-        filter = TasksFilter(filter_data, queryset=matter_queryset)
+        filter = TasksFilter(filter_data, queryset=matter_queryset, request=request)
         tasks = filter.qs
         user_id = filter_data.get("user")
         user_id = int(user_id) if user_id not in (None, "") else None
@@ -87,7 +98,7 @@ def get_matter_tasks_data(request, matter_id):
             "user": None,  # All users
             "focus": "",  # All focus values
         }
-        filter = TasksFilter(default_filter, queryset=matter_queryset)
+        filter = TasksFilter(default_filter, queryset=matter_queryset, request=request)
         tasks = filter.qs
         user_id = None
         focus = ""
@@ -273,10 +284,15 @@ def tasks_add(request, id):
     matter = get_object_or_404(Matter, pk=id)
 
     if request.method == "POST":
-        form = TaskForm(request.POST, user=request.user, use_required_attribute=False)
+        form = TaskForm(
+            request.POST,
+            user=request.user,
+            include_matter=matter.id,
+            use_required_attribute=False,
+        )
         if form.is_valid():
             task = form.save(commit=False)
-            task.status = STATUS_PENDING
+            task.status = task.status or STATUS_PENDING
             # The current matter is only the preset — the form's matter select
             # is live, so a task can be filed on another matter without
             # leaving this page.
@@ -292,7 +308,7 @@ def tasks_add(request, id):
             return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
     else:
         # Get the currently filtered user if available
-        filter_data = request.session.get("matter_tasks_filter", {})
+        filter_data = request.session.get(filter_key(id), {})
         user_id = filter_data.get("user")
         focus = filter_data.get("focus")
 
@@ -312,14 +328,13 @@ def tasks_add(request, id):
                 "focus": focus if focus else "Long Term",  # Default to Long Term
             },
             user=request.user,
+            include_matter=matter.id,
             use_required_attribute=False,
         )
 
-    # The current matter is preselected, but the full open list stays
-    # available so a task can be added to another matter from here.
-    form.fields["matter"].queryset = Matter.objects.filter(
-        status__in=["Pending", "Open"]
-    ).order_by("name")
+    # The current matter is preselected, but the user's other open matters
+    # stay available so a task can be added to another matter from here. The
+    # choices are the form's own: built for this user.
     users = CustomUser.objects.filter(is_active=True).order_by("username")
     form.fields["user"].queryset = users
 
@@ -337,19 +352,25 @@ def tasks_add(request, id):
 
 @login_required
 @matter_access_required
+@require_POST
 def tasks_add_quick(request, id):
     matter = get_object_or_404(Matter, pk=id)
     task = Task()
+    typed = request.POST.get("description", "")
 
     # prevent creation of tasks without a description
-    if not request.POST["description"]:
+    if not typed:
         return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
     # get filter values to auto populate task properties
-    filter_data = request.session.get("matter_tasks_filter", {})
+    filter_data = request.session.get(filter_key(id), {})
+
+    refusal = quick_add_refusal(typed)
+    if refusal:
+        return refusal
 
     # set task description and some property values
-    task.description = request.POST["description"]
+    task.description = typed
     task.status = STATUS_PENDING
     task.date_due = timezone.localdate()
     task.matter = matter  # Always assign to the current matter
@@ -396,10 +417,7 @@ def tasks_edit(request, id, task_id):
         if form.is_valid():
             task = form.save(commit=False)
             if task.status == STATUS_COMPLETE and not can_complete_task(task):
-                form.add_error(
-                    "status",
-                    "Please complete all checklist items before marking this task as done.",
-                )
+                form.add_error("status", CHECKLIST_INCOMPLETE_MESSAGE)
             else:
                 task.save()
                 return HttpResponse(
@@ -428,6 +446,7 @@ def tasks_edit(request, id, task_id):
 
 @login_required
 @matter_access_required
+@require_http_methods(["POST", "DELETE"])
 def tasks_delete(request, id, task_id):
     """Delete task for a matter"""
     matter = get_object_or_404(Matter, pk=id)
@@ -443,10 +462,17 @@ def tasks_filter(request, id):
     matter = get_object_or_404(Matter, pk=id)
 
     if request.method == "POST":
+        if request.POST.get("restore_defaults"):
+            # Restore Defaults from this tab's dialog: forget the tab's own
+            # filter (the list falls back to its defaults) and stay here. The
+            # firm-wide tasks filter is a different one and is left alone.
+            request.session[filter_key(id)] = {"matter": id}
+            return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
+
         # Merge into existing session so unmodified quick-filter state is
         # preserved; skip the CSRF token explicitly. status is multi-valued, so
         # read it via getlist (the items() loop would keep only the last box).
-        filter_data = dict(request.session.get("matter_tasks_filter", {}))
+        filter_data = dict(request.session.get(filter_key(id), {}))
         for key, val in request.POST.items():
             if key in ("csrfmiddlewaretoken", "status"):
                 continue
@@ -461,10 +487,10 @@ def tasks_filter(request, id):
             filter_data, timezone.localdate()
         )
         filter_data["matter"] = id  # Ensure matter is always set
-        request.session["matter_tasks_filter"] = filter_data
+        request.session[filter_key(id)] = filter_data
         return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
     else:
-        filter_data = request.session.get("matter_tasks_filter", {})
+        filter_data = request.session.get(filter_key(id), {})
         filter_data["matter"] = id  # Ensure matter is always set
 
         if filter_data:
@@ -478,7 +504,7 @@ def tasks_filter(request, id):
             filter_data = refresh_date_preset(filter_data, timezone.localdate())
             # Create a queryset filtered by matter
             queryset = Task.objects.filter(matter=matter)
-            filter = TasksFilter(filter_data, queryset=queryset)
+            filter = TasksFilter(filter_data, queryset=queryset, request=request)
         else:
             default_filter = {
                 "status": ACTIVE_STATUSES,
@@ -488,7 +514,7 @@ def tasks_filter(request, id):
                 "focus": "",  # All focus by default
             }
             queryset = Task.objects.filter(matter=matter)
-            filter = TasksFilter(default_filter, queryset=queryset)
+            filter = TasksFilter(default_filter, queryset=queryset, request=request)
 
         return render(
             request, "matters/tasks/filter.html", {"filter": filter, "matter": matter}
@@ -503,10 +529,10 @@ def tasks_filter_quick(request, id, quick_filter):
     if quick_filter not in presets:
         raise Http404("Unknown quick filter")
 
-    filter_data = request.session.get("matter_tasks_filter", {})
+    filter_data = request.session.get(filter_key(id), {})
     filter_data.update(presets[quick_filter])
     filter_data["matter"] = id
-    request.session["matter_tasks_filter"] = filter_data
+    request.session[filter_key(id)] = filter_data
     return HttpResponse(status=204, headers={"HX-Trigger": TASKS_TRIGGER})
 
 
@@ -514,11 +540,11 @@ def tasks_filter_quick(request, id, quick_filter):
 @matter_access_required
 def tasks_filter_user(request, id, user_id):
     """Filter tasks by user for a matter"""
-    filter_data = request.session.get("matter_tasks_filter", {})
+    filter_data = request.session.get(filter_key(id), {})
     filter_data["matter"] = id
     filter_data["user"] = user_id if user_id != 0 else None
 
-    request.session["matter_tasks_filter"] = filter_data
+    request.session[filter_key(id)] = filter_data
     return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
 
@@ -553,14 +579,14 @@ def tasks_toggle_chip(request, id, user_id):
 @matter_access_required
 def tasks_filter_focus(request, id, focus):
     """Filter tasks by focus for a matter"""
-    filter_data = request.session.get("matter_tasks_filter", {})
+    filter_data = request.session.get(filter_key(id), {})
     filter_data["matter"] = id
 
     if focus == "All":
         focus = None
 
     filter_data["focus"] = focus
-    request.session["matter_tasks_filter"] = filter_data
+    request.session[filter_key(id)] = filter_data
     return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
 
@@ -568,17 +594,18 @@ def tasks_filter_focus(request, id, focus):
 @matter_access_required
 def tasks_filter_importance(request, id, importance_value):
     """Filter tasks by importance for a matter"""
-    filter_data = request.session.get("matter_tasks_filter", {})
+    filter_data = request.session.get(filter_key(id), {})
     filter_data["matter"] = id
     # Set to None when 0 (All) is selected, otherwise use the value
     filter_data["importance"] = None if importance_value == 0 else importance_value
 
-    request.session["matter_tasks_filter"] = filter_data
+    request.session[filter_key(id)] = filter_data
     return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
 
 @login_required
 @matter_access_required
+@require_POST
 def tasks_status(request, id, task_id):
     """Toggle task status for a matter"""
     matter = get_object_or_404(Matter, pk=id)
@@ -588,14 +615,7 @@ def tasks_status(request, id, task_id):
         task.status = STATUS_PENDING
     else:
         if not can_complete_task(task):
-            response = HttpResponse(status=204)
-            response["HX-Toast"] = json.dumps(
-                {
-                    "type": "items incomplete",
-                    "message": "Please complete all checklist items before marking this task as done.",
-                }
-            )
-            return response
+            return toast_warning(HttpResponse(status=204), CHECKLIST_INCOMPLETE_MESSAGE)
         task.status = STATUS_COMPLETE
     task.save()
     return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
@@ -603,6 +623,7 @@ def tasks_status(request, id, task_id):
 
 @login_required
 @matter_access_required
+@require_POST
 def tasks_set_status(request, id, task_id, status):
     """Set task status for a matter"""
     matter = get_object_or_404(Matter, pk=id)
@@ -613,14 +634,7 @@ def tasks_set_status(request, id, task_id, status):
     if status is None:
         raise Http404("Unknown status")
     if status == STATUS_COMPLETE and not can_complete_task(task):
-        response = HttpResponse(status=204)
-        response["HX-Toast"] = json.dumps(
-            {
-                "type": "warning",
-                "message": "Please complete all checklist items before marking this task as done.",
-            }
-        )
-        return response
+        return toast_warning(HttpResponse(status=204), CHECKLIST_INCOMPLETE_MESSAGE)
     task.status = status
     task.save()
     return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
@@ -628,6 +642,7 @@ def tasks_set_status(request, id, task_id, status):
 
 @login_required
 @matter_access_required
+@require_POST
 def tasks_importance(request, id, task_id, importance):
     """Change task importance for a matter"""
     matter = get_object_or_404(Matter, pk=id)
@@ -639,23 +654,13 @@ def tasks_importance(request, id, task_id, importance):
 
 @login_required
 @matter_access_required
+@require_POST
 def tasks_user(request, id, task_id, user_id):
     """Change task user for a matter"""
     matter = get_object_or_404(Matter, pk=id)
     task = get_object_or_404(Task, pk=task_id, matter=matter)
     user = get_object_or_404(CustomUser, pk=user_id)
     task.user = user
-    task.save()
-    return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
-
-
-@login_required
-@matter_access_required
-def tasks_focus(request, id, task_id, focus):
-    """Change task focus for a matter"""
-    matter = get_object_or_404(Matter, pk=id)
-    task = get_object_or_404(Task, pk=task_id, matter=matter)
-    task.focus = focus
     task.save()
     return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
@@ -689,7 +694,7 @@ def tasks_date(request, id, task_id):
 @matter_access_required
 def tasks_filter_sort(request, id, order):
     """Sort tasks for a matter"""
-    filter_data = request.session.get("matter_tasks_filter", {})
+    filter_data = request.session.get(filter_key(id), {})
     filter_data["matter"] = id
 
     current_order = filter_data.get("order_by", "")
@@ -700,7 +705,7 @@ def tasks_filter_sort(request, id, order):
         new_order = order
 
     filter_data["order_by"] = new_order
-    request.session["matter_tasks_filter"] = filter_data
+    request.session[filter_key(id)] = filter_data
 
     # Auto-initialize custom_order values when switching to custom_order mode
     if new_order == "custom_order":
@@ -711,7 +716,9 @@ def tasks_filter_sort(request, id, order):
             # Get all matter's tasks in current display order using date_due ordering
             temp_filter_data = {**filter_data, "order_by": "date_due"}
             temp_filter = TasksFilter(
-                temp_filter_data, queryset=Task.objects.filter(matter=matter)
+                temp_filter_data,
+                queryset=Task.objects.filter(matter=matter),
+                request=request,
             )
             all_tasks = list(temp_filter.qs)
 
@@ -778,7 +785,7 @@ def tasks_bulk_update(request, id):
         return HttpResponse(status=400, content="No tasks selected.")
 
     if request.method == "POST":
-        form = BulkTasksForm(request.POST)
+        form = BulkTasksForm(request.POST, user=request.user)
 
         if form.is_valid():
             tasks = Task.objects.filter(id__in=selected_tasks, matter=matter)
@@ -788,7 +795,14 @@ def tasks_bulk_update(request, id):
             user = form.cleaned_data.get("user")
             new_matter = form.cleaned_data.get("matter")
 
+            skipped = 0
             for task in tasks:
+                # The same guard as editing one task: none of the update is
+                # applied to a task whose checklist is unfinished.
+                if status == STATUS_COMPLETE and not can_complete_task(task):
+                    skipped += 1
+                    continue
+
                 if status:
                     task.status = status
 
@@ -807,7 +821,10 @@ def tasks_bulk_update(request, id):
                 task.save()
 
             clear_selected_ids(request, key)
-            return selection_response(TASKS_TRIGGER)
+            response = selection_response(TASKS_TRIGGER)
+            if skipped:
+                toast_warning(response, checklist_skip_message(skipped))
+            return response
 
         return render(
             request,
@@ -815,7 +832,7 @@ def tasks_bulk_update(request, id):
             {"form": form, "matter": matter},
         )
 
-    form = BulkTasksForm()
+    form = BulkTasksForm(user=request.user)
     return render(
         request,
         "matters/tasks/bulk-update-modal.html",
@@ -907,13 +924,7 @@ def tasks_bulk_set_status(request, id):
             if skipped:
                 clear_selected_ids(request, key)
                 response = selection_response(TASKS_TRIGGER)
-                response["HX-Toast"] = json.dumps(
-                    {
-                        "type": "warning",
-                        "message": f"{skipped} task(s) skipped — complete their checklists first.",
-                    }
-                )
-                return response
+                return toast_warning(response, checklist_skip_message(skipped))
         else:
             tasks.update(status=status)
         clear_selected_ids(request, key)

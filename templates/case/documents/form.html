@@ -27,7 +27,15 @@
         {% if edit %}<input type="hidden" name="edit" value="true">{% endif %}
         <div class="form-group">
           <label for="{{ form.matter.id_for_label }}">{{ form.matter.label }}</label>
-          <div>{{ form.matter }}{{ form.matter.errors }}</div>
+          <div>
+            {{ form.matter }}{{ form.matter.errors }}
+            {% if edit and document.is_drive_synced %}
+              <p class="detail-text">
+                This document follows its folder in Google Drive. To move it
+                to another matter, move the file in Drive.
+              </p>
+            {% endif %}
+          </div>
         </div>
         <div class="form-group">
           <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
@@ -63,9 +71,13 @@
               the file, update it in the Drive record folder.
             </p>
           {% else %}
+            {% if edit %}
+              {% url 'case:documents-download' document.id as download_url %}
+            {% endif %}
             <div id="document-dropzone"
                  class="dropzone"
-                 {% if edit and document.file %}data-existing-file="{{ document.file.name }}"{% endif %}></div>
+                 {% if edit and document.file %}data-existing-file="{{ document.file.name }}"{% endif %}
+                 {% if edit and document.file %}data-download-url="{{ download_url }}"{% endif %}></div>
           {% endif %}
           {% if form.non_field_errors %}
             {% for error in form.non_field_errors %}
@@ -106,7 +118,7 @@
       {% if edit %}
         <button type="button"
                 class="btn btn-danger"
-                hx-confirm="{% if document.is_drive_synced %}Delete this synced document? The file stays in Drive but will not sync back in.{% else %}Are you sure you want to delete this file?{% endif %}"
+                hx-confirm="{% if document.is_drive_synced %}Delete this synced document? The file stays in Drive but will not sync back in.{% else %}Are you sure you want to delete this document?{% endif %}"
                 hx-delete="{% url 'case:documents-delete' document.id %}"
                 hx-target="#htmx-modal-container">Delete</button>
       {% else %}

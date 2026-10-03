@@ -137,6 +137,38 @@ hard to use.
 Pages moved in from before these rules existed do not all follow them yet.
 Fix what you touch.
 
+## User guide pages
+
+Pages under `docs/guide/` are for attorneys and staff, not for people who
+run servers. They follow the house rules above and these as well.
+[Matters](../guide/matters.md) is the model to copy.
+
+- **Write from the screen.** Read the templates, forms and views, and name
+  every button, field, column and menu exactly as the screen does, in
+  bold: **Matters**, **Add Matter**, **Submit**. Use "→" between the
+  steps of a menu path: **Settings → Appearance**. Never invent a label.
+  An icon with no text is described by what it is ("the plus button").
+- **Task first.** Headings are things the reader wants to do or
+  understand: "Open a new matter", "Close a matter". Steps are numbered,
+  and each starts with the action. After the steps, one sentence says
+  what the reader should now see.
+- **Second person, present tense, short sentences, plain words.** No
+  "simply", "just" or "easy".
+- **Nothing the reader cannot see.** No code, file names, addresses with
+  ids in them, environment variables or database terms.
+- **Good to know.** When the application does something a careful user
+  would not expect, say so once, plainly, in a short "Good to know" list
+  at the end of that section: three items at most, and only real ones. If
+  it is a bug, fix the bug and leave the item out.
+- **Permissions in one sentence.** "You need the Financial permission for
+  this. Ask your administrator."
+- **Invented examples only:** the matter "Rivera v. Northside Logistics",
+  the client "Elena Rivera", the firm "Example Law".
+- **Shape.** An H1 title, then two or three sentences on who the page is
+  for and what it covers. Plain Markdown: headings, numbered lists, short
+  tables, at most one `!!! note` per page. Prose wrapped at about 76
+  columns. No screenshots yet.
+
 ## Decision records
 
 Write a record in `decisions/` when a design choice would otherwise have to

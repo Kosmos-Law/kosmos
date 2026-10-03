@@ -99,13 +99,15 @@ class TestNoteContent:
         assert response.status_code == 200
         assert response.content.decode() == note.content
 
-    def test_note_content_post(self, client_with_matter, note):
+    def test_note_content_is_read_only(self, client_with_matter, note):
+        # Saving goes through autosave, which checks the version the client
+        # last saw; this address must not be a way around that check
         url = reverse("notes:note-content", args=[note.id])
-        new_content = "Updated markdown content"
-        response = client_with_matter.post(url, {"content": new_content})
-        assert response.status_code == 204
+        before = note.content
+        response = client_with_matter.post(url, {"content": "Overwritten"})
+        assert response.status_code == 405
         note.refresh_from_db()
-        assert note.content == new_content
+        assert note.content == before
 
 
 class TestNoteAutosave:

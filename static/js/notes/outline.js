@@ -33,13 +33,14 @@ export function buildOutline() {
     collapsedItems = [];
   }
 
-  function buildHierarchicalHtml(items) {
-    let html = "";
+  // Heading text is whatever someone typed into the note, so it goes in
+  // through textContent, never parsed as markup
+  function buildItems(items) {
+    const fragment = document.createDocumentFragment();
     let i = 0;
 
     while (i < items.length) {
       const heading = items[i];
-      const text = heading.text || "(empty)";
 
       const children = [];
       let j = i + 1;
@@ -49,44 +50,43 @@ export function buildOutline() {
         j++;
       }
 
-      const isCollapsed = collapsedItems.includes(heading.pos);
-      const collapsedCls = isCollapsed ? " collapsed" : "";
+      const li = document.createElement("li");
+      li.className = "outline-item level-" + heading.level;
+      li.dataset.pos = heading.pos;
+
+      const textEl = document.createElement("span");
+      textEl.className = "outline-text";
+      textEl.textContent = heading.text || "(empty)";
 
       if (children.length > 0) {
-        html +=
-          '<li class="outline-item has-children level-' +
-          heading.level +
-          collapsedCls +
-          '" data-pos="' +
-          heading.pos +
-          '">';
-        html +=
-          '<span class="outline-toggle"><i class="icon-chevron-down"></i></span>';
-        html += '<span class="outline-text">' + text + "</span>";
-        html +=
-          '<ul class="outline-children">' +
-          buildHierarchicalHtml(children) +
-          "</ul>";
-        html += "</li>";
+        li.classList.add("has-children");
+        if (collapsedItems.includes(heading.pos)) li.classList.add("collapsed");
+
+        const toggle = document.createElement("span");
+        toggle.className = "outline-toggle";
+        const chevron = document.createElement("i");
+        chevron.className = "icon-chevron-down";
+        toggle.appendChild(chevron);
+
+        const childList = document.createElement("ul");
+        childList.className = "outline-children";
+        childList.appendChild(buildItems(children));
+
+        li.append(toggle, textEl, childList);
       } else {
-        html +=
-          '<li class="outline-item level-' +
-          heading.level +
-          '" data-pos="' +
-          heading.pos +
-          '">';
-        html += '<span class="outline-toggle-spacer"></span>';
-        html += '<span class="outline-text">' + text + "</span>";
-        html += "</li>";
+        const spacer = document.createElement("span");
+        spacer.className = "outline-toggle-spacer";
+        li.append(spacer, textEl);
       }
 
+      fragment.appendChild(li);
       i = j;
     }
 
-    return html;
+    return fragment;
   }
 
-  outlineList.innerHTML = buildHierarchicalHtml(headings);
+  outlineList.replaceChildren(buildItems(headings));
 
   outlineList.querySelectorAll(".outline-toggle").forEach((toggle) => {
     toggle.addEventListener("click", (e) => {

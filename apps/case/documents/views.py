@@ -1,4 +1,3 @@
-import json
 import logging
 
 from django.contrib.auth.decorators import login_required
@@ -7,7 +6,8 @@ from django.core.files.storage import default_storage
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.utils.http import content_disposition_header
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.case.models import Document, Label
 from apps.case.views import get_matter_from_url, set_last_tab
@@ -19,7 +19,10 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
+from utils.safe_json import json_for_script
+from utils.toasts import toast_warning
 
+from .access import documents_for_user, target_matter_for_user
 from .filters import FilesFilter
 from .fingerprint import find_duplicates, fingerprint_file
 from .forms import BulkFilesForm, FilesForm
@@ -171,8 +174,11 @@ def documents_sort(request, matter_id, order):
 
     current_order = filter_data.get("order_by", "")
 
+    # A second click on the same column reverses it. The column may itself
+    # ask for descending first ("-importance"), so reversing means flipping
+    # the sign either way.
     if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
+        new_order = order[1:] if order.startswith("-") else f"-{order}"
     else:
         new_order = order
 
@@ -210,16 +216,56 @@ def document_date(request, document_id):
     )
 
 
+def _documents_list_response(request, matter_id):
+    """The Documents tab list, as the row menus' POSTs swap it into #documents."""
+    context = {
+        "app": "matters",
+        "subapp": "documents",
+    } | get_document_data(request, matter_id)
+    return render(request, "case/documents/list.html", context)
+
+
+# A document that came from Google Drive is on the matter its Drive folder is
+# linked to. The sync would move it straight back, so it is not moved here.
+DRIVE_MOVE_MESSAGE = (
+    "This document follows its folder in Google Drive. To move it to another "
+    "matter, move the file in Drive."
+)
+
+
+# A document filed under a proceeding is part of that proceeding's record:
+# Document.save() puts any other category back to Record.
+PROCEEDING_CATEGORIES = ("Record", "Discovery")
+
+
 @login_required
+@require_POST
 def document_category(request, document_id, category):
     """Set document category."""
     document = get_object_or_404(Document, id=document_id)
+
+    if category not in dict(Document.CATEGORY_CHOICES):
+        return HttpResponse(status=400, content="Invalid category.")
+
+    if document.proceeding_id and category not in PROCEEDING_CATEGORIES:
+        # Saving would silently turn the choice back into Record. Leave the
+        # document as it is and say why.
+        response = _documents_list_response(request, document.matter_id)
+        return toast_warning(
+            response,
+            "The category was not changed. This document is filed under a "
+            "proceeding, so it can only be Record or Discovery. To change it, "
+            "pick the category in Edit Details, which clears the proceeding.",
+            duration=10000,
+        )
+
     document.category = category
     document.save()
-    return redirect("case:documents-list", matter_id=document.matter_id)
+    return _documents_list_response(request, document.matter_id)
 
 
 @login_required
+@require_POST
 def document_proceeding(request, document_id, proceeding_id):
     """Set document proceeding."""
     from apps.matters.proceedings.models import Proceeding
@@ -229,20 +275,26 @@ def document_proceeding(request, document_id, proceeding_id):
     if proceeding_id == 0:
         document.proceeding = None
     else:
-        proceeding = get_object_or_404(Proceeding, id=proceeding_id)
+        # Only a proceeding of the document's own matter.
+        proceeding = get_object_or_404(
+            Proceeding, id=proceeding_id, matter_id=document.matter_id
+        )
         document.proceeding = proceeding
 
     document.save()
-    return redirect("case:documents-list", matter_id=document.matter_id)
+    return _documents_list_response(request, document.matter_id)
 
 
 @login_required
+@require_POST
 def document_importance(request, document_id, importance):
     """Set document importance."""
     document = get_object_or_404(Document, id=document_id)
+    if not 1 <= importance <= 7:
+        return HttpResponse(status=400, content="Invalid importance.")
     document.importance = importance
     document.save()
-    return redirect("case:documents-list", matter_id=document.matter_id)
+    return _documents_list_response(request, document.matter_id)
 
 
 def _describe_duplicates(duplicates, content_hash, limit=5):
@@ -303,7 +355,7 @@ def documents_add(request, matter_id):
 
                     # Create document with auto-populated fields
                     document = form.save(commit=False)
-                    document.matter = matter
+                    _file_under_chosen_matter(document, form, matter)
                     document.created_by = request.user
 
                     # Auto-set date from email
@@ -315,6 +367,7 @@ def documents_add(request, matter_id):
 
                     document.save()  # Gets PK
                     form.save_m2m()
+                    _drop_other_matters_labels(document)
 
                     # Read PDF content and save as file
                     with open(pdf_file.name, "rb") as f:
@@ -333,7 +386,7 @@ def documents_add(request, matter_id):
                         document.delete()
                         form.add_error(
                             None,
-                            "FILE_REQUIRED: Upload failed — file did not save to storage.",
+                            "FILE_REQUIRED: Upload failed. The file did not save to storage.",
                         )
                     else:
                         # Queue OCR for the generated PDF
@@ -366,7 +419,11 @@ def documents_add(request, matter_id):
                 content_hash, page_fingerprint = fingerprint_file(
                     uploaded_file, is_pdf=True, size=uploaded_file.size
                 )
-                duplicates = find_duplicates(content_hash, page_fingerprint)
+                # Only matches the user may see: the warning names each
+                # match and its matter.
+                duplicates = documents_for_user(
+                    find_duplicates(content_hash, page_fingerprint), request.user
+                )
                 if duplicates.exists() and not request.POST.get("duplicate_ok"):
                     return render(
                         request,
@@ -383,10 +440,11 @@ def documents_add(request, matter_id):
 
                 # Two-phase save: first save without file to get PK
                 document = form.save(commit=False)
-                document.matter = matter
+                _file_under_chosen_matter(document, form, matter)
                 document.created_by = request.user
                 document.save()  # Gets PK
                 form.save_m2m()
+                _drop_other_matters_labels(document)
 
                 # Now save file with proper path using document.pk
                 document.file = uploaded_file
@@ -399,7 +457,7 @@ def documents_add(request, matter_id):
                     document.delete()
                     form.add_error(
                         None,
-                        "FILE_REQUIRED: Upload failed — file did not save to storage.",
+                        "FILE_REQUIRED: Upload failed. The file did not save to storage.",
                     )
                 else:
                     # Queue OCR for PDF files
@@ -467,6 +525,17 @@ def documents_edit(request, document_id):
 
         uploaded_file = request.FILES.get("file")
 
+        # The Matter field is locked for a Drive-synced document (the form
+        # ignores it). A request that asks for another matter anyway is
+        # refused outright rather than saved with the matter left alone.
+        posted_matter = request.POST.get("matter")
+        if (
+            document.is_drive_synced
+            and posted_matter
+            and posted_matter != str(old_matter_id)
+        ):
+            form.add_error("matter", DRIVE_MOVE_MESSAGE)
+
         if uploaded_file and document.drive_file_id:
             # Drive-synced record: the bytes mirror the Drive file. Metadata
             # stays editable; the file itself is replaced in Drive.
@@ -487,7 +556,9 @@ def documents_edit(request, document_id):
             fingerprints = fingerprint_file(
                 uploaded_file, is_pdf=True, size=uploaded_file.size
             )
-            duplicates = find_duplicates(*fingerprints, exclude_pk=document.pk)
+            duplicates = documents_for_user(
+                find_duplicates(*fingerprints, exclude_pk=document.pk), request.user
+            )
             if duplicates.exists() and not request.POST.get("duplicate_ok"):
                 return render(
                     request,
@@ -536,6 +607,8 @@ def documents_edit(request, document_id):
 
             document.save()
             form.save_m2m()
+            if document.matter_id != old_matter_id:
+                _drop_other_matters_labels(document)
 
             # Queue OCR for new PDF file
             if uploaded_file:
@@ -580,6 +653,37 @@ def documents_edit(request, document_id):
         )
 
 
+def _selected_on_matter(selected_ids, matter_id):
+    """The selected documents that are on the matter in the URL.
+
+    The selection is a list of ids kept in the session. The matter in the URL
+    is the one the user was checked against, so an id that is not on it is
+    ignored rather than acted on.
+    """
+    return Document.objects.filter(id__in=selected_ids, matter_id=matter_id)
+
+
+def _file_under_chosen_matter(document, form, matter):
+    """A new document goes on the matter chosen in the form's Matter field
+    (it was always put on the matter the form was opened from, whatever the
+    field said). The form's Proceeding list is that opening matter's, so a
+    proceeding picked there does not follow the document to another matter.
+    """
+    document.matter = form.cleaned_data.get("matter") or matter
+    if document.proceeding and document.proceeding.matter_id != document.matter_id:
+        document.proceeding = None
+
+
+def _drop_other_matters_labels(document):
+    """After a move: take off the labels that belong to another matter.
+
+    A matter's own labels stay behind when a document leaves it; global
+    labels go with the document.
+    """
+    stale = document.labels.exclude(matter=None).exclude(matter_id=document.matter_id)
+    document.labels.remove(*stale)
+
+
 @login_required
 def bulk_documents_update(request, matter_id):
     matter, matters = get_matter_from_url(request, matter_id)
@@ -597,7 +701,7 @@ def bulk_documents_update(request, matter_id):
             proceeding = form.cleaned_data.get("proceeding")
             labels = form.cleaned_data.get("labels")
 
-            documents = Document.objects.filter(id__in=selected_documents)
+            documents = _selected_on_matter(selected_documents, matter_id)
 
             for document in documents:
                 if proceeding:
@@ -628,6 +732,7 @@ def bulk_documents_update(request, matter_id):
 
 
 @login_required
+@require_http_methods(["POST", "DELETE"])
 def documents_delete(request, document_id):
     try:
         document = Document.objects.get(id=document_id)
@@ -662,7 +767,11 @@ def download_document(request, document_id):
     if document.category == "Record" and document.date:
         full_file_name = f"{document.date}_{full_file_name}"
 
-    response["Content-Disposition"] = f'attachment; filename="{full_file_name}"'
+    # The name is whatever the user typed: quotes, backslashes and non-ASCII
+    # characters have to be escaped or encoded, and a control character
+    # cannot go in a header at all.
+    full_file_name = "".join(ch for ch in full_file_name if ch.isprintable())
+    response["Content-Disposition"] = content_disposition_header(True, full_file_name)
     response["Content-Length"] = document.file.size
     response["Cache-Control"] = "private, no-store"
     response["X-Content-Type-Options"] = "nosniff"
@@ -849,7 +958,7 @@ def document_viewer(request, document_id):
         initial_highlight = None
 
     # Serialize highlights for JavaScript
-    highlights_json = json.dumps(
+    highlights_json = json_for_script(
         [
             {
                 "id": h.id,
@@ -916,6 +1025,18 @@ def retry_ocr(request, document_id):
 
     document.ocr_status = "pending"
     document.save(update_fields=["ocr_status"])
+
+    # The "ocr failed" badge retries through HTMX and swaps itself for the
+    # pending badge, which then polls.
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "case/documents/ocr-badge.html",
+            {
+                "document": document,
+                "hide_on_bypass": request.POST.get("hide_on_bypass") == "1",
+            },
+        )
 
     return JsonResponse({"success": True, "status": "pending"})
 
@@ -1009,7 +1130,7 @@ def bulk_documents_ai(request, matter_id, action):
     if not selected_documents:
         return HttpResponse(status=400, content="No documents selected.")
 
-    Document.objects.filter(id__in=selected_documents).update(ai_context=action)
+    _selected_on_matter(selected_documents, matter_id).update(ai_context=action)
 
     clear_selected_ids(request, key)
     return selection_response("documentsChanged")
@@ -1025,7 +1146,7 @@ def bulk_documents_delete(request, matter_id):
     if not selected_documents:
         return HttpResponse(status=400, content="No documents selected.")
 
-    Document.objects.filter(id__in=selected_documents).delete()
+    _selected_on_matter(selected_documents, matter_id).delete()
     clear_selected_ids(request, key)
 
     return selection_response("documentsChanged")
@@ -1041,9 +1162,11 @@ def bulk_documents_importance(request, matter_id):
     if not selected_documents:
         return HttpResponse(status=400, content="No documents selected.")
 
-    importance = request.POST.get("importance")
+    importance = request.POST.get("importance", "")
     if importance:
-        Document.objects.filter(id__in=selected_documents).update(
+        if not importance.isdecimal() or not 1 <= int(importance) <= 7:
+            return HttpResponse(status=400, content="Invalid importance.")
+        _selected_on_matter(selected_documents, matter_id).update(
             importance=int(importance)
         )
 
@@ -1061,9 +1184,32 @@ def bulk_documents_category(request, matter_id):
     if request.method == "POST":
         category = request.POST.get("category")
         if category:
-            Document.objects.filter(id__in=selected_documents).update(category=category)
+            if category not in dict(Document.CATEGORY_CHOICES):
+                return HttpResponse(status=400, content="Invalid category.")
+            documents = _selected_on_matter(selected_documents, matter_id)
+            # A document filed under a proceeding can only be Record or
+            # Discovery (its next save would turn anything else back into
+            # Record), so it is left as it is, as the row's own menu does.
+            kept = 0
+            if category not in PROCEEDING_CATEGORIES:
+                kept = documents.filter(proceeding__isnull=False).count()
+                documents = documents.filter(proceeding__isnull=True)
+            documents.update(category=category)
             clear_selected_ids(request, key)
-            return selection_response("documentsChanged")
+            response = selection_response("documentsChanged")
+            if kept:
+                toast_warning(
+                    response,
+                    (
+                        "1 document was not changed. It is"
+                        if kept == 1
+                        else f"{kept} documents were not changed. They are"
+                    )
+                    + " filed under a proceeding, so the category can only be "
+                    "Record or Discovery.",
+                    duration=10000,
+                )
+            return response
 
         return HttpResponse(status=400, content="No category selected.")
 
@@ -1089,8 +1235,6 @@ def bulk_documents_category(request, matter_id):
 @login_required
 def bulk_documents_matter(request, matter_id):
     """Show modal to select matter for bulk move."""
-    from apps.matters.models import Matter
-
     matter, matters = get_matter_from_url(request, matter_id)
     key = get_session_key("selected_documents", matter_id)
     selected_documents = get_selected_ids(request, key)
@@ -1099,14 +1243,29 @@ def bulk_documents_matter(request, matter_id):
         target_matter_id = request.POST.get("matter")
 
         if target_matter_id:
-            target_matter = get_object_or_404(Matter, id=target_matter_id)
+            if not target_matter_id.isdecimal():
+                return HttpResponse(status=400, content="Invalid matter.")
+            # The target arrives in the POST body, which the central matter
+            # check never sees.
+            target_matter = target_matter_for_user(target_matter_id, request.user)
 
             # Move documents to new matter
-            for doc in Document.objects.filter(id__in=selected_documents):
+            skipped = 0
+            for doc in _selected_on_matter(
+                selected_documents, matter_id
+            ).select_related("proceeding"):
+                if doc.is_drive_synced:
+                    skipped += 1
+                    continue
+
                 old_file_path = doc.file.name if doc.file else None
 
                 doc.matter = target_matter
+                # A proceeding belongs to the matter the document is leaving.
+                if doc.proceeding and doc.proceeding.matter_id != target_matter.id:
+                    doc.proceeding = None
                 doc.save()
+                _drop_other_matters_labels(doc)
 
                 # Move file to new matter's folder if file exists
                 if old_file_path:
@@ -1129,7 +1288,24 @@ def bulk_documents_matter(request, matter_id):
                         pass  # File move failed, but document is still moved
 
             clear_selected_ids(request, key)
-            return selection_response("documentsChanged")
+            response = selection_response("documentsChanged")
+            if skipped == 1:
+                toast_warning(
+                    response,
+                    "1 document from Google Drive was not moved. It follows its "
+                    "folder in Google Drive. To move it to another matter, move "
+                    "the file in Drive.",
+                    duration=10000,
+                )
+            elif skipped:
+                toast_warning(
+                    response,
+                    f"{skipped} documents from Google Drive were not moved. They "
+                    "follow their folders in Google Drive. To move one to "
+                    "another matter, move the file in Drive.",
+                    duration=10000,
+                )
+            return response
 
         return HttpResponse(status=400, content="No matter selected.")
 
