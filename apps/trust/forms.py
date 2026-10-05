@@ -1,5 +1,6 @@
 from django import forms
 
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 from .models import Transaction
@@ -23,16 +24,6 @@ class TransactionForm(forms.ModelForm):
             ("Withdrawal", "Withdrawal"),
         )
 
-        ENTERED_CHOICES = (
-            (0, "No"),
-            (1, "Yes"),
-        )
-
-        CONFIRMED_CHOICES = (
-            (False, "No"),
-            (True, "Yes"),
-        )
-
         widgets = {
             "contact": forms.Select(attrs={"class": "span2"}),
             "date": forms.DateInput(attrs={"type": "date"}),
@@ -46,7 +37,7 @@ class TransactionForm(forms.ModelForm):
                 }
             ),
             "amount": forms.TextInput(),
-            "confirmed": forms.Select(choices=CONFIRMED_CHOICES),
+            "confirmed": forms.Select(choices=YESNO_CHOICES),
         }
 
     def __init__(self, *args, **kwargs):

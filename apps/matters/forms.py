@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.contacts.models import Contact
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 from .models import Matter, PracticeArea
@@ -87,9 +88,7 @@ class MatterForm(forms.ModelForm):
             "flat_fee_amount": forms.NumberInput(
                 attrs={"step": "0.01"},
             ),
-            "deferred_fees": forms.Select(
-                choices=((False, "No"), (True, "Yes")),
-            ),
+            "deferred_fees": forms.Select(choices=YESNO_CHOICES),
         }
 
         labels = {

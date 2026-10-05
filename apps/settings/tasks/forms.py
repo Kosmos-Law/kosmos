@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.settings.models import Firm
+from config.helpers import YESNO_CHOICES
 
 
 class TasksSettingsForm(forms.ModelForm):
@@ -11,7 +12,7 @@ class TasksSettingsForm(forms.ModelForm):
     # partial post reads as the safe default (off).
     quick_task_ai = forms.TypedChoiceField(
         coerce=lambda v: v in (True, "True"),
-        choices=((False, "No"), (True, "Yes")),
+        choices=YESNO_CHOICES,
         required=False,
         label="AI Quick Task Entry",
         help_text=(
