@@ -16,6 +16,7 @@ from apps.invoicing.credits.forms import CreditsForm
 from apps.invoicing.credits.get_credits_data import get_credits_data
 from apps.invoicing.credits.models import Credit
 from apps.invoicing.invoices.models import Invoice
+from apps.management.filter_manager import filter_data_from_post
 from apps.matters.models import Matter
 
 
@@ -156,7 +157,7 @@ def credits_filter(request):
         )
 
     if request.method == "POST":
-        request.session["credits_filter"] = request.POST
+        request.session["credits_filter"] = filter_data_from_post(request.POST)
 
         return HttpResponse(status=204, headers={"HX-Trigger": "creditsChanged"})
     else:

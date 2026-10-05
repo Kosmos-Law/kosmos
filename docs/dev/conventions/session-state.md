@@ -67,14 +67,15 @@ if filter_manager.process_filter():
 return render(request, "calendar/filter.html", {"filter": event_filter(request)})
 ```
 
-`process_filter()` stores `request.POST` as it came. That is the known
-wart: the session then holds `csrfmiddlewaretoken` beside the real
-fields, and because a `QueryDict` serialises to one value per key, a
-multi-valued field keeps only its last value. Several views store
-`request.POST` directly the same way (users, intakes, payments, credits,
-matter contacts); the labels tab stores `dict(request.POST)`, which
-keeps every value as a list instead. All of them work because the
-FilterSet ignores the extra key, but do not copy the pattern.
+`process_filter()` stores the POST through
+`filter_data_from_post()` (same module): a plain dict without
+`csrfmiddlewaretoken`, a string per key and a list where a key was sent
+more than once. Storing `request.POST` itself would keep the token and,
+because a `QueryDict` serialises to one value per key, lose every value
+of a multi-select but the last. The views that store a filter POST
+directly (users, intakes, payments, credits, matter contacts) go through
+the same helper; the labels tab stores `dict(request.POST)`, which keeps
+every value as a list instead.
 
 The newer flow, used by tasks, time, expenses, flat fees, facts, notes
 and mail, merges the POST into what is already stored and skips the
@@ -296,7 +297,8 @@ setting. Do the same.
   ORM unchecked.
 - **A `QueryDict` in the session is not a dict.** It serialises to the
   last value per key. Read multi-valued fields with `getlist()` before
-  storing, as the tasks and facts filters do.
+  storing, as the tasks and facts filters do, or store the POST through
+  `filter_data_from_post()`.
 - **Keys are global.** Two lists that pick the same prefix share state.
   Scope with `get_session_key(prefix, scope_id)` for anything that
   exists per matter.

@@ -15,6 +15,7 @@ from apps.intakes.filter_intakes import ORDER_FIELDS, IntakeFilter
 from apps.intakes.forms import IntakeForm, NoteForm
 from apps.intakes.intakes import get_table_data
 from apps.intakes.models import Intake, Note, UserIntakeView
+from apps.management.filter_manager import filter_data_from_post
 from apps.matters.models import PracticeArea
 from utils.safe_markdown import render_markdown
 from utils.toasts import toast_error
@@ -72,7 +73,7 @@ def intake_filter(request):
         return IntakeFilter(filter_data, queryset=Intake.objects.all())
 
     if request.method == "POST":
-        request.session["intake_filter"] = request.POST
+        request.session["intake_filter"] = filter_data_from_post(request.POST)
 
         return HttpResponse(status=204, headers={"HX-Trigger": "intakesChanged"})
 
