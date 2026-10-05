@@ -102,6 +102,11 @@ urlpatterns = [
         intake_edit_practice_area,
         name="edit-practice-area",
     ),
+    path(
+        "intakes/edit-practice-area/<int:pk>/clear",
+        intake_edit_practice_area,
+        name="clear-practice-area",
+    ),
     path("intakes/<int:pk>/value-edit/", value_edit, name="value-edit"),
     path("intakes/<int:pk>/value-update/", value_update, name="value-update"),
     path("intakes/<int:pk>/value-display/", value_display, name="value-display"),

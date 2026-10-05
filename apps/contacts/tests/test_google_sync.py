@@ -91,3 +91,46 @@ def test_the_button_is_shown_only_when_google_is_connected(
     monkeypatch.setattr(google, "check_credentials", lambda: True)
     body = client.get(page).content.decode()
     assert f'hx-post="{_url(contact)}"' in body
+
+
+# ── Deleting a contact that has a Google copy ────────────────────────────
+
+
+def _delete(client, contact):
+    return client.delete(reverse("contacts:delete", args=[contact.id]))
+
+
+def test_deleting_removes_the_google_copy_when_connected(client, contact, connected):
+    contact.google_id = "people/c123"
+    contact.save()
+
+    response = _delete(client, contact)
+
+    assert response.headers["HX-Redirect"] == reverse("contacts:index")
+    assert connected["deleted"] == [contact.id]
+    assert "contacts-pending-toast" not in client.get("/contacts/").content.decode()
+
+
+def test_deleting_while_disconnected_warns_that_the_copy_remains(
+    client, contact, not_connected
+):
+    contact.google_id = "people/c123"
+    contact.save()
+
+    response = _delete(client, contact)
+
+    assert response.status_code == 204
+    page = client.get(response.headers["HX-Redirect"]).content.decode()
+    assert "Google Contacts is not connected" in page
+    assert "copy there was not removed" in page
+    # Shown once: the next load of the page says nothing.
+    assert "contacts-pending-toast" not in client.get("/contacts/").content.decode()
+
+
+def test_deleting_a_contact_with_no_google_copy_says_nothing(
+    client, contact, not_connected
+):
+    response = _delete(client, contact)
+
+    page = client.get(response.headers["HX-Redirect"]).content.decode()
+    assert "contacts-pending-toast" not in page

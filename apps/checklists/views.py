@@ -31,7 +31,8 @@ from apps.management.selection import (
 from apps.tasks.access import task_for_user
 
 CHECKLISTS_TRIGGER = "checklistsChanged"
-TASKS_TRIGGER = "tasksChanged"
+# The event the tasks tab and the matter Tasks tab both reload on.
+TASKS_TRIGGER = "tasksListChanged"
 
 
 # ---------------------------------------------------------------------------

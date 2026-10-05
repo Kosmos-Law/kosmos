@@ -8,6 +8,15 @@ from django.db.models.query import F, QuerySet
 from django.forms.models import model_to_dict
 from django.http import JsonResponse
 
+# The one Yes/No select. Every boolean input is a Select over this, not a
+# checkbox. On a ModelForm BooleanField the posted "True"/"False" cleans
+# through BooleanField.to_python; a plain ChoiceField must coerce itself,
+# because bool("False") is True.
+YESNO_CHOICES = (
+    (False, "No"),
+    (True, "Yes"),
+)
+
 
 def dump_model(instance):
     """Convert a django model to to dict."""
@@ -30,8 +39,8 @@ def dump(result):
         result = dump_model(result)
     elif isinstance(result, QuerySet):
         result = dump_set(result)
-    elif type(result) is dict or list or str or float or int:
-        result = result
+    elif isinstance(result, (dict, list, str, float, int)):
+        pass
     else:
         result = "Input must be a a model instance, queryset, dict, string, int, list, or float."
     return JsonResponse(result, safe=False)

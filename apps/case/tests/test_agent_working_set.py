@@ -117,6 +117,30 @@ class TestBuildWorkingSet:
         assert working.carried == {("document", str(other.id))}
         assert working.evicted == 1
 
+    def test_eviction_is_first_fit_not_a_recency_cut_off(
+        self, conversation, matter, user, text_document
+    ):
+        """A newest read too big for the cap is evicted on its own; an
+        older, smaller one that still fits is carried."""
+        from apps.case.models import Document
+
+        big = Document.objects.create(
+            matter=matter, name="Record", category="Evidence", created_by=user
+        )
+        big.ocr_text = "Gamma " * 2_000
+        big.ocr_status = "completed"
+        big.save(update_fields=["ocr_text", "ocr_status"])
+        add_turn(
+            conversation,
+            user,
+            [read_step("document", text_document.id, text_document.name)],
+        )
+        add_turn(conversation, user, [read_step("document", big.id, big.name)])
+        cap = len(agent_working_set.HEADER) + len(text_document.ocr_text) + 200
+        working = build_working_set(conversation, matter, max_chars=cap)
+        assert working.carried == {("document", str(text_document.id))}
+        assert working.evicted == 1
+
     def test_never_and_deleted_not_carried_not_evicted(
         self, conversation, matter, user, text_document
     ):

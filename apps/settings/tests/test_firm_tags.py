@@ -31,16 +31,16 @@ def render_error_page():
 
 def test_firm_logo_replaces_wordmark(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
-    firm = Firm.objects.create(name="Craig Legal, LLC")
+    firm = Firm.objects.create(name="Example Law, LLC")
     firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
     html = render_error_page()
     assert 'class="auth-title has-logo"' in html
-    assert 'alt="Craig Legal, LLC"' in html
+    assert 'alt="Example Law, LLC"' in html
     assert firm.logo.url in html
 
 
 def test_no_logo_falls_back_to_wordmark():
-    Firm.objects.create(name="Craig Legal, LLC")
+    Firm.objects.create(name="Example Law, LLC")
     html = render_error_page()
     assert "has-logo" not in html
     assert "Kosmos" in html

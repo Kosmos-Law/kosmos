@@ -73,7 +73,10 @@ class ContactQuerySet(models.QuerySet):
 
 class Contact(AuditMixin, models.Model):
     id = models.BigAutoField(primary_key=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    # The user who last saved the contact (every add and edit rewrites it),
+    # not an owner: the address book is the firm's, so a deleted user row
+    # must not take contacts with it.
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, blank=True, null=True)
     name = models.CharField(max_length=100)
     company = models.CharField(max_length=100, blank=True, null=True)
@@ -103,7 +106,7 @@ class Contact(AuditMixin, models.Model):
         sentence "this contact ...". Empty when it is safe to delete.
 
         Deleting a contact deletes what hangs off it: the database cascades
-        to the client's trust ledger and payment requests, and detaches the
+        to the client's trust ledger and trust deposit requests, and detaches the
         contact from the matters it is the client of. Those are records a
         firm has to keep, so the contact stays while they exist."""
         blockers = []
@@ -115,7 +118,7 @@ class Contact(AuditMixin, models.Model):
         if self.transaction_set.exists():
             blockers.append("has trust activity")
         if self.trust_requests.exists():
-            blockers.append("has payment requests")
+            blockers.append("has trust deposit requests")
         return blockers
 
     @property

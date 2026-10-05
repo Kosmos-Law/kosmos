@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST
 from apps.case.facts.sorting import (
     filterset_sort_keys,
     stored_sort_key,
+    toggled_sort_key,
     with_valid_sort,
 )
 from apps.case.highlights.importance import parse_importance
@@ -25,6 +26,7 @@ from .filters import WitnessesFilter
 from .forms import WitnessForm
 
 SORT_KEYS = filterset_sort_keys(WitnessesFilter)
+DEFAULT_SORT = "name"
 
 
 def get_witnesses_data(request, matter, matter_id):
@@ -46,7 +48,7 @@ def get_witnesses_data(request, matter, matter_id):
             witnesses = queryset
 
     # Get current sort order
-    current_order = stored_sort_key(filter_data, SORT_KEYS, "name")
+    current_order = stored_sort_key(filter_data, SORT_KEYS, DEFAULT_SORT)
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -401,16 +403,9 @@ def witnesses_sort(request, matter_id, order):
     filter_session_key = get_session_key("witnesses_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 
-    current_order = filter_data.get("order_by", "")
-
-    # A second click on the same column reverses it, whichever direction
-    # the column starts in (importance starts highest first).
-    if current_order == order:
-        new_order = order[1:] if order.startswith("-") else f"-{order}"
-    else:
-        new_order = order
-
-    filter_data["order_by"] = new_order
+    filter_data["order_by"] = toggled_sort_key(
+        filter_data, SORT_KEYS, DEFAULT_SORT, order
+    )
     request.session[filter_session_key] = filter_data
     request.session.modified = True
 

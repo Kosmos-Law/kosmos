@@ -25,6 +25,10 @@ INVOICE_STATUS = (
 # work in progress, not a receivable: it stays out of the ledger and balance due.
 UNSENT_STATUSES = ("DRAFT", "APPROVED")
 
+# Issued and awaiting payment: the statuses a payment or credit can be
+# applied to, and the only ones a reopened invoice goes back to.
+OPEN_STATUSES = ("SENT", "DEFERRED")
+
 
 class Invoice(AuditMixin, models.Model):
     # Opaque public identifier for tokenized payment links (never expose the
@@ -111,7 +115,8 @@ class Invoice(AuditMixin, models.Model):
 
     def reopen_if_no_longer_covered(self):
         """After a payment or credit is taken off: a Paid invoice that is no
-        longer covered goes back to Sent.
+        longer covered goes back to the status it was paid from, Sent or
+        Deferred.
 
         ``amount_remaining`` alone cannot decide this. It counts a Paid
         invoice with no allocations as paid in full (invoices from before
@@ -124,8 +129,22 @@ class Invoice(AuditMixin, models.Model):
             self.applications.exists() or self.credit_applications.exists()
         )
         if not has_allocations or self.amount_remaining > 0:
-            self.status = "SENT"
+            self.status = self.status_before_paid
             self.save(update_fields=["status"])
+
+    @property
+    def status_before_paid(self):
+        """The status this invoice was paid from, read from its history: a
+        Deferred invoice whose payment falls through is still deferred. Sent
+        when the history does not say (an invoice that was never Sent or
+        Deferred, or one from before its history was kept)."""
+        previous = (
+            self.history.exclude(status="PAID")
+            .order_by("-history_date", "-history_id")
+            .values_list("status", flat=True)
+            .first()
+        )
+        return previous if previous in OPEN_STATUSES else "SENT"
 
     @property
     def amount_remaining(self):

@@ -74,3 +74,19 @@ def test_date_and_name_still_sort(client, intakes):
 
     assert by_name == ["High", "Low", "Normal, newer", "Normal, older"]
     assert by_date == ["High", "Normal, older", "Low", "Normal, newer"]
+
+
+def test_a_second_click_on_the_flag_reverses_the_sort(client, intakes):
+    client.post("/intakes/order-by/-importance")
+    client.post("/intakes/order-by/-importance")
+
+    assert client.session["intake_filter"]["order_by"] == "importance"
+    # Lowest first; equal importance still falls back to newest first.
+    assert _names(client) == ["Low", "Normal, newer", "Normal, older", "High"]
+
+
+def test_a_third_click_on_the_flag_restores_the_first_sort(client, intakes):
+    for _ in range(3):
+        client.post("/intakes/order-by/-importance")
+
+    assert client.session["intake_filter"]["order_by"] == "-importance"

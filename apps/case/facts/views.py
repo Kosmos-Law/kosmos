@@ -27,9 +27,15 @@ from .filters import (
 )
 from .forms import FactForm
 from .generate_pdf import generate_facts_pdf
-from .sorting import filterset_sort_keys, stored_sort_key, with_valid_sort
+from .sorting import (
+    filterset_sort_keys,
+    stored_sort_key,
+    toggled_sort_key,
+    with_valid_sort,
+)
 
 SORT_KEYS = filterset_sort_keys(FactsFilter)
+DEFAULT_SORT = "date"
 
 
 def labels_mode_from(filter_data):
@@ -78,7 +84,7 @@ def get_facts_data(request, matter, matter_id):
             facts = queryset
 
     # Get current sort order
-    current_order = stored_sort_key(filter_data, SORT_KEYS, "date")
+    current_order = stored_sort_key(filter_data, SORT_KEYS, DEFAULT_SORT)
 
     # Get keyword value
     keyword = filter_data.get("keyword", "")
@@ -675,16 +681,9 @@ def facts_sort(request, matter_id, order):
     filter_session_key = get_session_key("facts_filter", matter_id)
     filter_data = request.session.get(filter_session_key, {})
 
-    current_order = filter_data.get("order_by", "")
-
-    # A second click on the same column reverses it, whichever direction
-    # the column starts in (importance starts highest first).
-    if current_order == order:
-        new_order = order[1:] if order.startswith("-") else f"-{order}"
-    else:
-        new_order = order
-
-    filter_data["order_by"] = new_order
+    filter_data["order_by"] = toggled_sort_key(
+        filter_data, SORT_KEYS, DEFAULT_SORT, order
+    )
     request.session[filter_session_key] = filter_data
     request.session.modified = True
 

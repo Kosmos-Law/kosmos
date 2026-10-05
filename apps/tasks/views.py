@@ -48,7 +48,7 @@ from apps.tasks.models import (
 )
 from apps.tasks.services import (
     clamp_importance,
-    detect_filter_label as _detect_filter_label,
+    merge_filter_post,
     parse_due_date,
     process_quick_task_description,
     quick_add_refusal,
@@ -273,11 +273,6 @@ def tasks_board_bulk_move(request):
     return JsonResponse({"ok": True, "skipped": skipped, "message": message})
 
 
-@login_required
-def tasks_select(request):
-    return redirect("tasks:index")
-
-
 def _on_tasks_tab(request):
     """True when the htmx request came from the tasks tab (list or board)."""
     path = urlsplit(request.headers.get("HX-Current-URL", "")).path
@@ -287,14 +282,15 @@ def _on_tasks_tab(request):
 @login_required
 def tasks_add(request):
     # The board's per-column "+" opens this modal with ?status=<slug> so the
-    # card lands in that column; anywhere else the form's own Status applies.
+    # form starts on that column's status. It is only the starting value:
+    # the Status the user submits is what is saved.
     column_status = STATUS_BY_SLUG.get(request.GET.get("status"))
 
     if request.method == "POST":
         form = TaskForm(request.POST, user=request.user, use_required_attribute=False)
         if form.is_valid():
             task = form.save(commit=False)
-            task.status = column_status or task.status or STATUS_PENDING
+            task.status = task.status or STATUS_PENDING
             task.save()
 
             # Store new task ID for force-show in filtered lists
@@ -348,7 +344,6 @@ def tasks_add(request):
             "date_due": timezone.localdate(),
         }
         if column_status:
-            # Show the column's status, since that is what will be saved.
             initial["status"] = column_status
         form = TaskForm(
             initial=initial,
@@ -589,25 +584,11 @@ def tasks_delete(request, id):
 @login_required
 def tasks_filter(request, user=None):
     if request.method == "POST":
-        # Merge into existing session so unmodified quick-filter state is
-        # preserved; skip the CSRF token explicitly. status is multi-valued, so
-        # read it via getlist (the items() loop would keep only the last box).
-        filter_data = dict(request.session.get("tasks_filter", {}))
-        for key, val in request.POST.items():
-            if key in ("csrfmiddlewaretoken", "status"):
-                continue
-            filter_data[key] = val
-        filter_data["status"] = request.POST.getlist("status")
-        # The has_due_date NullBooleanSelect posts "unknown" for its empty
-        # state; normalize it to "" so it reads as "no preference" rather than
-        # a real value (which would flip the date dropdown to Custom range and
-        # light the Filter button).
-        if filter_data.get("has_due_date") == "unknown":
-            filter_data["has_due_date"] = ""
-        filter_data["filter_label"] = _detect_filter_label(
-            filter_data, timezone.localdate()
+        request.session["tasks_filter"] = merge_filter_post(
+            request.session.get("tasks_filter", {}),
+            request.POST,
+            timezone.localdate(),
         )
-        request.session["tasks_filter"] = filter_data
         return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
     else:
@@ -689,6 +670,8 @@ def tasks_filter(request, user=None):
 @login_required
 def tasks_filter_quick(request, quick_filter):
     quick_filters = quick_date_filters(timezone.localdate())
+    if quick_filter not in quick_filters:
+        raise Http404("Unknown quick filter")
 
     filter_data = request.session.get("tasks_filter", {})
     filter_data.update(quick_filters[quick_filter])

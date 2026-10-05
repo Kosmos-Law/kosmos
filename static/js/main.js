@@ -1,17 +1,3 @@
-//
-// utility functions to show and hide elements
-//
-
-function show(elementId) {
-  const item = document.getElementById(elementId);
-  item.style.display = "block";
-}
-
-function hide(elementId) {
-  const item = document.getElementById(elementId);
-  item.style.display = "none";
-}
-
 // Attach confirm handler to .confirm links (delegated for dynamic content)
 document.addEventListener('click', async function(e) {
   const confirmLink = e.target.closest('.confirm');
@@ -139,40 +125,6 @@ function copyToClipboard(button, data) {
   });
 }
 
-// Copy value logic
-document.addEventListener('DOMContentLoaded', function() {
-  const copyButtons = document.querySelectorAll('.copy-btn');
-
-  copyButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      let data = this.getAttribute('data-copy');
-
-      // If data-copy-target is specified, get text from target element
-      const targetSelector = this.getAttribute('data-copy-target');
-      if (targetSelector) {
-        const targetElement = document.querySelector(targetSelector);
-        if (targetElement) {
-          data = targetElement.textContent.trim();
-        }
-      }
-
-      navigator.clipboard.writeText(data).then(() => {
-        const originalHtml = this.innerHTML;
-
-        this.innerHTML = '<i class="icon-check"></i>';
-        this.style.color = 'green';
-
-        setTimeout(() => {
-          this.innerHTML = originalHtml;
-          this.style.color = '';
-        }, 2000);
-      }).catch(err => {
-        console.error('Failed to copy value: ', err);
-      });
-    });
-  });
-});
-
 // ==========================================================================
 //  Leader Key (Space) — Vim-style two-keystroke shortcuts
 //  Press Space, then an action key within 500ms
@@ -253,14 +205,18 @@ function switchSearchTab(tab) {
 // ==========================================================================
 
 const commandPalette = {
-  items: [
+  allItems: [
     { label: 'Time Entry', icon: 'icon-clock', url: '/activity/time/add', matterUrl: '/activity/time/add/{id}/activity' },
     { label: 'Task', icon: 'icon-square-check', url: '/tasks/add', matterUrl: '/matters/{id}/tasks/add' },
     { label: 'Expense', icon: 'icon-dollar-sign', url: '/activity/expenses/add', matterUrl: '/activity/expenses/add/{id}/activity' },
     { label: 'Event', icon: 'icon-calendar', url: '/events/add', matterUrl: '/events/add/{id}/matters' },
     { label: 'Contact', icon: 'icon-user', url: '/contacts/add' },
-    { label: 'Intake', icon: 'icon-inbox', url: '/intakes/add' },
+    // The sidebar renders its Intakes link only for a user with the
+    // Intakes permission; the palette takes that link's presence as its
+    // own signal rather than offer a form the server will refuse.
+    { label: 'Intake', icon: 'icon-inbox', url: '/intakes/add', requires: '#nav-intakes' },
   ],
+  items: [],
   activeIndex: 0,
   overlay: null,
   pendingToast: null,
@@ -269,6 +225,9 @@ const commandPalette = {
     if (this.overlay) return;
     this.activeIndex = 0;
     this.pendingToast = null;
+    this.items = this.allItems.filter(
+      (item) => !item.requires || document.querySelector(item.requires)
+    );
 
     const overlay = document.createElement('div');
     overlay.className = 'cmd-palette-overlay';

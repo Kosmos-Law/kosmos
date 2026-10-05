@@ -412,24 +412,6 @@ def _update_notes_filter(request, **changes):
 
 
 @login_required
-def notes_filter(request):
-    """Filter modal; POST stores the whole form in the session."""
-    if request.method == "POST":
-        request.session[NOTES_FILTER_KEY] = {
-            key: value
-            for key, value in request.POST.items()
-            if key != "csrfmiddlewaretoken"
-        }
-        request.session.modified = True
-        return HttpResponse(status=204, headers={"HX-Trigger": NOTES_TRIGGER})
-
-    filter_data = request.session.get(NOTES_FILTER_KEY, {})
-    queryset = Note.objects.filter(matter__isnull=True)
-    filter_obj = NotesFilter(filter_data, queryset=queryset)
-    return render(request, "notes/filter.html", {"filter": filter_obj})
-
-
-@login_required
 def notes_order_by(request, order):
     """Column sort; a second click on the same column flips direction."""
     filter_data = request.session.get(NOTES_FILTER_KEY, {})
@@ -988,9 +970,10 @@ def notes_search_palette(request):
 def notes_launch(request):
     """Open the editor at the user's most recently viewed note.
 
-    The sidebar's Notes launcher points here. Falls back to the latest
-    note the user can reach, and finally creates a fresh untitled note so
-    the editor always has something to open.
+    The Library's Editor button points here. Falls back to the latest
+    note the user can reach. With no reachable note there is nothing to
+    open, and a GET creates nothing: the page offers a New note button
+    instead (a POST to notes_add).
     """
     # Only notes still within reach: a note viewed before the user left its
     # matter must not be the landing note
@@ -1009,7 +992,13 @@ def notes_launch(request):
             .first()
         )
     if note is None:
-        note = Note.objects.create(title="Untitled", author=request.user, matter=None)
+        if request.headers.get("HX-Request"):
+            # The editor landed here in place (its open note was deleted)
+            # but there is no editor without a note: load the page instead
+            return HttpResponse(
+                status=204, headers={"HX-Redirect": reverse("notes:launch")}
+            )
+        return render(request, "notes/launch-empty.html")
     if request.headers.get("HX-Request"):
         # Editor-context landing (the open note was just deleted): swap the
         # content partial in place instead of redirecting to a full page
@@ -1475,8 +1464,9 @@ def note_folder_delete_confirm(request, folder_id):
     folder = folder_for_user(request.user, folder_id)
     descendants = folder.get_descendants()
     subfolder_count = len(descendants)
-    # Every note the delete can take: deleting the subfolders deletes the
-    # notes inside them too, so they count along with the folder's own
+    # Every note the delete can take: "Delete Folder and Notes" takes the
+    # notes inside the subfolders too, so they count along with the
+    # folder's own
     note_count = Note.objects.filter(folder__in=[folder, *descendants]).count()
 
     # Editor context (plus the open note's id) rides the querystring so the
@@ -1507,12 +1497,14 @@ def note_folder_delete(request, folder_id):
     parent_folder = folder.parent
 
     if delete_subfolders:
-        # Delete all descendant notes and subfolders
-        for desc in reversed(descendants):
-            Note.objects.filter(folder=desc).delete()
-            desc.delete()
+        # Notes go only with delete_notes. The dialog offers "Delete Folder
+        # and Subfolders" when it counted none, but a note filed since it
+        # opened must survive the way the folder's own notes do: to the
+        # root (Note.folder is SET_NULL), with the folders gone.
         if delete_notes:
-            Note.objects.filter(folder=folder).delete()
+            Note.objects.filter(folder__in=[folder, *descendants]).delete()
+        for desc in reversed(descendants):
+            desc.delete()
     else:
         # Reparent subfolders to this folder's parent
         for child in folder.children.all():

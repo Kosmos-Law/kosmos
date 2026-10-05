@@ -248,7 +248,6 @@ def test_label_link_sets_fields_and_queues_resync(client, matter, _inline_resync
     assert response.status_code == 204
     matter.refresh_from_db()
     assert matter.gmail_label_name == "Matters - Open/New Label"
-    assert matter.gmail_label_id is None  # legacy field cleared
     assert _inline_resync == [matter.id]
 
 
@@ -257,7 +256,6 @@ def test_label_unlink_clears_fields(client, matter, _inline_resync):
     response = client.post(reverse("case:emails-label-unlink", args=[matter.id]))
     assert response.status_code == 204
     matter.refresh_from_db()
-    assert matter.gmail_label_id is None
     assert matter.gmail_label_name is None
     # Unlink removes the emails itself; it no longer leaves that to a resync.
     assert Email.objects.filter(matter=matter).count() == 0
@@ -383,9 +381,10 @@ def _stub_refresh_thread(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _clear_refresh_flag(matter):
-    from django.core.cache import cache
-
-    from apps.mail.views import _refresh_cache_key
+    from apps.mail.views import (
+        _refresh_cache_key,
+        status_cache as cache,
+    )
 
     cache.delete(_refresh_cache_key(matter.id))
     yield
@@ -395,9 +394,10 @@ def _clear_refresh_flag(matter):
 def test_refresh_starts_thread_and_returns_polling_pill(
     client, matter, fake_gmail, _stub_refresh_thread
 ):
-    from django.core.cache import cache
-
-    from apps.mail.views import _refresh_cache_key
+    from apps.mail.views import (
+        _refresh_cache_key,
+        status_cache as cache,
+    )
 
     response = client.post(reverse("case:emails-refresh", args=[matter.id]))
     assert "Syncing" in response.content.decode()
@@ -408,9 +408,10 @@ def test_refresh_starts_thread_and_returns_polling_pill(
 def test_refresh_reattaches_to_run_in_flight(
     client, matter, fake_gmail, _stub_refresh_thread
 ):
-    from django.core.cache import cache
-
-    from apps.mail.views import _refresh_cache_key
+    from apps.mail.views import (
+        _refresh_cache_key,
+        status_cache as cache,
+    )
 
     cache.set(_refresh_cache_key(matter.id), "running", 60)
     response = client.post(reverse("case:emails-refresh", args=[matter.id]))
@@ -429,9 +430,10 @@ def test_refresh_without_label_starts_nothing(
 
 
 def test_refresh_status_running_keeps_polling(client, matter, fake_gmail):
-    from django.core.cache import cache
-
-    from apps.mail.views import _refresh_cache_key
+    from apps.mail.views import (
+        _refresh_cache_key,
+        status_cache as cache,
+    )
 
     cache.set(_refresh_cache_key(matter.id), "running", 60)
     url = reverse("case:emails-refresh-status", args=[matter.id])
@@ -449,9 +451,10 @@ def test_refresh_status_done_restores_button_and_reloads(client, matter, fake_gm
 
 
 def test_refresh_status_poll_cap_gives_up(client, matter, fake_gmail):
-    from django.core.cache import cache
-
-    from apps.mail.views import _refresh_cache_key
+    from apps.mail.views import (
+        _refresh_cache_key,
+        status_cache as cache,
+    )
 
     cache.set(_refresh_cache_key(matter.id), "running", 60)
     url = reverse("case:emails-refresh-status", args=[matter.id])

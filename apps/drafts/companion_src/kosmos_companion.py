@@ -377,6 +377,13 @@ class _Connection:
                     # The draft was unlinked in Kosmos; nothing to poll for.
                     self.last_note = "draft was unlinked in Kosmos"
                     break
+                if exc.code == 403:
+                    # The link is still there, but the matter is no longer
+                    # the user's to open.
+                    self.last_note = (
+                        "you no longer have access to this draft's matter in Kosmos"
+                    )
+                    break
                 self.last_note = f"retrying after server error: {exc}"
             except Exception as exc:
                 # Network blip or server hiccup: note it and keep polling.
@@ -592,6 +599,7 @@ class Companion(unohelper.Base, XJobExecutor):
             return
         session = matches[0]
         documents = _distinct_documents(matches)
+        unasked = ""
         if len(documents) > 1:
             # Different files share this name. Pairing with the wrong one
             # would send another matter's edits here.
@@ -599,9 +607,15 @@ class Companion(unohelper.Base, XJobExecutor):
                 index = self._choose_session(doc_name, documents)
             except Exception:
                 # The chooser could not be shown. Fall back to the newest
-                # link, as before; the confirmation below names it.
+                # link, as before, and say so in the confirmation.
                 traceback.print_exc()
                 index = 0
+                unasked = (
+                    f' {len(documents)} files named "{doc_name}" are linked '
+                    "and the list to choose from could not be shown, so the "
+                    "most recently linked one was taken. If that is the "
+                    "wrong matter, use Kosmos > Disconnect."
+                )
             if index is None:
                 return
             session = documents[index]
@@ -619,8 +633,9 @@ class Companion(unohelper.Base, XJobExecutor):
 
         self._message(
             f'Connected to the draft link for "{session["name"]}" '
-            f"({_session_label(session)}). Edits you approve in that Kosmos "
-            "chat now appear here as tracked changes, and the AI reads this "
+            f"({_session_label(session)}).{unasked} Edits the AI makes in "
+            "that Kosmos chat appear here at once as tracked changes, for "
+            "you to accept or reject in Writer, and the AI reads this "
             "document as you have it (hand edits included). Keep the "
             "document open; save whenever you are satisfied."
         )

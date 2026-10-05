@@ -65,7 +65,14 @@ def test_send_ignores_kind_and_effort_params(client, matter, _no_worker):
     )
     conversation = Conversation.objects.get()
     assert conversation.kind == "classic"
-    assert conversation.effort == "medium"
+
+
+def test_effort_field_is_gone():
+    """The effort tiers went with research mode; no run read the field
+    after 2026-08-14 and clone/split only carried it along."""
+    names = {f.name for f in Conversation._meta.get_fields()}
+    assert "effort" not in names
+    assert not hasattr(Conversation, "EFFORT_CHOICES")
 
 
 def test_send_to_legacy_research_conversation_works(client, matter, user, _no_worker):

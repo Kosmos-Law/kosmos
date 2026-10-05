@@ -209,10 +209,10 @@ neither.
 - **`adopt_gmail_account <username>`** is for an install that connected
   Gmail before mailboxes were per-user, when one shared token was kept in
   `email_tokens.json` under `GOOGLE_DATA_DIR`. It turns that file into
-  the named user's mailbox, carries over the sync position, assigns the
-  already-synced emails to it, and fetches the identifier used to
-  recognise the same message in other mailboxes. Run it once, before
-  anyone else connects a mailbox. Current code never writes that file,
+  the named user's mailbox, assigns the already-synced emails to it, and
+  fetches the identifier used to recognise the same message in other
+  mailboxes; the first sync afterwards re-lists the mailbox. Run it once,
+  before anyone else connects a mailbox. Current code never writes that file,
   so on an install without it the command stops and tells you to connect
   on the Integrations page.
 - **`refresh_email_bodies`** fetches the HTML body for emails that were

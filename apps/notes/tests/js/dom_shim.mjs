@@ -25,12 +25,14 @@ class TextNode {
 }
 
 function matchesSimple(el, selector) {
-  // "tag", ".a", ".a.b", ".a:not(.b)"
+  // "tag", ".a", ".a.b", ".a:not(.b)", "[data-x]" (attribute present)
   const not = /:not\(\.([\w-]+)\)/.exec(selector);
   if (not && el.classList.contains(not[1])) return false;
   const bare = selector.replace(/:not\([^)]*\)/, "");
   const tag = /^[a-z0-9]+/i.exec(bare);
   if (tag && el.tagName.toLowerCase() !== tag[0].toLowerCase()) return false;
+  const attrs = [...bare.matchAll(/\[([\w-]+)\]/g)].map((m) => m[1]);
+  if (!attrs.every((a) => a in el.attrs)) return false;
   const classes = [...bare.matchAll(/\.([\w-]+)/g)].map((m) => m[1]);
   return classes.every((c) => el.classList.contains(c));
 }
@@ -208,13 +210,15 @@ function parseInto(root, html) {
 export function installDom(elements = {}) {
   const store = new Map();
   globalThis.Node = { TEXT_NODE: 3, ELEMENT_NODE: 1 };
+  const body = new Element("body");
   globalThis.document = {
+    body,
     createElement: (tag) => new Element(tag),
     createDocumentFragment: () => new Fragment(),
     getElementById: (id) => elements[id] || null,
-    querySelector: () => null,
+    querySelector: (selector) => body.querySelector(selector),
+    querySelectorAll: (selector) => body.querySelectorAll(selector),
   };
-  globalThis.document.body = new Element("body");
   globalThis.window = globalThis;
   globalThis.addEventListener = () => {}; // window.addEventListener
   globalThis.sessionStorage = {

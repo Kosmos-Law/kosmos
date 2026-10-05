@@ -2,14 +2,14 @@ from django.core.management.base import BaseCommand, CommandError
 
 import apps.mail.google as google
 from apps.accounts.models import CustomUser
-from apps.mail.models import Email, GmailAccount, GmailSyncState
+from apps.mail.models import Email, GmailAccount
 
 
 class Command(BaseCommand):
     help = (
         "One-time multi-account migration: turn the legacy shared token file "
-        "(GOOGLE_DATA_DIR/email_tokens.json) into the given user's GmailAccount, move "
-        "the sync cursor onto it, claim all existing Email rows, and backfill "
+        "(GOOGLE_DATA_DIR/email_tokens.json) into the given user's GmailAccount, "
+        "claim all existing Email rows, and backfill "
         "Email.message_id (the cross-mailbox dedupe key) from Gmail. Run "
         "BEFORE anyone else connects a mailbox."
     )
@@ -48,11 +48,8 @@ class Command(BaseCommand):
         profile = service.users().getProfile(userId="me").execute()
         account.address = profile.get("emailAddress", account.address or "")
 
-        # Carry the incremental cursor over so adoption doesn't force a
-        # re-bootstrap of the whole mailbox.
-        state = GmailSyncState.objects.first()
-        if state and state.history_id and not account.history_id:
-            account.history_id = state.history_id
+        # No cursor is carried over from the single-mailbox days: the first
+        # sync re-lists the mailbox under the adopted account.
         account.save()
         self.stdout.write(
             self.style.SUCCESS(f"Account: {account.address} -> {user.username}")

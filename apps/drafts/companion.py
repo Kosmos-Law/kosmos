@@ -18,6 +18,9 @@ a user's installed copy only changes when they download it again:
            granted, then reports. It claims only when the round it was
            handed says "claim": true, so it also works against a server
            that predates the claim.
+    0.4.1  the same protocol; stops polling with a plain message when the
+           server answers 403 (the user lost access to the matter), and
+           its messages no longer speak of edits being "approved".
 
 The protocol therefore only ever grows: no path, method or key that 0.3.0
 uses may change, and anything new must be optional for the client.
@@ -30,7 +33,9 @@ tables included), which becomes the AI's draft context.
 Auth is a per-user key in the X-Kosmos-Token header (CompanionToken). These
 endpoints are CSRF-exempt: the client is urllib inside LibreOffice, not a
 browser with cookies. An unlinked draft answers 404, which tells the
-extension to stop polling.
+extension to stop polling; a link whose matter the user can no longer open
+answers 403, so the extension can say that instead (0.3.0 reads a 403 as
+a server error and keeps polling, which is harmless).
 """
 
 import base64
@@ -42,6 +47,7 @@ from functools import wraps
 from pathlib import Path
 
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -57,7 +63,7 @@ logger = logging.getLogger(__name__)
 COMPANION_SRC = Path(__file__).resolve().parent / "companion_src"
 # Also declared in companion_src/description.xml (LibreOffice reads the
 # version from there); test_companion checks the two agree.
-EXTENSION_VERSION = "0.4.0"
+EXTENSION_VERSION = "0.4.1"
 
 
 def companion_auth(view):
@@ -75,7 +81,10 @@ def companion_auth(view):
         if token is None or not token.user.is_active:
             return JsonResponse({"error": "invalid token"}, status=401)
         request.companion_user = token.user
-        return view(request, *args, **kwargs)
+        try:
+            return view(request, *args, **kwargs)
+        except PermissionDenied as exc:
+            return JsonResponse({"error": str(exc)}, status=403)
 
     return wrapper
 
@@ -91,7 +100,19 @@ def _user_links(user):
 
 
 def _get_link(request, link_id):
-    return get_object_or_404(_user_links(request.companion_user), pk=link_id)
+    """The link, if it is the token user's own and its matter is still
+    theirs to open. A link that exists on the user's own conversation but
+    whose matter they have lost is told apart from one that was unlinked:
+    the extension's message names the right cause."""
+    link = get_object_or_404(
+        DraftLink.objects.filter(
+            conversation__user=request.companion_user
+        ).select_related("conversation__matter"),
+        pk=link_id,
+    )
+    if not request.companion_user.has_matter_access(link.conversation.matter):
+        raise PermissionDenied("no access to the matter")
+    return link
 
 
 def _json_body(request):

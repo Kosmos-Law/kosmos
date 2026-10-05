@@ -30,7 +30,6 @@ from types import SimpleNamespace
 from django.core.mail import mail_admins
 from django.db.models import Q
 
-from apps.invoicing.invoices.models import Invoice
 from apps.invoicing.payments.models import Payment
 from apps.invoicing.processors import (
     PENDING,
@@ -188,26 +187,14 @@ def _reopen_requests(**fulfilled_by):
 def _reverse_payment(payment, event):
     """An accepted operating charge fell through (ACH return / NSF / void)."""
     invoice_ids = list(payment.applications.values_list("invoice_id", flat=True))
-    # Delete each application individually so PaymentApplication.delete() runs
-    # (records history; a cascade delete would skip the hook).
+    # Each application is deleted on its own so PaymentApplication.delete()
+    # runs: it reopens an invoice the payment no longer covers (a cascade
+    # would skip the hook and leave the invoice Paid).
     for application in list(payment.applications.all()):
         application.delete()
     detail = payment.detail
     _reopen_requests(payment=payment)
     payment.delete()
-
-    # The delete hook leaves an invoice PAID when its *last* allocation is removed
-    # (a legacy amount_remaining rule counts PAID + no-allocations as fully paid).
-    # Explicitly revert any such invoice so a returned payment shows as unpaid —
-    # but leave PAID any invoice still fully covered by other allocations.
-    for inv_id in invoice_ids:
-        inv = Invoice.objects.filter(pk=inv_id).first()
-        if inv is None or inv.status != "PAID":
-            continue
-        has_alloc = inv.applications.exists() or inv.credit_applications.exists()
-        if not has_alloc or inv.amount_remaining > 0:
-            inv.status = "SENT"
-            inv.save(update_fields=["status"])
 
     mail_admins(
         subject=f"Online payment {event.status}: {event.transaction_id}",

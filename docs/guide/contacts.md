@@ -151,9 +151,9 @@ no contact is open on the right.
 
 Kosmos refuses to delete a contact that is the client on a matter
 (whatever the matter's status), has trust activity, or has been sent a
-trust deposit request (the message calls these payment requests). It
-keeps the contact and gives the reason, for example "Elena Rivera was not
-deleted: this contact is the client on 1 matter and has trust activity."
+trust deposit request. It keeps the contact and gives the reason, for
+example "Elena Rivera was not deleted: this contact is the client on 1
+matter and has trust activity."
 
 Deleting is permanent. Deleted with the contact:
 
@@ -188,7 +188,8 @@ is in one folder or in none (**Unsorted**).
 refuse to delete on its own: a client on a matter, or a contact with
 trust activity or a trust deposit request. Those contacts move to
 **Unsorted**, and Kosmos says how many, for example "Kept 2 contacts that
-are clients or have trust activity. Find them under Unsorted."
+are clients or have trust activity or trust deposit requests. Find them
+under Unsorted."
 
 ## Put a contact on a matter
 

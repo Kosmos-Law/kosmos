@@ -3,17 +3,10 @@ from django_filters.filters import forms
 
 from apps.matters.models import Matter, PracticeArea
 
-MATTER_STATUS_CHOICES = (
-    ("Pending", "Pending"),
-    ("Open", "Open"),
-    ("Closed", "Closed"),
-    ("Complete", "Complete"),
-)
-
 
 class MatterFilter(django_filters.FilterSet):
     status = django_filters.ChoiceFilter(
-        choices=MATTER_STATUS_CHOICES, empty_label="All"
+        choices=Matter.STATUS_CHOICES, empty_label="All"
     )
     # The firm's own list (Settings, Practice Areas), inactive ones included
     # so matters filed under a retired area can still be found.

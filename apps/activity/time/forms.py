@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.accounts.access import filter_matters_for_user
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 from .models import AbbreviationCode, TimeEntry
@@ -31,16 +32,6 @@ class TimeEntryForm(forms.ModelForm):
             "entered",
         )
 
-        COMP_CHOICES = (
-            (False, "No"),
-            (True, "Yes"),
-        )
-
-        ENTERED_CHOICES = (
-            (False, "No"),
-            (True, "Yes"),
-        )
-
         widgets = {
             "matter": forms.Select(
                 attrs={
@@ -58,8 +49,8 @@ class TimeEntryForm(forms.ModelForm):
                     "autofocus": True,
                 }
             ),
-            "comp": forms.Select(choices=COMP_CHOICES),
-            "entered": forms.Select(choices=ENTERED_CHOICES),
+            "comp": forms.Select(choices=YESNO_CHOICES),
+            "entered": forms.Select(choices=YESNO_CHOICES),
         }
 
         labels = {"rate": "Rate"}

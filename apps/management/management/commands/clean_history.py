@@ -1,21 +1,28 @@
-"""Management command to clean up old history records."""
+"""Management command to clean up old history records and failed task rows."""
 
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
+from django_q.models import Failure
 
 
 class Command(BaseCommand):
-    help = "Delete history records older than specified days (default: 90)"
+    help = (
+        "Delete change-history records and failed worker tasks older than "
+        "specified days (default: 90)"
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--days",
             type=int,
             default=90,
-            help="Delete history older than this many days (default: 90)",
+            help=(
+                "Delete history and failed tasks older than this many days "
+                "(default: 90)"
+            ),
         )
         parser.add_argument(
             "--dry-run",
@@ -70,6 +77,18 @@ class Command(BaseCommand):
                         )
                         self.stdout.write(f"  {table}: {count:,} records deleted")
                     total_deleted += count
+
+        # django-q caps successful runs at save_limit but keeps every failed
+        # task forever; the admin's Failed tasks page is the only reader.
+        failures = Failure.objects.filter(stopped__lt=cutoff)
+        count = failures.count()
+        if count > 0:
+            if dry_run:
+                self.stdout.write(f"  failed tasks: {count:,} records would be deleted")
+            else:
+                failures.delete()
+                self.stdout.write(f"  failed tasks: {count:,} records deleted")
+            total_deleted += count
 
         if dry_run:
             self.stdout.write(

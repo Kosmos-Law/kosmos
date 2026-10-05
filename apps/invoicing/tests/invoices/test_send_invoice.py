@@ -55,7 +55,7 @@ def test_send_invoice_uses_billing_email(invoice, mailoutbox, settings, tmp_path
     settings.BILLING_FROM_EMAIL = "billing-sender@example.com"
     invoice.pdf_file.save("inv.pdf", ContentFile(b"%PDF-1.4 test"), save=True)
     Firm.objects.create(
-        name="Craig Legal",
+        name="Example Law",
         email="firm@example.com",
         billing_email="billing@example.com",
     )
@@ -65,9 +65,9 @@ def test_send_invoice_uses_billing_email(invoice, mailoutbox, settings, tmp_path
     msg = mailoutbox[0]
     # Sent from the configured billing sender, named "<Firm> Billing" to match
     # the Reply-To (so inboxes don't truncate a bare firm name).
-    assert msg.from_email == "Craig Legal Billing <billing-sender@example.com>"
+    assert msg.from_email == "Example Law Billing <billing-sender@example.com>"
     # Reply-To carries a "<Firm> Billing" display name over the billing address.
-    assert msg.reply_to == ["Craig Legal Billing <billing@example.com>"]
+    assert msg.reply_to == ["Example Law Billing <billing@example.com>"]
     assert "billing@example.com" in msg.body
     assert "firm@example.com" not in msg.body
     html = msg.alternatives[0][0]
@@ -79,9 +79,9 @@ def test_send_invoice_falls_back_to_firm_email(invoice, mailoutbox, settings, tm
     """With no billing email configured, correspondence uses the firm email."""
     _offline_send_env(settings, tmp_path)
     invoice.pdf_file.save("inv.pdf", ContentFile(b"%PDF-1.4 test"), save=True)
-    Firm.objects.create(name="Craig Legal", email="firm@example.com")
+    Firm.objects.create(name="Example Law", email="firm@example.com")
 
     assert send_invoice(invoice, to="client@example.com") is True
     msg = mailoutbox[0]
-    assert msg.reply_to == ["Craig Legal Billing <firm@example.com>"]
+    assert msg.reply_to == ["Example Law Billing <firm@example.com>"]
     assert "firm@example.com" in msg.body

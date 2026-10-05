@@ -92,7 +92,7 @@
                 <div class="highlight-citation">{{ highlight.citation }}</div>
               </div>
               <div class="highlight-importance">
-                <i class="icon-flag"></i> {{ highlight.importance }}
+                <i class="icon-flag"></i> {{ highlight.importance_name }}
               </div>
               <a href="#"
                  class="highlight-edit-btn edit-highlight"
@@ -247,8 +247,14 @@
       caselawId: {{ caselaw.id|default:"null" }},
       csrfToken: "{{ csrf_token }}",
       existingHighlights: {{ highlights_json|safe }},
+      importanceNames: {{ importance_names_json|safe }},
       initialHighlight: {{ initial_highlight|default:"null" }}
     };
+
+    // The level's name on the shared scale, as the document viewer shows it
+    function importanceName(level) {
+      return config.importanceNames[level] || level;
+    }
 
     let currentSelection = null;
     let selectedHighlightId = null;
@@ -404,7 +410,7 @@
           <div class="highlight-slug">${escapeHtml(highlight.slug)}</div>
           <div class="highlight-citation">${escapeHtml(highlight.citation || '')}</div>
         </div>
-        <div class="highlight-importance"><i class="icon-flag"></i> ${highlight.importance}</div>
+        <div class="highlight-importance"><i class="icon-flag"></i> ${importanceName(highlight.importance)}</div>
         <a href="#" class="highlight-edit-btn edit-highlight" data-highlight-id="${highlight.id}">
           <i class="icon-pencil"></i>
         </a>
@@ -750,7 +756,7 @@
       if (citationEl) citationEl.textContent = data.citation || '';
 
       const impEl = item.querySelector('.highlight-importance');
-      if (impEl) impEl.innerHTML = `<i class="icon-flag"></i> ${data.importance}`;
+      if (impEl) impEl.innerHTML = `<i class="icon-flag"></i> ${importanceName(data.importance)}`;
     }
 
     function escapeHtml(text) {

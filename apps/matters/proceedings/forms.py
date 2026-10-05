@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.matters.proceedings.models import Proceeding
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 
@@ -16,17 +17,7 @@ class ProceedingForm(forms.ModelForm):
             "primary",
         )
 
-        STATUSES = (
-            ("Ongoing", "Ongoing"),
-            ("Concluded", "Concluded"),
-            ("Stayed", "Stayed"),
-            ("Dismissed", "Dismissed"),
-        )
-
-        PRIMARY_CHOICES = (
-            (False, "No"),
-            (True, "Yes"),
-        )
+        STATUSES = Proceeding.STATUS_CHOICES
 
         widgets = {
             "forum": forms.TextInput(attrs={"onfocus": "moveFocusToEnd(this)"}),
@@ -35,7 +26,7 @@ class ProceedingForm(forms.ModelForm):
             ),
             "status": forms.Select(choices=STATUSES),
             "date_filed": forms.DateInput(attrs={"type": "date"}),
-            "primary": forms.Select(choices=PRIMARY_CHOICES),
+            "primary": forms.Select(choices=YESNO_CHOICES),
         }
 
         labels = {

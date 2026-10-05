@@ -63,9 +63,10 @@ def contact(user, folder):
 
 @pytest.fixture
 def practice_area():
-    practice_area = PracticeArea.objects.create(
+    # Migration matters.0023 seeds "General"; a second row would shadow it.
+    practice_area, _ = PracticeArea.objects.get_or_create(
         name="General",
-        is_active=True,
+        defaults={"is_active": True},
     )
     return practice_area
 

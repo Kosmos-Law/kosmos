@@ -35,8 +35,6 @@ class Matter(AuditMixin, models.Model):
     # Gmail label mapped to this matter for case-email sync. The label NAME
     # is the contract: every connected mailbox (GmailAccount) resolves it to
     # its own label id at sync time, so one link serves all mailboxes.
-    # gmail_label_id is legacy (pre-multi-account) and no longer written.
-    gmail_label_id = models.CharField(max_length=64, null=True, blank=True)
     gmail_label_name = models.CharField(max_length=255, null=True, blank=True)
     practice_area = models.ForeignKey(
         "PracticeArea",
@@ -93,12 +91,19 @@ class Matter(AuditMixin, models.Model):
             models.Index(fields=["billing_type"]),
         ]
 
+    # The lifecycle, in order. `status` is a plain CharField (no choices, so
+    # the database accepts anything); these tuples are the one list the
+    # forms, the filter and the access modules' matter choices draw on.
+    STATUSES = ("Pending", "Open", "Complete", "Closed")
+    STATUS_CHOICES = tuple((status, status) for status in STATUSES)
     # Statuses under which work is no longer tracked: the file has moved out
     # of the "Matters - Open" Drive/Gmail roots, so its mirrors are unlinked.
     # "Complete" is the closing-out phase (usually waiting on a trust
     # reimbursement); "Closed" is final and additionally starts the chat
     # retention clock (apps/case/ai/purge.py).
     INACTIVE_STATUSES = ("Complete", "Closed")
+    # Still being worked: what the task, event and assignment forms offer.
+    ACTIVE_STATUSES = ("Pending", "Open")
 
     def save(self, *args, **kwargs):
         previous_status = None
@@ -134,7 +139,6 @@ class Matter(AuditMixin, models.Model):
             # rows all survive the unlink: record Documents are append-only
             # and Email rows are only removed by label events on a
             # still-mapped matter.
-            self.gmail_label_id = None
             self.gmail_label_name = None
             self.drive_folder = None
             self.drive_folder_id = None
@@ -427,10 +431,12 @@ class Matter(AuditMixin, models.Model):
             or 0
         )
 
+        # No balance due here: payments are applied to invoices, and credits
+        # pay them too, so billed minus payments is not what is owed. The
+        # ledger computes the balance from the applications.
         invoices = {
             "billed": billed_invoices,
             "payment_sum": payment_sum,
-            "due": billed_invoices - payment_sum,
         }
 
         return {

@@ -126,6 +126,7 @@ def test_modified_file_replaces_bytes_and_resets_ocr(
     doc.importance = 7
     doc.ocr_status = "completed"
     doc.ocr_text = "old text"
+    doc.summary = "Describes the old scan."
     doc.save()
 
     meta["modifiedTime"] = "2026-02-01T00:00:00.000Z"
@@ -139,6 +140,9 @@ def test_modified_file_replaces_bytes_and_resets_ocr(
         assert fh.read() == b"%PDF-corrected"
     assert doc.ocr_status == "pending"
     assert doc.ocr_text is None
+    # The summary task skips a document that already has one: a kept
+    # summary would describe the old scan forever.
+    assert doc.summary is None
     # User-set metadata untouched.
     assert doc.name == "Amended Complaint (my title)"
     assert doc.importance == 7

@@ -810,19 +810,9 @@ urlpatterns = [
         name="ai-new-conversation-prompt",
     ),
     path(
-        "case/<int:matter_id>/ai/create-prompt/",
-        ai.create_prompt,
-        name="ai-create-prompt",
-    ),
-    path(
         "case/<int:matter_id>/ai/prompt-editor/",
         ai.prompt_editor_modal,
         name="ai-prompt-editor",
-    ),
-    path(
-        "case/<int:matter_id>/ai/context-preview/",
-        ai.context_preview,
-        name="ai-context-preview",
     ),
     # Research (matter-scoped)
     path(
@@ -963,11 +953,6 @@ urlpatterns = [
         "case/documents/<int:document_id>/serve/",
         documents.serve_document,
         name="serve",
-    ),
-    path(
-        "case/documents/<int:document_id>/ocr-status/",
-        documents.ocr_status,
-        name="ocr-status",
     ),
     path(
         "case/documents/<int:document_id>/retry-ocr/",
@@ -1304,6 +1289,11 @@ urlpatterns = [
         "case/research/brief/<int:brief_id>/status/",
         research.research_brief_status,
         name="research-brief-status",
+    ),
+    path(
+        "case/research/brief/<int:brief_id>/retry/",
+        research.research_retry_brief,
+        name="research-retry-brief",
     ),
     path(
         "case/research/brief/<int:brief_id>/delete/",

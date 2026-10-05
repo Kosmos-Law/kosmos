@@ -1,9 +1,16 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from apps.accounts.access import matter_access_required
-from apps.matters.events.get_event_data import get_event_data
+from apps.case.facts.sorting import stored_sort_key
+from apps.matters.events.get_event_data import (
+    DEFAULT_SORT,
+    SORT_FIELDS,
+    SORT_KEYS,
+    get_event_data,
+    sort_session_key,
+)
 from apps.matters.models import Matter
 
 
@@ -103,9 +110,13 @@ def events_filter_status(request, id, status):
 @matter_access_required
 def events_filter_sort(request, id, order):
     matter = get_object_or_404(Matter, pk=id)
-    session_key = f"matter_events_sort_{matter.id}"
+    if order not in SORT_FIELDS:
+        raise Http404("Unknown sort")
+    session_key = sort_session_key(matter.id)
 
-    current_order = request.session.get(session_key, "date")
+    current_order = stored_sort_key(
+        {"order_by": request.session.get(session_key)}, SORT_KEYS, DEFAULT_SORT
+    )
 
     if current_order == order:
         new_order = f"-{order}" if not current_order.startswith("-") else order

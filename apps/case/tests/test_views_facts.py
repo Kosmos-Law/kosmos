@@ -133,17 +133,17 @@ class TestFactsSort:
         matter_id = client_with_matter.matter.id
         filter_key = f"facts_filter_{matter_id}"
 
-        # First sort - ascending
-        client_with_matter.get(f"/case/{matter_id}/facts/sort/date/")
-        session = client_with_matter.session
-        filter_data = session.get(filter_key, {})
-        assert filter_data.get("order_by") == "date"
-
-        # Second sort - should toggle to descending
+        # The list starts oldest first: the first click reverses it
         client_with_matter.get(f"/case/{matter_id}/facts/sort/date/")
         session = client_with_matter.session
         filter_data = session.get(filter_key, {})
         assert filter_data.get("order_by") == "-date"
+
+        # Second sort - back to oldest first
+        client_with_matter.get(f"/case/{matter_id}/facts/sort/date/")
+        session = client_with_matter.session
+        filter_data = session.get(filter_key, {})
+        assert filter_data.get("order_by") == "date"
 
 
 class TestFactImportance:

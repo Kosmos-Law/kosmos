@@ -2,5 +2,5 @@
   <a href="{% url 'matters:tasks-index' id=task.matter.id %}"
      class="matter-link">{{ task.matter.name }}</a>
 {% else %}
-  <a href="{% url 'tasks:select' %}">Admin</a>
+  <a href="{% url 'tasks:index' %}">Admin</a>
 {% endif %}

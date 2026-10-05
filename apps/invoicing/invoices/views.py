@@ -527,10 +527,7 @@ def invoice_flat_fee_entries(request, pk):
 
 @login_required
 def quick_invoice_payment(request, pk, payment_type):
-    try:
-        invoice = Invoice.objects.get(pk=pk)
-    except (Invoice.DoesNotExist, Exception):
-        return HttpResponse(status=404)
+    invoice = get_object_or_404(Invoice, pk=pk)
     # Trust money belongs to a client. A withdrawal with no client would sit
     # on no ledger, and the Trust tab cannot list it.
     if payment_type == "trust" and not (invoice.matter and invoice.matter.client_id):
@@ -704,8 +701,12 @@ def invoices_void(request, pk):
     if invoice.status in ["DRAFT", "APPROVED"]:
         return HttpResponse(status=400)
 
-    if not invoice.pdf_file:
-        store_invoice_pdf(invoice, request)
+    # The stored copy is remade stamped Void while the entries are still on
+    # the invoice: void() releases them, and a copy made after that would be
+    # a blank page. The client's link no longer serves it; this is the firm's
+    # record of what was cancelled.
+    invoice.status = "VOID"
+    store_invoice_pdf(invoice, request)
 
     invoice.void()
 

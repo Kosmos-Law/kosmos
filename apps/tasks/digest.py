@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from django.core.mail import send_mail
@@ -6,10 +7,13 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
+from apps.calendar.access import events_for_user
 from apps.calendar.models import Event
-from apps.tasks.access import sees_all_matters, tasks_for_user
+from apps.tasks.access import tasks_for_user
 from apps.tasks.constants import ACTIVE_STATUSES
 from apps.tasks.models import Task
+
+logger = logging.getLogger(__name__)
 
 LOOKAHEAD_DAYS = 3
 
@@ -31,7 +35,12 @@ def send_daily_digest():
     for user in users:
         if is_weekend and not user.digest_include_weekends:
             continue
-        send_digest_for_user(user)
+        # One address that bounces at the mail server must not cost the
+        # rest of the firm their digest.
+        try:
+            send_digest_for_user(user)
+        except Exception:
+            logger.exception("Daily digest failed for user %s", user.pk)
 
 
 def send_digest_for_user(user):
@@ -45,11 +54,7 @@ def send_digest_for_user(user):
     upcoming_end = today + timedelta(days=LOOKAHEAD_DAYS)
 
     # Events
-    events_qs = Event.objects.select_related("matter")
-    if not sees_all_matters(user):
-        events_qs = events_qs.filter(
-            Q(matter__isnull=True) | Q(matter__in=user.assigned_matters.all())
-        )
+    events_qs = events_for_user(Event.objects.select_related("matter"), user)
 
     overdue_events = events_qs.filter(
         date__lt=today,

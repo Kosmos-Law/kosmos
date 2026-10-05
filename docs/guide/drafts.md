@@ -40,7 +40,7 @@ the file. If you use **Rotate token** or **Revoke token** under
 **Settings → Claude Desktop**, download the extension again and reinstall
 it (see [Settings](settings.md)).
 
-This page describes version 0.4.0 of the extension. The download dialog,
+This page describes version 0.4.1 of the extension. The download dialog,
 **LibreOffice Companion**, names the current version, and **Kosmos →
 Status** in Writer shows the version you have installed (a copy that
 shows none is older). To update, download the file again, install it over
@@ -107,7 +107,14 @@ Good to know:
   the confirmation message.
 - Only the person who started the conversation can connect Writer to its
   draft, and only while they can still open the matter. A colleague can
-  read the chat, but their Writer answers "No draft link found".
+  read the chat, but their Writer answers "No draft link found". If you
+  are taken off the matter while connected, the connection stops and
+  **Kosmos → Status** says you no longer have access to the draft's
+  matter.
+- If more than one file of the document's name is linked and the list to
+  choose from cannot be shown, Writer connects to the most recently
+  linked one and says so in the confirmation. Check the matter it names;
+  **Kosmos → Disconnect** if it is the wrong one.
 - The chat window does not show whether Writer is connected. Use
   **Kosmos → Status** in Writer.
 

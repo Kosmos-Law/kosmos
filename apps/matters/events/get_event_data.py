@@ -3,7 +3,19 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 
 from apps.calendar.models import Event
+from apps.case.facts.sorting import sort_keys, stored_sort_key
 from apps.matters.proceedings.models import Proceeding
+
+# The columns the matter Events tab sorts by: the list's own sort buttons.
+# The stored key is checked against these on the way in and on the way out,
+# so a session cannot hand `order_by()` a name the model does not have.
+SORT_FIELDS = ("date", "party", "description", "status")
+SORT_KEYS = sort_keys(SORT_FIELDS)
+DEFAULT_SORT = "date"
+
+
+def sort_session_key(matter_id):
+    return f"matter_events_sort_{matter_id}"
 
 
 def get_event_data(request, matter):
@@ -14,18 +26,18 @@ def get_event_data(request, matter):
     status_session_key = f"matter_events_filter_{matter.id}"
     filter_status = request.session.get(status_session_key, "Pending")
 
-    # Get sort order from session, default to "date"
-    sort_session_key = f"matter_events_sort_{matter.id}"
-    order_by = request.session.get(sort_session_key, "date")
+    order_by = stored_sort_key(
+        {"order_by": request.session.get(sort_session_key(matter.id))},
+        SORT_KEYS,
+        DEFAULT_SORT,
+    )
 
     # Build queryset based on filter
     events = Event.objects.filter(matter=matter)
     if filter_status:
         events = events.filter(status=filter_status)
 
-    # Apply sort order (supports multiple fields separated by comma)
-    order_fields = [f.strip() for f in order_by.split(",")]
-    events = events.order_by(*order_fields)
+    events = events.order_by(order_by)
 
     # Calculate duration for events
     for event in events:
@@ -38,9 +50,7 @@ def get_event_data(request, matter):
             event.duration = None
 
     # Get current order without the "-" prefix for template comparison
-    # Use the first field for highlighting the active sort button
-    first_order = order_fields[0] if order_fields else "date"
-    current_order = first_order.lstrip("-")
+    current_order = order_by.lstrip("-")
 
     event_data = {
         "matter": matter,

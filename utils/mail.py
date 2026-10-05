@@ -33,7 +33,7 @@ def _billing_display_name(company):
 
 def billing_from_email(company):
     """From header for client-facing billing email: '<Firm> Billing' as display
-    name in front of BILLING_FROM_EMAIL — e.g. '"Craig Legal Billing" <billing@…>'.
+    name in front of BILLING_FROM_EMAIL — e.g. '"Example Law Billing" <billing@…>'.
     Replies route to the firm's billing address via Reply-To. Returns None when
     no address is configured (so the caller falls back to DEFAULT_FROM_EMAIL)."""
     address = parseaddr(settings.BILLING_FROM_EMAIL or "")[1]
@@ -43,7 +43,7 @@ def billing_from_email(company):
 def billing_reply_to(company):
     """Reply-To for client-facing billing email: the firm's billing address
     carrying the same '<Firm> Billing' display name — e.g.
-    '"Craig Legal Billing" <billing@…>' — so a client's reply captures a sensible
+    '"Example Law Billing" <billing@…>' — so a client's reply captures a sensible
     contact name in their inbox. Address is Firm.billing_email, falling back to
     the firm email. Returns None when no address is configured."""
     address = ""

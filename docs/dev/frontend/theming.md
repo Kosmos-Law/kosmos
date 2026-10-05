@@ -2,40 +2,43 @@
 
 Theming is **token-first**, with **co-located structural overrides**.
 
-There are **six themes**: three light — `light` (Matcha), `basic` (after the 2017
-LawPay UI: white ground, navy buttons, azure accents; formerly `oxford` —
-the `--oxford-*` palette keeps the source name), and `nord-light`
-(Nord's Snow Storm surfaces, Polar Night text, frost blue links, frost
-cyan selection) — and three dark — `dark` (Gruvbox), `cosmic` (Nord), and
-`everforest` (green-gray surfaces, cream text, signature-green links).
-**Cosmic and everforest are the dark theme structurally** — they
-share the dark token block and every dark structural rule, and only
-repoint the `--gb-*` ramp (theme blocks in `colors.css`, palettes in
-`palette.css`). Consequence: every "dark" selector is scoped to **all
-three** themes as
+There are **seven themes**. Four are light: `light` (Matcha), `basic`
+(after the 2017 LawPay UI: white ground, navy buttons, azure accents;
+formerly `oxford`, and the `--oxford-*` palette keeps the source name),
+`nord-light` (Nord's Snow Storm surfaces, Polar Night text, frost blue
+links, frost cyan selection) and `letterhead` (after a firm engagement
+letter: bone paper, hairline rules, fountain-pen blue). Three are dark:
+`dark` (Gruvbox), `cosmic` (Nord) and `everforest` (green-gray surfaces,
+cream text, signature-green links).
+
+**Cosmic and everforest are the dark theme structurally.** They share the
+dark token block and every dark structural rule, and only repoint the
+`--gb-*` ramp (theme blocks in `colors.css`, palettes in `palette.css`).
+Consequence: every "dark" selector is scoped to **all three** themes as
 `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])`.
 When you add a new dark structural rule, use that `:is(...)` selector so
 all the darks stay in sync.
-**The non-Matcha lights are the light theme structurally** — they inherit
+
+**The non-Matcha lights are the light theme structurally.** They inherit
 every `:root` (light) default and their blocks in `colors.css` only
-repoint colour tokens. Light
-structural rules are the unscoped defaults, so they get them for free; a
-rule scoped to `[data-theme="light"]` alone does NOT apply to them — scope
-to `:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"])`
+repoint colour tokens. Light structural rules are the unscoped defaults,
+so they get them for free; a rule scoped to `[data-theme="light"]` alone
+does NOT apply to them. Scope to
+`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="letterhead"])`
 (or the subset that needs it) when a light structural rule must reach the
-other light themes. (Retired themes: `sky`, `kosmos`, `kosmos-dark`,
-`latte`, `mocha`, `everforest-light`; renamed: `oxford` → `basic` —
-`theme.js` migrates stored settings.)
+other light themes. Retired themes: `sky`, `kosmos`, `kosmos-dark`,
+`latte`, `mocha`, `everforest-light`; renamed: `oxford` to `basic`
+(`theme.js` migrates stored settings).
 
 All theme colour variables are authored in **oklch** (`palette.css` ramps and
-any literal colours in `colors.css` theme blocks) — no hex. Derivation
+any literal colours in `colors.css` theme blocks): no hex. Derivation
 formulas (`color-mix`) and component styles consume tokens as before.
 
 - **Tokens are the primary mechanism.** `static/css/colors.css` defines every
   semantic token in `:root` (light values) and re-defines the same tokens in a
   single `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) { … }` block (dark
   `gb-*` values). Component stylesheets consume `var(--token)` and are
-  theme-agnostic — they flip automatically when the tokens change underneath
+  theme-agnostic: they flip automatically when the tokens change underneath
   them.
 
 - **When dark only needs a different value → change a token.** Add or repoint
@@ -55,11 +58,11 @@ formulas (`color-mix`) and component styles consume tokens as before.
   someone *chose* (link hue, selection wash, urgency) is a per-theme token.
   A colour that exists only in service of another colour (the border of a
   fill, the focus ring of an accent, a hover step) is a `color-mix()`
-  formula off its source — formulas can't forget a theme, which is how
+  formula off its source. Formulas cannot forget a theme, which is how
   fixed button borders rotted invisibly in eight themes. Current
   derivations: `--focus-ring` (accent normalized to mid-tone),
   `--field-focus` (ring diluted toward the field ground), the focus halo,
-  and the modal button borders (fill mixed 20% toward `--color-darker` —
+  and the modal button borders (fill mixed 20% toward `--color-darker`:
   darkens in light themes, lightens in dark ones). A theme may still
   override a derived value with a scoped rule as an escape hatch.
 
@@ -67,7 +70,7 @@ formulas (`color-mix`) and component styles consume tokens as before.
   mobile topbar wordmark, the auth-card wordmark, and the painted favicon
   all run from `--brand-grad-from` to `--brand-grad-to`. The leading (left)
   end is `--brand-ink`, the stronger colour (set once in `:root`); the far
-  end is the per-theme decision — each light block sets `--brand-grad-to`,
+  end is the per-theme decision: each light block sets `--brand-grad-to`,
   and the darks get it by repointing `--gb-bright-yellow`. A new theme must
   set it (or set it to `var(--brand-ink)` for a flat brand), or it inherits
   Matcha's violet. The inline cuts fill from the shared SVG gradients in

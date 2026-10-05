@@ -154,7 +154,7 @@ def test_oxt_download_is_personalized_zip(client, user, settings):
     declared = re.search(
         r'<version value="([^"]+)"/>', archive.read("description.xml").decode()
     )
-    assert declared.group(1) == companion.EXTENSION_VERSION == "0.4.0"
+    assert declared.group(1) == companion.EXTENSION_VERSION == "0.4.1"
 
 
 def test_setup_dialog_names_the_version_and_how_to_update(client):

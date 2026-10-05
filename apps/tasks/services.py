@@ -399,6 +399,30 @@ def quick_date_filters(today):
     }
 
 
+def merge_filter_post(stored, post, today):
+    """The stored tasks filter with the filter dialog's POST merged in.
+
+    Shared by the tasks tab and the matter Tasks tab, whose dialogs post the
+    same fields. Merging keeps the quick-filter state the dialog does not
+    carry; status is multi-valued, so it is read with getlist (an items()
+    loop would keep only the last box). The has_due_date NullBooleanSelect
+    posts "unknown" for its empty state, normalized to "" so it reads as
+    "no preference" rather than a real value (which would flip the date
+    dropdown to Custom range and light the Filter button). Returns a new
+    dict; the stored filter is not mutated.
+    """
+    filter_data = dict(stored)
+    for key, val in post.items():
+        if key in ("csrfmiddlewaretoken", "status"):
+            continue
+        filter_data[key] = val
+    filter_data["status"] = post.getlist("status")
+    if filter_data.get("has_due_date") == "unknown":
+        filter_data["has_due_date"] = ""
+    filter_data["filter_label"] = detect_filter_label(filter_data, today)
+    return filter_data
+
+
 def refresh_date_preset(filter_data, today, presets=None):
     """Re-stamp a semantic date preset's date dimensions from today.
 

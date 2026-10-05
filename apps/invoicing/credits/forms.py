@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from django import forms
+from django.utils import timezone
 
 from apps.invoicing.credits.models import Credit
 from config.settings import CustomFormRendererCompact
@@ -26,7 +25,7 @@ class CreditsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
 
-        self.fields["date"].initial = datetime.now().date()
+        self.fields["date"].initial = timezone.localdate()
 
     def clean_amount(self):
         amount = self.cleaned_data["amount"]

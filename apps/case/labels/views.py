@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from apps.case.documents.access import open_matters_for_user
 from apps.case.models import CaseLaw, Document, Fact, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
+from apps.matters.models import Matter
 from apps.notes.models import Note
 
 from .filters import LabelsFilter
@@ -129,20 +130,19 @@ def labels_filter(request, matter_id):
     else:
         filter_data = request.session.get(filter_session_key, {})
 
+        # The same set as every other label list on this tab: the global
+        # labels and this matter's, never another matter's.
+        labels = _labels_for(matter).select_related("matter")
         if filter_data:
             filter = LabelsFilter(
-                filter_data,
-                queryset=Label.objects.all()
-                .select_related("matter")
-                .order_by("matter__name", "name"),
+                filter_data, queryset=labels.order_by("matter__name", "name")
             )
         else:
             default_filter = {"order_by": "name"}
 
-            filter = LabelsFilter(
-                default_filter,
-                queryset=Label.objects.all().select_related("matter").order_by("name"),
-            )
+            filter = LabelsFilter(default_filter, queryset=labels.order_by("name"))
+        # The Matter choice can only narrow to this matter's own labels.
+        filter.form.fields["matter"].queryset = Matter.objects.filter(pk=matter.pk)
 
         return render(
             request, "case/labels/filter.html", {"filter": filter, "matter": matter}
@@ -198,7 +198,9 @@ def _get_object_for_labels(object_type, object_id, view=None):
         context_key = "document"
     elif object_type == "highlight":
         obj = get_object_or_404(Highlight, id=object_id)
-        matter = obj.document.matter if obj.document else None
+        # A highlight sits on a document or on a saved case; both carry
+        # the matter.
+        matter = obj.source.matter
         # Pick row template based on view: table row, viewer sidebar card, or card
         if view == "table":
             row_template = "case/highlights/highlight-row.html"

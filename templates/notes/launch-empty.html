@@ -1,0 +1,25 @@
+{% extends "registration/base.html" %}
+{% load firm_tags %}
+{% comment %}
+notes_launch with nothing to open: the user can reach no note yet. The
+editor cannot render without a note, so instead of creating one on a GET
+this page offers to (a plain form post; notes_add ?open=1 redirects into
+the editor on the new note).
+{% endcomment %}
+{% block content %}
+  <div class="auth-container">
+    <div class="auth-card">
+      {% auth_brand %}
+      <div class="auth-info">
+        <p>There are no notes you can open yet.</p>
+      </div>
+      <form method="post" action="{% url 'notes:add' %}?open=1">
+        {% csrf_token %}
+        <div class="auth-buttons justify-between">
+          <a href="{% url 'notes:index' %}">Back to the Library</a>
+          <button type="submit" class="btn btn-success">New note</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

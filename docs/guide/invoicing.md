@@ -162,15 +162,16 @@ and choose **Draft**, **Approved**, **Sent**, **Deferred** or
 | **Approved** | Checked and ready to send. Its entries can no longer be edited or deleted, and Kosmos keeps the PDF made now. Still not owed. The pencil button still works. |
 | **Sent** | Issued. On the ledger and in **Balance Due**. Payments and credits can be applied. The pencil button is gone. |
 | **Deferred** | Issued, but not being collected for now. Still in **Balance Due**, shown apart on the ledger, and left out of **Due** on **Collection**. |
-| **Paid** | Set by Kosmos when the payments and credits applied equal the total. Removing one in the **Apply** dialog, or deleting the payment or credit, returns the invoice to **Sent**. |
+| **Paid** | Set by Kosmos when the payments and credits applied equal the total. Removing one in the **Apply** dialog, or deleting the payment or credit, returns the invoice to **Sent**, or to **Deferred** if that is what it was before it was paid. |
 | **Uncollectible** | Written off. Out of **Balance Due**. Its entries stay billed. **Amount Due** in the list and **Outstanding** on **History** are $0.00. |
 | **Void** | Cancelled. See [Void an invoice](#void-an-invoice). |
 
 Kosmos makes the invoice's PDF again, and keeps that copy, when you
 choose **Approved** or **Sent** and when an invoice leaves **Draft** for
 any other status. So an invoice that leaves **Draft** loses the draft
-mark, whichever status it goes to. Any other change, such as **Sent** to
-**Deferred**, leaves the kept copy as it is.
+mark, whichever status it goes to. Sending an invoice straight from
+**Draft** or **Approved** does the same. Any other change, such as
+**Sent** to **Deferred**, leaves the kept copy as it is.
 
 On a **Sent** or **Deferred** invoice, **+ Card** and **+ Trust** at the
 top record a payment against it. See [Payments](payments.md).
@@ -230,9 +231,9 @@ Approved invoice has no void button: delete it instead.
    through it) at the top right. **Void Invoice** opens.
 2. Type VOID in the box and click **Submit**.
 
-The invoice is now **Void** and stays in the list with its PDF. Its
-entries are unbilled again, so they return to **Work in Progress** and can
-be edited. Payments and credits applied to it are taken off it and stay
+The invoice is now **Void** and stays in the list with its PDF, made
+again with a cancelled mark across it. Its entries are unbilled again,
+so they return to **Work in Progress** and can be edited. Payments and credits applied to it are taken off it and stay
 on the matter, unapplied. It no longer counts in **Balance Due**. Voiding
 cannot be undone, and a void invoice's status cannot be changed.
 
@@ -270,7 +271,8 @@ that still have something due, and under **Current Applications** you can
 remove an application. A second amount from the same credit to the same
 invoice is added to the first application. The **ID** menu also has
 **Edit** and **Delete**. Removing an application, or deleting the credit,
-sets an invoice it had paid off back to **Sent**.
+sets an invoice it had paid off back to **Sent** (or **Deferred**, if it
+was deferred when it was paid).
 
 Once a credit is applied, **Edit** will not make it smaller than the
 amount applied or move it to another matter. Remove the application

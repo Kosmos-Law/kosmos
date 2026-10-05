@@ -578,19 +578,14 @@ def documents_edit(request, document_id):
             document = form.save(commit=False)
             document.updated_by = request.user
 
-            # If new file uploaded, delete old and reset OCR fields
+            # If new file uploaded, delete old and reset what was read from it
             if uploaded_file:
                 if old_file_path:
                     default_storage.delete(old_file_path)
 
                 document.file = uploaded_file
                 document.content_hash, document.page_fingerprint = fingerprints
-                document.ocr_status = "pending"
-                document.ocr_text = None
-                document.ocr_error = None
-                document.ocr_processed_at = None
-                document.page_count = None
-                document.ocr_pages_done = 0
+                document.reset_extraction()
             # If matter changed (and no new file), move file to new matter's folder
             elif document.matter_id != old_matter_id and old_file_path:
                 file_extension = old_file_path.split(".")[-1].lower()
@@ -982,25 +977,6 @@ def document_viewer(request, document_id):
     }
 
     return render(request, "case/viewer.html", context)
-
-
-@login_required
-def ocr_status(request, document_id):
-    """Return OCR status for polling."""
-    document = get_object_or_404(Document, id=document_id)
-
-    return JsonResponse(
-        {
-            "status": document.ocr_status,
-            "error": document.ocr_error,
-            "processed_at": (
-                document.ocr_processed_at.isoformat()
-                if document.ocr_processed_at
-                else None
-            ),
-            "page_count": document.page_count,
-        }
-    )
 
 
 @login_required

@@ -5,7 +5,7 @@
 If any problems occur during the installation of dependencies, make sure
 to check the following:
 
-- Python version is 3.10 or higher
+- Python version is 3.13 or higher
 - You are running the command inside the virtual environment created in
   [Installing dependencies](install-manual.md#installing-dependencies)
 - The `pyproject.toml` file is located in the project root directory

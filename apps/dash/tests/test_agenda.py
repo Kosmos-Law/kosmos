@@ -51,7 +51,7 @@ def admin_user():
     user = CustomUser.objects.create(
         username="james",
         first_name="James",
-        last_name="Craig",
+        last_name="Example",
         email="admin@example.com",
         role="ADMIN",
     )
@@ -187,7 +187,7 @@ def test_task_block_invalid_json_left_alone(admin_user):
 
 def test_any_user_can_assign_teammate(staff_user, admin_user):
     _apply_task_blocks(
-        block([{"description": "Call the client", "user": "James Craig"}]),
+        block([{"description": "Call the client", "user": "James Example"}]),
         staff_user,
     )
     assert Task.objects.get().user_id == admin_user.id

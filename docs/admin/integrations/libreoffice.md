@@ -1,8 +1,8 @@
 # Drafting with LibreOffice
 
 How to set up AI-assisted drafting: an attorney links an AI chat to a
-draft `.odt` document, and edits they approve in the chat appear in the
-document as tracked changes. This page covers what the server needs, the
+draft `.odt` document, and edits the AI makes in the chat appear in the
+document as tracked changes, to accept or reject in Writer. This page covers what the server needs, the
 companion extension each user installs in their own LibreOffice, and the
 headless LibreOffice packages on the server.
 
@@ -138,11 +138,16 @@ Things users should know:
 
 ## Versions and updating
 
-The current version of the extension is **0.4.0**. The server builds each
+The current version of the extension is **0.4.1**. The server builds each
 user's download from its own copy of the source, so a download is always
 the version the server was deployed with. An installed copy does not
 update itself: it changes only when the user downloads the file again and
 installs it.
+
+What 0.4.1 changes over 0.4.0: nothing in how it talks to the server.
+When a user loses access to the draft's matter, it stops and says so
+instead of retrying, and its messages describe what happens (edits appear
+at once as tracked changes) rather than speaking of approval.
 
 What 0.4.0 adds over 0.3.0:
 
@@ -157,7 +162,7 @@ What 0.4.0 adds over 0.3.0:
   dialog, the pen button beside the message box).
 
 To see which version is installed, choose **Kosmos → Status** in Writer.
-0.4.0 and later end the message with "Companion version 0.4.0". A copy
+0.4.0 and later end the message with "Companion version" and the number. A copy
 whose Status message names no version is 0.3.0.
 
 To update: download the extension again from the **LibreOffice

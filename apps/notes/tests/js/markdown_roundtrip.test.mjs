@@ -185,6 +185,18 @@ test("a link keeps its address", () => {
   assert.equal(roundTrip(once), once);
 });
 
+test("an image reference is not a link: it stays as typed", () => {
+  // Used to load as "!site plan (https://...)" and be saved back that way
+  const md = "Plan: ![site plan](https://example.com/plan_v2.png) attached";
+  assert.equal(visibleText(markdownToHtml(md)), md);
+  assert.equal(roundTrip(md), md);
+  // A link right after an exclamation mark that is prose, not an image
+  assert.equal(
+    roundTrip("Wow! [the order](https://example.com/x)"),
+    "Wow! the order (https://example.com/x)",
+  );
+});
+
 test("code keeps its characters", () => {
   assert.equal(
     markdownToHtml("run `a_b_c <x> & *y*` now"),

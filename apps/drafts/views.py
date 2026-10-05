@@ -75,7 +75,7 @@ def draft_link(request, conv_id):
     conversation = _get_conversation(conv_id)
     drive_file_id = request.POST.get("file", "")
     if not drive_file_id:
-        return HttpResponse("Missing file parameter.", status=400)
+        return _link_refused("Choose a file from the matter's Drive folder.")
     try:
         services.create_link(conversation, drive_file_id)
     except services.DraftError as exc:

@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import ROLE_OPTIONS, CustomUser
+from apps.management.filter_manager import filter_data_from_post
 from apps.matters.models import Matter
 from apps.settings.users.filters import UserFilter
 from apps.settings.users.forms import CreateUserForm, UserForm
@@ -28,7 +29,7 @@ def user_list(request):
 @login_required
 def user_filter(request):
     if request.method == "POST":
-        request.session["user_filter"] = request.POST
+        request.session["user_filter"] = filter_data_from_post(request.POST)
 
         return HttpResponse(status=204, headers={"HX-Trigger": "userListReload"})
 
@@ -184,7 +185,7 @@ def toggle_permission(request, user_id, perm):
 
 # Matters the assignment dialog lists: those still being worked. A new matter
 # starts as Pending, and has to be assignable before it is opened.
-ASSIGNABLE_STATUSES = ("Pending", "Open")
+ASSIGNABLE_STATUSES = Matter.ACTIVE_STATUSES
 
 
 def _assignment_lists(target_user):

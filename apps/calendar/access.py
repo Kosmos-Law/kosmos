@@ -18,7 +18,7 @@ from apps.matters.models import Matter
 # Matters the event form and the calendar's matter menu offer. A matter in
 # any other status is offered only to the form opened from it, or to the
 # event already on it.
-EVENT_MATTER_STATUSES = ("Pending", "Open")
+EVENT_MATTER_STATUSES = Matter.ACTIVE_STATUSES
 
 
 def events_for_user(queryset, user):

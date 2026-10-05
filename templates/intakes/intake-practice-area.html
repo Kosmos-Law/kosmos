@@ -18,5 +18,12 @@
            class="dropdown-item">{{ pa.name }}</a>
       </li>
     {% endfor %}
+    {% if intake.practice_area %}
+      <li>
+        <a href="#"
+           hx-post="{% url 'intakes:clear-practice-area' pk=intake.id %}"
+           class="dropdown-item urgent"><i class="icon-x"></i> None</a>
+      </li>
+    {% endif %}
   </ul>
 </div>

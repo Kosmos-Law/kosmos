@@ -201,9 +201,11 @@ def armed_write_protocols(conversation, user_message, include_caselaw=True):
     from .note_blocks import NOTES_PROTOCOL, NOTES_TRIGGER_RE
     from .witness_blocks import WITNESS_TRIGGER_RE, WITNESSES_PROTOCOL
 
-    # Current message plus a few before it, so follow-up directives
-    # ("also add the crash date") keep the protocol from a turn or
-    # two after the one that named the timeline.
+    # The last four user messages, so follow-up directives ("also add
+    # the crash date") keep the protocol from a turn or two after the
+    # one that named the timeline. The current message is saved before
+    # the run starts, so it heads that slice; it is prepended as well
+    # for a caller that runs before the save (the tests, for one).
     recent_user_text = "\n".join(
         [user_message]
         + list(

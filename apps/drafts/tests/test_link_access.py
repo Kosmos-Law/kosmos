@@ -90,25 +90,35 @@ class TestCompanionTokenFollowsMatterAccess:
         data = json.loads(api.get("/case/drafts/companion/api/sessions/").content)
         assert data["sessions"] == []
 
-    def test_link_endpoints_answer_404(self, api, link, removed_from_matter):
+    def test_link_endpoints_answer_403(self, api, link, removed_from_matter):
+        """Distinct from the 404 of an unlinked draft: the link is still
+        there, and the extension's Status says access was lost rather than
+        that the draft was unlinked."""
         round_ = CompanionRound.objects.create(
             link=link, edits=[{"op": "replace", "old": "a", "new": "b"}]
         )
         base = f"/case/drafts/companion/api/{link.id}"
         hello = api.post(f"{base}/hello/", "{}", content_type="application/json")
-        assert hello.status_code == 404
-        assert api.get(f"{base}/ops/").status_code == 404
+        assert hello.status_code == 403
+        assert json.loads(hello.content) == {"error": "no access to the matter"}
+        assert api.get(f"{base}/ops/").status_code == 403
         result = api.post(
             f"{base}/rounds/{round_.id}/",
             json.dumps({"ok": True}),
             content_type="application/json",
         )
-        assert result.status_code == 404
+        assert result.status_code == 403
         round_.refresh_from_db()
         assert round_.status == "pending"
         assert round_.delivered_at is None
         link.refresh_from_db()
         assert link.companion_seen is None
+
+    def test_another_users_link_is_not_found(self, api, link):
+        """Nothing is said about a link that is not the token user's own."""
+        link.conversation.user = None
+        link.conversation.save()
+        assert api.get(f"/case/drafts/companion/api/{link.id}/ops/").status_code == 404
 
     def test_member_of_the_matter_still_works(
         self, api, link, matter, user, removed_from_matter
