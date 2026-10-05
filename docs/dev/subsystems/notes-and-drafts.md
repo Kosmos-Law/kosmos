@@ -104,11 +104,12 @@ imports and binds the toolbar, the trees, the Ctrl+K palette
 (`notes_search_palette`, shared ranking with the API), the reference
 picker (`references.js`, `reference_search`) and the outline.
 
-`notes_launch` is where the sidebar's Notes link goes: the user's most
+`notes_launch` is where the Library's Editor button goes: the user's most
 recently viewed note that is still within reach, else the newest visible
-note, else a fresh untitled note, so the editor always opens on
-something. Background reloads call the partial with `?sync=1` so they do
-not count as a view.
+note. With no reachable note it renders `launch-empty.html`, a page with
+a New note button (a POST to `notes_add`), rather than creating a note on
+a GET. Background reloads call the partial with `?sync=1` so they do not
+count as a view.
 
 **Storage is Markdown, and the round trip is the risk.** The stored text
 is plain text with Markdown marks; `markdown.js` turns it into editor HTML
@@ -119,7 +120,8 @@ reference chips and link addresses out first, and lets exactly one tag
 through: a bare `<br>`, which is how a table cell breaks a line. What is
 known to change shape, pinned by `markdown_roundtrip.test.mjs`: a
 Markdown link becomes its text followed by the address in parentheses
-(the editor has no link mark), underscores inside a word are never
+(the editor has no link mark; an image reference `![alt](url)` is not a
+link and stays as typed), underscores inside a word are never
 emphasis, and table cells flatten to one line with literal pipes escaped
 (but not the pipe inside a `[[doc:1|label]]` chip). Tables are GFM pipe
 tables with outer pipes; column alignment round-trips through the
@@ -145,7 +147,9 @@ received, to `note_autosave`. `_version_conflict()` in
 `apps/notes/views.py` answers `409` when they differ: another tab, another
 person or the AI saved since. `note_title` makes the same check. A `409`
 puts the tab into conflict (`enterConflict`): editing is paused behind
-the banner in `editor-content.html`, the format toolbar is hidden, and
+the banner in `editor-content.html`, every control that would change the
+note (`data-editing-only` in `editor.html`: the format toolbar and its
+overflow items, Import, Replace, the table bar) is hidden, and
 `ConflictLock` (`conflict-lock.js`, a ProseMirror plugin) refuses every
 transaction that changes the document, because `setEditable(false)` stops
 typing but not programmatic commands. Reload (`reloadNoteContent`) is

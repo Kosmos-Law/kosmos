@@ -19,6 +19,12 @@
   {% csrf_token %}
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
+  {% comment %}
+  Toasts carry the reasons the editor's JavaScript gets back as text (a
+  rename a sibling's title refuses, a drop the server rejects). base.html
+  loads them; this page extends base-minimal.html, so it loads its own.
+  {% endcomment %}
+  <link rel="stylesheet" href="{% static_v 'css/toasts.css' %}" />
   <div class="note-editor-layout">
     <!-- Left Panel - Files / Matters -->
     <aside class="note-panel note-panel-left"
@@ -120,7 +126,7 @@
               <i class="icon-save"></i>
             </a>
             <span class="toolbar-divider"></span>
-            <div class="format-toolbar">{% include "components/format-toolbar.html" %}</div>
+            <div class="format-toolbar" data-editing-only>{% include "components/format-toolbar.html" %}</div>
           </div>
           <div class="toolbar-right">
             <span class="toolbar-divider"></span>
@@ -150,29 +156,32 @@
                 Overflow homes for format buttons the container queries hide
                 when the editor column narrows (wide panels / small screens).
                 Each proxies a click to its hidden bar button (data-cmd).
+                data-editing-only: hidden, with every control that would
+                change the note, while a conflict pauses editing
+                (autosave.js enterConflict).
                 {% endcomment %}
-                <li class="fmt-overflow fmt-overflow-1">
+                <li data-editing-only class="fmt-overflow fmt-overflow-1">
                   <a class="dropdown-item" href="#" data-fmt="strike"><i class="icon-strikethrough"></i> Strikethrough</a>
                 </li>
-                <li class="fmt-overflow fmt-overflow-1">
+                <li data-editing-only class="fmt-overflow fmt-overflow-1">
                   <a class="dropdown-item" href="#" data-fmt="h4"><i class="icon-heading-4"></i> Heading 4</a>
                 </li>
-                <li class="fmt-overflow fmt-overflow-1">
+                <li data-editing-only class="fmt-overflow fmt-overflow-1">
                   <a class="dropdown-item" href="#" data-fmt="quote"><i class="icon-quote"></i> Blockquote</a>
                 </li>
-                <li class="fmt-overflow fmt-overflow-2">
+                <li data-editing-only class="fmt-overflow fmt-overflow-2">
                   <a class="dropdown-item" href="#" data-fmt="h3"><i class="icon-heading-3"></i> Heading 3</a>
                 </li>
-                <li class="fmt-overflow fmt-overflow-2">
+                <li data-editing-only class="fmt-overflow fmt-overflow-2">
                   <a class="dropdown-item" href="#" data-fmt="ordered"><i class="icon-list-ordered"></i> Numbered List</a>
                 </li>
-                <li class="fmt-overflow fmt-overflow-3">
+                <li data-editing-only class="fmt-overflow fmt-overflow-3">
                   <a class="dropdown-item" href="#" data-fmt="h2"><i class="icon-heading-2"></i> Heading 2</a>
                 </li>
-                <li class="fmt-overflow fmt-overflow-3">
+                <li data-editing-only class="fmt-overflow fmt-overflow-3">
                   <a class="dropdown-item" href="#" data-fmt="bullet"><i class="icon-list"></i> Bullet List</a>
                 </li>
-                <li>
+                <li data-editing-only>
                   <a class="dropdown-item"
                      href="#"
                      hx-get="{% url 'notes:note-import-modal' note.id %}"
@@ -203,7 +212,10 @@
       <!-- Search and Replace Bar -->
       <div id="search-replace-bar" class="search-replace-bar">
         <input type="text" id="search-input" placeholder="Find...">
-        <input type="text" id="replace-input" placeholder="Replace with...">
+        <input type="text"
+               id="replace-input"
+               placeholder="Replace with..."
+               data-editing-only>
         <span id="search-count"></span>
         <button type="button" id="search-prev" title="Previous match">
           <i class="icon-chevron-up"></i>
@@ -211,10 +223,10 @@
         <button type="button" id="search-next" title="Next match">
           <i class="icon-chevron-down"></i>
         </button>
-        <button type="button" id="replace-one" title="Replace">
+        <button type="button" id="replace-one" title="Replace" data-editing-only>
           <i class="icon-replace"></i>
         </button>
-        <button type="button" id="replace-all" title="Replace All">
+        <button type="button" id="replace-all" title="Replace All" data-editing-only>
           <i class="icon-replace-all"></i>
         </button>
         <button type="button" id="search-close" title="Close">
@@ -222,7 +234,7 @@
         </button>
       </div>
       <!-- Table Bar -->
-      <div id="table-bar" class="table-bar">
+      <div id="table-bar" class="table-bar" data-editing-only>
         <button type="button" data-tb="insert" title="Insert table">
           <i class="icon-table"></i>
         </button>
@@ -341,5 +353,6 @@
       <div class="panel-resizer" title="Drag to resize; double-click to reset"></div>
     </aside>
   </div>
+  <script src="{% static_v 'js/toasts.js' %}"></script>
   <script type="module" src="{% static_v 'js/notes-editor.js' %}"></script>
 {% endblock content %}

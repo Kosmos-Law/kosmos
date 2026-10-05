@@ -19,7 +19,6 @@ urlpatterns = [
     path("notes/", views.notes_index, name="index"),
     path("notes/list/", views.notes_list, name="list"),
     path("notes/add/", views.notes_add, name="add"),
-    path("notes/filter/", views.notes_filter, name="filter"),
     path("notes/filter/keyword/", views.notes_filter_keyword, name="filter-keyword"),
     path(
         "notes/filter/category/<str:category>/",

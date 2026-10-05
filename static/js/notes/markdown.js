@@ -63,8 +63,10 @@ function formatInline(text) {
 
   // The editor has no link mark, so a markdown link can't stay a link; it
   // becomes its text followed by the address in parentheses, which keeps
-  // the address when the note is saved again.
-  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, address) =>
+  // the address when the note is saved again. An image reference
+  // (![alt](address)) is not a link: the editor has no images either, so
+  // it stays as typed and is written back whole.
+  text = text.replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, address) =>
     label === address
       ? hold(escapeHtml(address))
       : label + " (" + hold(escapeHtml(address)) + ")",
