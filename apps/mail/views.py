@@ -448,8 +448,7 @@ def label_link(request, matter_id):
         )
 
     matter.gmail_label_name = label_name
-    matter.gmail_label_id = None  # legacy per-mailbox id, no longer stored
-    matter.save(update_fields=["gmail_label_id", "gmail_label_name"])
+    matter.save(update_fields=["gmail_label_name"])
     _queue_resync(matter)
 
     return HttpResponse(status=204, headers={"HX-Refresh": "true"})
@@ -460,9 +459,8 @@ def label_link(request, matter_id):
 def label_unlink(request, matter_id):
     """Unlink this matter's Gmail label and remove its synced emails."""
     matter, _ = get_matter_from_url(request, matter_id)
-    matter.gmail_label_id = None
     matter.gmail_label_name = None
-    matter.save(update_fields=["gmail_label_id", "gmail_label_name"])
+    matter.save(update_fields=["gmail_label_name"])
     # The user confirmed removing the emails; a resync no longer does that
     # for a matter with no label (a closed matter keeps its emails).
     mail_google.remove_matter_emails(matter)

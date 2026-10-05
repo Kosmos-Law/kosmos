@@ -14,7 +14,7 @@ The screens are in the user guide: [Email](../../guide/email.md) and
 
 | Path | What it holds |
 |---|---|
-| `apps/mail/models.py` | `GmailAccount`, `Email`, `EmailAttachment`, the legacy `GmailSyncState` |
+| `apps/mail/models.py` | `GmailAccount`, `Email`, `EmailAttachment` |
 | `apps/mail/google.py`, `parser.py`, `tasks.py` | The sync (label resolution, bootstrap, history feed, per-matter resync); `parse_payload()`; attachment text extraction |
 | `apps/mail/promote.py`, `ai.py` | `promote_email()`; thread formatting for AI context |
 | `apps/mail/views.py`, `filters.py`, `templates/case/emails/` | The case Emails tab, routed from `apps/case/urls.py` under `case/<matter_id>/emails/` |
@@ -55,9 +55,7 @@ matter or disconnecting a mailbox removes those rows. A null `account`
 marks a row from before per-user mailboxes, awaiting `adopt_gmail_account`.
 
 **EmailAttachment**: metadata plus extracted `text` and an
-`extract_status`; the bytes are never stored. **GmailSyncState** is the
-legacy single-mailbox cursor, kept only so `adopt_gmail_account` can carry
-it over.
+`extract_status`; the bytes are never stored.
 
 ### Intakes
 
@@ -348,8 +346,7 @@ The matrix is in the [permissions reference](../../reference/permissions.md).
 
 ## Things that bite
 
-- **The label name is the contract, not the id.** `Matter.gmail_label_id`
-  is legacy and no longer written. Every mailbox resolves
+- **The label name is the contract, not the id.** Every mailbox resolves
   `gmail_label_name` to its own id on each tick, so renaming a label in
   Gmail detaches it: the old name lands in `missing_labels`, and a token
   with the labels scope creates a fresh, empty label under the linked

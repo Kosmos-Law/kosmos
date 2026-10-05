@@ -57,9 +57,8 @@ are in [Architecture](../architecture.md).
   one.
 - `drive_folder` and `drive_folder_id` name the matter's Google Drive
   folder; the id is the link and the name is for display.
-  `gmail_label_name` is the Gmail contract (`gmail_label_id` is legacy and
-  no longer written). Both are cleared when the matter leaves active work
-  (below).
+  `gmail_label_name` is the Gmail contract. All three are cleared when the
+  matter leaves active work (below).
 - `date_start` and `date_end`: the opening date comes from the form; the
   closing date is written by `save()`.
 - `billable`, `billing_type` (`HOURLY` or `FLAT_FEE`), `flat_fee_amount`,

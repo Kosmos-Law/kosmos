@@ -64,7 +64,7 @@ Which of these an operator needs, and when, is covered in
 
 | Command | What it does |
 |---|---|
-| `adopt_gmail_account` | One-time multi-account migration: turn the legacy shared token file (GOOGLE_DATA_DIR/email_tokens.json) into the given user's GmailAccount, move the sync cursor onto it, claim all existing Email rows, and backfill Email.message_id (the cross-mailbox dedupe key) from Gmail. Run BEFORE anyone else connects a mailbox. |
+| `adopt_gmail_account` | One-time multi-account migration: turn the legacy shared token file (GOOGLE_DATA_DIR/email_tokens.json) into the given user's GmailAccount, claim all existing Email rows, and backfill Email.message_id (the cross-mailbox dedupe key) from Gmail. Run BEFORE anyone else connects a mailbox. |
 | `link_gmail_labels` | Link Gmail labels to Matter records by setting Matter.gmail_label_name (the cross-mailbox contract). Interactive; suggests matches by name. Labels are read from the first connected mailbox. |
 | `refresh_email_bodies` | Refetch synced emails that have no stored HTML body (one-off backfill after the body_html field was added). Rows whose message genuinely has no HTML part are refetched each run; use --matter to limit scope. |
 | `setup_gmail_sync_schedule` | Create or update the Gmail sync schedules: an incremental history sync every 2 minutes and a weekly full re-list (early Monday) to reconcile drift the history feed can't repair. No env gate: the sync is read-only and no-ops when no Gmail account is connected. Superseded by setup_schedules, which installs these with every other schedule. |

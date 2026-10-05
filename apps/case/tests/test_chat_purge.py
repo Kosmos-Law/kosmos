@@ -95,7 +95,6 @@ def test_close_unlinks_mirrors(status):
         status="Open",
         drive_folder="Linked Folder",
         drive_folder_id="mf9",
-        gmail_label_id="Label_9",
         gmail_label_name="Matters - Open/Linked",
     )
     proceeding = Proceeding.objects.create(matter=matter, nickname="Main")
@@ -115,7 +114,6 @@ def test_close_unlinks_mirrors(status):
     proceeding.refresh_from_db()
     assert matter.drive_folder is None
     assert matter.drive_folder_id is None
-    assert matter.gmail_label_id is None
     assert matter.gmail_label_name is None
     assert proceeding.status == "Concluded"
     assert not DriveFolderMapping.objects.filter(matter=matter).exists()

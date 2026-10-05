@@ -35,8 +35,6 @@ class Matter(AuditMixin, models.Model):
     # Gmail label mapped to this matter for case-email sync. The label NAME
     # is the contract: every connected mailbox (GmailAccount) resolves it to
     # its own label id at sync time, so one link serves all mailboxes.
-    # gmail_label_id is legacy (pre-multi-account) and no longer written.
-    gmail_label_id = models.CharField(max_length=64, null=True, blank=True)
     gmail_label_name = models.CharField(max_length=255, null=True, blank=True)
     practice_area = models.ForeignKey(
         "PracticeArea",
@@ -134,7 +132,6 @@ class Matter(AuditMixin, models.Model):
             # rows all survive the unlink: record Documents are append-only
             # and Email rows are only removed by label events on a
             # still-mapped matter.
-            self.gmail_label_id = None
             self.gmail_label_name = None
             self.drive_folder = None
             self.drive_folder_id = None
