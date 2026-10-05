@@ -79,7 +79,8 @@ would be the client, record the client here and the caller in a note.
 Click an intake's name. On the left are its details: **Email**, **Phone**,
 **Address**, **Disputed Property**, **Value**, **Status**, **Date**,
 **Area** (the practice area) and **Source**. Click the status or the area
-to change it. Click the value (or the pencil, if there is none), type a
+to change it; the area menu ends with **None**, which clears it. Click
+the value (or the pencil, if there is none), type a
 whole number and press Enter. Anything else is refused with "Value must be
 a whole number, with no commas or cents." The flag beside the name sets
 the importance. The pin button beside an address opens it in Google Maps,

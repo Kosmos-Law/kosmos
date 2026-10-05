@@ -369,11 +369,14 @@ def intake_edit_importance(request, pk, importance):
 
 @login_required
 @require_POST
-def intake_edit_practice_area(request, pk, practice_area_id):
+def intake_edit_practice_area(request, pk, practice_area_id=None):
+    """Save an inline Practice Area pick, or clear it (the clear route
+    carries no id), and re-render the cell."""
     intake = get_object_or_404(Intake, pk=pk)
-    practice_area = get_object_or_404(PracticeArea, pk=practice_area_id)
-
-    intake.practice_area = practice_area
+    if practice_area_id is None:
+        intake.practice_area = None
+    else:
+        intake.practice_area = get_object_or_404(PracticeArea, pk=practice_area_id)
     intake.save()
 
     practice_areas = PracticeArea.objects.filter(is_active=True).order_by("name")
