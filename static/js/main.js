@@ -1,17 +1,3 @@
-//
-// utility functions to show and hide elements
-//
-
-function show(elementId) {
-  const item = document.getElementById(elementId);
-  item.style.display = "block";
-}
-
-function hide(elementId) {
-  const item = document.getElementById(elementId);
-  item.style.display = "none";
-}
-
 // Attach confirm handler to .confirm links (delegated for dynamic content)
 document.addEventListener('click', async function(e) {
   const confirmLink = e.target.closest('.confirm');
@@ -138,40 +124,6 @@ function copyToClipboard(button, data) {
     console.error('Failed to copy value: ', err);
   });
 }
-
-// Copy value logic
-document.addEventListener('DOMContentLoaded', function() {
-  const copyButtons = document.querySelectorAll('.copy-btn');
-
-  copyButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      let data = this.getAttribute('data-copy');
-
-      // If data-copy-target is specified, get text from target element
-      const targetSelector = this.getAttribute('data-copy-target');
-      if (targetSelector) {
-        const targetElement = document.querySelector(targetSelector);
-        if (targetElement) {
-          data = targetElement.textContent.trim();
-        }
-      }
-
-      navigator.clipboard.writeText(data).then(() => {
-        const originalHtml = this.innerHTML;
-
-        this.innerHTML = '<i class="icon-check"></i>';
-        this.style.color = 'green';
-
-        setTimeout(() => {
-          this.innerHTML = originalHtml;
-          this.style.color = '';
-        }, 2000);
-      }).catch(err => {
-        console.error('Failed to copy value: ', err);
-      });
-    });
-  });
-});
 
 // ==========================================================================
 //  Leader Key (Space) — Vim-style two-keystroke shortcuts
