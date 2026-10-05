@@ -351,11 +351,9 @@ def highlights_filter_sort(request, matter_id, order):
 def highlights_filter_default(request, matter_id):
     """Reset highlights filter to defaults."""
     filter_session_key = get_session_key("highlights_filter", matter_id)
-    request.session[filter_session_key] = {
-        "document": "",
-        "keyword": "",
-        "order_by": "created",
-    }
+    # An empty filter is the default (newest first), the same as a fresh
+    # session; storing an order here would make Restore Defaults a sort.
+    request.session[filter_session_key] = {}
     return redirect("case:highlights-index", matter_id=matter_id)
 
 

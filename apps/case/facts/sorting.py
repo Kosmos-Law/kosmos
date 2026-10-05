@@ -34,3 +34,14 @@ def with_valid_sort(filter_data, valid_keys):
     if stored_sort_key(cleaned, valid_keys, None) is None:
         cleaned.pop("order_by", None)
     return cleaned
+
+
+def toggled_sort_key(filter_data, valid_keys, default, order):
+    """The key a click on the ``order`` column stores: the column itself,
+    or its reverse when the list is already sorted by it, whichever
+    direction the column starts in (importance starts highest first).
+    The default order counts as a sort, so the first click on the
+    default column reverses it instead of storing what is already shown."""
+    if stored_sort_key(filter_data, valid_keys, default) == order:
+        return order[1:] if order.startswith("-") else f"-{order}"
+    return order

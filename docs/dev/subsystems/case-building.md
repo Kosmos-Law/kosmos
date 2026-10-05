@@ -295,7 +295,9 @@ which resolves every id in the URL (matter, document, highlight, fact,
 witness, label, case law, and the `object_type`/`object_id` pairs of the
 label and witness modals) to a matter through `MATTER_LOOKUPS` in
 `apps/accounts/access.py` and refuses a user who is not a member of all of
-them. The views therefore carry only `@login_required`. What the URL
+them. The tab views therefore carry only `@login_required` (the shell
+views in `views.py` that take a matter id also carry
+`@matter_access_required`). What the URL
 cannot see is checked in the app: a matter in a form or POST body
 (`documents/access.py`), a source or label id in a body
 (`facts/access.py`, `labels/views.py`), and lists that would reach across

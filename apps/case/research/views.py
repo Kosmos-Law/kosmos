@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from apps.case.courtlistener import (
     fetch_cluster,
@@ -863,14 +864,17 @@ def research_save_brief(request, result_id):
     matter = result.query.matter
 
     # One brief per case per user: a colleague's brief of the same case
-    # answers a different question and is not this user's to open.
+    # answers a different question and is not this user's to open. A brief
+    # of the user's own that failed is written again on the same row.
     if result.cluster_id:
         existing = (
             _user_briefs(matter, request.user)
             .filter(cluster_id=result.cluster_id)
-            .exists()
+            .first()
         )
-        if existing:
+        if existing is not None:
+            if existing.status == "error":
+                _restart_brief(existing, request.user, result=result)
             return _render_result_row(request, result)
 
     brief = CaseBrief.objects.create(
@@ -889,6 +893,35 @@ def research_save_brief(request, result_id):
     generate_brief(brief.id)
 
     return _render_result_row(request, result)
+
+
+def _restart_brief(brief, user, result=None):
+    """Queue a failed brief again on its own row, so the Abstracts list
+    keeps one entry per case. The save bumps updated_at, the heartbeat
+    the stale-brief reaper reads: a stale stamp would fail it again at
+    once."""
+    brief.status = "pending"
+    brief.brief = ""
+    brief.updated_by = user
+    fields = ["status", "brief", "updated_by", "updated_at"]
+    if result is not None:
+        brief.result = result
+        brief.query_text = result.query.query_text
+        fields += ["result", "query_text"]
+    brief.save(update_fields=fields)
+    generate_brief(brief.id)
+
+
+@login_required
+@require_POST
+def research_retry_brief(request, brief_id):
+    """POST: write a failed brief again. Returns the brief's status
+    fragment, which polls until the brief is written."""
+    brief = get_object_or_404(
+        CaseBrief, pk=brief_id, created_by=request.user, status="error"
+    )
+    _restart_brief(brief, request.user)
+    return render(request, "case/research/brief-status.html", {"brief": brief})
 
 
 @login_required

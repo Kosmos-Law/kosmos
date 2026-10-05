@@ -50,5 +50,15 @@
       {% endfor %}
     </div>
   </div>
-  <div class="highlight-card-date">{{ highlight.document.date|date:"F j, Y"|default:"No date" }}</div>
+  {% comment %}
+    The card's date is the source's: the document's date, or the date the
+    case was filed.
+  {% endcomment %}
+  <div class="highlight-card-date">
+    {% if highlight.document %}
+      {{ highlight.document.date|date:"F j, Y"|default:"No date" }}
+    {% else %}
+      {{ highlight.caselaw.date_filed|date:"F j, Y"|default:"No date" }}
+    {% endif %}
+  </div>
 </article>

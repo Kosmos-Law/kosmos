@@ -135,16 +135,6 @@ def _adopt_candidate(matter, name, date, size):
     return candidate
 
 
-def _reset_ocr(document):
-    """Mirror documents_edit's file-replacement OCR reset."""
-    document.ocr_status = "pending"
-    document.ocr_text = None
-    document.ocr_error = None
-    document.ocr_processed_at = None
-    document.page_count = None
-    document.ocr_pages_done = 0
-
-
 def _queue_ocr(document_id):
     """Queue OCR explicitly (mirrors promote_email): the post_save signal
     only fires on the file-less first save, so it never sees the PDF."""
@@ -249,7 +239,7 @@ def ingest_pdf(service, file_meta, parts, mapping, dry_run, stats):
             default_storage.delete(existing.file.name)
         existing.file.save(f"{existing.pk}.pdf", ContentFile(content), save=False)
         existing.set_fingerprints(io.BytesIO(content), size=len(content))
-        _reset_ocr(existing)
+        existing.reset_extraction()
         if existing.drive_mapping_id != mapping.id:
             existing.category = mapping.category
             existing.proceeding_id = mapping.proceeding_id
