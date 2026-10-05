@@ -52,3 +52,29 @@ class TestDeleteNeedsMoreThanALink:
         ).content.decode()
         assert "hx-delete=" in html
         assert "hx-get=" not in html
+
+
+class TestKeepNotesMeansKeepNotes:
+    """ "Delete Folder and Subfolders" is offered when the dialog counted no
+    notes; a note filed into a subfolder after the dialog opened must not
+    go down with the folders."""
+
+    def test_deleting_subfolders_without_delete_notes_keeps_their_notes(
+        self, client, tree
+    ):
+        url = reverse("notes:folder-delete", args=[tree.id]) + "?delete_subfolders=true"
+        resp = client.delete(url)
+        assert resp.status_code == 204
+        assert not NoteFolder.objects.filter(name__in=["Top", "Mid", "Deep"]).exists()
+        kept = Note.objects.filter(title__in=["One", "Two", "Three"])
+        assert kept.count() == 3
+        # Kept the way "Delete Folder, Keep Notes" keeps them: at the root
+        assert all(n.folder_id is None for n in kept)
+
+    def test_delete_notes_still_deletes_them(self, client, tree):
+        url = (
+            reverse("notes:folder-delete", args=[tree.id])
+            + "?delete_subfolders=true&delete_notes=true"
+        )
+        assert client.delete(url).status_code == 204
+        assert not Note.objects.filter(title__in=["One", "Two", "Three"]).exists()

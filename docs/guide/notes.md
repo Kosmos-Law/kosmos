@@ -68,7 +68,7 @@ When there are subfolders and no notes:
 
 | Button | What happens |
 |---|---|
-| **Delete Folder and Subfolders** | The folder and every subfolder are deleted. |
+| **Delete Folder and Subfolders** | The folder and every subfolder are deleted. A note filed into one of them since the dialog opened goes to **Inbox**. |
 | **Delete Folder, Keep Subfolders** | The folder is removed and its subfolders move up one level. |
 
 ### Work with notes
@@ -116,7 +116,8 @@ set a topic when it creates a note.
 The editor opens in its own browser tab: from **Open** or the **+**
 button in either list, from a note in the sidebar **Search**, or from
 **Editor** at the top right of the Library, which opens the note you
-looked at last.
+looked at last (or, when there is no note you can open yet, a page with a
+**New note** button).
 
 ### Find your way around
 

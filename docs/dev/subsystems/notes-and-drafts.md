@@ -104,11 +104,12 @@ imports and binds the toolbar, the trees, the Ctrl+K palette
 (`notes_search_palette`, shared ranking with the API), the reference
 picker (`references.js`, `reference_search`) and the outline.
 
-`notes_launch` is where the sidebar's Notes link goes: the user's most
+`notes_launch` is where the Library's Editor button goes: the user's most
 recently viewed note that is still within reach, else the newest visible
-note, else a fresh untitled note, so the editor always opens on
-something. Background reloads call the partial with `?sync=1` so they do
-not count as a view.
+note. With no reachable note it renders `launch-empty.html`, a page with
+a New note button (a POST to `notes_add`), rather than creating a note on
+a GET. Background reloads call the partial with `?sync=1` so they do not
+count as a view.
 
 **Storage is Markdown, and the round trip is the risk.** The stored text
 is plain text with Markdown marks; `markdown.js` turns it into editor HTML

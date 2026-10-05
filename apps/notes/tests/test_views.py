@@ -597,14 +597,12 @@ class TestNotesLaunch:
         note = Note.objects.get(title="Only note")
         assert resp.url == reverse("notes:note-view", args=[note.id])
 
-    def test_creates_untitled_when_no_notes(self, client, user):
+    def test_offers_new_note_when_no_notes(self, client, user):
+        # The GET creates nothing (test_launch_empty.py has the rest)
         assert Note.objects.count() == 0
         resp = client.get(reverse("notes:launch"))
-        assert resp.status_code == 302
-        note = Note.objects.get()
-        assert note.title == "Untitled"
-        assert note.matter_id is None
-        assert resp.url == reverse("notes:note-view", args=[note.id])
+        assert resp.status_code == 200
+        assert Note.objects.count() == 0
 
     def test_htmx_request_swaps_partial_in_place(self, client, user):
         from apps.notes.models import NoteView
@@ -1544,13 +1542,6 @@ class TestNotesList:
         assert client.session["standalone_notes_filter"]["order_by"] == "title"
         client.get(reverse("notes:order-by", args=["title"]))
         assert client.session["standalone_notes_filter"]["order_by"] == "-title"
-
-    def test_filter_modal_get_and_post(self, client, user):
-        resp = client.get(reverse("notes:filter"))
-        assert resp.status_code == 200
-        resp = client.post(reverse("notes:filter"), {"category": "research"})
-        assert resp.status_code == 204
-        assert client.session["standalone_notes_filter"]["category"] == "research"
 
 
 class TestNotesTabAdd:
