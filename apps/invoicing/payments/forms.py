@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from django import forms
+from django.utils import timezone
 
 from apps.invoicing.payments.models import Payment
 from apps.invoicing.payments.trust import TRUST_METHOD, trust_balance
@@ -29,9 +28,7 @@ class PaymentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
 
-        today = datetime.now().date()
-
-        self.fields["date"].initial = today
+        self.fields["date"].initial = timezone.localdate()
         self.fields["payment_method"].initial = "CARD"
 
     def clean_amount(self):

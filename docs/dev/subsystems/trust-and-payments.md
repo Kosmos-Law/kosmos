@@ -305,9 +305,9 @@ unknown id is a no-op) and:
   for a deposit also sets `confirmed=True` once `event.settled`
   (`_apply_to_deposit()`), "so the confirmed balance tracks the bank";
 - on a reversal of a payment, `_reverse_payment()` deletes each
-  application individually so the invoice reopens, deletes the payment,
-  re-checks each affected invoice because the legacy Paid rule could
-  otherwise leave it Paid, and emails the admins;
+  application individually so the invoice reopens (the hook's
+  `reopen_if_no_longer_covered()` handles the legacy Paid rule), deletes
+  the payment, and emails the admins;
 - on a reversal of a deposit, `_reverse_deposit()` deletes an unconfirmed
   deposit (its history row keeps the audit trail) but only flags a
   confirmed one, "don't silently mutate the confirmed ledger", and emails
@@ -439,10 +439,6 @@ See the [permissions reference](../../reference/permissions.md).
   path, and expect orphaned sessions from page reloads.
 - **Rate limits reset on restart and are per worker.** The limiter's
   docstring says so; do not treat the numbers as a security control.
-- **`PaymentForm` and `CreditsForm` default the date with
-  `datetime.now().date()`**, the server's clock rather than
-  `timezone.localdate()`; the online recording functions use
-  `timezone.localdate()`. Near midnight the two can disagree.
 
 ## Related
 
