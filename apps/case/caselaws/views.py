@@ -15,7 +15,11 @@ from django.views.decorators.http import require_POST
 from apps.accounts.access import filter_matters_for_user
 from apps.case.courtlistener import fetch_case_by_citation
 from apps.case.facts.sorting import sort_keys, stored_sort_key
-from apps.case.highlights.importance import DEFAULT_IMPORTANCE, parse_importance
+from apps.case.highlights.importance import (
+    DEFAULT_IMPORTANCE,
+    IMPORTANCE_CHOICES,
+    parse_importance,
+)
 from apps.case.models import CaseLaw, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.matters.models import Matter
@@ -422,6 +426,7 @@ def caselaw_viewer(request, caselaw_id):
             "matter": case_law.matter,
             "highlights": highlights,
             "highlights_json": highlights_json,
+            "importance_names_json": json_for_script(dict(IMPORTANCE_CHOICES)),
             "initial_highlight": initial_highlight,
             "opinion_html": opinion_html,
             "opinion_text": opinion_text,

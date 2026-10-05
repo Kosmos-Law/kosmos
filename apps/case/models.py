@@ -357,6 +357,13 @@ class Highlight(AuditMixin, models.Model):
         return "caselaw"
 
     @property
+    def importance_name(self):
+        """The level's name on the shared scale (Normal, High, ...)."""
+        from apps.case.highlights.importance import IMPORTANCE_CHOICES
+
+        return dict(IMPORTANCE_CHOICES).get(self.importance, self.importance)
+
+    @property
     def citation(self):
         """Return citation for either document or case law source."""
         if self.document:
