@@ -91,12 +91,19 @@ class Matter(AuditMixin, models.Model):
             models.Index(fields=["billing_type"]),
         ]
 
+    # The lifecycle, in order. `status` is a plain CharField (no choices, so
+    # the database accepts anything); these tuples are the one list the
+    # forms, the filter and the access modules' matter choices draw on.
+    STATUSES = ("Pending", "Open", "Complete", "Closed")
+    STATUS_CHOICES = tuple((status, status) for status in STATUSES)
     # Statuses under which work is no longer tracked: the file has moved out
     # of the "Matters - Open" Drive/Gmail roots, so its mirrors are unlinked.
     # "Complete" is the closing-out phase (usually waiting on a trust
     # reimbursement); "Closed" is final and additionally starts the chat
     # retention clock (apps/case/ai/purge.py).
     INACTIVE_STATUSES = ("Complete", "Closed")
+    # Still being worked: what the task, event and assignment forms offer.
+    ACTIVE_STATUSES = ("Pending", "Open")
 
     def save(self, *args, **kwargs):
         previous_status = None

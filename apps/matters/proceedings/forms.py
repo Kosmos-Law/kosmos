@@ -16,12 +16,7 @@ class ProceedingForm(forms.ModelForm):
             "primary",
         )
 
-        STATUSES = (
-            ("Ongoing", "Ongoing"),
-            ("Concluded", "Concluded"),
-            ("Stayed", "Stayed"),
-            ("Dismissed", "Dismissed"),
-        )
+        STATUSES = Proceeding.STATUS_CHOICES
 
         PRIMARY_CHOICES = (
             (False, "No"),

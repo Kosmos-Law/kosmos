@@ -288,7 +288,7 @@ def overview_status_update(request, id, status):
     mattersChanged: Open/Closed flips change the open-matters switcher and
     stepper lists."""
     matter = get_object_or_404(Matter, pk=id)
-    if status in dict(MatterForm.Meta.STATUSES):
+    if status in Matter.STATUSES:
         matter.status = status
         matter.save()
     response = render(request, "matters/overview/status.html", {"matter": matter})

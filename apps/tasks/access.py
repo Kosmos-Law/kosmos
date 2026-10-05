@@ -17,7 +17,7 @@ from apps.tasks.models import Task, TaskNote
 
 # Matters a task form or the tasks filter offers. A matter in another status
 # is offered only to the form opened from it, or to the task already on it.
-TASK_MATTER_STATUSES = ("Pending", "Open")
+TASK_MATTER_STATUSES = Matter.ACTIVE_STATUSES
 
 
 def sees_all_matters(user):
