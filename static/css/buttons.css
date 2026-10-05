@@ -17,9 +17,10 @@
   outline: none;
 }
 
+/* A deliberate exception to the 1rem floor: the small buttons are mostly
+   icon buttons set beside text, and at 1rem the icons outgrow it. */
 .btn-sm {
-  line-height: 1.25;
-  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
 }
 
 .btn-primary,

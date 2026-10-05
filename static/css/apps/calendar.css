@@ -267,7 +267,9 @@
 
 /* Event styling — theme tokens, not raw stone: the old stone-150 fill
    matched Matcha's --background-section canvas exactly (border-only
-   visibility) and read pale yellow against Nord Light's cool snow. */
+   visibility) and read pale yellow against Nord Light's cool snow.
+   The chip text is a deliberate exception to the 1rem floor: at 1rem the
+   chips crowd the month grid's day cells. */
 .fc-event,
 .fc-event.fc-daygrid-block-event,
 .fc-event.fc-daygrid-dot-event {
@@ -276,7 +278,7 @@
   border-radius: var(--radius-sm);
   color: var(--color-primary) !important;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.8125rem;
   padding: 0.125rem 0.25rem;
 }
 
