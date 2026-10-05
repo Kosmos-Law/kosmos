@@ -136,8 +136,8 @@ database. Keep the two in step.
 
 `Contact.deletion_blockers()` is the one place that says when a contact
 may not be deleted: while it is the client on a matter, has trust
-`Transaction` rows (`CASCADE` on the contact), or has payment requests
-(`trust_requests`, from `apps/invoicing/requests/`). The contact delete
+`Transaction` rows (`CASCADE` on the contact), or has trust deposit
+requests (`trust_requests`, from `apps/invoicing/requests/`). The contact delete
 view and the folder delete view both call it and refuse with a toast.
 
 **`RelationshipType`** and **`ContactRelationship`** record how two
