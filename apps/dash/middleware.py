@@ -8,7 +8,7 @@ class DailyDashCheckMiddleware:
     Middleware that ensures users view the agenda dashboard at least once per day.
 
     On the first request of each day, redirects authenticated users to the
-    agenda dash page. The dash view marks the check-in as complete.
+    agenda dash page and records the check-in itself (last_dash_check, below).
 
     The check-in is stored on the user model, so it persists across devices.
     """

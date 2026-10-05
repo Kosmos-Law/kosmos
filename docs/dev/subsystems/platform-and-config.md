@@ -16,7 +16,7 @@ the code reads it.
 | `config/.env.example` | Every variable the application reads, with a comment that becomes its description in the generated reference. |
 | `config/urls.py` | The URL root and the two media-routing functions. |
 | `config/health.py` | The three health views. |
-| `config/context.py` | Context processors `env` and `site_handle`. |
+| `config/context.py` | The `env` context processor. |
 | `config/helpers.py` | `normalize_phone()`, `dictfetchall()`, `MultipleOrderingFilter`, `timestamp_to_eastern()`, the `dump*` helpers. |
 | `config/wsgi.py`, `config/asgi.py` | Entry points; gunicorn runs `config.wsgi:application`. |
 | `apps/accounts/middleware.py` | `HtmxLoginRedirectMiddleware`, `PermissionMiddleware`. |

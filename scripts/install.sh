@@ -347,7 +347,6 @@ else
   if [ "$PROD" -eq 1 ]; then
     env_set "$tmp" DEBUG False
     env_set "$tmp" ENV prod
-    env_set "$tmp" SITE_NAME Kosmos
     env_set "$tmp" ALLOWED_HOSTS "$DOMAIN"
     env_set "$tmp" CSRF_TRUSTED_ORIGINS "https://$DOMAIN"
     env_set "$tmp" PUBLIC_BASE_URL "https://$DOMAIN"
@@ -421,6 +420,10 @@ unset VIRTUAL_ENV
 sync_args=(--frozen)
 if [ "$PROD" -eq 1 ]; then sync_args+=(--no-dev); fi
 (cd "$APP_DIR" && run uv sync "${sync_args[@]}")
+# A development checkout gets the git hook that lints each commit.
+if [ "$PROD" -eq 0 ] && [ -d "$APP_DIR/.git" ]; then
+  (cd "$APP_DIR" && run .venv/bin/pre-commit install)
+fi
 run mkdir -p "$APP_DIR/logs" "$APP_DIR/media" "$APP_DIR/google"
 
 # ---------------------------------------------------------------- django ----

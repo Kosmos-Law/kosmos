@@ -20,7 +20,6 @@ variable belongs to stays off or falls back until it is set.
 | `ALLOWED_HOSTS` | **Required** | Comma-separated host names the application answers to. (comma-separated list) |
 | `CSRF_TRUSTED_ORIGINS` | empty | Comma-separated full origins (scheme, host and port when not the default) trusted for form posts. Needed behind a reverse proxy. (comma-separated list) |
 | `PUBLIC_BASE_URL` | empty | Scheme and host used to build absolute links outside a web request, such as payment links in emails sent by the background worker. Blank falls back to the host of the request that triggered the send, when there is one. |
-| `SITE_NAME` | empty | A display name for this instance. Passed to templates as site_handle; no template currently shows it. |
 | `TIME_ZONE` | `America/New_York` | The firm's time zone, as a tz database name (for example America/Chicago). Dates shown in the app, the times scheduled jobs run, and the zone events are written to Google Calendar in all follow it. |
 
 ## Database
