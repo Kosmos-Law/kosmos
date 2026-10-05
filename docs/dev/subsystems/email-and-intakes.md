@@ -175,7 +175,7 @@ renders one email with a Gmail link into the viewer's own mailbox when
 they have a copy (`_own_gmail_url()`). The Refresh button
 (`emails_refresh`) runs `resync_matter()` on a daemon thread, not the
 queue, because an on-demand refresh must not wait behind a wedged batch;
-it signals completion through the default cache, which is per-process.
+it signals completion through the cross-process `ai_status` cache.
 
 `email_promote` calls `promote_email()`: the email is rendered to PDF
 through the mbox pipeline in `apps/case/documents/mbox.py`, filed as a
@@ -357,12 +357,12 @@ The matrix is in the [permissions reference](../../reference/permissions.md).
   drops one account's rows across all label-linked matters (trashed or
   deleted). Neither touches another mailbox's rows or a matter with no
   label. Only Unlink calls `remove_matter_emails()`.
-- **The Refresh button's running flag is in the per-process cache.**
-  `emails_refresh` stores `emails_refresh_<matter>` in the default
-  `LocMemCache` and polls it; the comment in `_start_refresh()` says it
-  assumes one gunicorn worker. With several, a poll landing in another
-  worker sees no flag and swaps the button back early. The AI status
-  moved to the cross-process `ai_status` cache for the same reason.
+- **The Refresh button's running flag must stay cross-process.**
+  `emails_refresh` stores `emails_refresh_<matter>` in the `ai_status`
+  `DatabaseCache` (the store the AI run status uses) because prod runs
+  several gunicorn workers and a poll usually lands in a worker other
+  than the one running the thread; in the default `LocMemCache` the
+  button swapped back early.
 - **`Email` rows are immutable once synced.** The sync skips existing
   rows, so `updated_at` stays honest for the auto summary's incremental
   `since=` filter. A change to the parser needs `refresh_email_bodies` or
