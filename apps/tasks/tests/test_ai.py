@@ -81,10 +81,12 @@ class TestQuickAddView:
         task = Task.objects.get()
         assert task.matter is None
         assert task.date_due == date.today()
-        # The misfiling warning still shows everywhere.
-        toast = json.loads(response.headers["HX-Toast"])
-        assert toast["type"] == "warning"
-        assert "mobile_only" not in toast
+        # The confirmation stays desktop-silent; the misfiling warning rides
+        # with it (toasts stack) and shows everywhere.
+        assert json.loads(response.headers["HX-Toast"])["mobile_only"] is True
+        toasts = json.loads(response.headers["HX-Toasts"])
+        assert [t["type"] for t in toasts] == ["warning"]
+        assert "mobile_only" not in toasts[0]
 
     def test_ai_failure_falls_back_to_legacy(self, client, user, monkeypatch):
         from apps.settings.models import Firm
