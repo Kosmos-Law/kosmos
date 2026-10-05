@@ -1,5 +1,7 @@
 from datetime import timedelta
+from decimal import Decimal
 
+from django.db.models import Case, DecimalField, F, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -88,38 +90,52 @@ def get_clients_asymmetric():
 
     """
 
-    all_contacts = (
-        Transaction.objects.exclude(contact=None).values("contact").distinct()
+    # The three balances of every client in one query: the asymmetric one
+    # (all deposits, confirmed withdrawals only, as get_asymmetric_client_balance
+    # has it), the pending one (every row) and the confirmed one (confirmed
+    # rows), each a signed sum of deposits less withdrawals.
+    deposit = When(type="Deposit", then=F("amount"))
+    withdrawal = When(type="Withdrawal", then=-F("amount"))
+    zero = Value(Decimal("0"))
+    money = DecimalField(max_digits=9, decimal_places=2)
+    rows = (
+        Transaction.objects.exclude(contact=None)
+        .values("contact_id", "contact__name")
+        .annotate(
+            asymmetric=Sum(
+                Case(
+                    deposit,
+                    When(type="Withdrawal", confirmed=True, then=-F("amount")),
+                    default=zero,
+                    output_field=money,
+                )
+            ),
+            pending=Sum(Case(deposit, withdrawal, default=zero, output_field=money)),
+            confirmed=Sum(
+                Case(deposit, withdrawal, default=zero, output_field=money),
+                filter=Q(confirmed=True),
+            ),
+        )
     )
 
-    current_contacts = []
-
-    for contact in all_contacts:
-        contact = Contact.objects.filter(pk=contact["contact"]).get()
-
-        client_balance = get_asymmetric_client_balance(contact.id)
-
-        # Listed when any of the client's balances is not zero. (Listing on
-        # the asymmetric balance alone hid a client whose pending or
-        # confirmed balance was still non-zero, while the totals under the
-        # table, which add up every transaction, went on counting them.)
-        if (
-            client_balance != 0
-            or get_pending_client_balance(contact.id) != 0
-            or get_confirmed_client_balance(contact.id) != 0
-        ):
-            new_contact = {
-                "id": contact.id,
-                "name": contact.name,
-                "bal": client_balance,
-            }
-            current_contacts.append(new_contact)
+    # Listed when any of the client's balances is not zero. (Listing on
+    # the asymmetric balance alone hid a client whose pending or
+    # confirmed balance was still non-zero, while the totals under the
+    # table, which add up every transaction, went on counting them.)
+    current_contacts = [
+        {
+            "id": row["contact_id"],
+            "name": row["contact__name"],
+            "bal": row["asymmetric"] or 0,
+        }
+        for row in rows
+        if (row["asymmetric"] or 0) != 0
+        or (row["pending"] or 0) != 0
+        or (row["confirmed"] or 0) != 0
+    ]
 
     # sort the list of dicts by the 'name' of each dict
-    if current_contacts:
-        current_contacts = sorted(current_contacts, key=lambda k: k["name"])
-
-    return current_contacts or []
+    return sorted(current_contacts, key=lambda k: k["name"])
 
 
 def get_pending_account_balance():
