@@ -253,14 +253,18 @@ function switchSearchTab(tab) {
 // ==========================================================================
 
 const commandPalette = {
-  items: [
+  allItems: [
     { label: 'Time Entry', icon: 'icon-clock', url: '/activity/time/add', matterUrl: '/activity/time/add/{id}/activity' },
     { label: 'Task', icon: 'icon-square-check', url: '/tasks/add', matterUrl: '/matters/{id}/tasks/add' },
     { label: 'Expense', icon: 'icon-dollar-sign', url: '/activity/expenses/add', matterUrl: '/activity/expenses/add/{id}/activity' },
     { label: 'Event', icon: 'icon-calendar', url: '/events/add', matterUrl: '/events/add/{id}/matters' },
     { label: 'Contact', icon: 'icon-user', url: '/contacts/add' },
-    { label: 'Intake', icon: 'icon-inbox', url: '/intakes/add' },
+    // The sidebar renders its Intakes link only for a user with the
+    // Intakes permission; the palette takes that link's presence as its
+    // own signal rather than offer a form the server will refuse.
+    { label: 'Intake', icon: 'icon-inbox', url: '/intakes/add', requires: '#nav-intakes' },
   ],
+  items: [],
   activeIndex: 0,
   overlay: null,
   pendingToast: null,
@@ -269,6 +273,9 @@ const commandPalette = {
     if (this.overlay) return;
     this.activeIndex = 0;
     this.pendingToast = null;
+    this.items = this.allItems.filter(
+      (item) => !item.requires || document.querySelector(item.requires)
+    );
 
     const overlay = document.createElement('div');
     overlay.className = 'cmd-palette-overlay';
