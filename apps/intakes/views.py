@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -278,7 +276,7 @@ def add_note(request, id):
     # if no post data has been submitted, show the intake form
     else:
         today = timezone.localdate().strftime("%Y-%m-%d")
-        now = datetime.now().time()
+        now = timezone.localtime().time()
         form = NoteForm(
             initial={"date": today, "time": now}, use_required_attribute=False
         )
