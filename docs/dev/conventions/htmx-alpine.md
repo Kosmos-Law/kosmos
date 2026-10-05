@@ -336,7 +336,10 @@ The theme system is its own page: [CSS theming](../frontend/theming.md).
 Beyond it, four rules apply to every stylesheet and are checked in
 review, not by a tool:
 
-- No `font-size` below `1rem`.
+- No new `font-size` below `1rem`. The smaller sizes already in the
+  stylesheets are deliberate exceptions (the calendar's month event chips,
+  `.btn-sm`, badges and other dense chrome). Leave them as they are; do
+  not raise them to the floor.
 - Every spacing value (padding, margin, gap) is a multiple of `0.25rem`.
 - No font weight above 500. Hierarchy comes from size, colour and space.
 - The button classes are a closed set, defined in

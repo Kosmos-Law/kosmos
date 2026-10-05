@@ -90,7 +90,10 @@ in `docs/dev/setup.md`. Never run `collectstatic` in development.
 
 **CSS**
 
-- No `font-size` below `1rem`.
+- No new `font-size` below `1rem`. The smaller sizes already in the
+  stylesheets are deliberate exceptions (the calendar's month event chips,
+  `.btn-sm`, badges and other dense chrome). Leave them as they are; do
+  not raise them to the floor.
 - Every spacing value is a multiple of `0.25rem`.
 - No `font-weight` above 500. Hierarchy comes from size, colour and space.
 - Colours are tokens in `static/css/colors.css`; dark-theme structural

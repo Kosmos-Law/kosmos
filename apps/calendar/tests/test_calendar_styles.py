@@ -1,4 +1,4 @@
-"""House rule: no font size below 1rem."""
+"""House rule: no new font size below 1rem, with the month chips excepted."""
 
 import re
 from pathlib import Path

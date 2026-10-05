@@ -89,4 +89,7 @@ Files with co-located dark (shared by all three darks) blocks include `buttons.c
 `apps/case/ai.css`, `apps/case/highlights.css`, `apps/notes-editor.css`. Grep
 `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])` for the authoritative list.
 
-Related: never use `font-size` below `1rem`.
+Related: never use a new `font-size` below `1rem`. The smaller sizes
+already in the stylesheets are deliberate exceptions (the calendar's month
+event chips, `.btn-sm`, badges and other dense chrome). Leave them as they
+are; do not raise them to the floor.
