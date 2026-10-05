@@ -168,6 +168,22 @@ class Document(AuditMixin, models.Model):
     def is_drive_synced(self):
         return bool(self.drive_file_id)
 
+    def reset_extraction(self):
+        """Forget everything derived from the bytes.
+
+        Every path that replaces the file (a re-upload, a Drive refresh)
+        calls this before saving so OCR runs again on the new content and
+        the summary task, which skips a document that already has one,
+        writes a fresh summary instead of keeping the old file's.
+        """
+        self.ocr_status = "pending"
+        self.ocr_text = None
+        self.ocr_error = None
+        self.ocr_processed_at = None
+        self.page_count = None
+        self.ocr_pages_done = 0
+        self.summary = None
+
     def set_fingerprints(self, fileobj, size=None):
         """Compute content_hash / page_fingerprint from an open binary file."""
         from apps.case.documents.fingerprint import fingerprint_file
@@ -235,8 +251,13 @@ class Document(AuditMixin, models.Model):
             self.category = "Record"
 
         # Safety net for creation paths that do not fingerprint explicitly:
-        # a file with no hash yet is read once here. Paths that replace the
-        # bytes must clear content_hash (or call set_fingerprints) first.
+        # a file with no hash yet is read once here. A hash that is already
+        # set is kept, so the fingerprints describe the bytes the user
+        # uploaded, not the stored file: the OCR task overwrites the file
+        # with the OCR'd PDF and leaves the hash alone on purpose, which is
+        # what lets a re-upload of the original still match. A path that
+        # replaces the bytes with a genuinely different file (documents_edit,
+        # the Drive refresh) sets new fingerprints itself.
         if self.file and not self.content_hash:
             try:
                 self.file.open("rb")
