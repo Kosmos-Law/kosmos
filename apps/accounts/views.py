@@ -9,9 +9,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
-from django.views.generic import CreateView
 
-from .forms import CustomUserCreationForm, VerificationCodeForm
+from .forms import VerificationCodeForm
 from .models import CustomUser, EmailVerificationCode
 from .utils import generate_verification_code, send_verification_email
 
@@ -40,12 +39,6 @@ def admin_login(request):
     return redirect_to_login(
         next_url or reverse("admin:index"), login_url=reverse("accounts:login")
     )
-
-
-class SignUpView(CreateView):
-    form_class = CustomUserCreationForm
-    success_url = "/accounts/login/"
-    template_name = "registration/signup.html"
 
 
 class LoginView(View):
