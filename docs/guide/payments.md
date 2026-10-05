@@ -107,7 +107,8 @@ To undo or change an application, open **Apply** again. **Current
 Applications** lists each invoice the payment is applied to, with
 **Amount Applied**. Click the X at the end of a row and confirm. The
 money goes back to the payment's unapplied amount, and an invoice that
-was **Paid** goes back to **Sent**.
+was **Paid** goes back to **Sent** (or to **Deferred**, if it was
+deferred when it was paid).
 
 A payment holds one application for each invoice. A further amount for
 an invoice already under **Current Applications** is added to that
@@ -177,7 +178,8 @@ Kosmos checks an edit against the payment's applications:
 
 Deleting removes the payment and its applications. The matter's
 **Balance Due** goes up, a part-paid invoice shows more owing, and an
-invoice that was **Paid** goes back to **Sent**.
+invoice that was **Paid** goes back to **Sent** (or **Deferred**, if it
+was deferred when it was paid).
 
 A payment by **Trust** keeps its trust withdrawal in step. Editing the
 payment changes the withdrawal's date, amount and description to match
