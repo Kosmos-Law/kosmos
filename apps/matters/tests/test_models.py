@@ -136,7 +136,7 @@ def test_value_empty_matter(matter):
     assert value["billed"]["net_fees_and_expenses"] == 0
     assert value["invoices"]["billed"] == Decimal("0")
     assert value["invoices"]["payment_sum"] == 0
-    assert value["invoices"]["due"] == Decimal("0")
+    assert "due" not in value["invoices"]
 
 
 def test_value_with_unbilled_time(user, matter):
@@ -345,7 +345,7 @@ def test_value_with_payments(user, matter):
     value = matter.value
     assert value["invoices"]["billed"] == Decimal("600.00")
     assert value["invoices"]["payment_sum"] == Decimal("400.00")
-    assert value["invoices"]["due"] == Decimal("200.00")
+    assert "due" not in value["invoices"]
 
 
 def test_value_with_discount(user, matter):
