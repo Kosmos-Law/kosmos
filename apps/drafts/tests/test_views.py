@@ -85,8 +85,16 @@ def test_link_and_unlink_cycle(client, conversation, monkeypatch):
 
 
 def test_link_requires_file_param(client, conversation):
+    """Refused the same way as the other refusals: the chip is left alone
+    and a toast says why, not a bare 400 the chat window shows nothing for."""
+    import json
+
     response = client.post(f"/case/ai/conversations/{conversation.id}/draft/link/")
-    assert response.status_code == 400
+    assert response.status_code == 204
+    toast = json.loads(response["HX-Toast"])
+    assert toast["type"] == "error"
+    assert "Choose a file" in toast["message"]
+    assert not DraftLink.objects.exists()
 
 
 def test_link_drive_failure_reported(client, conversation, monkeypatch):
