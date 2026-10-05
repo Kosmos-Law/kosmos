@@ -457,7 +457,7 @@ invoice that lacks one (see the
   comp flag or an amount on a draft's entry does not regenerate the stored
   PDF; the next status move does, and `invoices_pdf()` renders a draft
   fresh anyway. An `APPROVED` invoice whose entries change keeps the stale
-  stored copy until it is moved again.
+  stored copy until it is moved or sent.
 - **`Matter.value["invoices"]` has no balance due.** It carries `billed`
   and `payment_sum` only; the ledger computes what is owed from the
   applications (`get_ledger_data()`), and so should anything else.

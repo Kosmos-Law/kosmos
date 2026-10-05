@@ -232,8 +232,8 @@ Approved invoice has no void button: delete it instead.
 2. Type VOID in the box and click **Submit**.
 
 The invoice is now **Void** and stays in the list with its PDF, made
-again with a cancelled mark across it. Its entries are unbilled again, so they return to **Work in Progress** and can
-be edited. Payments and credits applied to it are taken off it and stay
+again with a cancelled mark across it. Its entries are unbilled again,
+so they return to **Work in Progress** and can be edited. Payments and credits applied to it are taken off it and stay
 on the matter, unapplied. It no longer counts in **Balance Due**. Voiding
 cannot be undone, and a void invoice's status cannot be changed.
 
