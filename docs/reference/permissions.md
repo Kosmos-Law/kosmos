@@ -54,14 +54,14 @@ it.
 | 3 | Prefix (`PERMISSION_PATHS`) | `/settings/intake-emails/` | Admin, or `perm_intakes` |
 | 3 | Prefix (`PERMISSION_PATHS`) | `/reports/` | Admin, or `perm_reports` |
 | 4 | Pattern (`PERMISSION_PATTERNS`) | `/matters/<id>/rates` and `/matters/<id>/ledger`, alone or followed by `/…` | Admin, or `perm_financial` |
-| 4 | Pattern (`PERMISSION_PATTERNS`) | `/case/research/…`, `/case/<id>/research/…` and the tab-switch address `/case/<id>/tab/research/` | Admin, or `perm_research` |
+| 4 | Pattern (`PERMISSION_PATTERNS`) | `/case/research/…`, `/case/<id>/research/…`, the tab-switch address `/case/<id>/tab/research/`, the saved case law under `/case/caselaws/…` and `/case/<id>/caselaws/…`, and the case viewer `/case/<id>/viewer/cluster/…` | Admin, or `perm_research` |
 | 5 | Matter membership (`MATTER_SCOPED_PREFIXES`, `process_view`) | Everything under `/case/` | Admin, `perm_all_matters`, or a member of every matter the URL's ids belong to. The lookup is set out under Matter membership below. |
 
 The two patterns as written in the source:
 
 ```
 ^/matters/\d+/(rates|ledger)(/|$)
-^/case/(\d+/)?(tab/)?research/
+^/case/(\d+/)?(tab/)?(research|caselaws)/|^/case/\d+/viewer/cluster/
 ```
 
 What sits under each path:
@@ -81,7 +81,7 @@ What sits under each path:
 | `/reports/` | All reports. |
 | `/matters/<id>/rates…` | A matter's Rates page and its list, add, edit and delete routes. |
 | `/matters/<id>/ledger…` | A matter's Ledger tab, list and PDF. |
-| `/case/research/…`, `/case/<id>/research/…` | Research searches, history, review, abstracts, saved case law lists, briefs and citation checks. |
+| `/case/research/…`, `/case/<id>/research/…`, `/case/caselaws/…`, `/case/<id>/caselaws/…`, `/case/<id>/viewer/cluster/…` | Research searches, history, review, abstracts, briefs and citation checks; the saved case law lists and the case viewer. |
 | `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, notes, emails, case search, AI chats, drafts and research. |
 
 ## Gates checked in views
@@ -95,30 +95,30 @@ matter's `members`.
 
 | Gate | Where it applies | Location | Blocked |
 |---|---|---|---|
-| `PermissionMiddleware.process_view`, `user_may_use_route` | Every route under `/case/`, by the ids in its URL (table below) | `apps/accounts/middleware.py:84`; [`apps/accounts/access.py:100`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/accounts/access.py) | 403 |
-| `matter_access_required` | Views under `/matters/<id>/…` that take the matter id: overview, edit, tab content, contacts, events, tasks, activity, timeline, proceedings, categories, settlement, rates, ledger, work status | `apps/accounts/access.py:9`; decorators in `apps/matters/**/views.py` | 403 |
-| `matter_access_required` | `/case/select-matter/<id>/`, `/case/<id>/mode-content/` (also covered by the middleware) | `apps/case/views.py:85`, `:99` | 403 |
-| `filter_matters_for_user` | Matter list, quick search, open-matter switcher JSON, open-matter dropdown and steppers on the matter detail page | `apps/matters/get_matter_list.py:36`; `apps/matters/views.py:140`, `:648`; `apps/matters/templatetags/matter_tags.py:14` | Matter not listed |
-| `filter_matters_for_user` | Matter switcher in the case workspace | `apps/case/views.py:113`, `:137`, `:245`; `apps/case/documents/get_document_data.py:26` | Matter not listed |
-| `filter_matters_for_user` | Matter choices in the task, time, expense, flat-fee, document and case-note forms | `apps/tasks/forms.py:69`, `:132`; `apps/activity/time/forms.py:75`; `apps/activity/expenses/forms.py:64`; `apps/activity/flat_fees/forms.py:60`; `apps/case/documents/forms.py:64`; `apps/case/notes/forms.py:28` | Matter not offered |
-| `assigned_matters` filter | Time, expense and flat-fee lists under `/activity/` | `apps/activity/time/get_time_data.py:23`; `apps/activity/expenses/get_expenses_data.py:23`; `apps/activity/flat_fees/get_flat_fees_data.py:22` | Entries not listed |
-| `has_matter_access` | Every `/notes/<id>/…` endpoint, for a note that belongs to a matter | `apps/notes/views.py:1003` (`_get_note`) | 404 |
-| `filter_matters_for_user` | Notes editor tree, palette and search scopes | `apps/notes/views.py:802`, `:980`, `:1265`, `:1279` | Notes not listed |
-| `has_matter_access` | Case note "Edit Details" modal (also covered by the middleware) | `apps/case/notes/views.py:148` | 404 |
-| `filter_matters_for_user` | Matters, proceedings and matter notes in in-app search results | `apps/search/views.py:152` | Not listed |
-| `entries_for_user` | Time, expense and flat-fee CSV exports, and the entries a bulk change touches | `apps/activity/access.py:23` | Entries left out |
-| `entry_for_user` | Opening, saving, deleting or toggling one time, expense or flat-fee entry by its id | `apps/activity/access.py:30` | 403 |
+| `PermissionMiddleware.process_view`, `user_may_use_route` | Every route under `/case/`, by the ids in its URL (table below) | `apps/accounts/middleware.py`; [`apps/accounts/access.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/accounts/access.py) | 403 |
+| `matter_access_required` | Views under `/matters/<id>/…` that take the matter id: overview, edit, tab content, contacts, events, tasks, activity, timeline, proceedings, categories, settlement, rates, ledger, work status | `apps/accounts/access.py`; decorators in `apps/matters/**/views.py` | 403 |
+| `matter_access_required` | `/case/select-matter/<id>/`, `/case/<id>/mode-content/` (also covered by the middleware) | `apps/case/views.py` | 403 |
+| `filter_matters_for_user` | Matter list, quick search, open-matter switcher JSON, open-matter dropdown and steppers on the matter detail page | `apps/matters/get_matter_list.py`; `apps/matters/views.py`; `apps/matters/templatetags/matter_tags.py` | Matter not listed |
+| `filter_matters_for_user` | Matter switcher in the case workspace | `apps/case/views.py`; `apps/case/documents/get_document_data.py` | Matter not listed |
+| `filter_matters_for_user` | Matter choices in the task, time, expense, flat-fee, document and case-note forms | `apps/tasks/forms.py`; `apps/activity/time/forms.py`; `apps/activity/expenses/forms.py`; `apps/activity/flat_fees/forms.py`; `apps/case/documents/forms.py`; `apps/case/notes/forms.py` | Matter not offered |
+| `assigned_matters` filter | Time, expense and flat-fee lists under `/activity/` | `apps/activity/time/get_time_data.py`; `apps/activity/expenses/get_expenses_data.py`; `apps/activity/flat_fees/get_flat_fees_data.py` | Entries not listed |
+| `has_matter_access` | Every `/notes/<id>/…` endpoint, for a note that belongs to a matter | `apps/notes/views.py` (`_get_note`) | 404 |
+| `filter_matters_for_user` | Notes editor tree, palette and search scopes | `apps/notes/views.py` | Notes not listed |
+| `has_matter_access` | Case note "Edit Details" modal (also covered by the middleware) | `apps/case/notes/views.py` | 404 |
+| `filter_matters_for_user` | Matters, proceedings and matter notes in in-app search results | `apps/search/views.py` | Not listed |
+| `entries_for_user` | Time, expense and flat-fee CSV exports, and the entries a bulk change touches | `apps/activity/access.py` | Entries left out |
+| `entry_for_user` | Opening, saving, deleting or toggling one time, expense or flat-fee entry by its id | `apps/activity/access.py` | 403 |
 | `has_matter_access` | The rate, trust-available and flat-fee-amount lookups behind the entry forms | `apps/activity/time/views.py`, `apps/activity/flat_fees/views.py` | 403 |
-| `matters_for_entry_form` | Matter choices in the entry forms and in the bulk "move to matter" menus | `apps/activity/access.py:48` | Matter not listed |
-| `assigned_matters` filter | "Upcoming Events" on the dashboard (events on no matter are shown to everyone) | `apps/dash/views.py:41` | Events not listed |
-| `filter_matters_for_user` | Dashboard matter lists, AI agenda matter list | `apps/dash/views.py:162`, `:311`; `apps/dash/agenda.py:110`, `:201` | Matter not listed |
-| `filter_matters_for_user`, `has_matter_access` | `/case/` landing redirect | `apps/case/views.py:58`, `:63` | Redirects to an accessible matter |
-| `perm_all_matters` only (role not consulted) | Daily digest email content | `apps/tasks/digest.py:47` | Items for other matters omitted |
+| `matters_for_entry_form` | Matter choices in the entry forms and in the bulk "move to matter" menus | `apps/activity/access.py` | Matter not listed |
+| `assigned_matters` filter | "Upcoming Events" on the dashboard (events on no matter are shown to everyone) | `apps/dash/views.py` | Events not listed |
+| `filter_matters_for_user` | Dashboard matter lists, AI agenda matter list | `apps/dash/views.py`; `apps/dash/agenda.py` | Matter not listed |
+| `filter_matters_for_user`, `has_matter_access` | `/case/` landing redirect | `apps/case/views.py` | Redirects to an accessible matter |
+| `perm_all_matters` only (role not consulted) | Daily digest email content | `apps/tasks/digest.py` | Items for other matters omitted |
 | Token APIs | See [Token-authenticated APIs](#token-authenticated-apis) | | 404 |
 
 How the middleware finds the matter of a `/case/` route. Each URL keyword
 names a record, and the record leads to a matter (`MATTER_LOOKUPS` and
-`OBJECT_TYPE_KEYS`, `apps/accounts/access.py:39`, `:63`):
+`OBJECT_TYPE_KEYS`, `apps/accounts/access.py`):
 
 | URL keyword | Record | Matter taken from |
 |---|---|---|
@@ -163,7 +163,7 @@ Not checked against matter membership (sign-in only):
 
 | Area | Paths | Location |
 |---|---|---|
-| Matter switcher partial | `/matters/<id>/switcher` (matter name) | `apps/matters/views.py:575` |
+| Matter switcher partial | `/matters/<id>/switcher` (matter name) | `apps/matters/views.py` |
 | Contacts (the contact's own record; contacts are firm-wide) | `/contacts/…` | `apps/contacts/` |
 | Contacts in in-app search results | `/search/…` | `apps/search/views.py` |
 | Invoicing, trust and reports (for a user who holds those flags) | `/invoicing/…`, `/reports/…` | |
@@ -172,43 +172,43 @@ Not checked against matter membership (sign-in only):
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: `/invoicing/…`, `/matters/<id>/rates…`, `/matters/<id>/ledger…` | `apps/accounts/middleware.py:31`, `:40` | 403 |
-| Matter Ledger tab, list and PDF (`/matters/<id>/ledger/…`), checked again in the view | `apps/matters/ledger/views.py:17` | 403 |
-| Matter tab switch to `ledger` or `rates` (`/matters/<id>/tab/<tab>/`) | `apps/matters/views.py:381`, `:398` | 403 |
-| Balance due and trust figures on the matter Overview | `apps/matters/views.py:199` | Figures omitted |
-| Bulk "change matter" and "comp" on time entries | `apps/activity/time/views.py:579`, `:636` | 403 |
-| Bulk "change matter" and "comp" on expenses | `apps/activity/expenses/views.py:362`, `:421` | 403 |
-| Bulk "change matter" and "comp" on flat fees | `apps/activity/flat_fees/views.py:310`, `:343` | 403 |
-| Bulk comp on an invoice's time entries (already under `/invoicing/`) | `apps/invoicing/invoices/views.py:115`, `:328` | 403 |
-| Token API: `ledger` and `trust` sections, invoice read | `apps/case/api.py:68`, `:557`, `:672` | 403, JSON error |
+| Middleware: `/invoicing/…`, `/matters/<id>/rates…`, `/matters/<id>/ledger…` | `apps/accounts/middleware.py` | 403 |
+| Matter Ledger tab, list and PDF (`/matters/<id>/ledger/…`), checked again in the view | `apps/matters/ledger/views.py` | 403 |
+| Matter tab switch to `ledger` or `rates` (`/matters/<id>/tab/<tab>/`) | `apps/matters/views.py` | 403 |
+| Balance due and trust figures on the matter Overview | `apps/matters/views.py` | Figures omitted |
+| Bulk "change matter" and "comp" on time entries | `apps/activity/time/views.py` | 403 |
+| Bulk "change matter" and "comp" on expenses | `apps/activity/expenses/views.py` | 403 |
+| Bulk "change matter" and "comp" on flat fees | `apps/activity/flat_fees/views.py` | 403 |
+| Bulk comp on an invoice's time entries (already under `/invoicing/`) | `apps/invoicing/invoices/views.py` | 403 |
+| Token API: `ledger` and `trust` sections, invoice read | `apps/case/api.py` | 403, JSON error |
 
 Not checked against `perm_financial`:
 
 | Area | Paths | Location |
 |---|---|---|
-| Time, expense and flat-fee lists (the Rate and Fee columns of the time list, the Amount column of the other two) | `/activity/…` | `templates/activity/time/list.html:220`; `apps/activity/` |
-| Token API sections `rates`, `activity`, `settlement` | `/case/api/matter/<id>/<section>/` | `apps/case/api.py:65` (`FINANCIAL_SECTIONS`) |
+| Time, expense and flat-fee lists (the Rate and Fee columns of the time list, the Amount column of the other two) | `/activity/…` | `templates/activity/time/list.html`; `apps/activity/` |
+| Token API sections `rates`, `activity`, `settlement` | `/case/api/matter/<id>/<section>/` | `apps/case/api.py` (`FINANCIAL_SECTIONS`) |
 
 ### Intakes (`perm_intakes`)
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: `/intakes/…`, `/settings/intake-emails/…` | `apps/accounts/middleware.py:31` | 403 |
-| Intakes in token search (`/search/api/`) | `apps/search/api.py:85` | Intakes omitted |
-| Intakes in in-app search results, and the search window's Intakes tab | `apps/search/views.py:80`, `:121` | Intakes omitted, tab not shown |
+| Middleware: `/intakes/…`, `/settings/intake-emails/…` | `apps/accounts/middleware.py` | 403 |
+| Intakes in token search (`/search/api/`) | `apps/search/api.py` | Intakes omitted |
+| Intakes in in-app search results, and the search window's Intakes tab | `apps/search/views.py` | Intakes omitted, tab not shown |
 
 ### Reports (`perm_reports`)
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: `/reports/…` | `apps/accounts/middleware.py:31` | 403 |
-| Firm-wide "Unbilled Time" breakdown on the dashboard (by user and by matter) | `apps/dash/views.py:79` | Shows the user's own figures instead |
+| Middleware: `/reports/…` | `apps/accounts/middleware.py` | 403 |
+| Firm-wide "Unbilled Time" breakdown on the dashboard (by user and by matter) | `apps/dash/views.py` | Shows the user's own figures instead |
 
 ### Research (`perm_research`)
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: `/case/research/…`, `/case/<matter_id>/research/…`, `/case/<matter_id>/tab/research/` | `apps/accounts/middleware.py:40` | 403 |
+| Middleware: `/case/research/…`, `/case/<matter_id>/research/…`, `/case/<matter_id>/tab/research/` | `apps/accounts/middleware.py` | 403 |
 
 No view checks this flag; the middleware is the gate.
 
@@ -216,24 +216,24 @@ No view checks this flag; the middleware is the gate.
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: `/admin/…` and the six `/settings/…` paths in `ADMIN_ONLY_PATHS` | `apps/accounts/middleware.py:50`, `:64` | 403 |
-| Toggle a permission, open or change matter assignments, checked again in the view | `apps/settings/users/views.py:129`, `:154`, `:176` | 403 |
-| Delete a matter | `apps/matters/views.py:589` | 403 |
-| Delete a voided invoice | `apps/invoicing/invoices/views.py:643` | 403 |
-| Add, edit, delete a time-entry abbreviation code | `apps/activity/time/views.py:721`, `:743`, `:772` | 403 with a message |
-| Connect or disconnect Google Calendar, Contacts or Drive (Gmail is open to every user) | `apps/settings/integrations/views.py:102` | 403 |
-| "Collections" section on the dashboard | `apps/dash/views.py:127` | Section omitted |
-| Everyone's tasks, events and time entries in the AI agenda context | `apps/dash/agenda.py:130`, `:147`, `:162` | Own and unassigned items only |
+| Middleware: `/admin/…` and the six `/settings/…` paths in `ADMIN_ONLY_PATHS` | `apps/accounts/middleware.py` | 403 |
+| Toggle a permission, open or change matter assignments, checked again in the view | `apps/settings/users/views.py` | 403 |
+| Delete a matter | `apps/matters/views.py` | 403 |
+| Delete a voided invoice | `apps/invoicing/invoices/views.py` | 403 |
+| Add, edit, delete a time-entry abbreviation code | `apps/activity/time/views.py` | 403 with a message |
+| Connect or disconnect Google Calendar, Contacts or Drive (Gmail is open to every user) | `apps/settings/integrations/views.py` | 403 |
+| "Collections" section on the dashboard | `apps/dash/views.py` | Section omitted |
+| Everyone's tasks, events and time entries in the AI agenda context | `apps/dash/agenda.py` | Own and unassigned items only |
 
 User-management routes under `/settings/users/`
 (`apps/settings/users/views.py`):
 
 | Route | Methods | Other checks |
 |---|---|---|
-| Change role (`change_role`, `:66`) | POST only (405 otherwise) | 400 unless the role is `ADMIN` or `USER` |
-| Switch status (`switch_status`, `:76`) | POST only | |
-| Toggle a permission (`toggle_permission`, `:128`) | POST only | 400 unless the name is one of the five flags |
-| Toggle a matter assignment (`toggle_matter_assignment`, `:174`) | POST only | |
+| Change role (`change_role`) | POST only (405 otherwise) | 400 unless the role is `ADMIN` or `USER` |
+| Switch status (`switch_status`) | POST only | |
+| Toggle a permission (`toggle_permission`) | POST only | 400 unless the name is one of the five flags |
+| Toggle a matter assignment (`toggle_matter_assignment`) | POST only | |
 
 None of these routes, nor the user edit form, checks whether the change
 removes the last active admin or the acting user's own Admin role.
@@ -245,22 +245,22 @@ whether the server also refuses the request.
 
 | Element | Shown to | Template | Server-side check |
 |---|---|---|---|
-| Sidebar: Invoicing | Admin or `perm_financial` | `templates/sidebar.html:71` | Yes (middleware) |
-| Sidebar: Intakes | Admin or `perm_intakes` | `templates/sidebar.html:81` | Yes (middleware) |
-| Sidebar: Reports | Admin or `perm_reports` | `templates/sidebar.html:91` | Yes (middleware) |
-| Case navigation: Research tab | Admin or `perm_research` | `templates/case/includes/case-nav.html:59` | Yes (middleware) |
-| Matter navigation: Rates tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html:17` | Yes (middleware, and the tab switch in the view) |
-| Matter navigation: Ledger tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html:55` | Yes (middleware and view) |
-| Matter form: Delete button | Admin | `templates/matters/form.html:28` | Yes (view) |
-| Activity lists: selection column and bulk actions | Admin or `perm_financial` | `templates/activity/time/list.html:191`, `expenses/list.html:183`, `flat-fees/list.html:146` | Bulk matter and comp only |
-| A matter's Time list: the Matter and Comp bulk menus (the selection column and the Category menu are for everyone) | Admin or `perm_financial` | `templates/matters/activity/list.html`; `apps/matters/activity/views.py:413`, `:473` | Yes |
-| Time codes: add and edit buttons | Admin | `templates/activity/time/codes/list.html:20`, `results.html:11` | Yes (view) |
-| Invoice detail: delete a voided invoice | Admin | `templates/invoicing/invoices/detail/detail.html:46` | Yes (view) |
-| Settings menu: Firm | Admin | `templates/settings/main.html:14` | Yes (middleware) |
-| Settings menu: Users, Permissions, Contacts, Practice Areas, Tasks | Admin | `templates/settings/main.html:25` | Yes (middleware) |
-| Settings menu: Intake Forms, Intake Emails | Admin or `perm_intakes` | `templates/settings/main.html:52` | Yes (middleware) |
-| Settings menu: Checklists | Admin or `perm_financial` | `templates/settings/main.html:65` | No (`/checklists/…`) |
-| Integrations page: Google account section | Admin | `templates/settings/integrations/index.html:4` | Yes (view) |
+| Sidebar: Invoicing | Admin or `perm_financial` | `templates/sidebar.html` | Yes (middleware) |
+| Sidebar: Intakes | Admin or `perm_intakes` | `templates/sidebar.html` | Yes (middleware) |
+| Sidebar: Reports | Admin or `perm_reports` | `templates/sidebar.html` | Yes (middleware) |
+| Case navigation: Research tab | Admin or `perm_research` | `templates/case/includes/case-nav.html` | Yes (middleware) |
+| Matter navigation: Rates tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware, and the tab switch in the view) |
+| Matter navigation: Ledger tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware and view) |
+| Matter form: Delete button | Admin | `templates/matters/form.html` | Yes (view) |
+| Activity lists: selection column and bulk actions | Admin or `perm_financial` | `templates/activity/time/list.html`, `expenses/list.html`, `flat-fees/list.html` | Bulk matter and comp only |
+| A matter's Time list: the Matter and Comp bulk menus (the selection column and the Category menu are for everyone) | Admin or `perm_financial` | `templates/matters/activity/list.html`; `apps/matters/activity/views.py` | Yes |
+| Time codes: add and edit buttons | Admin | `templates/activity/time/codes/list.html`, `results.html` | Yes (view) |
+| Invoice detail: delete a voided invoice | Admin | `templates/invoicing/invoices/detail/detail.html` | Yes (view) |
+| Settings menu: Firm | Admin | `templates/settings/main.html` | Yes (middleware) |
+| Settings menu: Users, Permissions, Contacts, Practice Areas, Tasks | Admin | `templates/settings/main.html` | Yes (middleware) |
+| Settings menu: Intake Forms, Intake Emails | Admin or `perm_intakes` | `templates/settings/main.html` | Yes (middleware) |
+| Settings menu: Checklists | Admin or `perm_financial` | `templates/settings/main.html` | No (`/checklists/…`) |
+| Integrations page: Google account section | Admin | `templates/settings/integrations/index.html` | Yes (view) |
 
 ## Routes that need no sign-in
 
@@ -317,12 +317,12 @@ limit.
 
 | Fact | Value |
 |---|---|
-| Token model | `CompanionToken`, one per user (`apps/drafts/models.py:89`) |
+| Token model | `CompanionToken`, one per user (`apps/drafts/models.py`) |
 | Format | `secrets.token_urlsafe(32)`, stored as-is in the database |
 | Expiry | None |
 | Issued | By the user: Settings → Claude Desktop, or the first time they open the LibreOffice companion setup |
 | Rotated or revoked | By the user only, in Settings → Claude Desktop |
-| Missing, unknown, or user inactive | 401 with a JSON error (`apps/drafts/api_auth.py:38`, `apps/drafts/companion.py:59`) |
+| Missing, unknown, or user inactive | 401 with a JSON error (`apps/drafts/api_auth.py`, `apps/drafts/companion.py`) |
 
 | URL prefix | Decorator | Methods | Scope |
 |---|---|---|---|

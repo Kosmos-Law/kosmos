@@ -127,12 +127,14 @@ set.
 
 ```bash
 .venv/bin/python -m pytest -n auto        # run the test suite
-pre-commit run --all-files                # ruff + djlint, as CI runs them
+pre-commit run --all-files                # ruff + djlint, the same checks the workflow defines
 ```
 
-Pull requests into `dev` run two workflows: lint and tests, and the
-installer itself on a clean Ubuntu runner in both modes. Conventions for
-contributors and coding agents are in [AGENTS.md](AGENTS.md).
+The repository carries two workflows (lint and tests, and the installer on
+a clean Ubuntu runner in both modes) as the definition of the checks, but
+GitHub Actions is switched off on this repository: run them locally before
+opening a pull request. Conventions for contributors and coding agents are
+in [AGENTS.md](AGENTS.md).
 
 ## Documentation
 
