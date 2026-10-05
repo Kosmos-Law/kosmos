@@ -980,25 +980,6 @@ def document_viewer(request, document_id):
 
 
 @login_required
-def ocr_status(request, document_id):
-    """Return OCR status for polling."""
-    document = get_object_or_404(Document, id=document_id)
-
-    return JsonResponse(
-        {
-            "status": document.ocr_status,
-            "error": document.ocr_error,
-            "processed_at": (
-                document.ocr_processed_at.isoformat()
-                if document.ocr_processed_at
-                else None
-            ),
-            "page_count": document.page_count,
-        }
-    )
-
-
-@login_required
 @require_POST
 def retry_ocr(request, document_id):
     """Retry OCR for a failed document."""

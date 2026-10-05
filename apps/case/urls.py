@@ -965,11 +965,6 @@ urlpatterns = [
         name="serve",
     ),
     path(
-        "case/documents/<int:document_id>/ocr-status/",
-        documents.ocr_status,
-        name="ocr-status",
-    ),
-    path(
         "case/documents/<int:document_id>/retry-ocr/",
         documents.retry_ocr,
         name="retry-ocr",
