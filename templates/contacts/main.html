@@ -5,4 +5,17 @@
     {% load humanize %}
     <div id="contacts">{% include "contacts/content.html" %}</div>
   </div>
+  {% if pending_toast %}
+    {% comment %}
+    Left by a view that redirected here (the delete view, when the Google
+    copy could not be removed): toasts.js loads after this block, so the
+    toast waits for the page.
+    {% endcomment %}
+    {{ pending_toast|json_script:"contacts-pending-toast" }}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        Toast.show(JSON.parse(document.getElementById("contacts-pending-toast").textContent));
+      });
+    </script>
+  {% endif %}
 {% endblock content %}
