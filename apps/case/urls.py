@@ -810,19 +810,9 @@ urlpatterns = [
         name="ai-new-conversation-prompt",
     ),
     path(
-        "case/<int:matter_id>/ai/create-prompt/",
-        ai.create_prompt,
-        name="ai-create-prompt",
-    ),
-    path(
         "case/<int:matter_id>/ai/prompt-editor/",
         ai.prompt_editor_modal,
         name="ai-prompt-editor",
-    ),
-    path(
-        "case/<int:matter_id>/ai/context-preview/",
-        ai.context_preview,
-        name="ai-context-preview",
     ),
     # Research (matter-scoped)
     path(

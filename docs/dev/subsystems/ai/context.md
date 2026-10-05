@@ -172,9 +172,8 @@ short-circuit or the fallback: they enter only when the selector names them.
 `context.load_legal_prompt()` (an edit takes effect without a restart)
 and its `[JURISDICTION]` placeholders are replaced with the matter's
 jurisdiction, else the firm's, else "United States common law". The same
-text heads the agent's orientation, the auto-summary context and the
-prompt export `views.create_prompt()` (routed at `ai/create-prompt/`,
-though no current template links to it). The operator page
+text heads the agent's orientation and the auto-summary context. The
+operator page
 [AI providers and research](../../../admin/integrations/ai.md) describes
 what to edit in it.
 
