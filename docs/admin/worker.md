@@ -208,7 +208,7 @@ order.
 | `generate_invoice_pdfs` | Stored invoice PDFs are missing or wrong. Regenerates them. `--clear` deletes every stored invoice PDF. |
 | `update_search_vectors` | Recomputes the search columns on documents and highlights. |
 | `purge_closed_chats` | Runs the weekly chat purge by hand. `--days` sets the retention window and `--dry-run` reports what would be deleted. |
-| `clean_history` | The database has grown large from change history. Deletes rows older than `--days` (default 90) from every change-history table, which includes the history of financial and trust records. It is not scheduled. Decide the firm's retention policy before running it, and use `--dry-run` first. |
+| `clean_history` | The database has grown large from change history. Deletes rows older than `--days` (default 90) from every change-history table, which includes the history of financial and trust records, and the worker's failed task records from before the same cutoff. It is not scheduled. Decide the firm's retention policy before running it, and use `--dry-run` first. |
 
 ### One-off backfills
 

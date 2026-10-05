@@ -80,7 +80,7 @@ retrying forever. The settings comment records why the cap was added:
 without it one such task was retried every fifteen minutes indefinitely
 and its history writes could fill a disk. A task killed by `timeout` is
 retried the same way. Successful runs are kept to the library's default
-of 250 rows; failures are never pruned automatically.
+of 250 rows; failures are kept until an operator runs `clean_history`.
 
 Nothing in the repository uses Django-Q's `hook` argument; a task that
 needs to react to its own failure does so in a `try`/`except` of its
@@ -129,11 +129,12 @@ rather than replaying every missed slot.
 
 ### `clean_history`
 
-Despite the name it has nothing to do with the task queue. It finds every
-table in the public schema whose name contains `historical` (the
-`django-simple-history` tables) and deletes rows older than `--days`
-(default 90). `--dry-run` counts without deleting. It is not scheduled;
-an operator runs it.
+It finds every table in the public schema whose name contains
+`historical` (the `django-simple-history` tables) and deletes rows older
+than `--days` (default 90), then deletes the worker's failed `Task` rows
+(the `Failure` proxy) stopped before the same cutoff, since django-q
+never prunes those itself. `--dry-run` counts without deleting. It is
+not scheduled; an operator runs it.
 
 ### Storage repair
 

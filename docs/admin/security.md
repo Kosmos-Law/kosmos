@@ -379,7 +379,8 @@ Limits:
 
 History grows without limit until you prune it. `clean_history` deletes
 history rows older than a number of days (90 unless you pass `--days`) from
-every history table. It is not scheduled. Decide how long your firm must
+every history table, and the worker's failed task records from before the
+same cutoff. It is not scheduled. Decide how long your firm must
 keep an audit trail, then run it by hand or from cron:
 
 ```bash
