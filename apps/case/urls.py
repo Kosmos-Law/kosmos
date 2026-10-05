@@ -1301,6 +1301,11 @@ urlpatterns = [
         name="research-brief-status",
     ),
     path(
+        "case/research/brief/<int:brief_id>/retry/",
+        research.research_retry_brief,
+        name="research-retry-brief",
+    ),
+    path(
         "case/research/brief/<int:brief_id>/delete/",
         research.research_delete_brief,
         name="research-delete-brief",

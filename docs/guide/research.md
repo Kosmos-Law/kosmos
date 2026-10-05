@@ -252,8 +252,8 @@ Good to know:
 - A saved brief is written from the opening part of the opinion, not the
   whole decision. The **Case brief** on the card is the one written from
   the full text.
-- If the card shows "Brief generation failed", delete the brief in
-  **Case Briefs** and click **Save Brief** again.
+- If the card shows "Brief generation failed", click **Retry** beside it
+  and the brief is written again.
 
 ## Use saved cases in AI chat
 

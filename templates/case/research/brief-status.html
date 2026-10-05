@@ -9,6 +9,13 @@
 {% elif brief.status == "error" %}
   <span class="research-save-error">
     <i class="icon-alert-triangle"></i> Brief generation failed
+    <button type="button"
+            class="btn"
+            hx-post="{% url 'case:research-retry-brief' brief.id %}"
+            hx-target="closest .research-save-error"
+            hx-swap="outerHTML">
+      <i class="icon-refresh-cw"></i> Retry
+    </button>
   </span>
 {% else %}
   <span class="research-status-msg"
