@@ -6,6 +6,10 @@ from utils.models import AuditMixin
 
 
 class Proceeding(AuditMixin, models.Model):
+    # `status` is a plain CharField; the form's choices come from here.
+    STATUSES = ("Ongoing", "Concluded", "Stayed", "Dismissed")
+    STATUS_CHOICES = tuple((status, status) for status in STATUSES)
+
     user = models.ForeignKey(
         "accounts.CustomUser", on_delete=models.SET_NULL, null=True, blank=True
     )

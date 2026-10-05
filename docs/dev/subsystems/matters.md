@@ -15,7 +15,7 @@ are in [Architecture](../architecture.md).
 |---|---|
 | `apps/matters/models.py` | `Matter`, `PracticeArea`, `Group`, `Role`, `Relationship` |
 | `apps/matters/views.py` | List, filters, detail tabs, add, edit, delete, the open-matters JSON |
-| `apps/matters/forms.py` | `MatterForm` (the statuses live here), `ContactComboboxWidget` |
+| `apps/matters/forms.py` | `MatterForm`, `ContactComboboxWidget` |
 | `apps/matters/filter.py` | `MatterFilter` (django-filter) for the list |
 | `apps/matters/get_matter_list.py` | Session filter, pagination and the quick-status buttons |
 | `apps/matters/client_wizard.py` | Create a contact or convert an intake from inside the matter form |
@@ -38,8 +38,8 @@ are in [Architecture](../architecture.md).
 
 - `status` is a plain `CharField`: no choices on the model and nothing in
   the database. The four values, `Pending`, `Open`, `Complete` and
-  `Closed`, are declared in `MatterForm.Meta.STATUSES` and again in
-  `MATTER_STATUS_CHOICES` in `apps/matters/filter.py`.
+  `Closed`, are `Matter.STATUSES` (with `Matter.STATUS_CHOICES` for the
+  form and the filter); `Matter.ACTIVE_STATUSES` is `("Pending", "Open")`.
   `Matter.INACTIVE_STATUSES` is `("Complete", "Closed")`; the comment
   there says which is which: Complete is the closing-out phase, usually
   waiting on a trust reimbursement, and Closed is final and starts the
@@ -57,9 +57,8 @@ are in [Architecture](../architecture.md).
   one.
 - `drive_folder` and `drive_folder_id` name the matter's Google Drive
   folder; the id is the link and the name is for display.
-  `gmail_label_name` is the Gmail contract (`gmail_label_id` is legacy and
-  no longer written). Both are cleared when the matter leaves active work
-  (below).
+  `gmail_label_name` is the Gmail contract. All three are cleared when the
+  matter leaves active work (below).
 - `date_start` and `date_end`: the opening date comes from the form; the
   closing date is written by `save()`.
 - `billable`, `billing_type` (`HOURLY` or `FLAT_FEE`), `flat_fee_amount`,
@@ -91,7 +90,7 @@ over the matter list.
 **`Proceeding`** (`apps/matters/proceedings/models.py`): one court or
 forum case under a matter, `CASCADE` on the matter. `status` is again a
 free field whose values (`Ongoing`, `Concluded`, `Stayed`, `Dismissed`)
-live in the form. `primary` is enforced in `save()`: setting it clears
+are `Proceeding.STATUSES`. `primary` is enforced in `save()`: setting it clears
 the flag on the matter's other proceedings. `display_name` prefers
 `nickname` over `forum`. Drive record folders that feed a proceeding are
 `DriveFolderMapping` rows in `apps/drive/`, not fields here; the
@@ -127,7 +126,7 @@ listed on the Settlement tab and fed to the AI context
 firm-wide address book row: name, company, address, three labelled phones,
 two emails, `folder` (`SET_NULL`), `intake` (`SET_NULL`, the intake it was
 converted from), and `google_id` when it has been copied to Google
-Contacts. `user` is `CASCADE` to the user who last saved it. A contact's
+Contacts. `user` is `SET_NULL` to the user who last saved it. A contact's
 client status is never stored: `derive_client_status()` reads it from the
 statuses of its `client_matters` (Open or Complete gives Current, Pending
 gives Pending, only Closed gives Former, none gives Nonclient, or Pending
@@ -137,8 +136,8 @@ database. Keep the two in step.
 
 `Contact.deletion_blockers()` is the one place that says when a contact
 may not be deleted: while it is the client on a matter, has trust
-`Transaction` rows (`CASCADE` on the contact), or has payment requests
-(`trust_requests`, from `apps/invoicing/requests/`). The contact delete
+`Transaction` rows (`CASCADE` on the contact), or has trust deposit
+requests (`trust_requests`, from `apps/invoicing/requests/`). The contact delete
 view and the folder delete view both call it and refuse with a toast.
 
 **`RelationshipType`** and **`ContactRelationship`** record how two
@@ -308,10 +307,9 @@ feed are in [Case building](case-building.md) and
 
 ## Access
 
-- Every `/matters/<id>/…` view carries `@matter_access_required`; the
-  list, quick search, switcher dropdown and `open_matters_json` narrow
-  with `filter_matters_for_user()`. The `switcher` partial itself checks
-  sign-in only.
+- Every `/matters/<id>/…` view carries `@matter_access_required` (the
+  `switcher` partial included); the list, quick search, switcher dropdown
+  and `open_matters_json` narrow with `filter_matters_for_user()`.
 - Rates and Ledger: `perm_financial`, at the middleware by path, again in
   `_get_detail_tab_data()` for the tab-switch route, and again in
   `apps/matters/ledger/views.py`. The Overview's balance, work in
@@ -331,11 +329,11 @@ the mechanism is [Identity and access](identity-and-access.md).
 
 ## Things that bite
 
-- **The statuses are strings in two lists.** `MatterForm.Meta.STATUSES`
-  and `MATTER_STATUS_CHOICES` must agree with each other and with every
-  `status="Open"` literal in the access modules' matter choices
-  (`TASK_MATTER_STATUSES`, `EVENT_MATTER_STATUSES`, `ENTRY_FORM_STATUSES`,
-  `ASSIGNABLE_STATUSES`). The database accepts any value.
+- **The statuses are strings.** The form, the filter and the access
+  modules' matter choices (`TASK_MATTER_STATUSES`, `EVENT_MATTER_STATUSES`,
+  `ENTRY_FORM_STATUSES`, `ASSIGNABLE_STATUSES`) all read
+  `Matter.STATUSES` and `Matter.ACTIVE_STATUSES`, but the database accepts
+  any value, and `status="Open"` literals remain in queries elsewhere.
 - **`Matter.save()` does work on every save.** A status change through
   any path (the form, the Overview dropdown, a shell) unlinks mirrors and
   writes `date_end`; a `queryset.update()` skips all of it, and so does a

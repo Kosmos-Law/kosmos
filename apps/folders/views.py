@@ -131,8 +131,8 @@ def delete(request, folder_id):
     folder = get_object_or_404(Folder, pk=folder_id)
 
     # Check if we should delete contacts too. A contact the firm has to keep
-    # (a client, or one with trust activity) is never deleted this way: it
-    # stays, without a folder.
+    # (a client, or one with trust activity or trust deposit requests) is
+    # never deleted this way: it stays, without a folder.
     kept = 0
     if request.GET.get("delete_contacts"):
         contacts = Contact.objects.filter(folder=folder)
@@ -169,6 +169,6 @@ def delete(request, folder_id):
             response,
             f"Kept {kept} contact{'' if kept == 1 else 's'} that "
             f"{'is a client or has' if kept == 1 else 'are clients or have'} "
-            "trust activity. Find them under Unsorted.",
+            "trust activity or trust deposit requests. Find them under Unsorted.",
         )
     return response

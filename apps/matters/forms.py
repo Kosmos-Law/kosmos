@@ -49,12 +49,7 @@ class MatterForm(forms.ModelForm):
             "flat_fee_amount",
         )
 
-        STATUSES = (
-            ("Pending", "Pending"),
-            ("Open", "Open"),
-            ("Complete", "Complete"),
-            ("Closed", "Closed"),
-        )
+        STATUSES = Matter.STATUS_CHOICES
 
         widgets = {
             "name": forms.TextInput(

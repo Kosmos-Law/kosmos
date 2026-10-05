@@ -185,7 +185,7 @@ def toggle_permission(request, user_id, perm):
 
 # Matters the assignment dialog lists: those still being worked. A new matter
 # starts as Pending, and has to be assignable before it is opened.
-ASSIGNABLE_STATUSES = ("Pending", "Open")
+ASSIGNABLE_STATUSES = Matter.ACTIVE_STATUSES
 
 
 def _assignment_lists(target_user):

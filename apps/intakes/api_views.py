@@ -1,7 +1,6 @@
 import hmac
 import json
 import re
-from datetime import datetime
 from functools import wraps
 
 from django.conf import settings
@@ -9,6 +8,7 @@ from django.db import models
 from django.db.models import Q, Value
 from django.db.models.functions import Replace
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -100,8 +100,8 @@ def receive_inquiry(request):
                 details = "\n".join(updates) + "\n\n" + details
 
             Note.objects.create(
-                date=datetime.now().date(),
-                time=datetime.now().time(),
+                date=timezone.localdate(),
+                time=timezone.localtime().time(),
                 intake=matched,
                 type="Email In",
                 details=details,
@@ -118,14 +118,14 @@ def receive_inquiry(request):
         intake = Intake.objects.create(
             name=full_name,
             phone=phone_number,
-            date=datetime.now().date(),
+            date=timezone.localdate(),
             status="Open",
             email=email,
         )
 
         Note.objects.create(
-            date=datetime.now().date(),
-            time=datetime.now().time(),
+            date=timezone.localdate(),
+            time=timezone.localtime().time(),
             intake=intake,
             type="Email In",
             details=summary,
@@ -241,7 +241,7 @@ def receive_intake(request):
                 address=data.get("address", "")[:255],
                 disputed_property=data.get("disputed_property", "")[:255],
                 practice_area=practice_area,
-                date=datetime.now().date(),
+                date=timezone.localdate(),
                 status="Open",
                 source="Internet",
             )
@@ -256,8 +256,8 @@ def receive_intake(request):
             note.save()
         else:
             note = Note.objects.create(
-                date=datetime.now().date(),
-                time=datetime.now().time(),
+                date=timezone.localdate(),
+                time=timezone.localtime().time(),
                 intake=intake,
                 user=None,
                 type="Client Form",

@@ -1,9 +1,7 @@
-from datetime import datetime
-
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -112,8 +110,12 @@ def order_by(request, order):
 
     current_order = filter_data.get("order_by", "")
 
-    if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
+    # A second click on the same column reverses it, whichever direction
+    # the button posts (the flag button asks for -importance first).
+    if current_order.lstrip("-") == order.lstrip("-"):
+        new_order = (
+            current_order[1:] if current_order.startswith("-") else f"-{current_order}"
+        )
     else:
         new_order = order
 
@@ -275,7 +277,7 @@ def add_note(request, id):
     # if no post data has been submitted, show the intake form
     else:
         today = timezone.localdate().strftime("%Y-%m-%d")
-        now = datetime.now().time()
+        now = timezone.localtime().time()
         form = NoteForm(
             initial={"date": today, "time": now}, use_required_attribute=False
         )
@@ -295,7 +297,11 @@ def add_note(request, id):
 @login_required
 def edit_note(request, id):
     note = get_object_or_404(Note, pk=id)
-    intake = get_object_or_404(Intake, pk=note.intake.id)
+    # A note whose intake was deleted before the delete view removed its
+    # notes has no intake (SET_NULL); there is nothing to edit it under.
+    if note.intake_id is None:
+        raise Http404("This note's intake has been deleted.")
+    intake = note.intake
 
     if request.method == "POST":
         form = NoteForm(request.POST, instance=note, use_required_attribute=False)
@@ -368,11 +374,14 @@ def intake_edit_importance(request, pk, importance):
 
 @login_required
 @require_POST
-def intake_edit_practice_area(request, pk, practice_area_id):
+def intake_edit_practice_area(request, pk, practice_area_id=None):
+    """Save an inline Practice Area pick, or clear it (the clear route
+    carries no id), and re-render the cell."""
     intake = get_object_or_404(Intake, pk=pk)
-    practice_area = get_object_or_404(PracticeArea, pk=practice_area_id)
-
-    intake.practice_area = practice_area
+    if practice_area_id is None:
+        intake.practice_area = None
+    else:
+        intake.practice_area = get_object_or_404(PracticeArea, pk=practice_area_id)
     intake.save()
 
     practice_areas = PracticeArea.objects.filter(is_active=True).order_by("name")

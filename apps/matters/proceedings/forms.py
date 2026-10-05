@@ -17,12 +17,7 @@ class ProceedingForm(forms.ModelForm):
             "primary",
         )
 
-        STATUSES = (
-            ("Ongoing", "Ongoing"),
-            ("Concluded", "Concluded"),
-            ("Stayed", "Stayed"),
-            ("Dismissed", "Dismissed"),
-        )
+        STATUSES = Proceeding.STATUS_CHOICES
 
         widgets = {
             "forum": forms.TextInput(attrs={"onfocus": "moveFocusToEnd(this)"}),

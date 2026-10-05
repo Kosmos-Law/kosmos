@@ -250,25 +250,3 @@ class EmailAttachment(models.Model):
     class Meta:
         db_table = "app_email_attachment"
         ordering = ["id"]
-
-
-class GmailSyncState(models.Model):
-    """LEGACY single-mailbox sync cursor.
-
-    Superseded by ``GmailAccount.history_id`` (one cursor per mailbox); kept
-    only so ``adopt_gmail_account`` can carry the cursor over. Remove the
-    model once adoption has run on prod.
-    """
-
-    history_id = models.CharField(max_length=32, null=True, blank=True)
-    # Mapped label ids no longer present in Gmail (label deleted) — surfaced
-    # as a drift warning on the integrations page.
-    missing_labels = models.JSONField(default=list, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    last_sync_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Gmail sync state (cursor set: {bool(self.history_id)})"
-
-    class Meta:
-        db_table = "app_gmail_sync_state"

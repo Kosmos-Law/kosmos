@@ -3,13 +3,13 @@ import threading
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import format_html
 from django.views.decorators.http import require_POST
 
 import apps.mail.google as mail_google
+from apps.case.ai.status import status_cache
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.matters.models import Matter
 
@@ -352,10 +352,11 @@ def _start_refresh(matter):
     Deliberately NOT the django-q queue: an on-demand refresh must not sit
     behind whatever the shared queue is chewing on (a wedged attachment
     batch once stranded the button in its syncing state for the queue's
-    whole retry cycle). Completion is signalled through the cache, the
-    same pattern the AI status indicator uses — which also means it
-    assumes status polls land in the process that spawned the thread
-    (single gunicorn worker), exactly as the AI chat already does."""
+    whole retry cycle). Completion is signalled through the cross-process
+    ai_status cache, the same store the AI status indicator uses: prod runs
+    several gunicorn workers and a poll usually lands in one other than the
+    one running the thread, so a per-process flag read as "finished" from
+    the first poll and the button flipped back while the sync ran."""
     key = _refresh_cache_key(matter.id)
 
     def run():
@@ -364,7 +365,7 @@ def _start_refresh(matter):
         except Exception:
             logger.exception("On-demand email resync failed for matter %s", matter.id)
         finally:
-            cache.delete(key)
+            status_cache.delete(key)
 
     threading.Thread(target=run, daemon=True).start()
 
@@ -381,8 +382,8 @@ def emails_refresh(request, matter_id):
     if not (matter.gmail_label_name and mail_google.check_credentials()):
         return HttpResponse(status=204, headers={"HX-Trigger": "emailsChanged"})
     key = _refresh_cache_key(matter.id)
-    if cache.get(key) != "running":
-        cache.set(key, "running", 600)
+    if status_cache.get(key) != "running":
+        status_cache.set(key, "running", 600)
         _start_refresh(matter)
     return render(
         request,
@@ -402,7 +403,7 @@ def emails_refresh_status(request, matter_id):
     except ValueError:
         polls = 0
 
-    if cache.get(_refresh_cache_key(matter.id)) == "running" and polls < 150:
+    if status_cache.get(_refresh_cache_key(matter.id)) == "running" and polls < 150:
         return render(
             request,
             "case/emails/refresh-button.html",
@@ -447,8 +448,7 @@ def label_link(request, matter_id):
         )
 
     matter.gmail_label_name = label_name
-    matter.gmail_label_id = None  # legacy per-mailbox id, no longer stored
-    matter.save(update_fields=["gmail_label_id", "gmail_label_name"])
+    matter.save(update_fields=["gmail_label_name"])
     _queue_resync(matter)
 
     return HttpResponse(status=204, headers={"HX-Refresh": "true"})
@@ -459,9 +459,8 @@ def label_link(request, matter_id):
 def label_unlink(request, matter_id):
     """Unlink this matter's Gmail label and remove its synced emails."""
     matter, _ = get_matter_from_url(request, matter_id)
-    matter.gmail_label_id = None
     matter.gmail_label_name = None
-    matter.save(update_fields=["gmail_label_id", "gmail_label_name"])
+    matter.save(update_fields=["gmail_label_name"])
     # The user confirmed removing the emails; a resync no longer does that
     # for a matter with no label (a closed matter keeps its emails).
     mail_google.remove_matter_emails(matter)

@@ -44,9 +44,16 @@ def show_list_for(request, contact):
         request.session["contacts_selected_folder_id"] = contact.folder_id
 
 
+# A toast for the next full load of the Contacts page. HX-Redirect sends
+# the browser elsewhere before HTMX reads the response's toast header, so
+# a view that redirects leaves its message here and index renders it.
+PENDING_TOAST_KEY = "contacts_pending_toast"
+
+
 @login_required
 def index(request):
     context = get_list_data(request)
+    context["pending_toast"] = request.session.pop(PENDING_TOAST_KEY, None)
     return render(request, "contacts/main.html", context)
 
 
@@ -235,8 +242,17 @@ def delete(request, id):
         relationship.delete()
 
     # delete google contact
-    if google.check_credentials() and contact.google_id:
-        google.delete_contact(contact)
+    if contact.google_id:
+        if google.check_credentials():
+            google.delete_contact(contact)
+        else:
+            request.session[PENDING_TOAST_KEY] = {
+                "type": "warning",
+                "message": (
+                    f"{contact.name} was deleted here, but Google Contacts is "
+                    "not connected, so the copy there was not removed."
+                ),
+            }
 
     # delete from database
     contact.delete()

@@ -15,7 +15,7 @@ from apps.matters.models import Matter
 
 # Matters an entry form offers. A closed matter is offered only to the form
 # opened from it, or to the entry already on it.
-ENTRY_FORM_STATUSES = ("Pending", "Open", "Complete")
+ENTRY_FORM_STATUSES = Matter.ACTIVE_STATUSES + ("Complete",)
 
 LOCKED_MESSAGE = "This entry is on a finalized invoice and can no longer be changed."
 

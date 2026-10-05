@@ -1,6 +1,6 @@
 """Deleting a contact deletes what hangs off it. A contact the firm has to
-keep (a client, or one with trust activity) is not deleted, whether asked
-for directly or by deleting its folder."""
+keep (a client, or one with trust activity or trust deposit requests) is not
+deleted, whether asked for directly or by deleting its folder."""
 
 from decimal import Decimal
 
@@ -8,6 +8,7 @@ import pytest
 
 from apps.contacts.models import Contact
 from apps.folders.models import Folder
+from apps.invoicing.requests.models import PaymentRequest
 from apps.matters.models import Matter
 from apps.trust.models import Transaction
 
@@ -60,6 +61,21 @@ def test_a_contact_with_trust_activity_is_not_deleted(client, contact):
     assert "has trust activity" in _toast(response)
 
 
+def test_a_contact_with_a_trust_deposit_request_is_not_deleted(client, contact):
+    PaymentRequest.objects.create(
+        account="trust",
+        client=contact,
+        amount_requested=Decimal("250.00"),
+        recipient_email="client@example.test",
+    )
+
+    response = client.delete(f"/contacts/{contact.id}/delete")
+
+    assert Contact.objects.filter(pk=contact.pk).exists()
+    # Named as the screen names them, not "payment requests".
+    assert "has trust deposit requests" in _toast(response)
+
+
 def test_deleting_a_folder_and_its_contacts_keeps_the_ones_that_matter(
     client, user, folder, contact
 ):
@@ -77,6 +93,13 @@ def test_deleting_a_folder_and_its_contacts_keeps_the_ones_that_matter(
     assert contact.folder is None
     assert Transaction.objects.filter(contact=contact).count() == 1
     assert "Kept 1 contact" in _toast(response)
+    assert "trust activity or trust deposit requests" in _toast(response)
+
+
+def test_the_folder_delete_dialog_names_every_kept_kind(client, folder, contact):
+    body = client.get(f"/folders/delete/{folder.id}/confirm").content.decode()
+
+    assert "trust deposit requests" in body
 
 
 def test_a_link_cannot_delete_a_folder(client, folder):

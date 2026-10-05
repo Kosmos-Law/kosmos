@@ -14,7 +14,7 @@ The screens are in the user guide: [Email](../../guide/email.md) and
 
 | Path | What it holds |
 |---|---|
-| `apps/mail/models.py` | `GmailAccount`, `Email`, `EmailAttachment`, the legacy `GmailSyncState` |
+| `apps/mail/models.py` | `GmailAccount`, `Email`, `EmailAttachment` |
 | `apps/mail/google.py`, `parser.py`, `tasks.py` | The sync (label resolution, bootstrap, history feed, per-matter resync); `parse_payload()`; attachment text extraction |
 | `apps/mail/promote.py`, `ai.py` | `promote_email()`; thread formatting for AI context |
 | `apps/mail/views.py`, `filters.py`, `templates/case/emails/` | The case Emails tab, routed from `apps/case/urls.py` under `case/<matter_id>/emails/` |
@@ -55,9 +55,7 @@ matter or disconnecting a mailbox removes those rows. A null `account`
 marks a row from before per-user mailboxes, awaiting `adopt_gmail_account`.
 
 **EmailAttachment**: metadata plus extracted `text` and an
-`extract_status`; the bytes are never stored. **GmailSyncState** is the
-legacy single-mailbox cursor, kept only so `adopt_gmail_account` can carry
-it over.
+`extract_status`; the bytes are never stored.
 
 ### Intakes
 
@@ -71,7 +69,8 @@ badge only applies to open intakes. **Note** (`app_intake_note`) is the
 intake's timeline, typed by `type` ("Email In", "VM In", "Email Out",
 "Client Form", "Comment"). `Note.intake` is `SET_NULL`, so the `delete`
 view deletes an intake's notes explicitly first; otherwise they would
-survive with no screen that reaches them.
+survive with no screen that reaches them. Notes orphaned before that fix
+are listed, and with `--apply` removed, by `clean_intake_notes`.
 
 **InboundEmail**: every message accepted on the Mailgun route, unique by
 `message_id`, with `status` received, processed or failed and the `error`.
@@ -176,7 +175,7 @@ renders one email with a Gmail link into the viewer's own mailbox when
 they have a copy (`_own_gmail_url()`). The Refresh button
 (`emails_refresh`) runs `resync_matter()` on a daemon thread, not the
 queue, because an on-demand refresh must not wait behind a wedged batch;
-it signals completion through the default cache, which is per-process.
+it signals completion through the cross-process `ai_status` cache.
 
 `email_promote` calls `promote_email()`: the email is rendered to PDF
 through the mbox pipeline in `apps/case/documents/mbox.py`, filed as a
@@ -348,8 +347,7 @@ The matrix is in the [permissions reference](../../reference/permissions.md).
 
 ## Things that bite
 
-- **The label name is the contract, not the id.** `Matter.gmail_label_id`
-  is legacy and no longer written. Every mailbox resolves
+- **The label name is the contract, not the id.** Every mailbox resolves
   `gmail_label_name` to its own id on each tick, so renaming a label in
   Gmail detaches it: the old name lands in `missing_labels`, and a token
   with the labels scope creates a fresh, empty label under the linked
@@ -359,12 +357,12 @@ The matrix is in the [permissions reference](../../reference/permissions.md).
   drops one account's rows across all label-linked matters (trashed or
   deleted). Neither touches another mailbox's rows or a matter with no
   label. Only Unlink calls `remove_matter_emails()`.
-- **The Refresh button's running flag is in the per-process cache.**
-  `emails_refresh` stores `emails_refresh_<matter>` in the default
-  `LocMemCache` and polls it; the comment in `_start_refresh()` says it
-  assumes one gunicorn worker. With several, a poll landing in another
-  worker sees no flag and swaps the button back early. The AI status
-  moved to the cross-process `ai_status` cache for the same reason.
+- **The Refresh button's running flag must stay cross-process.**
+  `emails_refresh` stores `emails_refresh_<matter>` in the `ai_status`
+  `DatabaseCache` (the store the AI run status uses) because prod runs
+  several gunicorn workers and a poll usually lands in a worker other
+  than the one running the thread; in the default `LocMemCache` the
+  button swapped back early.
 - **`Email` rows are immutable once synced.** The sync skips existing
   rows, so `updated_at` stays honest for the auto summary's incremental
   `since=` filter. A change to the parser needs `refresh_email_bodies` or
