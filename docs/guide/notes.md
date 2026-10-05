@@ -145,6 +145,8 @@ A new folder appears as "Untitled" with its name ready to type over. You
 can drag a note or folder onto a folder. While you drag, **Move to root**
 (or **Move to matter root**) appears at the bottom of the list. To rename
 a note, click its title at the top of the note, type, and press Enter.
+A title another note in the same folder already has is refused, with a
+message saying so.
 
 **New note** above the list follows where you are. On the **Library** tab
 it creates the note at the top level of the library. On the **Matters**
@@ -217,7 +219,10 @@ Good to know:
   heading, a bullet or a quote. To keep such characters as they are, put
   the text in inline code. Text in angle brackets (an email address
   copied from a message header) and underscores inside a word (a file
-  name) are kept as typed.
+  name) are kept as typed. The one exception is `<br>` on its own, which
+  becomes a line break (it is how a table cell keeps a second line). A
+  Markdown image reference (`![plan](address)`) is kept as typed too; the
+  editor shows no images.
 
 ### Tables
 
@@ -279,9 +284,10 @@ the note while you have changes of your own, your next save is refused
 and a banner appears: "This note was changed somewhere else (another tab,
 another person or the AI). Editing is paused."
 
-While the banner shows, the note and its title are read-only, the
-formatting buttons are hidden, and the disk icon becomes a warning
-triangle. You can still select and copy text.
+While the banner shows, the note and its title are read-only, and the
+disk icon becomes a warning triangle. The formatting buttons, **Import
+from markdown**, the Replace buttons and the table bar are hidden until
+you reload. You can still select and copy text.
 
 1. Select your unsaved text and copy it.
 2. Click **Reload latest**. The note is replaced with the saved version,

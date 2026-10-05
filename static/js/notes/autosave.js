@@ -133,19 +133,43 @@ export function enterConflict() {
   if (state.editor) state.editor.setEditable(false);
   const title = document.getElementById("note-title");
   if (title) title.readOnly = true;
-  // Dead buttons would mislead: the format cluster goes while the banner
-  // is up (setupToolbar re-shows it when the reloaded note initializes)
-  const cluster = document.querySelector(".note-toolbar .format-toolbar");
-  if (cluster) cluster.style.display = "none";
+  setEditingControlsHidden(true);
   const banner = document.getElementById("note-conflict-banner");
   if (banner) banner.hidden = false;
   updateSaveStatus("conflict");
 }
 
 export function clearConflict() {
+  const wasPaused = state.conflict;
   state.conflict = false;
   const banner = document.getElementById("note-conflict-banner");
   if (banner) banner.hidden = true;
+  if (wasPaused) setEditingControlsHidden(false);
+}
+
+// Dead buttons would mislead: every control that would change the note
+// (the format cluster and its overflow menu items, Import, Replace, the
+// table bar: data-editing-only in editor.html) goes while the banner is
+// up, since ConflictLock refuses what they do without a word. They live
+// in the toolbar, which survives the reload's swap, so clearConflict
+// brings them back (setupToolbar then re-decides the cluster). Inline
+// display, because the overflow items are shown by container queries.
+function setEditingControlsHidden(hidden) {
+  document.querySelectorAll("[data-editing-only]").forEach((el) => {
+    el.style.display = hidden ? "none" : "";
+  });
+}
+
+// The banner's message again, for a control reached while paused anyway
+// (an Import dialog that was open when the conflict arrived, Enter in a
+// Replace box). toasts.js is a classic script: Toast is a global binding,
+// absent under the Node tests.
+export function notifyPaused() {
+  if (typeof Toast === "undefined") return;
+  Toast.warning(
+    "This note was changed somewhere else (another tab, another person or the AI). Reload latest to continue.",
+    "Editing is paused",
+  );
 }
 
 // Re-fetch the open note through the normal swap pipeline (editor

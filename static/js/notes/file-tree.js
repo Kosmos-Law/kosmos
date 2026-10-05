@@ -356,12 +356,13 @@ function onDragEnd() {
   if (container) container.classList.remove("tree-dragging");
 }
 
-// No toast library loads in the editor, so rejection feedback is a brief
-// red flash on the target (the server's reason goes to the console).
+// A brief red flash on the target, and the server's reason as a toast
+// (toasts.js is a classic script loaded by editor.html; Toast is a global
+// binding, absent under the Node tests).
 function flashDropError(target, reason) {
-  console.warn("Move rejected:", reason);
   target.classList.add("drop-error");
   setTimeout(() => target.classList.remove("drop-error"), DROP_ERROR_MS);
+  if (typeof Toast !== "undefined") Toast.warning(reason, "Not moved");
 }
 
 // The open note no longer exists (deleted here, in another tab, or by a

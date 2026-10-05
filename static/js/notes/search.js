@@ -9,7 +9,7 @@ import {
 } from "../vendor/tiptap.bundle.js";
 
 import { state, bindClick } from "./state.js";
-import { scheduleAutosave } from "./autosave.js";
+import { scheduleAutosave, notifyPaused } from "./autosave.js";
 
 const searchPluginKey = new PluginKey("search");
 
@@ -271,6 +271,7 @@ function goToPrevMatch() {
 }
 
 function replaceCurrentMatch() {
+  if (state.conflict) return notifyPaused();
   if (
     state.currentMatchIndex < 0 ||
     state.currentMatchIndex >= state.searchMatches.length
@@ -297,6 +298,7 @@ function replaceCurrentMatch() {
 }
 
 function replaceAllMatches() {
+  if (state.conflict) return notifyPaused();
   const searchInput = document.getElementById("search-input");
   const replaceInput = document.getElementById("replace-input");
   if (!searchInput || !state.editor) return;

@@ -65,6 +65,7 @@ import {
   enterConflict,
   clearConflict,
   reloadNoteContent,
+  notifyPaused,
 } from "./notes/autosave.js";
 import { ConflictLock } from "./notes/conflict-lock.js";
 import { broadcast, setupBroadcast } from "./notes/broadcast.js";
@@ -334,10 +335,12 @@ function setupTitleEdit() {
             enterConflict();
           } else {
             // e.g. a sibling note already has this title: flash the
-            // input red; the console carries the server's reason
-            console.warn("Title rejected:", data.error);
+            // input red and say why (the reason comes from the server)
             input.classList.add("input-error");
             setTimeout(() => input.classList.remove("input-error"), 1200);
+            if (typeof Toast !== "undefined") {
+              Toast.warning(data.error, "Title not changed");
+            }
           }
         }
       })
@@ -543,6 +546,13 @@ function setupImportModal() {
     const content = textInput.value.trim();
     if (!content) return;
 
+    // The menu item is hidden while paused, but the dialog may have been
+    // open when the conflict arrived: say why nothing happens
+    if (state.conflict) {
+      notifyPaused();
+      window.dispatchEvent(new CustomEvent("close-modal"));
+      return;
+    }
     const replaceContent = document.getElementById("import-replace").checked;
     importMarkdown(content, replaceContent);
     window.dispatchEvent(new CustomEvent("close-modal"));
@@ -593,8 +603,31 @@ function setupHtmxHandlers() {
       clearConflict(); // every content swap lands on a fresh version
 
       setTimeout(initEditor, 50);
+      surfaceNoteInTree();
     }
   });
+}
+
+// The Matters pane lists Open matters; the open note's matter is added
+// only when the trees render. A note on another matter reached from
+// Recent or the palette has no tree row until then, so render the trees
+// again and reveal the row once it is live (the click path's
+// updateSidebarActive ran before the row existed).
+function surfaceNoteInTree() {
+  const container = document.getElementById("file-tree-container");
+  if (!container || !window.NOTE_DATA) return;
+  const row = container.querySelector(
+    `.file-tree-note:not(.tree-recent-note)[data-note-id="${window.NOTE_DATA.id}"]`,
+  );
+  if (row) return;
+  container.addEventListener(
+    "htmx:afterSettle",
+    () => {
+      updateSidebarActive(window.NOTE_DATA.id);
+    },
+    { once: true },
+  );
+  refreshTree();
 }
 
 // A note click only moves the active pill (the canvas and outline swap via
