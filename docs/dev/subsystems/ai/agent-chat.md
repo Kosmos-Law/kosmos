@@ -92,8 +92,9 @@ The middle segment is the conversation's **working set**
 turns, re-fetched from the database each turn and carried forward
 verbatim under a `## Materials in View` header. Reads come from prior
 `Message.agent_run` steps; each item is capped at 60k chars, the segment
-at 200k (or what the history ceiling leaves after segment A), and
-least-recently-read items are evicted first. Kept items render in
+at 200k (or what the history ceiling leaves after segment A). Items are
+admitted most-recently-read first; one that does not fit is evicted and
+older, smaller ones after it are still tried. Kept items render in
 first-read order so the segment grows append-only, keeping the
 prompt-cache prefix stable. Deleted or newly `never`-flagged items drop
 out. Caselaw carries the opinion only while the 1h `read_caselaw` cache
@@ -244,8 +245,9 @@ exist only for a user who could open those screens. See the
   protocols, draft) belongs in segment B; a change to the order or text of
   segment A invalidates the provider cache for every open conversation.
 - **The working set is append-only on purpose.** Items are admitted
-  most-recently-read first until the cap and rendered in first-read
-  order; re-sorting kept items would break the cache prefix.
+  most-recently-read first (first fit against the cap, not a strict
+  recency cut-off) and rendered in first-read order; re-sorting kept
+  items would break the cache prefix.
 - **Prompt builds never fetch.** An opinion whose cache has expired drops
   out of the working set silently; the earlier-reads note tells the model
   its text is gone.

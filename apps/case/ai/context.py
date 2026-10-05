@@ -1,20 +1,22 @@
 """
 Context assembly for AI chat.
 
-Gathers matter data for the system prompt, organized by importance:
+Gathers matter data for the system prompt, organized by importance
+(a 1-7 scale on the records; get_importance_tier maps it to four tiers):
 1. Matter overview, contacts, proceedings (always included)
-2. Critical evidence (importance 5) - across all content types
+2. Critical evidence (importance 5-7) - across all content types
 3. High importance (importance 4) - across all content types
 4. Medium importance (importance 3) - across all content types
 5. Reference materials (importance 1-2) - across all content types
 6. Administrative info (tasks, events, settlement)
 
 Content types with importance ratings:
-- Documents, Highlights, Facts, Notes
+- Documents, Highlights, Facts, Notes, Emails
 - Reference Conversations (automatically HIGH importance since explicitly flagged)
 - Case Law (ai_context field controls inclusion)
 
-Documents and Case Law have a three-state ai_context field:
+Documents, Case Law, Emails and Conversations have a three-state ai_context
+field:
 - "always": Always included with full content
 - "auto": Included by intelligent selector based on relevance to user's question
 - "never": Completely excluded from context
@@ -57,14 +59,14 @@ LEGAL_PROMPT_FILE = Path(__file__).resolve().parent / "prompts" / "legal.md"
 class ImportanceTier(Enum):
     """Importance tiers for context items."""
 
-    CRITICAL = "CRITICAL"  # Importance 5 (Highest)
+    CRITICAL = "CRITICAL"  # Importance 5-7 (Highest)
     HIGH = "HIGH"  # Importance 4 (High)
     MEDIUM = "MEDIUM"  # Importance 3 (Normal)
     REFERENCE = "REFERENCE"  # Importance 1-2 (Low/Lowest)
 
 
 def get_importance_tier(importance: int) -> ImportanceTier:
-    """Map importance value (1-5) to a tier."""
+    """Map an importance value (1-7) to a tier; 5 and above is CRITICAL."""
     if importance >= 5:
         return ImportanceTier.CRITICAL
     elif importance >= 4:
