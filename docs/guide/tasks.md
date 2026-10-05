@@ -131,9 +131,9 @@ The form closes and the new task is at the top of the list.
 
 Good to know:
 
-- A task added from the plus button on a board column is saved with that
-  column's status, whatever you choose in **Status**. To give it another
-  status, change it after the task is saved.
+- A task added from the plus button on a board column starts with that
+  column's status in **Status**. Choose another status there and the task
+  is saved with the one you chose.
 
 ## Change a task
 

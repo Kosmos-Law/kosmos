@@ -34,7 +34,6 @@ from apps.tasks.views import (
     tasks_index,
     tasks_list,
     tasks_matter,
-    tasks_select,
     tasks_select_all,
     tasks_set_status,
     tasks_set_view_mode,
@@ -49,7 +48,6 @@ app_name = "tasks"
 
 urlpatterns = [
     path("", tasks_index, name="index"),
-    path("tasks", tasks_select, name="select"),
     path("tasks/add", tasks_add, name="add"),
     path("tasks/add/quick", tasks_add_quick, name="add-quick"),
     path("tasks/<int:id>/edit", tasks_edit, name="edit"),

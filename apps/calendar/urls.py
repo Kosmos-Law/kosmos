@@ -19,7 +19,6 @@ from apps.calendar.views import (
     events_index,
     events_list,
     events_quick_update,
-    events_select,
     events_view_mode,
 )
 
@@ -33,7 +32,6 @@ urlpatterns = [
     path("events/api/matter/<int:matter_id>", events_api, name="api-matter"),
     path("events/<int:id>/quick-update", events_quick_update, name="quick-update"),
     path("events/view/<str:mode>", events_view_mode, name="view-mode"),
-    path("events/select", events_select, name="select"),
     path("events/add", events_add, name="add"),
     path("events/add/<str:origin>", events_add, name="add-origin"),
     path(

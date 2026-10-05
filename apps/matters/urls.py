@@ -376,11 +376,6 @@ urlpatterns = [
         name="tasks-filter-importance",
     ),
     path(
-        "matters/<int:id>/tasks/filter-focus/<str:focus>",
-        tasks.tasks_filter_focus,
-        name="tasks-filter-focus",
-    ),
-    path(
         "matters/<int:id>/tasks/<int:task_id>/status",
         tasks.tasks_status,
         name="tasks-status",

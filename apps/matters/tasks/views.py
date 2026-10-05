@@ -39,6 +39,7 @@ from apps.tasks.models import (
 )
 from apps.tasks.services import (
     detect_filter_label,
+    merge_filter_post,
     quick_add_refusal,
     quick_date_filters,
     refresh_date_preset,
@@ -56,6 +57,13 @@ def filter_key(matter_id):
     does not follow the user to the next.
     """
     return get_session_key("matter_tasks_filter", matter_id)
+
+
+def pagination_key(matter_id):
+    """The session key holding one matter's Tasks tab page, per matter for
+    the same reason as the filter: page 3 of one matter's tasks must not
+    open another matter's tab on an empty page."""
+    return get_session_key("matter_tasks_pagination", matter_id)
 
 
 def get_matter_tasks_data(request, matter_id):
@@ -87,21 +95,18 @@ def get_matter_tasks_data(request, matter_id):
         tasks = filter.qs
         user_id = filter_data.get("user")
         user_id = int(user_id) if user_id not in (None, "") else None
-        focus = filter_data.get("focus")
     else:
-        # Default filter for matter tasks - show active (non-complete) tasks,
-        # all users and all focus by default
+        # Default filter for matter tasks - show active (non-complete) tasks
+        # and all users by default
         default_filter = {
             "status": ACTIVE_STATUSES,
             "matter": matter_id,
             "order_by": "date_due",
             "user": None,  # All users
-            "focus": "",  # All focus values
         }
         filter = TasksFilter(default_filter, queryset=matter_queryset, request=request)
         tasks = filter.qs
         user_id = None
-        focus = ""
 
     # Force-show newly created tasks at the top regardless of filters
     new_task_ids = request.session.pop("new_task_ids", [])
@@ -111,7 +116,7 @@ def get_matter_tasks_data(request, matter_id):
         tasks = tasks.exclude(id__in=new_task_ids)
 
     pagination = CustomPaginator(
-        tasks, per_page=20, request=request, session_key="matter_tasks_pagination"
+        tasks, per_page=20, request=request, session_key=pagination_key(matter_id)
     )
 
     # Get user's note view history for badge notification system
@@ -202,7 +207,7 @@ def get_matter_tasks_data(request, matter_id):
 
     list_data = {
         "pagination": pagination,
-        "session_key": "matter_tasks_pagination",
+        "session_key": pagination_key(matter_id),
         "trigger_key": TASKS_TRIGGER,
         "objects": task_list,
         "matter": matter,
@@ -227,7 +232,6 @@ def get_matter_tasks_data(request, matter_id):
             if importance_value
             else ""
         ),
-        "focus": focus,
         "filter_label": filter_label,
         # Filter button is the superset signal for modal-only dimensions on
         # this page, mirroring the main tasks toolbar. Date and user have
@@ -310,7 +314,6 @@ def tasks_add(request, id):
         # Get the currently filtered user if available
         filter_data = request.session.get(filter_key(id), {})
         user_id = filter_data.get("user")
-        focus = filter_data.get("focus")
 
         if user_id and user_id != "":
             try:
@@ -325,7 +328,6 @@ def tasks_add(request, id):
                 "user": initial_user,
                 "matter": matter,
                 "date_due": timezone.localdate(),
-                "focus": focus if focus else "Long Term",  # Default to Long Term
             },
             user=request.user,
             include_matter=matter.id,
@@ -387,13 +389,6 @@ def tasks_add_quick(request, id):
     if not user_id:
         user_id = request.user.id
     task.user = CustomUser.objects.filter(pk=int(user_id)).get()
-
-    # auto populate the focus
-    focus = filter_data.get("focus", None)
-    if focus:
-        task.focus = focus
-    else:
-        task.focus = "Long Term"
 
     task.save()
 
@@ -469,22 +464,10 @@ def tasks_filter(request, id):
             request.session[filter_key(id)] = {"matter": id}
             return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
-        # Merge into existing session so unmodified quick-filter state is
-        # preserved; skip the CSRF token explicitly. status is multi-valued, so
-        # read it via getlist (the items() loop would keep only the last box).
-        filter_data = dict(request.session.get(filter_key(id), {}))
-        for key, val in request.POST.items():
-            if key in ("csrfmiddlewaretoken", "status"):
-                continue
-            filter_data[key] = val
-        filter_data["status"] = request.POST.getlist("status")
-        # The has_due_date NullBooleanSelect posts "unknown" for its empty
-        # state; normalize it to "" so it reads as "no preference" rather than
-        # a real value (which would light the Filter button).
-        if filter_data.get("has_due_date") == "unknown":
-            filter_data["has_due_date"] = ""
-        filter_data["filter_label"] = detect_filter_label(
-            filter_data, timezone.localdate()
+        filter_data = merge_filter_post(
+            request.session.get(filter_key(id), {}),
+            request.POST,
+            timezone.localdate(),
         )
         filter_data["matter"] = id  # Ensure matter is always set
         request.session[filter_key(id)] = filter_data
@@ -511,7 +494,6 @@ def tasks_filter(request, id):
                 "matter": id,
                 "order_by": "date_due",
                 "user": None,  # All users by default
-                "focus": "",  # All focus by default
             }
             queryset = Task.objects.filter(matter=matter)
             filter = TasksFilter(default_filter, queryset=queryset, request=request)
@@ -573,21 +555,6 @@ def tasks_toggle_chip(request, id, user_id):
     request.user.task_user_chips = pinned
     request.user.save(update_fields=["task_user_chips"])
     return HttpResponse(status=204, headers={"HX-Trigger": TASKS_TRIGGER})
-
-
-@login_required
-@matter_access_required
-def tasks_filter_focus(request, id, focus):
-    """Filter tasks by focus for a matter"""
-    filter_data = request.session.get(filter_key(id), {})
-    filter_data["matter"] = id
-
-    if focus == "All":
-        focus = None
-
-    filter_data["focus"] = focus
-    request.session[filter_key(id)] = filter_data
-    return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
 
 @login_required

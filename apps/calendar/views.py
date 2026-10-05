@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
@@ -83,11 +83,6 @@ def events_list(request):
 
     context = context | get_table_data(request)
     return render(request, "calendar/list.html", context)
-
-
-@login_required
-def events_select(request):
-    return redirect("calendar:index")
 
 
 @login_required
