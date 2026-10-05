@@ -58,10 +58,10 @@ in `docs/dev/setup.md`. Never run `collectstatic` in development.
 
 - Formatting and linting are ruff (`[tool.ruff]` in `pyproject.toml`:
   `E W F I`, line length 88) and djlint (`.djlintrc`, Django profile).
-  There is no black, isort or flake8; `.flake8` is a dead file.
-- Lint the files you edited, never a directory: pre-commit skips
-  `migrations/`, ruff's own config does not, so `ruff format apps/`
-  rewrites every migration.
+  There is no black, isort, flake8 or pyright.
+- Lint the files you edited rather than a directory. Both pre-commit and
+  `[tool.ruff]` exclude `migrations/`, so a directory run no longer
+  rewrites the migrations, but it still touches files you did not change.
 - The pre-commit hook fails the commit when it reformats a file. Review
   the diff, `git add -u`, commit again.
 - Never edit a migration that has been merged to `dev`; add a new one.
@@ -71,11 +71,10 @@ in `docs/dev/setup.md`. Never run `collectstatic` in development.
 - Multi-line template comments are `{% comment %} ... {% endcomment %}`.
   `{# #}` is single-line only; across lines it renders as page text.
 - Boolean inputs are Yes/No selects, not checkboxes: a `forms.Select`
-  (or `TypedChoiceField`) over `((True, "Yes"), (False, "No"))` choices
-  defined in the form, as `YESNO_CHOICES` in
-  `apps/invoicing/invoices/forms.py` or `COMP_CHOICES` in
-  `apps/activity/time/forms.py`. The select posts the string `"False"`,
-  and `bool("False")` is `True`: coerce by comparison (see
+  (or `TypedChoiceField`) over `YESNO_CHOICES` from `config/helpers.py`,
+  never a tuple of your own. On a ModelForm `BooleanField` the posted
+  `"False"` cleans to `False`; a plain `ChoiceField` must coerce by
+  comparison, because `bool("False")` is `True` (see
   `apps/settings/tasks/forms.py`).
 - User-facing text has no em dashes: two sentences, a colon or
   parentheses. Same rule in `docs/`.
