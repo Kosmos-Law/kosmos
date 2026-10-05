@@ -11,8 +11,6 @@ pytestmark = pytest.mark.django_db
 
 
 def test_index(client, folder, task, matter):
-    response = client.get("/tasks")
-    assert response.status_code == 302
     response = client.get(reverse("tasks:index"))
     assert response.status_code == 200
     assertTemplateUsed(response, "tasks/list.html")

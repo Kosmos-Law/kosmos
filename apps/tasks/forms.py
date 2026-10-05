@@ -90,13 +90,6 @@ class TaskForm(forms.ModelForm):
             raise ValidationError("Description is limited to 200 characters.")
         return description
 
-    def clean_matter(self):
-        matter = self.cleaned_data["matter"]
-        # if not matter:
-        #     raise ValidationError("This field is required")
-
-        return matter
-
 
 class BulkTasksForm(forms.Form):
     STATUS_CHOICES = BULK_STATUS_CHOICES

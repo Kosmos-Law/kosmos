@@ -23,6 +23,11 @@
           Google account. Contact an administrator to establish a connection.
         </div>
       {% endif %}
+      {% if edit and event.detached_from_google %}
+        <p class="event-detached-note">
+          Not on Google Calendar. This event was deleted there and kept here, so it will not be posted to Google again.
+        </p>
+      {% endif %}
       <form id="event-form"
             hx-post="{{ action }}"
             hx-target="#htmx-modal-container"

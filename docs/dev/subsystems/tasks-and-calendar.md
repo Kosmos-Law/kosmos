@@ -162,13 +162,6 @@ its quick add always files on the current matter with no prefix parsing.
 The add form preselects the matter but keeps the user's other open matters
 in the select, so a task can be filed elsewhere from here.
 
-This file still carries a "focus" dimension (`tasks_filter_focus`, the
-`focus` keys in the default filter, `task.focus = ...` in `tasks_add_quick`).
-It is dead: `Task` has no `focus` field, `TasksFilter` has no `focus`
-filter, and no template references it. The assignment sets a plain Python
-attribute that is never saved. Do not build on it; remove it when you
-touch the file.
-
 ### Task notes
 
 `tasks_detail` renders a task's notes through `render_markdown()` (so
@@ -269,8 +262,7 @@ calendar toggle is shared across matters.
 
 `dash_index` in `apps/dash/views.py` shows the next seven Pending events
 (past-due ones sort first and stay until marked), the unbilled-time
-section and, for administrators, the collections section; it also puts
-`open_intakes` in the context, which no Dash template renders.
+section and, for administrators, the collections section.
 `DailyDashCheckMiddleware` redirects each user to the Dash on their first
 full page load of the day (`CustomUser.last_dash_check`).
 
@@ -291,9 +283,9 @@ mechanism is described in [The AI context system](ai/context.md).
   07:00: every active user with `digest_enabled` and an address (weekends
   only with `digest_include_weekends`) gets their overdue, today's and next
   three days' events and tasks, scoped like the Dash, or nothing when
-  there is nothing to say. The users are processed in one loop with no
-  per-user guard, so an SMTP error for one user ends that run for the
-  rest. `setup_digest_schedule` is the older per-job installer, superseded
+  there is nothing to say. Each user's send is guarded on its own: an
+  SMTP error for one user is logged and the loop goes on to the next.
+  `setup_digest_schedule` is the older per-job installer, superseded
   by `setup_schedules`.
 - `calendar-sync` runs `scheduled_sync()` in `apps/calendar/sync.py` every
   two minutes: `reconcile()`, then `sync_from_google()`. It does nothing
@@ -331,11 +323,11 @@ without `perm_intakes`. The matrix is in the
   matter "Follow" and the task "Up call", and files under the filter's
   matter with a warning toast. The AI path, when enabled, does not have
   this problem.
-- **The "visible events" rule is written four times.** `events_for_user()`
-  in `apps/calendar/access.py`, `_events_for()` in `apps/dash/views.py`,
-  `_on_visible_matter()` in `apps/dash/agenda.py` and the inline filter in
-  `apps/tasks/digest.py` are the same `Q(matter__isnull=True) |
-  Q(matter__in=...)` expression. Change one and the others drift.
+- **The "visible events" rule lives in one place.** `events_for_user()`
+  in `apps/calendar/access.py` is what the Dash, the Plan chat's
+  `_on_visible_matter()` and the digest call for events (and
+  `tasks_for_user()` for tasks). Do not write the `Q(matter__isnull=True)
+  | Q(matter__in=...)` expression again; call the helper.
 - **`google_synced_at` is set with `.update()`, never `.save()`.** Both
   `push_event()` and the pull pin it to `F("updated_at")` without touching
   the row's `updated_at` or writing a history row. A `.save()` there would
@@ -343,11 +335,10 @@ without `perm_intakes`. The matrix is in the
 - **Order matters in `scheduled_sync()`.** Deletions, then pushes, then the
   pull. The pull re-creates anything it finds on Google with no local row
   unless the id is in `PendingGoogleDeletion`.
-- **Two `TASKS_TRIGGER` names, one of them heard by nothing.** The tasks
-  views trigger `tasksListChanged`; `apps/checklists/views.py` triggers
-  `tasksChanged` after removing a checklist, and no template listens for
-  it; the checklist modal refreshes the tab itself with an `htmx.ajax`
-  call in `hx-on::after-request`. Use `tasksListChanged`.
+- **One trigger name for a changed task list.** The tasks views and
+  `apps/checklists/views.py` both trigger `tasksListChanged`; the tasks
+  tab and the matter Tasks tab reload on it. A new view that changes a
+  task sends that name, not a new one, or nothing reloads.
 - **The matter Tasks tab is a copy, not a call.** `apps/matters/tasks/views.py`
   duplicates most of `apps/tasks/views.py` (quick add, status, bulk) with
   the per-matter filter key. A fix to one tab usually needs the same fix

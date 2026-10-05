@@ -20,8 +20,8 @@ from django.utils import timezone
 from apps.accounts.access import filter_matters_for_user
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.time.models import TimeEntry
+from apps.calendar.access import events_for_user
 from apps.calendar.models import Event
-from apps.intakes.models import Intake
 from apps.invoicing.applications.models import CreditApplication, PaymentApplication
 from apps.invoicing.credits.models import Credit
 from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
@@ -38,16 +38,6 @@ from apps.trust.available import trust_available_by_client
 from apps.trust.trust import get_pending_client_balance
 
 
-def _events_for(user):
-    """Events the user may see: those on matters they can open, and those on
-    no matter at all."""
-    if user.is_admin or user.perm_all_matters:
-        return Event.objects.all()
-    return Event.objects.filter(
-        Q(matter__isnull=True) | Q(matter__in=user.assigned_matters.all())
-    )
-
-
 def dash_events_context(request):
     """The next upcoming pending events, plus any still-pending past-due
     ones — an event stays on the dash until it's marked complete or
@@ -60,7 +50,7 @@ def dash_events_context(request):
     """
     today = timezone.localdate()
     return {
-        "upcoming_events": _events_for(request.user)
+        "upcoming_events": events_for_user(Event.objects.all(), request.user)
         .filter(status="Pending", date__isnull=False)
         .order_by("date", "start_time", "party")[:7],
         "today": today,
@@ -378,7 +368,6 @@ def dash_collections_context(request):
 def dash_index(request):
     context = {
         "app": "dash",
-        "open_intakes": Intake.objects.filter(status="Open").order_by("-date")[:10],
         **dash_events_context(request),
         **dash_wip_context(request),
         **dash_collections_context(request),

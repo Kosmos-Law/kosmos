@@ -66,11 +66,17 @@ def test_add_without_a_status_is_pending(client, user):
     assert Task.objects.get(description="Draft the motion").status == "Pending"
 
 
-def test_board_column_sets_the_status(client, user):
+def test_board_column_is_only_the_starting_status(client, user):
     url = reverse("tasks:add") + "?status=on-hold"
     # The dialog opens showing the column's status...
     form = client.get(url).context["form"]
     assert form.initial["status"] == "On hold"
-    # ...and the column wins whatever the form posts.
+    # ...and the Status the user submits is what is saved.
     assert client.post(url, _data(user, status="In progress")).status_code == 204
+    assert Task.objects.get(description="Draft the motion").status == "In progress"
+
+
+def test_board_column_status_is_kept_when_left_alone(client, user):
+    url = reverse("tasks:add") + "?status=on-hold"
+    assert client.post(url, _data(user, status="On hold")).status_code == 204
     assert Task.objects.get(description="Draft the motion").status == "On hold"
