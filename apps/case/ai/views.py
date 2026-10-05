@@ -993,7 +993,6 @@ def clone_conversation(request, conv_id):
         title=f"{conversation.title} (Copy)",
         llm=conversation.llm,
         kind=conversation.kind,
-        effort=conversation.effort,
         vet_citations=conversation.vet_citations,
     )
 
@@ -1111,7 +1110,6 @@ def split_conversation(request, message_id):
         title=f"{conversation.title} (Split)",
         llm=conversation.llm,
         kind=conversation.kind,
-        effort=conversation.effort,
         vet_citations=conversation.vet_citations,
     )
 

@@ -325,9 +325,6 @@ protocol. The matrix is in the
   `GEMINI_MODELS`, `MODEL_CONTEXT_LIMITS`, `MODEL_HARD_LIMITS` and the
   `pricing.py` rates. Anthropic publishes no "latest" alias, so each
   version is a new key.
-- **`Conversation.effort` is not read by any run.** The classic effort
-  tiers its comment describes were pruned on 2026-08-14, and the agent
-  turn uses the constant `AGENT_CLAUDE_EFFORT`; only clone and split copy it.
 - **The agenda and intake chat tests monkeypatch `threading.Thread`** to
   run the worker inline; `status.py` binds `Thread` at import so the
   heartbeat stays a real thread, or that patch turns its wait loop into a
