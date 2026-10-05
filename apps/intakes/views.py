@@ -111,8 +111,12 @@ def order_by(request, order):
 
     current_order = filter_data.get("order_by", "")
 
-    if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
+    # A second click on the same column reverses it, whichever direction
+    # the button posts (the flag button asks for -importance first).
+    if current_order.lstrip("-") == order.lstrip("-"):
+        new_order = (
+            current_order[1:] if current_order.startswith("-") else f"-{current_order}"
+        )
     else:
         new_order = order
 
