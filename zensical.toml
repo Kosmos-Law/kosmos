@@ -77,15 +77,36 @@ nav = [
   ] },
   { "Develop" = [
     "dev/index.md",
+    { "Start here" = [
+      { "Set up a development environment" = "dev/setup.md" },
+      { "Architecture" = "dev/architecture.md" },
+    ] },
     { "Conventions" = [
+      { "HTMX, Alpine and idiomorph" = "dev/conventions/htmx-alpine.md" },
+      { "Session state" = "dev/conventions/session-state.md" },
+      { "Testing" = "dev/conventions/testing.md" },
+      { "Branches and releases" = "dev/conventions/branches-and-releases.md" },
       { "CSS theming" = "dev/frontend/theming.md" },
       { "Writing documentation" = "dev/writing-docs.md" },
       { "Squashing migrations" = "dev/squashing-migrations.md" },
     ] },
     { "Subsystems" = [
-      { "Agentic chat" = "dev/subsystems/ai/agent-chat.md" },
-      { "Research tab" = "dev/subsystems/ai/research-tab.md" },
+      { "Platform and config" = "dev/subsystems/platform-and-config.md" },
+      { "Identity and access" = "dev/subsystems/identity-and-access.md" },
+      { "Matters and contacts" = "dev/subsystems/matters.md" },
+      { "Tasks and calendar" = "dev/subsystems/tasks-and-calendar.md" },
+      { "Time and billing" = "dev/subsystems/time-and-billing.md" },
+      { "Trust and payments" = "dev/subsystems/trust-and-payments.md" },
+      { "Case building" = "dev/subsystems/case-building.md" },
+      { "AI" = [
+        { "The AI context system" = "dev/subsystems/ai/context.md" },
+        { "Agentic chat" = "dev/subsystems/ai/agent-chat.md" },
+        { "Research tab" = "dev/subsystems/ai/research-tab.md" },
+      ] },
+      { "Notes and drafts" = "dev/subsystems/notes-and-drafts.md" },
+      { "Email and intakes" = "dev/subsystems/email-and-intakes.md" },
       { "MCP server and JSON APIs" = "dev/subsystems/mcp.md" },
+      { "Operations" = "dev/subsystems/operations.md" },
     ] },
   ] },
   { "Reference" = [

@@ -191,13 +191,13 @@ class TestApply:
                 ),
                 RedlineEdit(old=DELETABLE, new=""),
             ],
-            author="James Craig",
+            author="Jordan Example",
         )
 
         assert [item.replacements for item in applied] == [1, 1]
         xml = _content_xml(draft)
         assert "tracked-changes" in xml
-        assert "James Craig" in xml
+        assert "Jordan Example" in xml
 
         markdown = _markdown(draft)
         assert "must accept all well-pleaded facts" in markdown

@@ -426,7 +426,7 @@
   --ef-purple: oklch(0.75 0.082 349);
   --ef-yellow: oklch(0.808 0.086 84);        /* dark: brand gradient's warm end */
 
-  /* Letterhead (Craig Legal, ~/cl minimal.css) — one warm stone axis,
+  /* Letterhead (after a firm engagement letter) — one warm stone axis,
      hue 68–100, lightness the only real dial; fountain-pen blue as the
      sole working accent. Canonical cl values keep their exact oklch;
      the ladder steps are interpolated on the same axis to fill the

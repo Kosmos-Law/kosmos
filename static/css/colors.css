@@ -8,7 +8,7 @@
 
    SEVEN themes. Four light — light (Matcha), nord-light (Nord Snow Storm),
    basic (after the 2017 LawPay UI: white ground, navy buttons, azure
-   accents), letterhead (after the Craig Legal engagement letter: bone
+   accents), letterhead (after a firm engagement letter: bone
    paper, hairline rules, fountain-pen blue) — and three dark — dark
    (Gruvbox), cosmic (Nord), everforest.
    The non-Gruvbox darks ARE the dark theme structurally — they share the
@@ -539,8 +539,8 @@
 }
 
 /* ==========================================================================
-   Letterhead — the fourth LIGHT theme, after the Craig Legal engagement
-   letter (~/cl): one warm stone axis (hue 68–100), hairline rules as the
+   Letterhead — the fourth LIGHT theme, after a firm engagement
+   letter: one warm stone axis (hue 68–100), hairline rules as the
    only graphic device, links and selection in the letter's own inks
    (soft-ink links, chip-fill selection), ink-filled primary buttons.
    Fountain-pen blue recedes to the calendar, the charts, and the blue

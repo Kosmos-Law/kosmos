@@ -23,7 +23,7 @@ _ENTITY_RE = re.compile(
 def firm_strip(name):
     """Drop a trailing legal-entity designation (LLC, PLLC, P.C., LLP, PA, LPA,
     PLC, Chartered) from a firm name for client-facing display — e.g.
-    "Craig Legal, LLC" -> "Craig Legal". Names with no recognized suffix pass
+    "Example Law, LLC" -> "Example Law". Names with no recognized suffix pass
     through unchanged. HTML-escaped. Mirrors utils.mail's sender-name stripping."""
     if not name:
         return ""
@@ -31,8 +31,8 @@ def firm_strip(name):
     if not m:
         return conditional_escape(name)
     # The greedy base group keeps the comma before the separator (a comma is
-    # non-whitespace), so trim any trailing separator chars: "Craig Legal, LLC"
-    # -> base "Craig Legal," -> "Craig Legal".
+    # non-whitespace), so trim any trailing separator chars: "Example Law, LLC"
+    # -> base "Example Law," -> "Example Law".
     return conditional_escape(re.sub(r"[\s,]+$", "", m.group(1)))
 
 
