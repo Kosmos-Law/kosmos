@@ -40,7 +40,7 @@ the file. If you use **Rotate token** or **Revoke token** under
 **Settings → Claude Desktop**, download the extension again and reinstall
 it (see [Settings](settings.md)).
 
-This page describes version 0.4.0 of the extension. The download dialog,
+This page describes version 0.4.1 of the extension. The download dialog,
 **LibreOffice Companion**, names the current version, and **Kosmos →
 Status** in Writer shows the version you have installed (a copy that
 shows none is older). To update, download the file again, install it over

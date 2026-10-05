@@ -18,6 +18,9 @@ a user's installed copy only changes when they download it again:
            granted, then reports. It claims only when the round it was
            handed says "claim": true, so it also works against a server
            that predates the claim.
+    0.4.1  the same protocol; stops polling with a plain message when the
+           server answers 403 (the user lost access to the matter), and
+           its messages no longer speak of edits being "approved".
 
 The protocol therefore only ever grows: no path, method or key that 0.3.0
 uses may change, and anything new must be optional for the client.
@@ -60,7 +63,7 @@ logger = logging.getLogger(__name__)
 COMPANION_SRC = Path(__file__).resolve().parent / "companion_src"
 # Also declared in companion_src/description.xml (LibreOffice reads the
 # version from there); test_companion checks the two agree.
-EXTENSION_VERSION = "0.4.0"
+EXTENSION_VERSION = "0.4.1"
 
 
 def companion_auth(view):
