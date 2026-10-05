@@ -108,7 +108,19 @@ def _may_see_intakes(user):
 def _on_visible_matter(queryset, user):
     """Rows on a matter the user may open, or on no matter (the firm's own
     tasks and events, which every user sees). The matter's name rides along
-    with each row, so the row is the user's to see only if the matter is."""
+    with each row, so the row is the user's to see only if the matter is.
+
+    Tasks and events take the rule from their own app's access helper, so
+    the agenda cannot drift from the lists and the digest. Time entries
+    keep the same test written here: their access helper has no room for
+    an entry on no matter."""
+    from apps.calendar.access import events_for_user
+    from apps.tasks.access import tasks_for_user
+
+    if queryset.model is Task:
+        return tasks_for_user(queryset, user)
+    if queryset.model is Event:
+        return events_for_user(queryset, user)
     if user.is_admin or user.perm_all_matters:
         return queryset
     return queryset.filter(
