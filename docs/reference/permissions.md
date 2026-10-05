@@ -163,7 +163,6 @@ Not checked against matter membership (sign-in only):
 
 | Area | Paths | Location |
 |---|---|---|
-| Matter switcher partial | `/matters/<id>/switcher` (matter name) | `apps/matters/views.py` |
 | Contacts (the contact's own record; contacts are firm-wide) | `/contacts/…` | `apps/contacts/` |
 | Contacts in in-app search results | `/search/…` | `apps/search/views.py` |
 | Invoicing, trust and reports (for a user who holds those flags) | `/invoicing/…`, `/reports/…` | |

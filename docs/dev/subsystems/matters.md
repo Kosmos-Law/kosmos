@@ -307,10 +307,9 @@ feed are in [Case building](case-building.md) and
 
 ## Access
 
-- Every `/matters/<id>/…` view carries `@matter_access_required`; the
-  list, quick search, switcher dropdown and `open_matters_json` narrow
-  with `filter_matters_for_user()`. The `switcher` partial itself checks
-  sign-in only.
+- Every `/matters/<id>/…` view carries `@matter_access_required` (the
+  `switcher` partial included); the list, quick search, switcher dropdown
+  and `open_matters_json` narrow with `filter_matters_for_user()`.
 - Rates and Ledger: `perm_financial`, at the middleware by path, again in
   `_get_detail_tab_data()` for the tab-switch route, and again in
   `apps/matters/ledger/views.py`. The Overview's balance, work in

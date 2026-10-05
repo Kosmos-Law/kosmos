@@ -558,6 +558,7 @@ def client_search(request):
 
 
 @login_required
+@matter_access_required
 def switcher(request, id):
     """Return the matter-switcher partial (header name + open-matter dropdown).
     The detail header's switcher re-fetches this on mattersChanged so the name
