@@ -69,7 +69,8 @@ badge only applies to open intakes. **Note** (`app_intake_note`) is the
 intake's timeline, typed by `type` ("Email In", "VM In", "Email Out",
 "Client Form", "Comment"). `Note.intake` is `SET_NULL`, so the `delete`
 view deletes an intake's notes explicitly first; otherwise they would
-survive with no screen that reaches them.
+survive with no screen that reaches them. Notes orphaned before that fix
+are listed, and with `--apply` removed, by `clean_intake_notes`.
 
 **InboundEmail**: every message accepted on the Mailgun route, unique by
 `message_id`, with `status` received, processed or failed and the `error`.

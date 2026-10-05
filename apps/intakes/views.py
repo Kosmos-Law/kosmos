@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -296,7 +296,11 @@ def add_note(request, id):
 @login_required
 def edit_note(request, id):
     note = get_object_or_404(Note, pk=id)
-    intake = get_object_or_404(Intake, pk=note.intake.id)
+    # A note whose intake was deleted before the delete view removed its
+    # notes has no intake (SET_NULL); there is nothing to edit it under.
+    if note.intake_id is None:
+        raise Http404("This note's intake has been deleted.")
+    intake = note.intake
 
     if request.method == "POST":
         form = NoteForm(request.POST, instance=note, use_required_attribute=False)

@@ -49,6 +49,7 @@ Which of these an operator needs, and when, is covered in
 
 | Command | What it does |
 |---|---|
+| `clean_intake_notes` | List intake notes whose intake is gone, and with --apply delete them. Reports only by default. |
 | `seed_intake_forms` | Create the starter intake form templates: example questionnaires from one firm's practice. Review and edit them before use. |
 
 ## invoicing
