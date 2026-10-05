@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.access import filter_matters_for_user, matter_access_required
 
@@ -76,8 +76,6 @@ def case_index(request):
 @login_required
 def no_matter(request):
     """Show when no matters are available."""
-    from django.shortcuts import render
-
     return render(request, "case/no-matter.html")
 
 
@@ -99,8 +97,6 @@ def select_matter(request, matter_id):
 @matter_access_required
 def mode_content(request, matter_id):
     """Return case mode content partial for HTMX, or redirect for regular request."""
-    from django.shortcuts import render
-
     matter = get_object_or_404(Matter, pk=matter_id)
     tab = get_last_tab(request, matter_id)
 
@@ -129,10 +125,9 @@ def mode_content(request, matter_id):
 
 
 @login_required
+@matter_access_required
 def tab_content(request, matter_id, tab):
     """Return tab content with wrapper for HTMX tab switching."""
-    from django.shortcuts import render
-
     matter = get_object_or_404(Matter, pk=matter_id)
     matters = filter_matters_for_user(
         Matter.objects.filter(status="Open").order_by("name"), request.user
