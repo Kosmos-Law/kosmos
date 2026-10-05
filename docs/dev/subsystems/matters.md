@@ -126,7 +126,7 @@ listed on the Settlement tab and fed to the AI context
 firm-wide address book row: name, company, address, three labelled phones,
 two emails, `folder` (`SET_NULL`), `intake` (`SET_NULL`, the intake it was
 converted from), and `google_id` when it has been copied to Google
-Contacts. `user` is `CASCADE` to the user who last saved it. A contact's
+Contacts. `user` is `SET_NULL` to the user who last saved it. A contact's
 client status is never stored: `derive_client_status()` reads it from the
 statuses of its `client_matters` (Open or Complete gives Current, Pending
 gives Pending, only Closed gives Former, none gives Nonclient, or Pending

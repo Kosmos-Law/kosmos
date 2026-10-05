@@ -248,9 +248,8 @@ callers are HTMX. The docstring gives the reason: settings are open to
 administrators alone, so a firm with none is locked out until someone uses
 the server's command line.
 
-Users are deactivated, never deleted, from the application. `Contact.user`
-is `on_delete=CASCADE`, so deleting a user row in the Django admin would
-take that user's contacts with it; prefer `is_active`.
+Users are deactivated, never deleted, from the application; prefer
+`is_active` to deleting a user row in the Django admin.
 
 ## Access
 

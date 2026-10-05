@@ -73,7 +73,10 @@ class ContactQuerySet(models.QuerySet):
 
 class Contact(AuditMixin, models.Model):
     id = models.BigAutoField(primary_key=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    # The user who last saved the contact (every add and edit rewrites it),
+    # not an owner: the address book is the firm's, so a deleted user row
+    # must not take contacts with it.
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, blank=True, null=True)
     name = models.CharField(max_length=100)
     company = models.CharField(max_length=100, blank=True, null=True)
