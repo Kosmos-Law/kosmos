@@ -111,10 +111,11 @@ the general note folders (`apps/notes/migrations/0011_...` and
 clearing the table or asserts with `<=`, as
 `apps/intakes/tests/test_website_practice_area.py` and the folder tests
 in `apps/notes/tests/test_views.py` do. `PracticeArea.name` is not
-unique, and the `practice_area` fixture in `apps/matters/tests/conftest.py`
-creates a row named "General" beside the seeded one; a test that looks
-a practice area up by name gets two. Prefer the fixture's instance to a
-lookup by name.
+unique: the `practice_area` fixture in `apps/matters/tests/conftest.py`
+reuses the seeded "General" row (`get_or_create`), but the same fixture
+in other apps' `conftest.py` files still creates a second one, so a test
+that looks a practice area up by name can get two. Prefer the fixture's
+instance to a lookup by name.
 
 Two autouse fixtures in the root `conftest.py` apply to every test:
 `_no_semantic_auto_index` sets `SEMANTIC_AUTO_INDEX = False` so model
