@@ -54,9 +54,10 @@
   margin-top: 1rem;
 }
 
+/* The form's own top margin is the gap below the note. */
 .event-detached-note {
   color: var(--color-muted);
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
 .events-form #id_description {
