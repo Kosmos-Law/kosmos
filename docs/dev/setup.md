@@ -13,10 +13,9 @@ the lint hooks and the docs build.
 - **Ubuntu or Debian** for the one-command install. On anything else,
   follow the manual steps; the installer refuses other distributions. A
   Nix flake (`flake.nix`) also exists, but it is not the documented path.
-- **Python 3.13.** `.python-version` pins it and uv downloads it, so
-  nothing needs to be installed by hand. (`pyproject.toml` says
-  `>=3.10`, but the lock file and the installer are only exercised on
-  3.13.)
+- **Python 3.13.** `.python-version` pins it, `pyproject.toml` requires
+  `>=3.13`, and uv downloads it, so nothing needs to be installed by
+  hand.
 - **PostgreSQL** on the same machine, with the `pgvector` and `pg_trgm`
   extensions available. The installer and the automated checks use
   PostgreSQL 16.
@@ -48,9 +47,9 @@ scripts/install.sh
 
 It installs the system packages and PostgreSQL, creates the `kosmos`
 role and database with both extensions, installs uv and ruff, runs
-`uv sync --frozen`, writes `config/.env` from `config/.env.dev`, runs
-the migrations and the post-migration commands, and prompts for the first
-superuser. Every phase is idempotent: if it stops, fix the cause and run
+`uv sync --frozen`, installs the pre-commit hook, writes `config/.env`
+from `config/.env.dev`, runs the migrations and the post-migration
+commands, and prompts for the first superuser. Every phase is idempotent: if it stops, fix the cause and run
 the same command again. Every option is listed in
 [Install with the installer script](../admin/install.md).
 
@@ -215,8 +214,8 @@ is laid out and what to test is in [Testing](conventions/testing.md).
 ## 7. Pre-commit and ruff
 
 Linting and formatting are **ruff** for Python and **djlint** for
-templates, through pre-commit. There is no black, isort or flake8 in the
-hooks (the `.flake8` file in the root is a leftover that nothing reads).
+templates, through pre-commit. There is no black, isort, flake8 or
+pyright.
 
 ```bash
 uv run pre-commit install          # once: install the git hook
@@ -232,15 +231,16 @@ YAML checks. Ruff's rules are in `pyproject.toml` under `[tool.ruff]`
 and commit again; see
 [Branches and releases](conventions/branches-and-releases.md).
 
-Run ruff on the files you changed, not on a directory:
+Run ruff on the files you changed rather than on a directory:
 
 ```bash
 ruff check --fix apps/notes/views.py && ruff format apps/notes/views.py
 ```
 
 Pre-commit excludes `migrations/` (the `exclude:` line at the top of its
-config), but `[tool.ruff]` does not, so `ruff format apps/` rewrites
-every migration file under it.
+config) and so does `[tool.ruff]` (`exclude = ["*/migrations/*"]`), so
+`ruff format apps/` leaves the migrations alone; it still reformats
+files you did not change.
 
 ## 8. Build the docs
 

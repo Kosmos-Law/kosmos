@@ -1,6 +1,20 @@
 from typing import Any, Dict
 
-from django.http import HttpRequest
+from django.http import HttpRequest, QueryDict
+
+
+def filter_data_from_post(post: QueryDict) -> Dict[str, Any]:
+    """A posted filter form as the session can keep it.
+
+    A QueryDict dropped into the session is serialized as one value per
+    key, so a multi-select lost every choice but the last; and the CSRF
+    token rode along. Lists survive here, the token does not.
+    """
+    return {
+        key: values[0] if len(values) == 1 else values
+        for key, values in post.lists()
+        if key != "csrfmiddlewaretoken"
+    }
 
 
 class FilterManager:
@@ -53,7 +67,7 @@ class FilterManager:
         Return a boolean indicating whether the filter data was processed or not
         """
         if self.request.method == "POST":
-            self.set_filter_data(self.request.POST)
+            self.set_filter_data(filter_data_from_post(self.request.POST))
 
             return True
 

@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.activity.models import ActivityCategory
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 
@@ -18,7 +19,7 @@ class ActivityCategoriesForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(attrs={"class": "span2"}),
             "claimed": forms.Select(
-                choices=[("False", "No"), ("True", "Yes")],
+                choices=YESNO_CHOICES,
                 attrs={"class": "span1"},
             ),
         }

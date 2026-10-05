@@ -16,7 +16,7 @@ the code reads it.
 | `config/.env.example` | Every variable the application reads, with a comment that becomes its description in the generated reference. |
 | `config/urls.py` | The URL root and the two media-routing functions. |
 | `config/health.py` | The three health views. |
-| `config/context.py` | Context processors `env` and `site_handle`. |
+| `config/context.py` | The `env` context processor. |
 | `config/helpers.py` | `normalize_phone()`, `dictfetchall()`, `MultipleOrderingFilter`, `timestamp_to_eastern()`, the `dump*` helpers. |
 | `config/wsgi.py`, `config/asgi.py` | Entry points; gunicorn runs `config.wsgi:application`. |
 | `apps/accounts/middleware.py` | `HtmxLoginRedirectMiddleware`, `PermissionMiddleware`. |
@@ -249,8 +249,8 @@ authenticated, all with `Cache-Control: no-store`:
   from a PDF, could otherwise contain `</script>`). Django's
   `json_script` filter does the same for a standalone element.
 - **`toasts.py`**. `add_toast()` and the `toast_success()` family set an
-  `HX-Toast` header (or `HX-Toasts` for several) on a response;
-  `static/js/toasts.js` renders them. Errors are sticky by default,
+  `HX-Toast` header on a response; a second call on the same response
+  stacks the rest in `HX-Toasts`. `static/js/toasts.js` renders both. Errors are sticky by default,
   `mobile_only` marks a toast the desktop page already shows by other
   means.
 - **`signing.py`**. The signed, expiring tokens for the public pages,

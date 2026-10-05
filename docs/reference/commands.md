@@ -74,7 +74,7 @@ Which of these an operator needs, and when, is covered in
 
 | Command | What it does |
 |---|---|
-| `clean_history` | Delete history records older than specified days (default: 90) |
+| `clean_history` | Delete change-history records and failed worker tasks older than specified days (default: 90) |
 | `setup_schedules` | Create or update every recurring Django-Q schedule used by Kosmos. |
 
 ## notes

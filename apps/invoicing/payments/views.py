@@ -13,6 +13,7 @@ from apps.invoicing.applications.models import (
 )
 from apps.invoicing.invoices.models import Invoice
 from apps.invoicing.payments.get_payment_data import get_payment_data
+from apps.management.filter_manager import filter_data_from_post
 from apps.matters.models import Matter
 
 from .filters import PaymentFilter
@@ -336,7 +337,7 @@ def payments_filter(request):
         )
 
     if request.method == "POST":
-        request.session["payments_filter"] = request.POST
+        request.session["payments_filter"] = filter_data_from_post(request.POST)
 
         return HttpResponse(status=204, headers={"HX-Trigger": "paymentsChanged"})
     else:

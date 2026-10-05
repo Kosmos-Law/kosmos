@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.accounts.models import CustomUser
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 
@@ -20,18 +21,13 @@ class UserForm(forms.ModelForm):
             "is_active",
         ]
 
-        ATTORNEY_CHOICES = (
-            (True, "Yes"),
-            (False, "No"),
-        )
-
         ACTIVE_CHOICES = (
             (True, "Active"),
             (False, "Inactive"),
         )
 
         widgets = {
-            "is_attorney": forms.Select(choices=ATTORNEY_CHOICES),
+            "is_attorney": forms.Select(choices=YESNO_CHOICES),
             "is_active": forms.Select(choices=ACTIVE_CHOICES),
         }
 

@@ -2,6 +2,7 @@ from django import forms
 
 from apps.accounts.access import filter_matters_for_user
 from apps.matters.models import Matter
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 from .models import FlatFeeEntry
@@ -20,16 +21,6 @@ class FlatFeeEntryForm(forms.ModelForm):
             "entered",
         )
 
-        COMP_CHOICES = (
-            (False, "No"),
-            (True, "Yes"),
-        )
-
-        ENTERED_CHOICES = (
-            (False, "No"),
-            (True, "Yes"),
-        )
-
         widgets = {
             "matter": forms.Select(
                 attrs={"onchange": "updateAmount()", "tabindex": "1"}
@@ -44,8 +35,8 @@ class FlatFeeEntryForm(forms.ModelForm):
                     "autofocus": True,
                 }
             ),
-            "comp": forms.Select(choices=COMP_CHOICES),
-            "entered": forms.Select(choices=ENTERED_CHOICES),
+            "comp": forms.Select(choices=YESNO_CHOICES),
+            "entered": forms.Select(choices=YESNO_CHOICES),
         }
 
         labels = {"amount": "Amount"}

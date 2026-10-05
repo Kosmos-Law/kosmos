@@ -140,7 +140,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "config.context.env",
-                "config.context.site_handle",
             ],
             "loaders": default_loaders if DEBUG else cached_loaders,
             "libraries": {
@@ -321,12 +320,9 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=SERVER_EMAIL)
 # payment requests). Falls back to DEFAULT_FROM_EMAIL when unset.
 BILLING_FROM_EMAIL = env("BILLING_FROM_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = env("ADMINS")
-# Address(es) BCC'd on every invoice email the app sends, so the firm retains a
-# faithful copy (cover message + attached PDF) of what each client received.
-# Comma-separated; leave empty to disable.
-# Note: invoice-email config — Reply-To, the contact address shown in the body,
-# and the BCC list — all come from the Firm settings record
-# (apps.settings.Firm), so the firm manages them in the UI in one place.
+# Invoice-email settings (Reply-To, the contact address shown in the body and
+# the BCC list) are not environment variables: they live on the Firm record
+# (apps.settings.Firm), so the firm manages them in the UI.
 
 # set cookies (sessions) to last for two months
 # default is two weeks, multiplying by four to get two months
@@ -345,7 +341,7 @@ if ENV == "dev":
     SESSION_FILE_PATH = os.path.join(BASE_DIR, ".dev-sessions")
     os.makedirs(SESSION_FILE_PATH, exist_ok=True)
 
-# Logging — standardized across all apps; logs live in <app>/logs/
+# Logging, shared by every app: one rotating file at BASE_DIR/logs/django.log
 (BASE_DIR / "logs").mkdir(exist_ok=True)
 
 LOGGING = {

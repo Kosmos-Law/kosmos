@@ -16,6 +16,7 @@ from apps.contacts.access import (
 )
 from apps.contacts.functions.load_contacts import load_contacts
 from apps.contacts.models import Contact
+from apps.management.filter_manager import filter_data_from_post
 from apps.management.selection import (
     all_visible_selected,
     clear_selected_ids,
@@ -198,7 +199,7 @@ def contact_filter(request, id):
     session_key = f"matter_contacts_filter_{matter.id}"
 
     if request.method == "POST":
-        request.session[session_key] = request.POST
+        request.session[session_key] = filter_data_from_post(request.POST)
         return HttpResponse(status=204, headers={"HX-Trigger": "contactsReload"})
 
     filter_data = request.session.get(session_key, {})

@@ -168,7 +168,6 @@ With `--prod`, also:
 |---|---|
 | `DEBUG` | `False` |
 | `ENV` | `prod` |
-| `SITE_NAME` | `Kosmos` |
 | `ALLOWED_HOSTS` | the hostname |
 | `CSRF_TRUSTED_ORIGINS`, `PUBLIC_BASE_URL` | `https://` plus the hostname |
 | `DEFAULT_FROM_EMAIL` | `Kosmos <noreply@HOST>` |

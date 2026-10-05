@@ -9,7 +9,6 @@ env:
   DEBUG: ${{ vars.DEBUG }}
   ENV: ${{ vars.ENV }}
   ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-  SITE_NAME: ${{ vars.SITE_NAME }}
   DB_NAME: ${{ secrets.DB_NAME }}
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}

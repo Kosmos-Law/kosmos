@@ -129,11 +129,11 @@ the page. The comment above the listener records that incident.
 The form inside posts back to the same container. A validation error
 re-renders the dialog (200, swapped in place, the modal stays open); a
 success returns 204, and the `htmx:afterRequest` listener closes the
-modal on **any** 204:
+modal on **any** 204 that does not carry an error toast:
 
 ```js
 document.body.addEventListener('htmx:afterRequest', (e) => {
-  if (e.detail.xhr.status === 204) {
+  if (e.detail.xhr.status === 204 && !carriesErrorToast(e.detail.xhr)) {
     window.dispatchEvent(new CustomEvent('close-modal'));
   }
 });
@@ -143,7 +143,13 @@ So a 204 both refreshes the lists (through `HX-Trigger`) and closes the
 dialog. The listener does not look at the target, so a 204 from any
 request on the page closes an open modal: a control inside a dialog
 that answers 204 (a selection toggle, a chip) closes the dialog it sits
-in. A response with an empty body aimed at the container closes it too
+in. The one exception is the refusal: a view that answers
+`toast_error(HttpResponse(status=204), ...)` (an `HX-Toast` or
+`HX-Toasts` header with `"type": "error"`) leaves the modal open so the
+user can correct the form; a 204 with no toast, or with a success,
+warning or info toast, closes it. A view that wants the dialog gone
+after refusing must say so another way (re-render, or `closeModal`).
+A response with an empty body aimed at the container closes it too
 (`htmx:beforeSwap`, with the swap cancelled). Three other ways to close:
 
 - `@click="$dispatch('close-modal')"` on a Cancel button.
@@ -151,8 +157,10 @@ in. A response with an empty body aimed at the container closes it too
   checklist folder form returns its refreshed list with status 202 and
   `HX-Trigger-After-Swap: closeModal` (`apps/checklists/views.py`):
   the swap lands first, then the modal closes.
-- `Escape`. Clicking the backdrop does not close a modal, by design
-  (`handleBackdropClick()` is empty with a comment saying so).
+- `Escape`, unless a confirmation prompt is showing over the dialog: then
+  `Escape` dismisses only the prompt. Clicking the backdrop does not close
+  a modal, by design (`handleBackdropClick()` is empty with a comment
+  saying so).
 
 `close()` fades for 150 ms and then empties the container. `open()`
 cancels that timer, because a reopen inside the window would otherwise
@@ -202,8 +210,9 @@ From JavaScript, `window.showConfirm(options)` returns a promise.
 A view adds a toast with the helpers in `utils/toasts.py`:
 `toast_success()`, `toast_error()`, `toast_warning()`, `toast_info()`,
 each taking the response and a message and returning the response. They
-set an `HX-Toast` header carrying JSON; `static/js/toasts.js` reads it
-in `htmx:beforeSwap` and shows the toast. Errors are sticky (duration
+set an `HX-Toast` header carrying JSON (a second toast on the same
+response stacks in `HX-Toasts`); `static/js/toasts.js` reads both in
+`htmx:beforeSwap` and shows the toasts. Errors are sticky (duration
 0); the others dismiss after five seconds. `toast_success()` also takes
 `link={"url": ..., "text": ...}` and `mobile_only=True`, which
 `toasts.js` drops at desktop width because the page already shows the

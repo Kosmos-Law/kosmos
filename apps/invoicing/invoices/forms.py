@@ -3,15 +3,11 @@ from datetime import datetime, timedelta
 from django import forms
 
 from apps.invoicing.invoices.models import Invoice
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 
 class InvoiceForm(forms.ModelForm):
-    YESNO_CHOICES = (
-        (True, "Yes"),
-        (False, "No"),
-    )
-
     class Meta:
         model = Invoice
         fields = [
@@ -43,7 +39,7 @@ class InvoiceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
-        self.fields["show_comp"].widget = forms.Select(choices=self.YESNO_CHOICES)
+        self.fields["show_comp"].widget = forms.Select(choices=YESNO_CHOICES)
 
         today = datetime.now().date()
 
@@ -60,11 +56,6 @@ class InvoiceForm(forms.ModelForm):
 
 
 class EditInvoiceForm(forms.ModelForm):
-    YESNO_CHOICES = (
-        (True, "Yes"),
-        (False, "No"),
-    )
-
     class Meta:
         model = Invoice
 
@@ -87,4 +78,4 @@ class EditInvoiceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
-        self.fields["show_comp"].widget = forms.Select(choices=self.YESNO_CHOICES)
+        self.fields["show_comp"].widget = forms.Select(choices=YESNO_CHOICES)

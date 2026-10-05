@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.accounts.access import filter_matters_for_user
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 from .models import ExpenseEntry
@@ -30,16 +31,6 @@ class ExpenseEntryForm(forms.ModelForm):
             ("Process Server", "Process Server"),
         )
 
-        COMP_CHOICES = (
-            (0, "No"),
-            (1, "Yes"),
-        )
-
-        ENTERED_CHOICES = (
-            (0, "No"),
-            (1, "Yes"),
-        )
-
         widgets = {
             "matter": forms.Select(attrs={"onchange": "updateRate()"}),
             "date": forms.DateInput(attrs={"type": "date"}),
@@ -51,8 +42,8 @@ class ExpenseEntryForm(forms.ModelForm):
                     "autofocus": True,
                 }
             ),
-            "comp": forms.Select(choices=COMP_CHOICES),
-            "entered": forms.Select(choices=ENTERED_CHOICES),
+            "comp": forms.Select(choices=YESNO_CHOICES),
+            "entered": forms.Select(choices=YESNO_CHOICES),
             "category": forms.Select(choices=CATEGORY_CHOICES),
         }
 

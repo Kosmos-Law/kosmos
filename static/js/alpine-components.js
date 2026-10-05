@@ -244,9 +244,11 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('open-modal', () => this.open());
       window.addEventListener('close-modal', () => this.close());
 
-      // Escape key closes modal
+      // Escape key closes modal. A confirmation prompt sitting over the
+      // dialog takes Esc for itself (confirmModal.handleKeydown fires on the
+      // same keypress); closing the dialog underneath too would lose the form.
       document.addEventListener('keydown', (e) => {
-        if (this.isOpen && e.key === 'Escape') {
+        if (this.isOpen && e.key === 'Escape' && !confirmPromptOpen()) {
           e.preventDefault();
           this.close();
         }
@@ -395,6 +397,34 @@ document.addEventListener('alpine:init', () => {
 });
 
 
+// True while the styled confirm() replacement (#confirm-modal) is showing.
+function confirmPromptOpen() {
+  const el = document.getElementById('confirm-modal');
+  if (!el || typeof Alpine === 'undefined') return false;
+  try {
+    return Boolean(Alpine.$data(el)?.isOpen);
+  } catch (err) {
+    return false;
+  }
+}
+
+// True when a response's HX-Toast or HX-Toasts headers (utils/toasts.py)
+// include an error toast.
+function carriesErrorToast(xhr) {
+  const toasts = [];
+  for (const header of ['HX-Toast', 'HX-Toasts']) {
+    const raw = xhr.getResponseHeader(header);
+    if (!raw) continue;
+    try {
+      const parsed = JSON.parse(raw);
+      toasts.push(...(Array.isArray(parsed) ? parsed : [parsed]));
+    } catch (err) {
+      // An unreadable header carries no toast toasts.js could show either.
+    }
+  }
+  return toasts.some((t) => t && t.type === 'error');
+}
+
 /**
  * HTMX Integration for Modal
  * Replaces Bootstrap modal hooks in main.js
@@ -433,9 +463,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Close modal on 204 status (successful form submission, no content)
+  // Close modal on 204 status (successful form submission, no content).
+  // A 204 that carries an error toast is a refusal: the modal stays open so
+  // the user can correct the form (see docs/dev/conventions/htmx-alpine.md).
   document.body.addEventListener('htmx:afterRequest', (e) => {
-    if (e.detail.xhr.status === 204) {
+    if (e.detail.xhr.status === 204 && !carriesErrorToast(e.detail.xhr)) {
       window.dispatchEvent(new CustomEvent('close-modal'));
     }
   });
