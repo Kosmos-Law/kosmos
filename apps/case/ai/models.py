@@ -40,11 +40,6 @@ class Conversation(AuditMixin, models.Model):
         ("research", "Research"),
         ("agent", "Agentic"),
     ]
-    EFFORT_CHOICES = [
-        ("low", "Low"),
-        ("medium", "Medium"),
-        ("high", "High"),
-    ]
 
     # A conversation belongs to exactly one of: a matter (case chat), an
     # intake (intake chat), or an agenda user (the dash agenda chat).
@@ -94,13 +89,6 @@ class Conversation(AuditMixin, models.Model):
         help_text="AI-generated summary for intelligent context selection",
     )
     kind = models.CharField(max_length=10, choices=KIND_CHOICES, default="classic")
-    # How hard each turn works, in both modes. Research: the tool-call
-    # budget (high also plans before searching). Analysis: the context
-    # apparatus (low skips the selector and loads no material bodies; high
-    # re-selects every turn with a stronger selector model). Formerly
-    # research_depth quick/standard/deep (remapped in 0075), then
-    # research_effort (renamed in 0076 when Analysis gained effort too).
-    effort = models.CharField(max_length=10, choices=EFFORT_CHOICES, default="medium")
     vet_citations = models.BooleanField(
         default=True,
         help_text=(

@@ -233,7 +233,22 @@ def test_cancelling_the_chooser_connects_to_nothing(writer):
 def test_a_chooser_that_cannot_be_shown_falls_back_to_the_newest_link(writer):
     window = writer(SESSIONS, choice=RuntimeError("no toolkit"))
     assert window.hello == [3]
-    assert "Smith v Jones: Reply" in window.messages[-1]
+    message = window.messages[-1]
+    assert "Smith v Jones: Reply" in message
+    # The fallback is said, not silent: the user may be on the wrong matter.
+    assert "could not be shown" in message
+    assert "most recently linked one was taken" in message
+    assert "Kosmos > Disconnect" in message
+
+
+def test_connecting_does_not_claim_an_approval_step(writer):
+    """Edits are applied as soon as the AI emits them; there is nothing
+    to approve in the chat. Review happens in Writer."""
+    window = writer([SESSIONS[0]])
+    message = window.messages[-1]
+    assert "approve" not in message
+    assert "accept or reject in Writer" in message
+    assert "could not be shown" not in message
 
 
 def test_no_match_explains_where_to_link(writer):
@@ -257,9 +272,45 @@ def test_messages_use_the_applications_names():
         "link-a-draft dialog",
         "start a drafting session",
         "server's copy of the draft",
+        "Edits you approve",
     ):
         assert stale not in source, stale
     assert "—" not in source
+
+
+# ── What stops the poll loop ─────────────────────────────────────────────────
+
+
+def _loop_until_stopped(ext, api):
+    conn = ext._Connection(ctx=None, api=api, doc=object(), session={"id": 1})
+    conn.stop.wait = lambda seconds: None  # no sleeping between polls
+    conn._loop()
+    return conn
+
+
+def _http_error(code):
+    import urllib.error
+
+    return urllib.error.HTTPError("https://unused", code, "refused", {}, None)
+
+
+def test_an_unlinked_draft_stops_the_loop_as_unlinked(ext):
+    api = mock.Mock()
+    api.ops.side_effect = _http_error(404)
+    conn = _loop_until_stopped(ext, api)
+    assert conn.last_note == "draft was unlinked in Kosmos"
+    assert api.ops.call_count == 1
+
+
+def test_lost_matter_access_stops_the_loop_and_says_so(ext):
+    """403 is the server's answer when the link is still there but the
+    user can no longer open its matter: not "unlinked"."""
+    api = mock.Mock()
+    api.ops.side_effect = _http_error(403)
+    conn = _loop_until_stopped(ext, api)
+    assert "no longer have access" in conn.last_note
+    assert "unlinked" not in conn.last_note
+    assert api.ops.call_count == 1
 
 
 # ── Claim before apply, against the real server views ────────────────────────

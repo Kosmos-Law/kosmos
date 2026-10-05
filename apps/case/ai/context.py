@@ -1,20 +1,22 @@
 """
 Context assembly for AI chat.
 
-Gathers matter data for the system prompt, organized by importance:
+Gathers matter data for the system prompt, organized by importance
+(a 1-7 scale on the records; get_importance_tier maps it to four tiers):
 1. Matter overview, contacts, proceedings (always included)
-2. Critical evidence (importance 5) - across all content types
+2. Critical evidence (importance 5-7) - across all content types
 3. High importance (importance 4) - across all content types
 4. Medium importance (importance 3) - across all content types
 5. Reference materials (importance 1-2) - across all content types
 6. Administrative info (tasks, events, settlement)
 
 Content types with importance ratings:
-- Documents, Highlights, Facts, Notes
+- Documents, Highlights, Facts, Notes, Emails
 - Reference Conversations (automatically HIGH importance since explicitly flagged)
 - Case Law (ai_context field controls inclusion)
 
-Documents and Case Law have a three-state ai_context field:
+Documents, Case Law, Emails and Conversations have a three-state ai_context
+field:
 - "always": Always included with full content
 - "auto": Included by intelligent selector based on relevance to user's question
 - "never": Completely excluded from context
@@ -23,11 +25,11 @@ Time entries are included as administrative data with invoice relationships.
 """
 
 import logging
+import zlib
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from django.core.cache import cache
 from django.db.models import Count, F, Max, Q
 from django.utils import timezone
 
@@ -46,6 +48,7 @@ from apps.tasks.models import Task
 
 from .access import has_financial_access
 from .models import Conversation
+from .status import status_cache
 
 logger = logging.getLogger(__name__)
 
@@ -56,14 +59,14 @@ LEGAL_PROMPT_FILE = Path(__file__).resolve().parent / "prompts" / "legal.md"
 class ImportanceTier(Enum):
     """Importance tiers for context items."""
 
-    CRITICAL = "CRITICAL"  # Importance 5 (Highest)
+    CRITICAL = "CRITICAL"  # Importance 5-7 (Highest)
     HIGH = "HIGH"  # Importance 4 (High)
     MEDIUM = "MEDIUM"  # Importance 3 (Normal)
     REFERENCE = "REFERENCE"  # Importance 1-2 (Low/Lowest)
 
 
 def get_importance_tier(importance: int) -> ImportanceTier:
-    """Map importance value (1-5) to a tier."""
+    """Map an importance value (1-7) to a tier; 5 and above is CRITICAL."""
     if importance >= 5:
         return ImportanceTier.CRITICAL
     elif importance >= 4:
@@ -667,6 +670,26 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
 CONTEXT_REUSE_SECONDS = 600
 
 
+def context_reuse_key(conversation_id):
+    return f"ai_ctx_{conversation_id}"
+
+
+def _pack_context(text):
+    """The assembled context as stored for reuse.
+
+    The entry lives in the cross-process ai_status cache (a database
+    table): a follow-up's run thread lands in whichever gunicorn worker
+    took the request, so a per-process cache only ever hit by luck. The
+    text is the whole system prompt, up to 80% of the model window (a
+    few MB for the largest case files); compressed, prose is a quarter
+    of that, which keeps the row and its base64 encoding small."""
+    return zlib.compress(text.encode("utf-8"))
+
+
+def _unpack_context(packed):
+    return zlib.decompress(packed).decode("utf-8")
+
+
 def _context_fingerprint(matter, include_library, llm, user, include_financial):
     """Cheap change marker for the matter's AI-visible material.
 
@@ -772,19 +795,19 @@ def assemble_matter_context_with_selection(
     # provider-side prompt caches warm between turns.
     include_financial = has_financial_access(user)
 
-    ctx_cache_key = f"ai_ctx_{conversation.id}" if conversation else None
+    ctx_cache_key = context_reuse_key(conversation.id) if conversation else None
     fingerprint = None
     if ctx_cache_key:
         fingerprint = _context_fingerprint(
             matter, include_library, llm, user, include_financial
         )
-        entry = cache.get(ctx_cache_key)
+        entry = status_cache.get(ctx_cache_key)
         if entry and entry.get("fingerprint") == fingerprint:
             logger.info(
                 "Reusing assembled context for conversation %s", conversation.id
             )
             emit("Context reused from the previous turn (case file unchanged)")
-            return entry["context"]
+            return _unpack_context(entry["context"])
 
     # Build the fixed sections (same as assemble_matter_context)
     sections = {}
@@ -1056,9 +1079,9 @@ def assemble_matter_context_with_selection(
         f"{selected_section}{also_available}"
     )
     if ctx_cache_key:
-        cache.set(
+        status_cache.set(
             ctx_cache_key,
-            {"context": assembled, "fingerprint": fingerprint},
+            {"context": _pack_context(assembled), "fingerprint": fingerprint},
             timeout=CONTEXT_REUSE_SECONDS,
         )
     emit(f"Context assembled (~{estimate_tokens(assembled):,} tokens)")

@@ -126,9 +126,10 @@ Library notes (standalone notes in folders flagged as AI library,
 most five and only when the topic bears on the question.
 
 **Reuse.** The assembled context is cached under `ai_ctx_<conversation id>`
-for `CONTEXT_REUSE_SECONDS` (600) together with a fingerprint from
-`_context_fingerprint()`: count and latest `updated_at` per source table,
-the model, the user and their Financial flag. A follow-up inside ten
+in the cross-process `ai_status` cache (zlib-compressed, since it is the
+whole system prompt) for `CONTEXT_REUSE_SECONDS` (600) together with a
+fingerprint from `_context_fingerprint()`: count and latest `updated_at`
+per source table, the model, the user and their Financial flag. A follow-up inside ten
 minutes with an unchanged fingerprint skips the selector entirely, which
 also keeps the provider prompt caches warm. Any write to the material,
 including the AI's own note, fact or witness writes, changes the
@@ -171,9 +172,8 @@ short-circuit or the fallback: they enter only when the selector names them.
 `context.load_legal_prompt()` (an edit takes effect without a restart)
 and its `[JURISDICTION]` placeholders are replaced with the matter's
 jurisdiction, else the firm's, else "United States common law". The same
-text heads the agent's orientation, the auto-summary context and the
-prompt export `views.create_prompt()` (routed at `ai/create-prompt/`,
-though no current template links to it). The operator page
+text heads the agent's orientation and the auto-summary context. The
+operator page
 [AI providers and research](../../../admin/integrations/ai.md) describes
 what to edit in it.
 
@@ -315,10 +315,6 @@ protocol. The matrix is in the
 - **Never edit a `.py` while a run may be in flight.** The worker reloads,
   the daemon thread dies with it, and the user gets the "interrupted"
   reply. Agent runs are minutes long.
-- **The context reuse cache is per process.** `ai_ctx_<id>` lives in the
-  `default` cache, a `LocMemCache`, so a follow-up only reuses the context
-  when its thread lands in the same gunicorn worker. Only the `ai_status`
-  alias is cross-process.
 - **Order inside `finalize_response()` is fixed.** Draft edits first;
   `strip_fake_note_confirmations()` before `apply_note_blocks()` (after,
   a real confirmation would match); handles after the blocks that consume
@@ -328,9 +324,6 @@ protocol. The matrix is in the
   `GEMINI_MODELS`, `MODEL_CONTEXT_LIMITS`, `MODEL_HARD_LIMITS` and the
   `pricing.py` rates. Anthropic publishes no "latest" alias, so each
   version is a new key.
-- **`Conversation.effort` is not read by any run.** The classic effort
-  tiers its comment describes were pruned on 2026-08-14, and the agent
-  turn uses the constant `AGENT_CLAUDE_EFFORT`; only clone and split copy it.
 - **The agenda and intake chat tests monkeypatch `threading.Thread`** to
   run the worker inline; `status.py` binds `Thread` at import so the
   heartbeat stays a real thread, or that patch turns its wait loop into a

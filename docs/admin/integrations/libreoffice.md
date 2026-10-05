@@ -1,8 +1,8 @@
 # Drafting with LibreOffice
 
 How to set up AI-assisted drafting: an attorney links an AI chat to a
-draft `.odt` document, and edits they approve in the chat appear in the
-document as tracked changes. This page covers what the server needs, the
+draft `.odt` document, and edits the AI makes in the chat appear in the
+document as tracked changes, to accept or reject in Writer. This page covers what the server needs, the
 companion extension each user installs in their own LibreOffice, and the
 headless LibreOffice packages on the server.
 

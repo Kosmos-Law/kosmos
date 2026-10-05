@@ -7,7 +7,9 @@ view. The store must be visible across processes: prod runs several
 gunicorn workers, and a poll usually lands in a different worker than the
 one that owns the run thread. The per-process LocMem default gave each
 worker a private view, so most first polls found nothing and fabricated
-"the server restarted mid-run" replies (2026-08-17).
+"the server restarted mid-run" replies (2026-08-17). The same store
+holds the context-reuse entries (``context.context_reuse_key``), which
+a follow-up's run thread reads from whichever worker it lands in.
 
 Liveness is TTL-based. In-flight writes carry a short timeout and the run
 thread keeps a heartbeat that re-touches the entry while its process is

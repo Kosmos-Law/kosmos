@@ -9,9 +9,11 @@ anything it wanted to rely on. Every successful read is already recorded
 in Message.agent_run["steps"]; this module re-fetches those materials
 fresh each turn — the database is the ground truth, so the carried text
 is always exact and current, never a summary. A total cap bounds the
-segment; least-recently-read items are evicted first and fall back to
-the earlier-reads note (agent_prompt), which tells the model to re-read
-them before quoting.
+segment: items are admitted most-recently-read first, and one that does
+not fit in what remains is evicted while smaller, older ones may still
+be carried (first fit, not a strict least-recently-read cut-off).
+Evicted items fall back to the earlier-reads note (agent_prompt), which
+tells the model to re-read them before quoting.
 """
 
 import logging
@@ -247,11 +249,12 @@ def build_working_set(
 ) -> WorkingSet:
     """The Materials in View segment for one agent turn.
 
-    Re-fetches every material the conversation has read, newest first,
-    keeping each while the total fits ``max_chars``; what does not fit is
-    evicted (counted, and left to the earlier-reads note). Kept items
-    render in first-read order so the segment grows append-only across
-    turns, which keeps the prompt-cache prefix stable.
+    Re-fetches every material the conversation has read and admits them
+    most-recently-read first, keeping each that still fits ``max_chars``;
+    one that does not fit is evicted (counted, and left to the
+    earlier-reads note) and the older ones after it are still tried.
+    Kept items render in first-read order so the segment grows
+    append-only across turns, which keeps the prompt-cache prefix stable.
     """
     reads = reads_from_steps(conversation)
     if not reads or max_chars <= 0:
