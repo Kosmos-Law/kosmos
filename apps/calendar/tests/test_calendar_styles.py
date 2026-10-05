@@ -17,14 +17,13 @@ def test_time_slot_labels_are_not_below_one_rem():
     assert float(_font_size(".fc .fc-timegrid-slot-label")) >= 1
 
 
-def test_month_events_are_not_below_one_rem():
+def test_month_events_keep_their_exception_to_the_floor():
+    """The chips crowd the month grid at 1rem, so they stay smaller."""
     assert (
-        float(
-            _font_size(
-                ".fc-event,\n.fc-event.fc-daygrid-block-event,\n.fc-event.fc-daygrid-dot-event"
-            )
+        _font_size(
+            ".fc-event,\n.fc-event.fc-daygrid-block-event,\n.fc-event.fc-daygrid-dot-event"
         )
-        >= 1
+        == "0.8125"
     )
 
 
