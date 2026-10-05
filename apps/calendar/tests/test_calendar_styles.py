@@ -15,3 +15,18 @@ def _font_size(selector):
 
 def test_time_slot_labels_are_not_below_one_rem():
     assert float(_font_size(".fc .fc-timegrid-slot-label")) >= 1
+
+
+def test_month_events_are_not_below_one_rem():
+    assert (
+        float(
+            _font_size(
+                ".fc-event,\n.fc-event.fc-daygrid-block-event,\n.fc-event.fc-daygrid-dot-event"
+            )
+        )
+        >= 1
+    )
+
+
+def test_day_numbers_are_not_below_one_rem():
+    assert float(_font_size(".fc .fc-daygrid-day-number")) >= 1

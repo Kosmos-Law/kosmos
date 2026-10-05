@@ -41,10 +41,22 @@
   width: 8rem;
 }
 
+/* An event deleted on Google and kept here: said in words under the
+   description, since the row has no other sign of it. */
+.events-table .event-detached {
+  color: var(--color-muted);
+  display: block;
+}
+
 /* form */
 
 .events-form {
   margin-top: 1rem;
+}
+
+.event-detached-note {
+  color: var(--color-muted);
+  margin-bottom: 1rem;
 }
 
 .events-form #id_description {
@@ -263,7 +275,7 @@
   border-radius: var(--radius-sm);
   color: var(--color-primary) !important;
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: 1rem;
   padding: 0.125rem 0.25rem;
 }
 
@@ -308,7 +320,7 @@
 
 .fc .fc-daygrid-day-number {
   color: var(--color-primary);
-  font-size: 0.875rem;
+  font-size: 1rem;
   padding: 0.5rem;
 }
 

@@ -210,7 +210,8 @@ Good to know:
 
 - An event that stays in Kosmos after it is deleted on Google is never
   sent to Google again, even if you edit it or set it back to
-  **Pending**. Nothing on the screen marks it.
+  **Pending**. The list shows "Not on Google Calendar" under its
+  description, and **Edit Event** says the same above the form.
 - A repeating event on Google arrives as separate events, and an event
   that spans several days arrives on its first day only.
 
