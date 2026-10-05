@@ -282,9 +282,10 @@ every signed-in user may see it; one on a matter needs
 `has_matter_access`, and a refusal is a `404`. `visible_notes_q()` scopes
 recents, launch and search. The matter's Notes tab under `/case/` is
 covered by the middleware (`note_id` is in `MATTER_LOOKUPS`). The
-companion API authenticates by token and `_user_links()` re-checks matter
-membership on every call, since a user taken off a matter keeps their
-token; the draft views under `/case/ai/conversations/<conv_id>/draft/`
+companion API authenticates by token and re-checks matter membership on
+every call (`_user_links()` for the listing, `_get_link()` for a link,
+which answers 403 for a lost matter and 404 for an unlinked draft), since
+a user taken off a matter keeps their token; the draft views under `/case/ai/conversations/<conv_id>/draft/`
 rely on the middleware plus `_get_conversation()`, which excludes
 matter-less conversations. The permission matrix is in the
 [permissions reference](../../reference/permissions.md).
