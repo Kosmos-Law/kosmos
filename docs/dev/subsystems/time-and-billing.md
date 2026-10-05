@@ -249,7 +249,9 @@ sent.
 `PAID` is set by `PaymentApplication.save()` and `CreditApplication.save()`
 when `amount_remaining` reaches 0, and unset by their `delete()` through
 `Invoice.reopen_if_no_longer_covered()`, which returns a Paid invoice to
-`SENT` when it has no allocations left or a balance again. Its docstring
+the status it was paid from (`status_before_paid`: the latest non-Paid
+row of its history when that is `SENT` or `DEFERRED`, else `SENT`) when
+it has no allocations left or a balance again. Its docstring
 explains why `amount_remaining` alone cannot decide: the legacy rule would
 keep an invoice Paid after its last allocation was removed.
 
@@ -271,8 +273,10 @@ command runs without a request.
 
 `store_invoice_pdf()` generates, deletes the previous file and saves the
 new one as `invoices/<matter_id>/<pk>.pdf` (`invoice_upload_path()`). It
-is called on create, on edit, on the status moves above, and before
-voiding an invoice that has no stored copy. `invoices_pdf()` serves the
+is called on create, on edit, on the status moves above, by a send that
+issues the invoice (one out of `DRAFT` or `APPROVED`, rendered as `SENT`
+before the email goes), and on void (rendered stamped Void, before the
+entries are released). `invoices_pdf()` serves the
 stored file except for a `DRAFT`, which is always rendered fresh (with
 the DRAFT notation in the filename). The public pay page's
 `_invoice_pdf_response()` regenerates when the field is empty or the file
@@ -291,7 +295,9 @@ asked: the email carries a pay link, `payment_url()` from
 `uuid` (`utils/signing.py`) that the pay views accept for
 `INVOICE_PAY_LINK_MAX_AGE` (90 days by default; see the
 [environment reference](../../reference/environment.md)), and the PDF is
-downloadable behind that link. On success the invoice becomes `SENT` with
+downloadable behind that link. A send out of `DRAFT` or `APPROVED`
+remakes the stored PDF first (`_store_pdf_as_sent()`); a resend keeps
+the copy the client has. On success the invoice becomes `SENT` with
 `date_sent` and a `sent` transmission row; on any failure a `failed` row
 is written, `InvoiceSendError` is raised and the status is left alone.
 
@@ -451,11 +457,10 @@ invoice that lacks one (see the
   comp flag or an amount on a draft's entry does not regenerate the stored
   PDF; the next status move does, and `invoices_pdf()` renders a draft
   fresh anyway. An `APPROVED` invoice whose entries change keeps the stale
-  stored copy until it is moved again.
-- **`Matter.value["invoices"]["due"]`** subtracts the sum of every
-  `Payment` on the matter from the billed total, ignoring applications and
-  credits. The ledger and the invoice list do not use it; do not reach for
-  it as a balance due.
+  stored copy until it is moved or sent.
+- **`Matter.value["invoices"]` has no balance due.** It carries `billed`
+  and `payment_sum` only; the ledger computes what is owed from the
+  applications (`get_ledger_data()`), and so should anything else.
 - **Date presets are rebuilt on read.** The Activity filter stores
   `filter_label`, and `refresh_date_preset()` recomputes `date_min` and
   `date_max` from today on every list render, so a stored window is not

@@ -154,7 +154,7 @@ def unbilled_bulk_create_invoices(request):
             headers={"HX-Trigger": "invoicesChanged, unbilledListChanged"},
         )
 
-    today = timezone.now().date()
+    today = timezone.localdate()
     last_day_prev_month = today.replace(day=1) - timedelta(days=1)
 
     context = {

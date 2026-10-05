@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django import forms
+from django.utils import timezone
 
 from apps.invoicing.invoices.models import Invoice
 from config.helpers import YESNO_CHOICES
@@ -41,7 +42,7 @@ class InvoiceForm(forms.ModelForm):
         self.renderer = CustomFormRendererCompact()
         self.fields["show_comp"].widget = forms.Select(choices=YESNO_CHOICES)
 
-        today = datetime.now().date()
+        today = timezone.localdate()
 
         first_day_of_current_month = today.replace(day=1)
 

@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.invoicing.invoices.functions.generate_invoice import store_invoice_pdf
-from apps.invoicing.invoices.models import InvoiceTransmission
+from apps.invoicing.invoices.models import UNSENT_STATUSES, InvoiceTransmission
 from apps.invoicing.pay.links import payment_url
 from apps.settings.models import Firm
 from utils.mail import (
@@ -62,6 +62,18 @@ def _log(
         status=status,
         error=error or "",
     )
+
+
+def _store_pdf_as_sent(invoice, request):
+    """Store the PDF as the client will see it: the watermark follows the
+    status at render time, and the status is only saved once the email has
+    gone out."""
+    status = invoice.status
+    invoice.status = "SENT"
+    try:
+        store_invoice_pdf(invoice, request)
+    finally:
+        invoice.status = status
 
 
 def send_invoice(
@@ -117,10 +129,15 @@ def send_invoice(
         raise InvoiceSendError(error)
 
     try:
-        # The PDF is (re)generated on every create / edit / approve, so the
-        # stored file is already current — generate here only if it is somehow
-        # missing, rather than paying the WeasyPrint cost on every send.
-        if attach_pdf and not invoice.pdf_file:
+        # A send that issues the invoice remakes its PDF, as a status change
+        # out of Draft or Approved does: the copy stored while it was a draft
+        # carries the DRAFT watermark, and an approved invoice's entries can
+        # change after its copy was made. A resend keeps the copy the client
+        # already has (it is only made if somehow missing), rather than
+        # paying the WeasyPrint cost on every send.
+        if invoice.status in UNSENT_STATUSES:
+            _store_pdf_as_sent(invoice, request)
+        elif attach_pdf and not invoice.pdf_file:
             store_invoice_pdf(invoice, request)
 
         cover = message if message is not None else (invoice.message or "")

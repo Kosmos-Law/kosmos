@@ -427,10 +427,12 @@ class Matter(AuditMixin, models.Model):
             or 0
         )
 
+        # No balance due here: payments are applied to invoices, and credits
+        # pay them too, so billed minus payments is not what is owed. The
+        # ledger computes the balance from the applications.
         invoices = {
             "billed": billed_invoices,
             "payment_sum": payment_sum,
-            "due": billed_invoices - payment_sum,
         }
 
         return {
