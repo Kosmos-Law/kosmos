@@ -358,7 +358,9 @@ anything named "retainer plan". The only billing arrangement is per
 matter, through `Matter.billing_type`, `Matter.flat_fee_amount` and
 `Matter.deferred_fees`, and a flat-fee matter bills by `FlatFeeEntry`
 rows. The word "retainer" appears only as the trust balance printed on an
-invoice and in trust-request wording.
+invoice and in trust-request wording. A client-level retainer plan was
+designed and abandoned; see the
+[decision record](../../decisions/2026-10-05-retainer-plans-abandoned.md).
 
 ### Reports
 
