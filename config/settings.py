@@ -187,8 +187,10 @@ CACHES = {
     # cross-process — prod runs several gunicorn workers and a poll
     # usually lands in a worker other than the one running the thread
     # (per-process LocMem gave each worker a private view, so polls
-    # fabricated false "server restarted mid-run" replies). The table is
-    # created by `manage.py createcachetable`, not a migration.
+    # fabricated false "server restarted mid-run" replies). The chat's
+    # context-reuse entries (ai_ctx_<conversation id>, compressed) live
+    # here for the same reason. The table is created by
+    # `manage.py createcachetable`, not a migration.
     "ai_status": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "ai_status_cache",

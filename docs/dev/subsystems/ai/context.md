@@ -126,9 +126,10 @@ Library notes (standalone notes in folders flagged as AI library,
 most five and only when the topic bears on the question.
 
 **Reuse.** The assembled context is cached under `ai_ctx_<conversation id>`
-for `CONTEXT_REUSE_SECONDS` (600) together with a fingerprint from
-`_context_fingerprint()`: count and latest `updated_at` per source table,
-the model, the user and their Financial flag. A follow-up inside ten
+in the cross-process `ai_status` cache (zlib-compressed, since it is the
+whole system prompt) for `CONTEXT_REUSE_SECONDS` (600) together with a
+fingerprint from `_context_fingerprint()`: count and latest `updated_at`
+per source table, the model, the user and their Financial flag. A follow-up inside ten
 minutes with an unchanged fingerprint skips the selector entirely, which
 also keeps the provider prompt caches warm. Any write to the material,
 including the AI's own note, fact or witness writes, changes the
@@ -315,10 +316,6 @@ protocol. The matrix is in the
 - **Never edit a `.py` while a run may be in flight.** The worker reloads,
   the daemon thread dies with it, and the user gets the "interrupted"
   reply. Agent runs are minutes long.
-- **The context reuse cache is per process.** `ai_ctx_<id>` lives in the
-  `default` cache, a `LocMemCache`, so a follow-up only reuses the context
-  when its thread lands in the same gunicorn worker. Only the `ai_status`
-  alias is cross-process.
 - **Order inside `finalize_response()` is fixed.** Draft edits first;
   `strip_fake_note_confirmations()` before `apply_note_blocks()` (after,
   a real confirmation would match); handles after the blocks that consume

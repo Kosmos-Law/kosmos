@@ -23,11 +23,11 @@ Time entries are included as administrative data with invoice relationships.
 """
 
 import logging
+import zlib
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from django.core.cache import cache
 from django.db.models import Count, F, Max, Q
 from django.utils import timezone
 
@@ -46,6 +46,7 @@ from apps.tasks.models import Task
 
 from .access import has_financial_access
 from .models import Conversation
+from .status import status_cache
 
 logger = logging.getLogger(__name__)
 
@@ -667,6 +668,26 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
 CONTEXT_REUSE_SECONDS = 600
 
 
+def context_reuse_key(conversation_id):
+    return f"ai_ctx_{conversation_id}"
+
+
+def _pack_context(text):
+    """The assembled context as stored for reuse.
+
+    The entry lives in the cross-process ai_status cache (a database
+    table): a follow-up's run thread lands in whichever gunicorn worker
+    took the request, so a per-process cache only ever hit by luck. The
+    text is the whole system prompt, up to 80% of the model window (a
+    few MB for the largest case files); compressed, prose is a quarter
+    of that, which keeps the row and its base64 encoding small."""
+    return zlib.compress(text.encode("utf-8"))
+
+
+def _unpack_context(packed):
+    return zlib.decompress(packed).decode("utf-8")
+
+
 def _context_fingerprint(matter, include_library, llm, user, include_financial):
     """Cheap change marker for the matter's AI-visible material.
 
@@ -772,19 +793,19 @@ def assemble_matter_context_with_selection(
     # provider-side prompt caches warm between turns.
     include_financial = has_financial_access(user)
 
-    ctx_cache_key = f"ai_ctx_{conversation.id}" if conversation else None
+    ctx_cache_key = context_reuse_key(conversation.id) if conversation else None
     fingerprint = None
     if ctx_cache_key:
         fingerprint = _context_fingerprint(
             matter, include_library, llm, user, include_financial
         )
-        entry = cache.get(ctx_cache_key)
+        entry = status_cache.get(ctx_cache_key)
         if entry and entry.get("fingerprint") == fingerprint:
             logger.info(
                 "Reusing assembled context for conversation %s", conversation.id
             )
             emit("Context reused from the previous turn (case file unchanged)")
-            return entry["context"]
+            return _unpack_context(entry["context"])
 
     # Build the fixed sections (same as assemble_matter_context)
     sections = {}
@@ -1056,9 +1077,9 @@ def assemble_matter_context_with_selection(
         f"{selected_section}{also_available}"
     )
     if ctx_cache_key:
-        cache.set(
+        status_cache.set(
             ctx_cache_key,
-            {"context": assembled, "fingerprint": fingerprint},
+            {"context": _pack_context(assembled), "fingerprint": fingerprint},
             timeout=CONTEXT_REUSE_SECONDS,
         )
     emit(f"Context assembled (~{estimate_tokens(assembled):,} tokens)")

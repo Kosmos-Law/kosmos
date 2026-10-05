@@ -1,11 +1,15 @@
 """Tests for per-conversation context reuse (assemble_matter_context_with_selection)."""
 
 import pytest
-from django.core.cache import cache
+from django.core.cache import cache as default_cache
 
 from apps.case.ai import selector
-from apps.case.ai.context import assemble_matter_context_with_selection
+from apps.case.ai.context import (
+    assemble_matter_context_with_selection,
+    context_reuse_key,
+)
 from apps.case.ai.models import Conversation
+from apps.case.ai.status import status_cache
 from apps.notes.models import Note
 
 pytestmark = pytest.mark.django_db
@@ -25,7 +29,8 @@ def manifest_counter(monkeypatch):
         return [], {}
 
     monkeypatch.setattr(selector, "build_manifest", counting_build_manifest)
-    cache.clear()
+    status_cache.clear()
+    default_cache.clear()
     return calls
 
 
@@ -44,6 +49,17 @@ def test_follow_up_reuses_context(user, matter, conversation, manifest_counter):
     second = assemble(matter, conversation, user, "now save that to a note")
     assert manifest_counter["n"] == 1
     assert second == first
+
+
+def test_reuse_entry_is_cross_process(user, matter, conversation, manifest_counter):
+    """The follow-up's run thread lands in whichever worker took the
+    request, so the entry has to live in the shared ai_status store (the
+    database table), not the per-process default cache (2026-08-17 for
+    the run status; the context entry had stayed behind)."""
+    assemble(matter, conversation, user, "question")
+    key = context_reuse_key(conversation.id)
+    assert status_cache.get(key) is not None
+    assert default_cache.get(key) is None
 
 
 def test_material_change_rebuilds(user, matter, conversation, manifest_counter):
