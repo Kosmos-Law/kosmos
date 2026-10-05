@@ -1464,8 +1464,9 @@ def note_folder_delete_confirm(request, folder_id):
     folder = folder_for_user(request.user, folder_id)
     descendants = folder.get_descendants()
     subfolder_count = len(descendants)
-    # Every note the delete can take: deleting the subfolders deletes the
-    # notes inside them too, so they count along with the folder's own
+    # Every note the delete can take: "Delete Folder and Notes" takes the
+    # notes inside the subfolders too, so they count along with the
+    # folder's own
     note_count = Note.objects.filter(folder__in=[folder, *descendants]).count()
 
     # Editor context (plus the open note's id) rides the querystring so the

@@ -602,8 +602,12 @@ function setupHtmxHandlers() {
       state.currentMatchIndex = -1;
       clearConflict(); // every content swap lands on a fresh version
 
-      setTimeout(initEditor, 50);
-      surfaceNoteInTree();
+      // The partial's inline script (the new NOTE_DATA) runs at settle,
+      // after this event: both wait for it
+      setTimeout(() => {
+        initEditor();
+        surfaceNoteInTree();
+      }, 50);
     }
   });
 }
