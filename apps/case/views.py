@@ -32,6 +32,13 @@ def get_tab_session_key(matter_id):
 def get_last_tab(request, matter_id):
     """Get the last active tab for a matter, or default to documents."""
     tab = request.session.get(get_tab_session_key(matter_id), DEFAULT_TAB)
+    if tab == "emails":
+        # The Emails tab hides on a server without Google sign-in (unless
+        # the matter holds synced emails); a remembered visit falls back.
+        from apps.mail.google import emails_tab_available
+
+        if not emails_tab_available(matter_id):
+            return DEFAULT_TAB
     return tab if tab in VALID_TABS else DEFAULT_TAB
 
 

@@ -126,6 +126,10 @@ choose into the matter's documents and reads them like any upload.
 Kosmos never changes anything in Drive. Administrators: see
 [Google Workspace](../admin/integrations/google.md).
 
+The **Link Drive Folder** button appears only once Drive is connected.
+A matter that was linked before Drive was disconnected keeps its **Drive
+Folder** button, so you can still see the link and remove it.
+
 1. On the **Documents** tab, click **Link Drive Folder** at the right of
    the toolbar. The **Drive Folder** dialog opens.
 2. Under **1. Matter folder**, click the matter's folder. A folder that is

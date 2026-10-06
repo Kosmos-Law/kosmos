@@ -55,6 +55,28 @@ def check_credentials():
         return False
 
 
+# Shown when the calendar is connected but no calendar is chosen to sync
+# with: the token alone cannot say which of the account's calendars to use.
+CALENDAR_ID_MISSING_MSG = (
+    "Google Calendar is connected, but no calendar is chosen to sync with "
+    "(CALENDAR_ID isn't set on the server), so changes to events aren't sent "
+    "to Google. Ask an administrator to finish the setup."
+)
+
+
+def setup_problem():
+    """Why a connected calendar can't sync, or None.
+
+    None both when everything is in place and when Google Calendar was never
+    connected: a firm that doesn't use Google has nothing to fix, so the
+    event form says nothing. Only a half-finished setup (connected, but no
+    CALENDAR_ID) is worth a warning.
+    """
+    if check_credentials() and not CALENDAR_ID:
+        return CALENDAR_ID_MISSING_MSG
+    return None
+
+
 def build_service():
     prepare_path(CALENDAR_TOKEN_PATH)
 
@@ -296,7 +318,9 @@ def sync_from_google():
     from apps.calendar.models import CalendarSyncState
 
     if not check_credentials():
-        logger.error("No Google Calendar credentials available")
+        # Not connected is the normal state for a firm without Google, and
+        # the job runs every two minutes: nothing here is an error.
+        logger.debug("Google Calendar not connected; skipping sync")
         return
 
     if not CALENDAR_ID:

@@ -255,6 +255,11 @@ the request. You return to **Integrations** and the button now reads
 this session. Go back to Settings, Integrations and connect again.",
 click **Connect** again.
 
+If Google sign-in is not set up on your server yet, there are no
+**Connect** buttons. An administrator sees a note pointing to the setup
+guide ([Google Workspace](../admin/integrations/google.md)). Everyone else
+sees "Google sign-in isn't set up yet. Ask an administrator."
+
 To disconnect one, click **Disconnect**, then **Disconnect** again in the
 prompt. Kosmos stops syncing with it for the whole firm until an
 administrator connects it again. Documents and events already in Kosmos

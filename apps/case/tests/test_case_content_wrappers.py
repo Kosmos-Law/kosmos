@@ -19,7 +19,11 @@ def _set_tab(client, matter, tab):
 
 
 @pytest.mark.parametrize("tab, event, _route", WRAPPERS)
-def test_mode_content_wraps_the_tab(client, matter, tab, event, _route):
+def test_mode_content_wraps_the_tab(client, matter, tab, event, _route, monkeypatch):
+    # The Emails tab is only remembered on a server with Google sign-in.
+    monkeypatch.setattr(
+        "apps.settings.integrations.oauth.google_oauth_configured", lambda: True
+    )
     _set_tab(client, matter, tab)
 
     body = client.get(

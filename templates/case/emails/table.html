@@ -5,7 +5,8 @@
 {% endcomment %}
 {% if not gmail_linked %}
   <p class="detail-text">
-    Gmail isn't connected. An admin can connect it under
+    No Gmail mailbox is connected yet. Each person connects their own
+    mailbox under
     <a href="{% url 'settings:integrations-index' %}">Settings &rsaquo; Integrations</a>.
   </p>
 {% elif not matter.gmail_label_name %}

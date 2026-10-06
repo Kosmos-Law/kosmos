@@ -8,6 +8,16 @@ from django import template
 
 register = template.Library()
 
+
+@register.simple_tag
+def drive_connected():
+    """Whether Google Drive is connected (reads the local token file only).
+    The composer's draft chip offers "Link a draft" only when it is."""
+    from apps.drive.google import check_credentials
+
+    return check_credentials()
+
+
 TOOL_ICONS = {
     "search_materials": "icon-file-search",
     "read_document": "icon-file-text",

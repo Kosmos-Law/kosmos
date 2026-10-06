@@ -212,7 +212,14 @@ def record_matter_state(matter, live_folders, folder_missing=False):
 
 
 def matter_drive_status(matter):
-    """DB-only summary for the Documents-tab button (never calls Drive)."""
+    """DB-only summary for the Documents-tab button (never calls Drive).
+
+    ``show`` hides the button on a firm without Drive: it appears once Drive
+    is connected, and stays while the matter still has a folder or mappings
+    (so they can be seen and unlinked after a disconnect). Checking the
+    connection reads the local token file only.
+    """
+    from apps.drive.google import check_credentials
     from apps.matters.proceedings.models import Proceeding
 
     state = DriveMatterState.objects.filter(matter=matter).first()
@@ -229,7 +236,10 @@ def matter_drive_status(matter):
             .exclude(pk__in=with_record)
             .count()
         )
+    connected = check_credentials()
     return {
+        "show": connected or linked or bool(mappings),
+        "connected": connected,
         "linked": linked,
         "folder": matter.drive_folder,
         "folder_missing": bool(state and state.folder_missing),
