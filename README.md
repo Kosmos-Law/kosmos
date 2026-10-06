@@ -31,8 +31,7 @@ with citation chasing.
 relevant documents, notes, case law and prior conversations for each question
 within the model's budget. An agentic mode can search the matter and
 CourtListener itself, and chat can write back into the record: facts,
-witnesses, notes and saved case law. Nightly summaries and a daily plan are
-generated automatically. Claude and Gemini are supported.
+witnesses, notes and saved case law. Claude and Gemini are supported.
 
 **Notes and drafting.** A rich-text notes editor with folders, matter-scoped
 and general libraries that feed the AI, and AI-proposed edits applied to

@@ -19,11 +19,11 @@ subsystem pages group them.
 | [Platform and config](subsystems/platform-and-config.md) | `config/`, `utils/`, `apps/management` | Settings, URL root, middleware, health checks; the shared helpers (`utils/`); the session-held filter, selection and pagination helpers, the schedule registry and the `static_v` template tag. |
 | [Identity and access](subsystems/identity-and-access.md) | `apps/accounts` | `CustomUser` with its `perm_*` flags and `is_admin`, the emailed sign-in code, `access.py` (matter membership) and the two project middlewares. |
 | [Matters](subsystems/matters.md) | `apps/matters`, `apps/contacts`, `apps/folders` | Matters, proceedings, rates, ledger, settlement; contacts and relationships; the contact folders (`Folder` is also the task folder). |
-| [Tasks and calendar](subsystems/tasks-and-calendar.md) | `apps/tasks`, `apps/checklists`, `apps/calendar`, `apps/dash` | Tasks and the daily digest; checklist templates; events and the Google Calendar sync; the dashboard and the AI daily plan (`apps/dash/agenda.py`). |
+| [Tasks and calendar](subsystems/tasks-and-calendar.md) | `apps/tasks`, `apps/checklists`, `apps/calendar`, `apps/dash` | Tasks and the daily digest; checklist templates; events and the Google Calendar sync; the dashboard. |
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
 | [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/search` | Documents and OCR, highlights, facts, witnesses, labels, the case search tab and the saved case law; the Google Drive mirror; the global search modal. |
-| [AI](subsystems/ai/context.md) | `apps/case/ai`, `apps/case/research` | The context builders, the chat surfaces, the agent tool loop, the auto summary, the semantic index; the Research tab pipeline. |
+| [AI](subsystems/ai/context.md) | `apps/case/ai`, `apps/case/research` | The context builders, the chat surfaces, the agent tool loop, the semantic index; the Research tab pipeline. |
 | [Notes and drafts](subsystems/notes-and-drafts.md) | `apps/notes`, `apps/drafts` | The notes editor, folders and library; draft links and the LibreOffice companion (`companion_src/`). |
 | [Email and intakes](subsystems/email-and-intakes.md) | `apps/mail`, `apps/intakes` | Gmail sync onto matters; intakes, the inbound Mailgun webhook, the client forms. |
 | Settings | `apps/settings` | One package per Settings page (`firm/`, `users/`, `permissions/`, `appearance/`, `integrations/`, `claude/`, and so on) and the `Firm` record. |
@@ -34,9 +34,8 @@ no models of their own (`apps/search` holds the watson registrations in
 endpoint in `api.py` that the MCP server's `search_kosmos` tool calls).
 None of
 the directories under `apps/` is vestigial: every one is installed and
-routed. There is no `agenda`, `billing`, `lab` or `research` app; the
-agenda lives in `apps/dash/agenda.py`, billing in `apps/invoicing`, and
-research in `apps/case/research`. Three packages have no `urls.py`:
+routed. There is no `billing`, `lab` or `research` app; billing lives in
+`apps/invoicing` and research in `apps/case/research`. Three packages have no `urls.py`:
 `apps/mail` and `apps/drafts` have their views mounted from
 `apps/case/urls.py`, and `apps/drive` has no views at all (it is driven
 by signals, the worker and management commands).
@@ -162,17 +161,15 @@ interchangeable.
 unit in production) runs everything that is queued with
 `django_q.tasks.async_task()` and the recurring schedules in
 `apps/management/schedules.py`: OCR, Drive, Gmail and Calendar sync,
-document and note summaries, semantic re-indexing, the nightly AI auto
-summaries and daily plans, payment webhook reconciliation, the daily
-digest, the chat purge. The worker is configured by `Q_CLUSTER` in
+document and note summaries, semantic re-indexing, payment webhook
+reconciliation, the daily digest, the chat purge. The worker is configured by `Q_CLUSTER` in
 settings and explained on the [operations page](subsystems/operations.md).
 
 **In-process daemon threads** run the interactive AI chats. `send_message`
 in `apps/case/ai/views.py` saves the user's message, seeds a status entry
 and starts `threading.Thread(target=process_ai_request, daemon=True)`
 (`apps/case/ai/tasks.py`) inside the gunicorn worker that took the
-request; the intake chat (`apps/intakes/chat.py`) and the agenda chat
-(`apps/dash/agenda.py`) do the same. The browser polls `case:ai-status`
+request; the intake chat (`apps/intakes/chat.py`) does the same. The browser polls `case:ai-status`
 every second. The code does not record why chats run on threads rather
 than the queue; the consequence it does record is that a restart of the
 web process ends every reply in flight, and the status cache below exists

@@ -60,9 +60,6 @@ next day. The Dash shows up to three sections:
 - **Collections**: **Past Due** balances and matters with **Low Trust
   Available (Pending)**. Only administrators see this section.
 
-**Plan** opens **Suggested Agenda** in a new browser tab: an AI chat that
-drafts an agenda for your day.
-
 Good to know:
 
 - Kosmos checks again in each browser you use, and when you return to a

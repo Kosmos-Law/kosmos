@@ -41,8 +41,8 @@ git branch --show-current
 - Shell access as the account that owns the checkout, with `sudo`.
 - A current backup of the database, the uploaded files and
   `config/.env`. See [Backup and restore](backup.md).
-- The options the installer was first run with (`--prod --domain HOST`,
-  and `--auto-summary-time` if you used it).
+- The options the installer was first run with (`--prod --domain HOST`
+  and any others).
 - A time when nobody is working. The upgrade stops the application, and
   restarting it ends any AI chat reply that is being generated.
 
@@ -138,7 +138,7 @@ Confirmed from the script. On a second run the installer:
 | `migrate` | Runs. New migrations are applied. |
 | `createcachetable`, `installwatson` | Run. Both do nothing if their work is already done. |
 | `buildwatson` | Runs, and reindexes every record. On a large database this is the slowest step. |
-| `setup_schedules` | Runs, and resets every scheduled job to its definition. Pass `--auto-summary-time` again if you use it, or the nightly AI jobs return to 01:30. |
+| `setup_schedules` | Runs, and resets every scheduled job to its definition. |
 | `collectstatic` | Runs, in production. |
 | First user | Skipped when a superuser exists. |
 | `gunicorn.conf.py` | Your copy is kept. Changes to the template are not applied. |

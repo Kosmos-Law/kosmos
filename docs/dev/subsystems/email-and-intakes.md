@@ -364,9 +364,8 @@ The matrix is in the [permissions reference](../../reference/permissions.md).
   than the one running the thread; in the default `LocMemCache` the
   button swapped back early.
 - **`Email` rows are immutable once synced.** The sync skips existing
-  rows, so `updated_at` stays honest for the auto summary's incremental
-  `since=` filter. A change to the parser needs `refresh_email_bodies` or
-  a full resync to reach old rows.
+  rows, so a change to the parser needs `refresh_email_bodies` or a full
+  resync to reach old rows.
 - **The sender check is against `CustomUser.email`.** A user forwarding
   from an alias that is not their account address is dropped silently
   with a 200; nothing is stored, so there is nothing to reprocess.

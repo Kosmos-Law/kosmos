@@ -28,7 +28,7 @@ Each integration stays off until it is configured.
 - [File storage](integrations/storage.md): local disk or an S3-compatible
   bucket, and how files are served.
 - [AI providers and research](integrations/ai.md): API keys, semantic
-  search, CourtListener, scheduled AI jobs, and what data leaves the
+  search, CourtListener, chat retention, and what data leaves the
   server.
 - [Online payments](integrations/payments.md): LawPay, Stripe or Confido,
   webhooks, and settlement.

@@ -50,9 +50,7 @@ Two variables with no default decide the shape of a run:
   `DEBUG` is sometimes toggled for testing while `ENV` is stable. `dev`
   keeps sessions in files under `.dev-sessions/` instead of the database
   (the comment explains: a development database that is rebuilt from a
-  snapshot would otherwise sign every device out). The nightly AI
-  schedules run only when `ENV` is exactly `prod`
-  (`apps/case/ai/auto_summary.py`, `apps/dash/agenda.py`). The `env`
+  snapshot would otherwise sign every device out). The `env`
   context processor passes the value to templates, which show the
   development banner, the dev favicon and `dev.css` when it is `dev`.
 
@@ -291,8 +289,8 @@ authenticated, all with `Cache-Control: no-store`:
   `CACHES["default"]`. The AI run status has its own database cache for
   exactly this reason; rate-limit counters accept the imprecision.
 - **`ENV` and `DEBUG` are independent.** A machine with `DEBUG=True` and
-  `ENV=prod` runs the nightly AI jobs against whatever database it has.
-  The value that gates them is `ENV`.
+  `ENV=prod` keeps sessions in the database and shows no development
+  banner. Code that must know which environment it is in tests `ENV`.
 - **`AuditMixin` depends on the request thread.** `created_by` is filled
   from the thread local, so a model saved from a worker task or a
   management command records no user unless the caller sets one.

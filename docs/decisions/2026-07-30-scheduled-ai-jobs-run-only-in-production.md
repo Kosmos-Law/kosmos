@@ -1,5 +1,9 @@
 # Scheduled AI jobs run only when ENV is prod (2026-07-30)
 
+The jobs named here were retired on 2026-10-06; the rule still holds for
+any future paid scheduled job. See
+[The Plan chat and the nightly auto threads are retired](2026-10-06-plan-chat-and-auto-threads-retired.md).
+
 The nightly auto-summary was the first scheduled job that calls a paid
 model for every open matter. The firm that runs this code keeps a
 development server whose database is restored from production every

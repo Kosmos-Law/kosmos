@@ -17,7 +17,7 @@ how the pieces are wired so a contributor can change them.
 | `apps/management/schedules.py` | `ScheduleSpec`, `schedule_specs()` and `install_schedules()`: the one registry of recurring jobs. |
 | `apps/management/management/commands/setup_schedules.py` | Installs the registry. |
 | `apps/management/management/commands/clean_history.py` | Prunes `simple_history` tables. |
-| `apps/case/management/commands/` | `setup_auto_summary_schedule` and `setup_chat_purge_schedule` (legacy subsets of `setup_schedules`), `run_auto_summaries`, `purge_closed_chats`, the document repair commands, `build_semantic_index`, `update_search_vectors`. |
+| `apps/case/management/commands/` | `setup_chat_purge_schedule` (a legacy subset of `setup_schedules`), `purge_closed_chats`, the document repair commands, `build_semantic_index`, `update_search_vectors`. |
 | `apps/drive/management/commands/restore_drive_documents.py` | Re-downloads Drive-mirrored files missing from storage. |
 | `apps/invoicing/management/commands/reconcile_pending.py`, `apps/invoicing/pay/reconcile.py` | The missed-webhook backstop for online payments. |
 | `config/health.py` | `/health/worker/`, the worker's liveness signal. |
@@ -62,10 +62,7 @@ callers are the OCR pipeline (`apps/case/documents/tasks.py`, `signals.py`,
 (`apps/notes/tasks.py`), semantic re-indexing (`apps/case/ai/semantic.py`),
 the Research tab (`apps/case/research/tasks.py`), the inbound intake
 webhook (`apps/intakes/inbound.py`), payment webhooks
-(`apps/invoicing/pay/views.py`), and the nightly AI jobs, which fan out
-one task per matter or user with a `task_name` and `group`
-(`apps/case/ai/auto_summary.py`, `apps/dash/agenda.py`). Or a `Schedule`
-row fires on its cron and the cluster calls the schedule's `func`.
+(`apps/invoicing/pay/views.py`). Or a `Schedule` row fires on its cron and the cluster calls the schedule's `func`.
 
 ### Failure
 
@@ -97,10 +94,10 @@ does `Schedule.objects.update_or_create(name=...)` for each, setting
 `schedule_type=CRON`, `repeats=-1` and a `next_run` computed by `croniter`
 from the local time now. The comment explains the last part: a new or
 changed schedule must wait for its next real slot rather than fire the
-moment the worker starts. `setup_schedules` installs them all;
-`--auto-summary-time "MIN HOUR"` is threaded through to the two AI
-summary specs. The two older commands in `apps/case` install subsets by
-passing `names=` and are kept as aliases.
+moment the worker starts. `setup_schedules` installs them all. The older
+`setup_*_schedule` commands (`setup_digest_schedule`,
+`setup_gmail_sync_schedule`, `setup_chat_purge_schedule`) install subsets
+by passing `names=` and are kept as aliases.
 
 To add a schedule: write the function so it takes no arguments and is
 safe to run twice, add a `ScheduleSpec` to `schedule_specs()` with a
@@ -112,10 +109,14 @@ instance. There is no migration; the row appears when the command runs.
 A schedule removed from the registry is not deleted from the database by
 `install_schedules()`; delete the row in the admin.
 
-The scheduled AI jobs check `settings.ENV` and return early with a log
-line unless it is `prod`, so a development copy of a firm's database does
-not spend on the production server's behalf. The list of jobs and their
-times is the [schedules reference](../../reference/schedules.md).
+No schedule calls a paid model today. One that does must target a
+`scheduled_*` wrapper that returns early with a log line unless
+`settings.ENV` is `prod`, and come with a management command for
+on-demand runs, so a development copy of a firm's database does not spend
+on the production server's behalf (see
+[Scheduled AI jobs run only when ENV is prod](../../decisions/2026-07-30-scheduled-ai-jobs-run-only-in-production.md)).
+The list of jobs and their times is the
+[schedules reference](../../reference/schedules.md).
 
 ### The worker health check
 
@@ -245,7 +246,7 @@ The Django-Q admin pages are behind the Django admin, which
   `RUNNING_TTL`. Deploy when no one is mid-reply, or accept the message.
 - **`setup_schedules` resets every schedule.** A time changed in the
   admin is overwritten on the next run, including the one the installer
-  makes. Pass `--auto-summary-time` on every run or the default returns.
+  makes.
 - **Schedules are in the firm's time zone.** `install_schedules()` computes
   `next_run` from `timezone.localtime()`, so changing `TIME_ZONE` needs
   both processes restarted and `setup_schedules` run again.
@@ -253,9 +254,6 @@ The Django-Q admin pages are behind the Django admin, which
   key, an integration switched on without credentials) runs ten times
   over two hours and writes a failure row each time. Make tasks
   idempotent, and raise rather than loop inside the task.
-- **`ENV` gates the AI schedules, `DEBUG` does not.** A machine with
-  `ENV=prod` and a copy of the production database runs the nightly
-  summaries and plans against it.
 - **Changing a management command's `help` or a schedule's description
   changes a generated page.** Run `scripts/gen_docs_reference.py` and
   commit the result, or `test_docs_reference` fails.

@@ -13,7 +13,7 @@ The case AI chat has two modes, chosen when a conversation is created
 
 Both modes share the window, the 1s status poll, cancellation, message
 creation, and the fenced-block writes (`tasks.finalize_response()`).
-Intake and agenda chats stay classic. The agentic mode (2026-08-23) is the
+The intake chat stays classic. The agentic mode (2026-08-23) is the
 successor of the retired research chat mode; see
 [Research chat (retired)](../../../decisions/research-chat-retired.md).
 
