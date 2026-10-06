@@ -50,7 +50,7 @@ from apps.intakes.client_forms.send import (
     send_form_link,
 )
 from apps.intakes.models import Intake
-from utils.toasts import toast_success
+from utils.toasts import toast_email_sent, toast_success
 
 FORMS_TRIGGER = "intakeFormsChanged"
 
@@ -71,6 +71,13 @@ def _refresh(message=None):
     """The 204 + HX-Trigger that makes the templates list re-fetch itself."""
     response = HttpResponse(status=204, headers={"HX-Trigger": FORMS_TRIGGER})
     return toast_success(response, message) if message else response
+
+
+def _refresh_sent(message):
+    """_refresh for an emailed form: the toast says so when email is not set
+    up and the message only reached the server log."""
+    response = HttpResponse(status=204, headers={"HX-Trigger": FORMS_TRIGGER})
+    return toast_email_sent(response, message)
 
 
 # --- Template library -------------------------------------------------------
@@ -444,7 +451,7 @@ def form_submission_send(request, sub_id):
     submission.recipient_email = recipient
     submission.save(update_fields=["recipient_email", "updated_at"])
     submission.mark_sent()
-    return _refresh(f"Form sent to {recipient}")
+    return _refresh_sent(f"Form sent to {recipient}")
 
 
 @login_required
@@ -499,7 +506,7 @@ def form_submission_resend(request, sub_id):
             context | {"form": form, "send_error": str(exc)},
         )
 
-    return _refresh("Reminder sent")
+    return _refresh_sent("Reminder sent")
 
 
 # --- Reviewing what came back ----------------------------------------------

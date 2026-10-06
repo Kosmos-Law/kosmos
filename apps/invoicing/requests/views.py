@@ -22,7 +22,7 @@ from apps.invoicing.requests.send import (
 )
 from apps.management.pagination import CustomPaginator
 from apps.matters.models import Matter
-from utils.toasts import toast_success
+from utils.toasts import toast_email_sent
 
 # Filter keys that don't count toward the "filter is active" toolbar highlight:
 # status has its own quick-buttons, and the POST carries the CSRF token.
@@ -192,7 +192,7 @@ def requests_new(request):
                 response = HttpResponse(
                     status=204, headers={"HX-Trigger": "requestsChanged"}
                 )
-                toast_success(response, f"Payment request sent to {to}.")
+                toast_email_sent(response, f"Payment request sent to {to}.")
                 return response
 
         context = {
@@ -341,7 +341,7 @@ def requests_new_trust(request):
                 response = HttpResponse(
                     status=204, headers={"HX-Trigger": "requestsChanged"}
                 )
-                toast_success(response, f"Trust deposit request sent to {to}.")
+                toast_email_sent(response, f"Trust deposit request sent to {to}.")
                 return response
 
         context = {
@@ -427,7 +427,7 @@ def requests_resend(request, pk):
                 if payment_request.is_trust
                 else "Payment request"
             )
-            toast_success(response, f"{label} resent to {to}.")
+            toast_email_sent(response, f"{label} resent to {to}.")
             return response
         context = {
             "payment_request": payment_request,
@@ -484,7 +484,7 @@ def requests_send_reminder(request, pk):
                 if payment_request.is_trust
                 else "Payment reminder"
             )
-            toast_success(response, f"{label} sent to {to}.")
+            toast_email_sent(response, f"{label} sent to {to}.")
             return response
         context = {
             "payment_request": payment_request,

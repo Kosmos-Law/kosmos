@@ -5,6 +5,9 @@ The three-dot menu on the intake detail opens a modal: pick a template
 fields, so the salutation is hand-tweaked here), then send. The send is
 plain text, From the firm's name, Reply-To (and Cc) the firm's intake
 inbox, and is recorded as an "Email Out" note tagged to the sending user.
+When email is not set up (console mode) the note opens with a line saying
+the message only reached the server log, so the intake's history does not
+read as a delivery.
 The Reply-To is editable per send; left blank it falls back to the firm's
 intake inbox, then the firm's own address.
 """
@@ -23,12 +26,14 @@ from django.views.decorators.http import require_http_methods
 from apps.intakes.models import Intake, IntakeEmailTemplate, Note
 from apps.settings.models import Firm
 from utils.mail import (
+    NOT_DELIVERED_MESSAGE,
+    email_delivers,
     firm_from_email,
     intake_reply_address,
     intake_reply_to,
     render_inlined,
 )
-from utils.toasts import toast_success
+from utils.toasts import toast_email_sent
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +116,9 @@ def send_email(request, id):
             ),
         )
 
+    details = f"**Subject:** {subject}\n\n{body}"
+    if not email_delivers():
+        details = f"**Not delivered.** {NOT_DELIVERED_MESSAGE}\n\n{details}"
     now = timezone.localtime()
     Note.objects.create(
         intake=intake,
@@ -118,8 +126,8 @@ def send_email(request, id):
         date=now.date(),
         time=now.time(),
         type="Email Out",
-        details=f"**Subject:** {subject}\n\n{body}",
+        details=details,
     )
     response = HttpResponse(status=204, headers={"HX-Trigger": "intakeDetailChanged"})
-    toast_success(response, "Email sent")
+    toast_email_sent(response, "Email sent")
     return response

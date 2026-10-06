@@ -93,11 +93,21 @@ The script does not install certbot. See
     ```bash
     git clone https://github.com/Kosmos-Law/kosmos.git
     cd kosmos
-    scripts/install.sh --prod --domain kosmos.example.com
+    scripts/install.sh --prod --domain kosmos.example.com \
+      --smtp-host smtp.example.com --smtp-user kosmos@example.com \
+      --smtp-password '<the SMTP password>' --from-email office@example.com
     ```
 
     `--domain` must be a bare hostname: letters, digits, dots and hyphens,
     with no scheme or path.
+
+    Signing in needs working email (see
+    [Outgoing email](integrations/email.md)), so a production install
+    asks for an SMTP server. Without `--smtp-host`, the script prompts
+    for the server, login, password and sender address; with `--yes` or no
+    terminal it stops instead. To install without email anyway, pass
+    `--no-email`: every message, sign-in codes included, is then only
+    written to `logs/error.log`, and the script says so loudly at the end.
 
 2. Create the first user when prompted, with a real email address.
 
@@ -127,6 +137,12 @@ socket, and the worker is running. Continue with
 | `--db-name NAME` | Database name. Default `kosmos`. |
 | `--db-user NAME` | Database role. Default `kosmos`. |
 | `--db-password PASS` | Role password. Default `kosmos` in development; a random one is generated in production. |
+| `--smtp-host HOST` | Production only. SMTP server for outgoing mail; sets `EMAIL_BACKEND=smtp`. Required with `--prod` unless `--no-email` is given (prompted for when there is a terminal). |
+| `--smtp-port PORT` | SMTP port, used with STARTTLS. Default `587`. Port 465 (implicit TLS) is refused because Kosmos does not support it. |
+| `--smtp-user NAME` | SMTP login (`EMAIL_HOST_USER`). |
+| `--smtp-password PASS` | SMTP password (`EMAIL_HOST_PASSWORD`). |
+| `--from-email ADDR` | A bare address used as the sender of all mail (`DEFAULT_FROM_EMAIL`, `BILLING_FROM_EMAIL`, `SERVER_EMAIL`). Default: `noreply@`, `billing@` and `kosmos@` at the hostname. |
+| `--no-email` | Production only. Install without outgoing mail. Mail stays in `console` mode and is only written to the log, sign-in codes included. |
 | `--no-superuser` | Do not create the first user. |
 | `--seed-intake-forms` | Also run `manage.py seed_intake_forms`. |
 | `--yes`, `-y` | Skip the confirmation prompt. Required when there is no terminal. |
@@ -139,7 +155,10 @@ underscores, starting with a letter or underscore.
 
 When `config/.env` already exists, its `DB_NAME`, `DB_USER`,
 `DB_PASSWORD`, `DB_HOST` and `DB_PORT` win over the `--db-*` options, and
-the script prints a warning for each option it ignores.
+the script prints a warning for each option it ignores. The `--smtp-*` and
+`--from-email` options only fill in a newly generated file; with an
+existing one they are ignored with a warning, and a `--prod` run warns if
+the file still has `EMAIL_BACKEND=console`.
 
 To create the first user without a prompt, export
 `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL` and
@@ -169,15 +188,16 @@ With `--prod`, also:
 | `ENV` | `prod` |
 | `ALLOWED_HOSTS` | the hostname |
 | `CSRF_TRUSTED_ORIGINS`, `PUBLIC_BASE_URL` | `https://` plus the hostname |
-| `DEFAULT_FROM_EMAIL` | `Kosmos <noreply@HOST>` |
-| `BILLING_FROM_EMAIL` | `Kosmos <billing@HOST>` |
-| `SERVER_EMAIL` | `kosmos@HOST` |
+| `DEFAULT_FROM_EMAIL` | `Kosmos <noreply@HOST>`, or `Kosmos <ADDR>` with `--from-email` |
+| `BILLING_FROM_EMAIL` | `Kosmos <billing@HOST>`, or `Kosmos <ADDR>` with `--from-email` |
+| `SERVER_EMAIL` | `kosmos@HOST`, or `ADDR` with `--from-email` |
+| `EMAIL_BACKEND` | `smtp`, unless `--no-email` |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | the `--smtp-*` values |
 | `INTAKE_INBOUND_RECIPIENT` | `kosmos-intakes` |
 | `PAYMENT_PROCESSOR` | `none` (online payment off until a processor is configured) |
 
-Everything else keeps its development default, in production too: email
-is printed to the log (`EMAIL_BACKEND=console`), uploads are stored on
-local disk (`STORAGE_BACKEND=local`), `ADMINS` is empty and every API key
+Everything else keeps its development default, in production too:
+uploads are stored on local disk (`STORAGE_BACKEND=local`), `ADMINS` is empty and every API key
 is blank. What each variable does is in the
 [environment variable reference](../reference/environment.md).
 
@@ -265,20 +285,25 @@ Things worth knowing about the shipped configuration:
     runs of the installer recognise a certbot-managed file and leave it
     alone.
 
-2. **Sign in.** Until outgoing email is configured, the verification code
-   is not sent: it is printed, with the rest of the message, into
-   `logs/error.log` in the checkout. Read it from there for the first
-   login:
+2. **Sign in.** The verification code arrives by email. If you installed
+   with `--no-email`, it is not sent: it is printed, with the rest of the
+   message, into `logs/error.log` in the checkout. Read it from there for
+   the first login:
 
     ```bash
     tail -f logs/error.log
     ```
 
-3. **Fill in `config/.env`.** At least outgoing email (`EMAIL_BACKEND=smtp`
-   and the `EMAIL_*` settings) and `ADMINS`. Then whichever integrations
-   the firm uses: AI provider keys (optional, and they can be entered
-   later under Settings > Integrations instead), payments, object
-   storage, Google.
+    While email is off, admins see a banner across the top of every page
+    saying so, and screens that send mail (invoices, requests, intake
+    email, form links) say the message was logged on the server instead
+    of claiming it was sent.
+
+3. **Fill in `config/.env`.** At least `ADMINS`, and outgoing email
+   (`EMAIL_BACKEND=smtp` and the `EMAIL_*` settings) if you installed
+   with `--no-email`. Then whichever integrations the firm uses: AI
+   provider keys (optional, and they can be entered later under
+   Settings > Integrations instead), payments, object storage, Google.
    See [Configuration](configuration.md) and the
    [environment variable reference](../reference/environment.md).
 

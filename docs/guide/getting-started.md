@@ -189,7 +189,7 @@ Everything here is under **Settings** in the sidebar.
 - **Settings → Notifications**: click **Enable** beside **Daily Digest
   Email** to get one email a day listing overdue items, today's schedule,
   and events and tasks due in the next three days. **Send Test** sends one
-  now.
+  now. If the email cannot be sent, the reason appears below the button.
 
 Good to know:
 

@@ -75,6 +75,9 @@ Then start the app in two terminals:
 | Option | Effect |
 | --- | --- |
 | `--db-name`, `--db-user`, `--db-password` | database settings (default `kosmos` / `kosmos` / `kosmos`); values in an existing `config/.env` win |
+| `--smtp-host`, `--smtp-port`, `--smtp-user`, `--smtp-password` | production only: outgoing mail server (port default `587`, STARTTLS); sets `EMAIL_BACKEND=smtp`. Required with `--prod` unless `--no-email`; prompted for when interactive |
+| `--from-email` | production only: one sender address for all mail (default `noreply@`, `billing@` and `kosmos@` at the domain) |
+| `--no-email` | production only: install without outgoing mail; every message, sign-in codes included, is only written to the log |
 | `--no-superuser` | skip the superuser prompt |
 | `--seed-intake-forms` | also run `manage.py seed_intake_forms` |
 | `--yes` | skip the confirmation prompt |
@@ -87,17 +90,19 @@ For a non-interactive superuser, export `DJANGO_SUPERUSER_USERNAME`,
 ### Production
 
 ```bash
-scripts/install.sh --prod --domain kosmos.example.com
+scripts/install.sh --prod --domain kosmos.example.com \
+  --smtp-host smtp.example.com --smtp-user kosmos@example.com \
+  --smtp-password '<password>' --from-email office@example.com
 sudo certbot --nginx -d kosmos.example.com
 ```
 
 `--prod` generates a production `config/.env` (`DEBUG=False`, a generated
-database password, the hostname in `ALLOWED_HOSTS` and friends), installs
+database password, the hostname in `ALLOWED_HOSTS` and friends, SMTP), installs
 nginx, renders the systemd units and nginx site from
 [`deploy/`](deploy/README.md), runs `collectstatic`, and starts
 `law.socket`, `law.service` and `qcluster.service`. Certbot adds TLS; later
 runs of the installer leave a certbot-managed file alone. Then fill in the
-blanks in `config/.env` (SMTP, `ADMINS`, API keys, object storage) and
+blanks in `config/.env` (`ADMINS`, API keys, object storage) and
 restart the two services.
 
 ### Manual installation and configuration
