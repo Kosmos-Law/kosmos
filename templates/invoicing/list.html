@@ -23,9 +23,11 @@
           <li {% if subapp == "trust" %}class="active"{% endif %}>
             <a href="{% url 'trust:index' %}">Trust</a>
           </li>
-          <li {% if subapp == "requests" %}class="active"{% endif %}>
-            <a href="{% url 'invoicing:requests-index' %}">Requests</a>
-          </li>
+          {% if online_payments_enabled or payment_requests_exist %}
+            <li {% if subapp == "requests" %}class="active"{% endif %}>
+              <a href="{% url 'invoicing:requests-index' %}">Requests</a>
+            </li>
+          {% endif %}
         </ul>
       </nav>
       <div class="detail-body">

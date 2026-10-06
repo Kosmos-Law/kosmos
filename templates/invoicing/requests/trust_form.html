@@ -81,6 +81,7 @@
       <button type="submit"
               form="trust-form"
               id="trust-submit"
+              {% if not online_payments_enabled %}disabled{% endif %}
               class="btn btn-success btn-busy">
         <span class="btn-busy-idle">Request Deposit</span>
         <span class="btn-busy-loading"><span class="btn-spinner"></span> Sending…</span>

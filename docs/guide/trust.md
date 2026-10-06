@@ -259,6 +259,7 @@ refuses is a payment by **Trust** for more than the client's balance: see
 
 If your firm takes payments online, click the plus button on the **Trust**
 tab, then **Request Deposit**, to email a client a link for a deposit.
+Without online payment the option is not shown.
 [Payments](payments.md) covers the request itself.
 
 When the client pays, Kosmos adds a **Deposit** to the client's ledger. Its

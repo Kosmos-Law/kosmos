@@ -15,6 +15,7 @@ from django.utils import timezone
 from apps.invoicing.invoices.functions.generate_invoice import store_invoice_pdf
 from apps.invoicing.invoices.models import UNSENT_STATUSES, InvoiceTransmission
 from apps.invoicing.pay.links import payment_url
+from apps.invoicing.processors import online_payments_enabled
 from apps.settings.models import Firm
 from utils.mail import (
     FIRM_LOGO_CID,
@@ -47,6 +48,17 @@ def _invalid_addresses(addresses):
         except ValidationError:
             invalid.append(addr)
     return invalid
+
+
+def _invoice_links(invoice, request):
+    """The email's link to the invoice page, as `pay_url` (a "Pay now" button)
+    when online payment is on, or `view_url` ("View invoice") when it is off.
+    The page is also where the client downloads the PDF, so the link stays
+    either way; only the promise of online payment goes."""
+    url = payment_url(invoice, request)
+    if online_payments_enabled():
+        return {"pay_url": url, "view_url": ""}
+    return {"pay_url": "", "view_url": url}
 
 
 def _log(
@@ -160,7 +172,9 @@ def send_invoice(
             "cover_message": cover,
             "firm_name": company.name if company else "",
             "billing_email": billing_email,
-            "pay_url": payment_url(invoice, request),  # tokenized payment link
+            # Tokenized link to the invoice page. With online payment off it
+            # still serves the PDF, so the email offers it as "View invoice".
+            **_invoice_links(invoice, request),
             "attach_pdf": attach_pdf,
             "logo_cid": FIRM_LOGO_CID if company and company.logo else "",
             "firm_address": firm_postal_address(company),
@@ -310,7 +324,7 @@ def send_reminder(
             "payment_terms": company.payment_terms if company else "",
             "firm_name": company.name if company else "",
             "billing_email": billing_email,
-            "pay_url": payment_url(invoice, request),
+            **_invoice_links(invoice, request),
             "attach_pdf": attach_pdf,
             "logo_cid": FIRM_LOGO_CID if company and company.logo else "",
             "firm_address": firm_postal_address(company),

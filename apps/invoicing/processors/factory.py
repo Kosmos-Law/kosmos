@@ -13,6 +13,18 @@ from .base import PaymentProcessor, ProcessorConfigError
 from .fake import FakeProcessor
 
 
+def online_payments_enabled() -> bool:
+    """Whether clients can pay online at all.
+
+    False only for "none", which switches online payment off: nothing should
+    then offer or promise it (no Pay now link in emails, no payment or trust
+    deposit requests). Every other value, "fake" included, counts as on, so a
+    misconfigured real processor still shows its own error rather than
+    silently hiding the feature.
+    """
+    return getattr(settings, "PAYMENT_PROCESSOR", "fake") != "none"
+
+
 def get_processor(name: str | None = None) -> PaymentProcessor:
     """Return an instance of the configured (or named) processor."""
     name = name or getattr(settings, "PAYMENT_PROCESSOR", "fake")

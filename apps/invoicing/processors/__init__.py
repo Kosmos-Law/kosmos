@@ -30,7 +30,7 @@ from .base import (
     WebhookEvent,
     WebhookVerificationError,
 )
-from .factory import get_processor
+from .factory import get_processor, online_payments_enabled
 
 __all__ = [
     "ACCEPTED_STATUSES",
@@ -52,4 +52,5 @@ __all__ = [
     "WebhookEvent",
     "WebhookVerificationError",
     "get_processor",
+    "online_payments_enabled",
 ]

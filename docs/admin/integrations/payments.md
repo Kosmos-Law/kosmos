@@ -21,6 +21,15 @@ A production install made by the installer starts with `none`: online
 payment is off. The emailed link still works, because it is also how a
 client downloads the invoice, but the page shows the amount due and the
 documents with a note to contact the firm, and nothing can be charged.
+With `none`, Kosmos also stops offering payment anywhere else:
+
+- Invoice emails and reminders carry a **View invoice** button and a
+  "View online" link instead of **Pay now** and "Pay online".
+- Payment requests and trust deposit requests cannot be created, resent
+  or reminded. Their menu items are hidden, and the Invoicing **Requests**
+  tab shows only while older requests exist.
+
+Every other value, `fake` included, counts as online payment being on.
 
 !!! warning
 

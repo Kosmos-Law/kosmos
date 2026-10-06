@@ -469,7 +469,9 @@ def balance_pay_page(request, token):
         except PaymentError as exc:
             return _processor_unavailable(request, exc)
         page_title, subtitle, amount_label = (
-            "Pay Account Balance",
+            # Online payment off: an old request link still shows the balance
+            # and documents, so the tab title promises no payment.
+            "Account Balance" if config.processor == "none" else "Pay Account Balance",
             "Account balance",
             "Amount Due",
         )

@@ -273,8 +273,10 @@ emails carry a link to that page.
 
 - `none` switches online payment off. The page shows the amount due and
   the invoice or statement to download, and asks the client to contact the
-  firm. Nothing can be charged or recorded. The installer writes this
-  value for a production install.
+  firm. Nothing can be charged or recorded. Invoice emails link to the page
+  as "View invoice" instead of "Pay now", and payment and trust deposit
+  requests cannot be sent. The installer writes this value for a
+  production install.
 - `fake` is for development. The page shows a simulated form, and
   submitting it records the invoice as paid although no money moves. It is
   the built-in default when the variable is missing, and the value in

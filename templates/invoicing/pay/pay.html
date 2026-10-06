@@ -1,7 +1,9 @@
 {% extends "base-minimal.html" %}
 {% load humanize invoicing_extras cache_buster %}
 {% block title %}
-  {% if invoice %}
+  {% if invoice and config.processor == 'none' %}
+    Invoice {{ invoice.id }}
+  {% elif invoice %}
     Pay Invoice {{ invoice.id }}
   {% else %}
     {{ page_title }}
