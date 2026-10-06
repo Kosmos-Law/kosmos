@@ -39,8 +39,8 @@ database and run when the worker comes back. Until then:
 | Intakes from forwarded email | The message is stored, but no intake is created from it. |
 | Gmail | Attachment text is not extracted, and linking a label to a matter does not pull its messages in. |
 | Google Drive | Saving a folder mapping does not pull its files in. |
-| Research tab | A run stays in progress, then is marked as an error after 30 minutes so it can be run again. |
-| Every scheduled job | No daily digest email, no Google Calendar, Drive or Gmail sync, no nightly AI summaries or daily plans, no chat purge. |
+| Saved case law | A case saved to a matter gets no summary. |
+| Every scheduled job | No daily digest email, no Google Calendar, Drive or Gmail sync, no chat purge. |
 
 ### What does not use the worker
 
@@ -101,7 +101,7 @@ upgrades.
 
 | Setting | Value | What it means for you |
 |---|---|---|
-| `workers` | `2` | Two tasks run at the same time. A long OCR job occupies one of them. The nightly AI jobs queue one task per open matter and work through them two at a time. |
+| `workers` | `2` | Two tasks run at the same time. A long OCR job occupies one of them. |
 | `timeout` | `600` | A task that runs longer than 10 minutes is stopped. |
 | `retry` | `900` | A task that failed or was stopped is handed out again 15 minutes after it was first picked up. |
 | `max_attempts` | `10` | After ten attempts a failing task is given up on, so a task that can never succeed does not retry forever. |
@@ -135,30 +135,17 @@ Things an operator should know:
 - **Every run resets every job.** If you edit a job's timing in the admin
   site, the next `setup_schedules` (including the one the installer runs)
   puts it back.
-- **`--auto-summary-time "MIN HOUR"`** moves the two nightly AI summary
-  jobs. The value is the cron minute and hour, so `"0 23"` means 23:00.
-  The default is `"30 1"`. Because every run resets every job, pass the
-  option on every run, or the time returns to the default. The daily plan
-  job is fixed at 02:45 and is meant to run after the summaries, so a
-  summary time later than that means plans are built from the previous
-  night's summaries.
 - **Times are in the firm's time zone**, the `TIME_ZONE` variable in
   `config/.env` (default `America/New_York`). After changing it, restart
   both services and run `setup_schedules` so every job's next run is
   recalculated.
 - **A new or changed job waits for its next slot.** It does not fire the
   moment the worker starts.
-- **The AI jobs only run when `ENV=prod`.** The nightly summary, the
-  weekly rebuild and the daily plan check the `ENV` setting and silently
-  do nothing when it is anything else. The value must be exactly `prod`.
-  This keeps a development or test copy of a firm's database from
-  repeating the production server's AI spending. To run them on demand
-  in any environment, use `run_auto_summaries` and `run_daily_plans`.
-- **The other jobs are not gated by `ENV`.** The Google sync jobs do
-  nothing until an account is connected, but the daily digest sends email
-  and the weekly chat purge deletes AI chat history for matters closed
-  longer than `CHAT_RETENTION_DAYS`. Keep that in mind before starting a worker against
-  a copy of a production database.
+- **No job is gated by `ENV`.** The Google sync jobs do nothing until an
+  account is connected, but the daily digest sends email and the weekly
+  chat purge deletes AI chat history for matters closed longer than
+  `CHAT_RETENTION_DAYS`. Keep that in mind before starting a worker
+  against a copy of a production database.
 
 ## Management commands an operator uses
 
@@ -201,7 +188,6 @@ order.
 | `build_semantic_index` | The semantic search index is behind, for example after worker downtime or when `SEMANTIC_AUTO_INDEX` was first switched on. Runs in the foreground, not through the worker, and skips anything unchanged. |
 | `backfill_note_summaries` | Library notes are missing their AI summaries. `--sync` runs in the foreground instead of queueing. |
 | `sync_calendar`, `sync_drive_notes`, `sync_gmail` | Run a Google sync now instead of waiting for the schedule, and see its output. The Drive and Gmail commands take `--full` and `--dry-run`. |
-| `run_auto_summaries`, `run_daily_plans` | Queue the nightly AI jobs now, in any environment. `run_auto_summaries` takes `--matter ID` and `--full`. The worker must be running. |
 | `restore_drive_documents` | Documents mirrored from Google Drive have a database record but no stored file. Downloads them again. Reports only, unless you pass `--apply`. |
 | `cleanup_orphan_documents` | Document records whose stored file is missing and cannot be recovered. Reports only, unless you pass `--apply`. |
 | `dedupe_documents` | The same file was added to a matter more than once. Reports only, unless you pass `--apply`. |
@@ -225,8 +211,8 @@ when you upgrade an install that predates the change.
 
 ### Older schedule commands
 
-`setup_digest_schedule`, `setup_gmail_sync_schedule`,
-`setup_auto_summary_schedule` and `setup_chat_purge_schedule` are older,
+`setup_digest_schedule`, `setup_gmail_sync_schedule` and
+`setup_chat_purge_schedule` are older,
 single-purpose versions of `setup_schedules`. Each calls the same code,
 limited to its own jobs. `setup_schedules` installs everything they do,
 plus the Calendar and Drive jobs that have no command of their own, so

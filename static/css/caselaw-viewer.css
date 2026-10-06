@@ -306,5 +306,13 @@ body:has(#case-content-container) {
 }
 
 .caselaw-fetch-error {
+  align-items: center;
+  background: var(--error-background);
+  border: 1px solid var(--orange-200);
+  border-radius: var(--radius-sm);
+  color: var(--error);
+  display: flex;
+  gap: 0.5rem;
   margin: 1rem 0;
+  padding: 1rem;
 }

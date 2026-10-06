@@ -185,7 +185,7 @@ Use this to return a working server to an earlier backup.
     | `migrate` | Brings the schema up to the code in the checkout, if the checkout is newer than the backup. It does nothing otherwise. |
     | `createcachetable` | Makes sure the `ai_status_cache` table exists. AI chat needs it and no migration creates it. |
     | `installwatson`, `buildwatson` | Make sure the full-text search column exists, and rebuild the search index. |
-    | `setup_schedules` | Brings the scheduled jobs up to date and moves each one to its next slot. Without this, every job that looks overdue in the restored data runs as soon as the worker starts. Pass `--auto-summary-time` if you use it. |
+    | `setup_schedules` | Brings the scheduled jobs up to date and moves each one to its next slot. Without this, every job that looks overdue in the restored data runs as soon as the worker starts. |
 
     The checkout must not be older than the backup. Old code cannot run
     against a newer schema.
@@ -261,8 +261,8 @@ A rehearsal copy is a complete, live copy of the firm's system. Before
 starting it, edit its `config/.env` so that it cannot act on the outside
 world:
 
-- set `ENV` to something other than `prod`, which switches off the
-  nightly AI jobs;
+- set `ENV` to `dev`, so that every page is marked as a development
+  instance;
 - set `EMAIL_BACKEND=console`, so that nothing is emailed to users or
   clients (login codes are then printed to `logs/error.log`, as on a
   fresh install);

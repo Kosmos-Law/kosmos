@@ -3,11 +3,9 @@
 The AI machinery under `apps/case/ai/` turns a matter's record into a
 system prompt, runs a model call on a background thread, reports progress
 to a polling view, and applies the writes the model was directed to make.
-Four surfaces share it: the case chat (the matter's **AI** tab), the
-intake chat (`apps/intakes/chat.py`), the Dash agenda chat
-(`apps/dash/agenda.py`) and the nightly auto-summary threads. Agentic-mode
-internals are on [Agentic chat](agent-chat.md); the Research tab's
-pipeline is on [Research tab](research-tab.md).
+Two surfaces share it: the case chat (the matter's **AI** tab) and the
+intake chat (`apps/intakes/chat.py`). Agentic-mode internals are on
+[Agentic chat](agent-chat.md).
 
 ## Where the code is
 
@@ -23,19 +21,16 @@ pipeline is on [Research tab](research-tab.md).
 | `apps/case/ai/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
 | `apps/case/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
 | `apps/case/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links or note chips; citation extraction and CourtListener verification; the Flash vetting job |
-| `apps/case/ai/auto_summary.py`, `purge.py` | The nightly threads; the closed-matter chat purge |
+| `apps/case/ai/purge.py` | The closed-matter chat purge |
 | `apps/case/ai/semantic.py`, `embeddings.py`, `pricing.py` | The pgvector index behind the agent's `search_materials`; estimated cost for the status bar |
 | `templates/case/ai/` | The chat window, `status.html` (the poller), `prompt-editor-modal.html`, message partials |
-| `apps/dash/agenda.py`, `apps/intakes/chat.py` | The agenda and intake chats, built on the same models and status protocol |
+| `apps/intakes/chat.py` | The intake chat, built on the same models and status protocol |
 
 ## Data model
 
-A `Conversation` belongs to exactly one of a `matter`, an `intake` or an
-`agenda_user` (all three `CASCADE`); the code, not the database, keeps
-that exclusive. `user` is who started it (`SET_NULL`); the nightly
-threads leave it null, which is how
-`auto_summary._get_or_create_conversation()` tells a system thread from a
-human one with the same title. `llm` and `kind` (`classic`, `agent`, or
+A `Conversation` belongs to exactly one of a `matter` or an `intake`
+(both `CASCADE`); the code, not the database, keeps that exclusive.
+`user` is who started it (`SET_NULL`). `llm` and `kind` (`classic`, `agent`, or
 the retired `research`) are fixed when the conversation is created.
 `ai_context` (`auto`, `always`, `never`) says whether this conversation is
 offered to other conversations on the matter as a reference, and `summary`
@@ -59,9 +54,9 @@ qcluster and `manage.py build_semantic_index` backfills.
    message (title, `llm`, `kind` from the form), stores the user
    `Message`, seeds `ai_status_<conversation id>` with `starting`, and
    starts a daemon `threading.Thread` on `tasks.process_ai_request()`.
-   The response is `messages.html` with the poller in it. The agenda and
-   intake chats have their own send views and workers
-   (`_process_agenda_chat()`, `_process_intake_chat()`) on the same protocol.
+   The response is `messages.html` with the poller in it. The intake chat
+   has its own send view and worker (`_process_intake_chat()`) on the
+   same protocol.
 2. **Context.** For a classic matter chat the thread calls
    `context.assemble_matter_context_with_selection()` (below), appends a
    linked draft's section when the conversation has one, then
@@ -117,8 +112,7 @@ and invoice status. Since 2026-10-02 every requesting user gets that
 detail (the Activity screens show it to anyone who can see the matter).
 Invoices are different: `build_manifest(include_invoices=...)` offers them
 to the selector only when `access.has_financial_access(user)` is true. A
-run with no user (the nightly auto-summary, which every member of the
-matter reads) sees neither money on time entries nor any invoice.
+run with no user sees neither money on time entries nor any invoice.
 
 Library notes (standalone notes in folders flagged as AI library,
 `apps.notes.models.get_library_notes()`) are offered on every matter when
@@ -172,8 +166,7 @@ short-circuit or the fallback: they enter only when the selector names them.
 `context.load_legal_prompt()` (an edit takes effect without a restart)
 and its `[JURISDICTION]` placeholders are replaced with the matter's
 jurisdiction, else the firm's, else "United States common law". The same
-text heads the agent's orientation and the auto-summary context. The
-operator page
+text heads the agent's orientation. The operator page
 [AI providers and research](../../../admin/integrations/ai.md) describes
 what to edit in it.
 
@@ -192,7 +185,7 @@ object held ten minutes for prompts over 130k characters) and streams so
 a cancel stops the bill. Fable keys carry Anthropic's server-side refusal
 fallback to Opus 5 (`anthropic_client.FALLBACK_MODELS`). Gemini Flash is
 hard-wired for the selector, conversation summaries and citation vetting,
-Gemini Pro for the intake, agenda and auto-summary threads.
+Gemini Pro for the intake chat.
 
 ### Status and the poller
 
@@ -207,7 +200,7 @@ most first polls find nothing and fabricate "server restarted" replies.
 Liveness is TTL-based. In-flight writes carry `RUNNING_TTL` (180 s) and a
 `RunHeartbeat` thread re-touches the entry every `HEARTBEAT_SECONDS`
 (30). Terminal payloads carry `FINAL_TTL` (600 s) so a poller that arrives
-late can still collect them. `views.ai_status()` is shared by the three
+late can still collect them. `views.ai_status()` is shared by the two
 chats: a missing key while the latest message is still the user's means
 the process died, and the view writes the "interrupted" assistant message
 itself; `complete` and `error` are stored as messages; `cancelled` is left
@@ -225,10 +218,8 @@ poller ran on forever and wrote an "interrupted" message every second
 
 The model writes to the record only through fenced blocks in its reply:
 `create-facts` and `create-witnesses` (lists), `create-note` and
-`edit-note` (one object each), `save-caselaw` (agent conversations only),
-and the agenda chat's `create-tasks` (`apps/dash/agenda.py`, through
-`apps.tasks.services.create_task_from_ai_entry()`). The intake chat has
-its own `update-intake` block. A protocol is added to the system prompt
+`edit-note` (one object each) and `save-caselaw` (agent conversations
+only). The intake chat has its own `update-intake` block. A protocol is added to the system prompt
 only when the last few user messages (the current one and the three
 before it) match its trigger pattern (`FACTS_TRIGGER_RE` and the like),
 so an ordinary chat carries no standing write instructions to misfire
@@ -267,39 +258,21 @@ stops, the key expires and the next poll reports the interruption. So do
 the conversation summary (`tasks.generate_conversation_summary()`) and
 the vetting job, started from the status view.
 
-The auto threads do run on qcluster. `refresh_auto_summaries()` queues
-`refresh_matter_auto_summary()` per open matter, which rewrites the
-"Auto Summary" conversation with Gemini Pro and then queues
-`refresh_matter_auto_agenda()` so the agenda sees the fresh summary. Each
-thread is one prompt and one reply, `ai_context="always"`; attorney
-discussion in the thread during the day is folded into the next refresh as
-guidance, then the thread resets. A later run is incremental
-(`build_incremental_context()`: the previous reply plus records changed
-since it, with a ten-minute margin) unless the delta exceeds 300k
-characters or the prompt text has changed, in which case it rebuilds
-through the full selection pipeline with no user and no library. A failed
-call keeps the previous version. The schedule targets run only when `ENV`
-is `prod`, because a development database restored from production
-inherits the schedule rows; `run_auto_summaries` bypasses that guard. The
-schedules are installed by `setup_schedules`; see the
-[schedules reference](../../../reference/schedules.md).
-
 `purge.purge_closed_chats()` deletes every matter conversation, its
 messages and their history rows once the matter's current Closed streak
 (read from the matter's history) is older than `CHAT_RETENTION_DAYS`
 (180; 0 keeps chats), from the weekly `chat-purge-weekly` schedule or the
-`purge_closed_chats` command. Intake and agenda chats are not in scope:
-they are deleted when ended or discarded.
+`purge_closed_chats` command. Intake chats are not in scope: they are
+deleted when ended or discarded.
 
 ## Access
 
 Routes under `/case/<matter id>/...` are checked for matter membership by
 `PermissionMiddleware.process_view()` in `apps/accounts/middleware.py`.
 That check never sees a conversation id in the query string or the body,
-and the status, cancel, intake and agenda routes name no matter, so
-`access.py` fills the gaps: `conversation_for_user()` (a matter chat needs
-the matter, an intake chat the Intakes permission, an agenda chat is its
-owner's) guards the poll and cancel views, and
+and the status, cancel and intake routes name no matter, so `access.py`
+fills the gaps: `conversation_for_user()` (a matter chat needs the
+matter, an intake chat the Intakes permission) guards the poll and cancel views, and
 `matter_conversation_for_user()` ties a posted conversation id to the
 matter in the URL with a 404, so a wrong id confirms nothing.
 
@@ -324,7 +297,7 @@ protocol. The matrix is in the
   `GEMINI_MODELS`, `MODEL_CONTEXT_LIMITS`, `MODEL_HARD_LIMITS` and the
   `pricing.py` rates. Anthropic publishes no "latest" alias, so each
   version is a new key.
-- **The agenda and intake chat tests monkeypatch `threading.Thread`** to
+- **The intake chat tests monkeypatch `threading.Thread`** to
   run the worker inline; `status.py` binds `Thread` at import so the
   heartbeat stays a real thread, or that patch turns its wait loop into a
   hang.
@@ -333,10 +306,10 @@ protocol. The matrix is in the
 
 - [AI chat](../../../guide/ai-chat.md) in the user guide shows the screens.
 - [AI providers and research](../../../admin/integrations/ai.md) covers
-  keys, the prompt file, scheduled jobs and retention for operators;
+  keys, the prompt file and retention for operators;
   [Background worker](../../../admin/worker.md) covers qcluster.
 - Neighbouring pages: [Agentic chat](agent-chat.md),
-  [Research tab](research-tab.md), [MCP server and JSON APIs](../mcp.md),
+  [MCP server and JSON APIs](../mcp.md),
   [Case building](../case-building.md),
   [Notes and drafts](../notes-and-drafts.md),
   [Email and intakes](../email-and-intakes.md).

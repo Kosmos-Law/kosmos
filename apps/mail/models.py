@@ -92,8 +92,7 @@ class Email(AuditMixin, models.Model):
     Text-only record: Gmail remains the archive of record and ``gmail_id``
     deep-links back to the original message. Attachments are recorded as
     metadata only (never fetched). Rows are immutable once synced — the sync
-    skips existing (account, matter, gmail_id) pairs so ``updated_at`` stays
-    honest for the auto-summary's ``since=`` incremental filtering.
+    skips existing (account, matter, gmail_id) pairs.
 
     One row per (account, matter): the same message labeled in two mailboxes
     yields two rows (provenance — unlabeling in one mailbox only drops that

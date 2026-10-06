@@ -291,8 +291,8 @@ of them:
 
 Every page that hosts the poller must load the idiomorph script.
 `base.html` does; the standalone AI windows (`conversation-standalone.html`,
-`dash/agenda-window.html`, `intakes/chat-window.html`) each load it
-themselves, with a comment saying why.
+`intakes/chat-window.html`) each load it themselves, with a comment
+saying why.
 
 ## Keyboard shortcuts
 

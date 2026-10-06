@@ -247,29 +247,6 @@ Good to know:
   for example "2 task(s) skipped. Complete their checklists first."
 - Changing or deleting a template leaves attached checklists as they are.
 
-## Create tasks from the Plan chat
-
-**Plan** on the Dash opens **Suggested Agenda**, an AI chat about your
-workload (see
-[Start the day on the Dash](getting-started.md#start-the-day-on-the-dash)).
-It suggests work, and adds tasks only when you tell it to.
-
-1. In **Ask about your agenda...**, say what to create, for example
-   "Create a task for me to call the adjuster on Rivera v. Northside
-   Logistics, due Friday", and press Enter.
-2. Read the reply. Each new task has a line that starts "Created task:"
-   and gives its description, matter, due date and user.
-
-The tasks are now in the tasks list, as **Pending**.
-
-Good to know:
-
-- There is no step to confirm. The tasks exist as soon as the reply
-  appears, so check each line and correct mistakes in the tasks list.
-- A task whose matter the chat cannot match to a **Pending** or **Open**
-  matter that you can open is filed under **Admin**. With no user named
-  the task is yours, and with no date named it has no due date.
-
 ## The daily digest
 
 The digest is one email a day. Switch it on under **Settings →

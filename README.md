@@ -23,16 +23,14 @@ LawPay/AffiniPay or Stripe with trust and operating accounts routed
 separately. Clients can be asked for trust deposits the same way.
 
 **Case building.** Documents with OCR text extraction, highlights and
-citations, a chronological fact timeline, witness tracking, case law pulled
-from CourtListener, and a Research tab that assembles full-opinion briefs
-with citation chasing.
+citations, a chronological fact timeline, witness tracking, and case law
+pulled from CourtListener and saved to the matter.
 
 **AI assistance.** Per-matter chat with a context system that selects the
 relevant documents, notes, case law and prior conversations for each question
 within the model's budget. An agentic mode can search the matter and
 CourtListener itself, and chat can write back into the record: facts,
-witnesses, notes and saved case law. Nightly summaries and a daily plan are
-generated automatically. Claude and Gemini are supported.
+witnesses, notes and saved case law. Claude and Gemini are supported.
 
 **Notes and drafting.** A rich-text notes editor with folders, matter-scoped
 and general libraries that feed the AI, and AI-proposed edits applied to
@@ -76,7 +74,6 @@ Then start the app in two terminals:
 | `--db-name`, `--db-user`, `--db-password` | database settings (default `kosmos` / `kosmos` / `kosmos`); values in an existing `config/.env` win |
 | `--no-superuser` | skip the superuser prompt |
 | `--seed-intake-forms` | also run `manage.py seed_intake_forms` |
-| `--auto-summary-time "30 1"` | passed to `setup_schedules` |
 | `--yes` | skip the confirmation prompt |
 | `--dry-run` | print every command instead of running it; rendered files are left in a temp dir for inspection |
 | `--force` | production only: overwrite system files that differ from the templates and remove nginx's default site |

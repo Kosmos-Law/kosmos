@@ -138,10 +138,9 @@ python manage.py qcluster
 
 Recurring jobs are installed explicitly and idempotently by
 `python manage.py setup_schedules`. This one command configures the digest,
-Google Calendar, Google Drive, Gmail, AI-summary, daily-plan, and
-chat-retention schedules. It is safe to run again after a deployment;
-migrations and schedule setup are never run automatically when the
-application starts.
+Google Calendar, Google Drive, Gmail, and chat-retention schedules. It is
+safe to run again after a deployment; migrations and schedule setup are
+never run automatically when the application starts.
 
 ## Production services (systemd and nginx)
 

@@ -54,14 +54,14 @@ it.
 | 3 | Prefix (`PERMISSION_PATHS`) | `/settings/intake-emails/` | Admin, or `perm_intakes` |
 | 3 | Prefix (`PERMISSION_PATHS`) | `/reports/` | Admin, or `perm_reports` |
 | 4 | Pattern (`PERMISSION_PATTERNS`) | `/matters/<id>/rates` and `/matters/<id>/ledger`, alone or followed by `/…` | Admin, or `perm_financial` |
-| 4 | Pattern (`PERMISSION_PATTERNS`) | `/case/research/…`, `/case/<id>/research/…`, the tab-switch address `/case/<id>/tab/research/`, the saved case law under `/case/caselaws/…` and `/case/<id>/caselaws/…`, and the case viewer `/case/<id>/viewer/cluster/…` | Admin, or `perm_research` |
+| 4 | Pattern (`PERMISSION_PATTERNS`) | The saved case law under `/case/caselaws/…` and `/case/<id>/caselaws/…`, the tab-switch address `/case/<id>/tab/caselaws/`, and the case viewer `/case/<id>/viewer/cluster/…` | Admin, or `perm_research` |
 | 5 | Matter membership (`MATTER_SCOPED_PREFIXES`, `process_view`) | Everything under `/case/` | Admin, `perm_all_matters`, or a member of every matter the URL's ids belong to. The lookup is set out under Matter membership below. |
 
 The two patterns as written in the source:
 
 ```
 ^/matters/\d+/(rates|ledger)(/|$)
-^/case/(\d+/)?(tab/)?(research|caselaws)/|^/case/\d+/viewer/cluster/
+^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/
 ```
 
 What sits under each path:
@@ -81,8 +81,8 @@ What sits under each path:
 | `/reports/` | All reports. |
 | `/matters/<id>/rates…` | A matter's Rates page and its list, add, edit and delete routes. |
 | `/matters/<id>/ledger…` | A matter's Ledger tab, list and PDF. |
-| `/case/research/…`, `/case/<id>/research/…`, `/case/caselaws/…`, `/case/<id>/caselaws/…`, `/case/<id>/viewer/cluster/…` | Research searches, history, review, abstracts, briefs and citation checks; the saved case law lists and the case viewer. |
-| `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, notes, emails, case search, AI chats, drafts and research. |
+| `/case/caselaws/…`, `/case/<id>/caselaws/…`, `/case/<id>/viewer/cluster/…` | The saved case law (the AI tab's Case Law view), adding a case by citation, and the case viewer. |
+| `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, notes, emails, case search, AI chats and drafts. |
 
 ## Gates checked in views
 
@@ -111,7 +111,7 @@ matter's `members`.
 | `has_matter_access` | The rate, trust-available and flat-fee-amount lookups behind the entry forms | `apps/activity/time/views.py`, `apps/activity/flat_fees/views.py` | 403 |
 | `matters_for_entry_form` | Matter choices in the entry forms and in the bulk "move to matter" menus | `apps/activity/access.py` | Matter not listed |
 | `assigned_matters` filter | "Upcoming Events" on the dashboard (events on no matter are shown to everyone) | `apps/dash/views.py` | Events not listed |
-| `filter_matters_for_user` | Dashboard matter lists, AI agenda matter list | `apps/dash/views.py`; `apps/dash/agenda.py` | Matter not listed |
+| `filter_matters_for_user` | Dashboard matter lists | `apps/dash/views.py` | Matter not listed |
 | `filter_matters_for_user`, `has_matter_access` | `/case/` landing redirect | `apps/case/views.py` | Redirects to an accessible matter |
 | `perm_all_matters` only (role not consulted) | Daily digest email content | `apps/tasks/digest.py` | Items for other matters omitted |
 | Token APIs | See [Token-authenticated APIs](#token-authenticated-apis) | | 404 |
@@ -133,10 +133,6 @@ names a record, and the record leads to a matter (`MATTER_LOOKUPS` and
 | `conv_id` | AI conversation | The conversation |
 | `message_id` | AI message | Its conversation |
 | `email_id` | Synced email | The email |
-| `query_id` | Research query | The query |
-| `result_id` | Research result | Its query |
-| `verification_id` | Citation check | Its result's query |
-| `brief_id` | Case brief | The brief |
 | `object_type` with `object_id` | Label and witness pickers: a `document`, `highlight`, `fact`, `note`, `caselaw` or `witness` | As for that kind of record |
 
 | Case | Result |
@@ -207,9 +203,8 @@ Not checked against `perm_financial`:
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: `/case/research/…`, `/case/<matter_id>/research/…`, `/case/<matter_id>/tab/research/` | `apps/accounts/middleware.py` | 403 |
-
-No view checks this flag; the middleware is the gate.
+| Middleware: `/case/caselaws/…`, `/case/<matter_id>/caselaws/…`, `/case/<matter_id>/tab/caselaws/`, `/case/<matter_id>/viewer/cluster/…` | `apps/accounts/middleware.py` | 403 |
+| The Agentic chat's CourtListener tools and the `save-caselaw` protocol (`has_research_access()`) | `apps/case/ai/access.py` | Tools not offered; the agent works from the cases already saved |
 
 ### Admin role
 
@@ -222,7 +217,6 @@ No view checks this flag; the middleware is the gate.
 | Add, edit, delete a time-entry abbreviation code | `apps/activity/time/views.py` | 403 with a message |
 | Connect or disconnect Google Calendar, Contacts or Drive (Gmail is open to every user) | `apps/settings/integrations/views.py` | 403 |
 | "Collections" section on the dashboard | `apps/dash/views.py` | Section omitted |
-| Everyone's tasks, events and time entries in the AI agenda context | `apps/dash/agenda.py` | Own and unassigned items only |
 
 User-management routes under `/settings/users/`
 (`apps/settings/users/views.py`):
@@ -247,7 +241,7 @@ whether the server also refuses the request.
 | Sidebar: Invoicing | Admin or `perm_financial` | `templates/sidebar.html` | Yes (middleware) |
 | Sidebar: Intakes | Admin or `perm_intakes` | `templates/sidebar.html` | Yes (middleware) |
 | Sidebar: Reports | Admin or `perm_reports` | `templates/sidebar.html` | Yes (middleware) |
-| Case navigation: Research tab | Admin or `perm_research` | `templates/case/includes/case-nav.html` | Yes (middleware) |
+| AI tab: Conversations / Case Law switch | Admin or `perm_research` | `templates/case/ai/view-pills.html` | Yes (middleware) |
 | Matter navigation: Rates tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware, and the tab switch in the view) |
 | Matter navigation: Ledger tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware and view) |
 | Matter form: Delete button | Admin | `templates/matters/form.html` | Yes (view) |

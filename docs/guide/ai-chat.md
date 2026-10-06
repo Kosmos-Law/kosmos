@@ -3,15 +3,13 @@
 This page is for attorneys and paralegals who want to ask an AI model
 about a matter. It covers starting a conversation, what the AI is and is
 not given, what it can add to the matter for you, and how to check what
-it tells you. It also covers the two smaller chats: **Plan** on the Dash
-and the chat on an intake.
+it tells you. It also covers the smaller chat on an intake.
 
 ## Where AI chat appears
 
 | Place | What it is for |
 |---|---|
 | A matter's **AI** tab, on the **Case** side | Questions about one matter, answered from its case file. Most of this page is about this chat. |
-| **Plan** on the Dash | **Suggested Agenda**, a chat about your workload. See [The Plan chat on the Dash](#the-plan-chat-on-the-dash). |
 | **Chat** on an intake | **Intake Chat**, a chat about a prospective client. See [The intake chat](#the-intake-chat). |
 
 Kosmos has no AI of its own. The person who runs your server connects it
@@ -131,8 +129,8 @@ Chosen for each question:
   [Documents](documents.md));
 - the matter's notes and its synced email threads, with the text of
   their attachments (see [Email](email.md));
-- saved cases (**Full Cases** on the **Research** tab, see
-  [Research](research.md)) and other conversations set to **Auto**;
+- saved cases (the **Case Law** view of the **AI** tab, see
+  [Case law](research.md)) and other conversations set to **Auto**;
 - invoices, only when the question is about billing and you have the
   Financial permission;
 - library notes, only when one bears on the question.
@@ -200,10 +198,10 @@ word out may be answered in prose only.
 | "Add her as a witness." | "Added witness:" and the name, or "Already on the witness list:" | The **Witnesses** tab |
 | "Save that analysis to a note." | "Created note:" and the title | The matter's notes, with you as author |
 | "Add this to the note on service of process." | "Appended to note:" or "Rewrote note:" and the title ("library note" for one in the Library) | The same note, on the matter or in the Library |
-| "Save these cases." (Agentic only, with the Research permission) | "Saved to case law:" and each case | **Full Cases** on the **Research** tab, with what the case was cited for |
+| "Save these cases." (Agentic only, with the Research permission) | "Saved to case law:" and each case | The **Case Law** view of the **AI** tab, with what the case was cited for |
 
-A matter chat does not create tasks: use the Plan chat (see
-[Create tasks from the Plan chat](tasks.md#create-tasks-from-the-plan-chat)).
+A matter chat does not create tasks. Add them yourself (see
+[Tasks](tasks.md)).
 To have the AI edit a document you are drafting, link the draft to the
 conversation with the pen button beside the message box (see
 [Drafts](drafts.md)).
@@ -272,36 +270,6 @@ After each reply, Kosmos writes a summary of about 100 words of the
 conversation so far. It appears as **Conversation Summary** at the top of
 the chat window the next time you open it, and it is what describes the
 conversation when a later chat chooses what to load.
-
-On a server set up for it, Kosmos also keeps two conversations on every
-**Open** matter, rewritten each night: **Auto Summary** (the facts, the
-issues in dispute, each side's position and the key evidence) and **Auto
-Agenda** (next steps, the path to resolution and strategic goals). The
-nightly run is given no rates, fees or invoices, whoever reads the
-result. Both are set to **Always**, so every Classic chat on the matter
-starts with them. You can reply in either one to correct it: the next
-night's version takes what you said as guidance, and your messages are
-then removed from the conversation.
-
-## The Plan chat on the Dash
-
-**Plan** on the Dash opens **Suggested Agenda** in a new browser tab (see
-[Start the day on the Dash](getting-started.md#start-the-day-on-the-dash)).
-You have one agenda chat, and only you see it. If none is waiting, Kosmos
-asks for the day's agenda as the window opens. Ask for a week or a month,
-or tell it to create tasks (see
-[Create tasks from the Plan chat](tasks.md#create-tasks-from-the-plan-chat)).
-
-It is given the **Pending** and **Open** matters you can see, your active
-tasks and unassigned ones, pending events up to 30 days ahead that are
-yours or the firm's, and your time entries for the last 14 days (hours
-and descriptions, no amounts). Tasks, events and time entries on a matter
-you cannot open are left out. If you have the Intakes permission, it is
-also given the firm's open and pending intakes. An administrator's agenda
-covers the whole team. It is not given documents,
-so it will not analyse a case: it offers a link to the matter's chat
-instead. The trash button discards the chat, and the next one starts
-fresh.
 
 ## The intake chat
 

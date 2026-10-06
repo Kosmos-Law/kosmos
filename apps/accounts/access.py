@@ -35,7 +35,6 @@ def filter_matters_for_user(queryset, user):
 # new kind of id needs a line here to be covered.
 _CASE = "apps.case.models"
 _AI = "apps.case.ai.models"
-_RESEARCH = "apps.case.research.models"
 MATTER_LOOKUPS = {
     "document_id": (f"{_CASE}.Document", ("matter_id",)),
     "highlight_id": (
@@ -50,13 +49,6 @@ MATTER_LOOKUPS = {
     "conv_id": (f"{_AI}.Conversation", ("matter_id",)),
     "message_id": (f"{_AI}.Message", ("conversation__matter_id",)),
     "email_id": ("apps.mail.models.Email", ("matter_id",)),
-    "query_id": (f"{_RESEARCH}.ResearchQuery", ("matter_id",)),
-    "result_id": (f"{_RESEARCH}.ResearchResult", ("query__matter_id",)),
-    "verification_id": (
-        f"{_RESEARCH}.CitationVerification",
-        ("result__query__matter_id",),
-    ),
-    "brief_id": (f"{_RESEARCH}.CaseBrief", ("matter_id",)),
 }
 
 # The label and witness pickers take the object as a (type, id) pair.

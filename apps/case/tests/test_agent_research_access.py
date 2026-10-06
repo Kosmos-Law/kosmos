@@ -51,7 +51,7 @@ def courtlistener(monkeypatch):
         calls.append(("cluster", cluster_id))
         return None
 
-    monkeypatch.setattr("apps.case.research.courtlistener.search_opinions", fake_search)
+    monkeypatch.setattr("apps.case.courtlistener.search_opinions", fake_search)
     monkeypatch.setattr("apps.case.courtlistener.lookup_citation", fake_lookup)
     monkeypatch.setattr("apps.case.courtlistener.fetch_cluster", fake_cluster)
     return calls

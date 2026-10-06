@@ -13,7 +13,7 @@ The case AI chat has two modes, chosen when a conversation is created
 
 Both modes share the window, the 1s status poll, cancellation, message
 creation, and the fenced-block writes (`tasks.finalize_response()`).
-Intake and agenda chats stay classic. The agentic mode (2026-08-23) is the
+The intake chat stays classic. The agentic mode (2026-08-23) is the
 successor of the retired research chat mode; see
 [Research chat (retired)](../../../decisions/research-chat-retired.md).
 
@@ -137,7 +137,7 @@ offered only to a user with the Research permission
 | `read_conversation` | an earlier conversation's transcript |
 | `read_invoice` | `format_invoice` (Financial permission) |
 | `read_matter_section` | `apps.case.api.SECTIONS[section](matter)`, capped 150k; the money sections need the Financial permission |
-| `search_caselaw` | CourtListener opinion search (`research.courtlistener.search_opinions` + `sanitize_query`), court filter from `get_court_ids` (state defaults from the matter's jurisdiction), optional `filed_after`; up to 3 query variants merged on cluster_id, `published` flag = has reporter citations |
+| `search_caselaw` | CourtListener opinion search (`apps/case/courtlistener.py`: `search_opinions` + `sanitize_query`), court filter from `jurisdictions.get_court_ids` (state defaults from the matter's jurisdiction), optional `filed_after`; up to 3 query variants merged on cluster_id, `published` flag = has reporter citations |
 | `lookup_citation` | `courtlistener.lookup_citation`: exact citation to case/cluster; not-found is a normal payload, not an error |
 | `read_opinion` | full cluster text (majority + concurrences/dissents, capped 250k) via `_opinion_for_cluster`, cached 24h at `agent_opinion_cluster_{id}`; sliced like every read |
 | `search_in_opinions` | literal case-insensitive grep across up to 10 cached/fetched opinions, up to 8 excerpt windows each with char offsets; per-id error isolation |
@@ -156,7 +156,7 @@ pending then finalized, so the live log shows one row per tool.
 
 The `save-caselaw` fenced write (`caselaw_blocks.py`, agent conversations
 only) is the authority ledger: when directed, the agent persists verified
-cases to the matter's Saved case law with the cited proposition in
+cases to the matter's saved case law (the AI tab's Case Law view) with the cited proposition in
 `notes`, deduped on the `(matter, cluster_id)` constraint (an existing row
 gets the proposition appended), then the usual 200-word summary is queued
 on qcluster.
@@ -274,5 +274,5 @@ real tools), `test_agent_working_set.py`, `test_agent_research_access.py`,
 
 - [AI chat and context](context.md) for everything the modes share.
 - [AI chat](../../../guide/ai-chat.md) in the user guide shows the window.
-- [Research tab](research-tab.md) for the CourtListener client and
-  jurisdictions the research tools reuse.
+- [Case building](../case-building.md#saved-cases) for saved case law,
+  the CourtListener client and the jurisdictions the research tools use.

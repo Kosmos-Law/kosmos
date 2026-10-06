@@ -493,9 +493,7 @@ class TestResearchTools:
                 },
             ], 200
 
-        monkeypatch.setattr(
-            "apps.case.research.courtlistener.search_opinions", fake_search
-        )
+        monkeypatch.setattr("apps.case.courtlistener.search_opinions", fake_search)
         payload, outcome = run(
             executor,
             "search_caselaw",
@@ -517,7 +515,7 @@ class TestResearchTools:
 
     def test_search_caselaw_all_queries_failed(self, executor, monkeypatch):
         monkeypatch.setattr(
-            "apps.case.research.courtlistener.search_opinions",
+            "apps.case.courtlistener.search_opinions",
             lambda *a, **k: ([], 400),
         )
         payload, outcome = run(executor, "search_caselaw", query="bad query")

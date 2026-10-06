@@ -60,9 +60,6 @@ next day. The Dash shows up to three sections:
 - **Collections**: **Past Due** balances and matters with **Low Trust
   Available (Pending)**. Only administrators see this section.
 
-**Plan** opens **Suggested Agenda** in a new browser tab: an AI chat that
-drafts an agenda for your day.
-
 Good to know:
 
 - Kosmos checks again in each browser you use, and when you return to a
@@ -104,16 +101,16 @@ A matter has two sides. Click a pill to change sides.
 | Side | Tabs |
 |---|---|
 | **Detail** | **Overview**, **Contacts**, **Rates**, **Activity**, **Events**, **Tasks**, **Proceedings**, **Settlement**, **Ledger** |
-| **Case** | **Documents**, **Highlights**, **Timeline**, **Witnesses**, **Notes**, **Emails**, **Labels**, **Search**, **AI**, **Research** |
+| **Case** | **Documents**, **Highlights**, **Timeline**, **Witnesses**, **Notes**, **Emails**, **Labels**, **Search**, **AI** |
 
 **Detail** is the office side of the matter: who is involved, what work
 was recorded, what is scheduled, the court proceedings and the money.
 **Case** is the working file: the documents, the passages you marked in
-them, the fact timeline, witnesses, notes, email, and the AI and research
-tools. Kosmos reopens each side on the tab you last used there.
+them, the fact timeline, witnesses, notes, email, and the AI tools with
+the matter's saved case law. Kosmos reopens each side on the tab you last used there.
 
-**Rates** and **Ledger** need the Financial permission. **Research** needs
-the Research permission. Ask your administrator. The tabs are described in
+**Rates** and **Ledger** need the Financial permission. Saved case law (the
+**Case Law** view of the **AI** tab) needs the Research permission. Ask your administrator. The tabs are described in
 [Matters](matters.md).
 
 ### Move to another matter

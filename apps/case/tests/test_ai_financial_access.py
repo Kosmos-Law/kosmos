@@ -4,8 +4,7 @@ The rule follows the application's own screens. Time entries carry their
 rate, fee, comp flag and invoice status for every user who can see the
 matter, as the Activity screens do. Invoices, the rates section, the ledger
 and trust are behind the Financial permission, as the Invoicing, Rates and
-Ledger screens are. A run for no user (the nightly auto-summary, read by
-every member of the matter) carries no billing detail at all.
+Ledger screens are. A run for no user carries no billing detail at all.
 """
 
 import json
@@ -119,8 +118,8 @@ class TestClassicContext:
         assert_time_entry_billing(text, invoice)
 
     def test_no_user_means_no_money(self, billed_matter):
-        """The nightly auto-summary runs for no user, and every member of
-        the matter reads what it writes."""
+        """A run for no user has no one whose permissions could open the
+        money, so it carries none."""
         for text in (
             assemble_matter_context(billed_matter, user=None),
             assemble_matter_context_with_selection(

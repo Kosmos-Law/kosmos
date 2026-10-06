@@ -29,7 +29,6 @@ DB_HOST="localhost"
 DB_PORT="5432"
 NO_SUPERUSER=0
 SEED_INTAKE=0
-AUTO_SUMMARY_TIME=""
 YES=0
 FORCE=0
 DRY_RUN=0
@@ -112,7 +111,6 @@ Options:
                                              generated in prod)
   --no-superuser         do not create a superuser
   --seed-intake-forms    also run manage.py seed_intake_forms
-  --auto-summary-time T  passed to setup_schedules (cron "minute hour")
   --yes                  skip the confirmation prompt
   --force                overwrite system files that differ from the
                          templates, and remove nginx's default site
@@ -136,7 +134,6 @@ while [ $# -gt 0 ]; do
     --db-password) DB_PASSWORD=${2:-}; shift ;;
     --no-superuser) NO_SUPERUSER=1 ;;
     --seed-intake-forms) SEED_INTAKE=1 ;;
-    --auto-summary-time) AUTO_SUMMARY_TIME=${2:-}; shift ;;
     --yes|-y) YES=1 ;;
     --force) FORCE=1 ;;
     --dry-run) DRY_RUN=1 ;;
@@ -439,11 +436,7 @@ manage createcachetable
 manage installwatson
 info "buildwatson reindexes every record; this takes a while on a large database"
 manage buildwatson
-if [ -n "$AUTO_SUMMARY_TIME" ]; then
-  manage setup_schedules --auto-summary-time "$AUTO_SUMMARY_TIME"
-else
-  manage setup_schedules
-fi
+manage setup_schedules
 if [ "$PROD" -eq 1 ]; then
   # With DEBUG=False STATIC_ROOT is the repository's own static/ directory;
   # this only adds the admin assets. Never run it in development.

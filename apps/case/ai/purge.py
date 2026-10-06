@@ -3,11 +3,10 @@
 Chats are working notes, not part of the client file: documents live in
 Drive, correspondence in Gmail, notes in the file. Once a matter has been
 closed past the retention window the conversations (and their message
-history rows, which are the real bulk) are deleted. Nothing regenerates
-them: the nightly auto-summary only refreshes Open matters.
+history rows, which are the real bulk) are deleted.
 
-Only matter-scoped conversations are touched. Intake and agenda chats are
-ephemeral already (one live per owner, deleted on end), and financial or
+Only matter-scoped conversations are touched. Intake chats are ephemeral
+already (one live per intake, deleted on end), and financial or
 docket records are never in scope here.
 """
 

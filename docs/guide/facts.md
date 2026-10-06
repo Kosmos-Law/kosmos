@@ -52,7 +52,7 @@ it, and a plus button with **Apply Labels** and **Link Witnesses**.
 
 **Highlights** lists every highlight on the matter in one list, newest
 first, ten to a page. It includes highlights made in court opinions (see
-[Research](research.md)).
+[Case law](research.md)).
 
 | Column | What it shows |
 |---|---|

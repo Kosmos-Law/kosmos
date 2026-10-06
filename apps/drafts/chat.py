@@ -180,7 +180,7 @@ def apply_edit_blocks(response_text, link):
     """Apply any draft-edits blocks, replacing each with the outcome text.
 
     A malformed block is left in place as visible text and changes nothing
-    (mirrors the agenda/intake block contract). A valid block either goes to
+    (mirrors the intake and fact block contract). A valid block either goes to
     the connected companion (which applies it to the live document and
     reports back) or is refused with instructions when no companion is
     connected.

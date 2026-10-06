@@ -41,10 +41,9 @@ class Conversation(AuditMixin, models.Model):
         ("agent", "Agentic"),
     ]
 
-    # A conversation belongs to exactly one of: a matter (case chat), an
-    # intake (intake chat), or an agenda user (the dash agenda chat).
-    # Intake and agenda conversations are ephemeral: at most one live per
-    # owner, deleted on end/discard.
+    # A conversation belongs to exactly one of: a matter (case chat) or an
+    # intake (intake chat). Intake conversations are ephemeral: at most one
+    # live per intake, deleted on end/discard.
     matter = models.ForeignKey(
         Matter,
         on_delete=models.CASCADE,
@@ -56,13 +55,6 @@ class Conversation(AuditMixin, models.Model):
         "intakes.Intake",
         on_delete=models.CASCADE,
         related_name="ai_conversations",
-        null=True,
-        blank=True,
-    )
-    agenda_user = models.ForeignKey(
-        "accounts.CustomUser",
-        on_delete=models.CASCADE,
-        related_name="agenda_conversations",
         null=True,
         blank=True,
     )
@@ -112,8 +104,6 @@ class Conversation(AuditMixin, models.Model):
             owner = self.matter.name
         elif self.intake_id:
             owner = self.intake.name
-        elif self.agenda_user_id:
-            owner = f"Agenda - {self.agenda_user.username}"
         else:
             owner = "Unattached"
         return f"{owner} - {self.title or 'Untitled'}"

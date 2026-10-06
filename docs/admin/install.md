@@ -129,7 +129,6 @@ socket, and the worker is running. Continue with
 | `--db-password PASS` | Role password. Default `kosmos` in development; a random one is generated in production. |
 | `--no-superuser` | Do not create the first user. |
 | `--seed-intake-forms` | Also run `manage.py seed_intake_forms`. |
-| `--auto-summary-time "MIN HOUR"` | Passed to `setup_schedules`: the start time of the nightly AI summary jobs, as cron minute and hour. See [Background worker](worker.md). |
 | `--yes`, `-y` | Skip the confirmation prompt. Required when there is no terminal. |
 | `--force` | Production only. Overwrite installed system files that differ from the templates, including an nginx site that certbot has modified, and remove nginx's default site. |
 | `--dry-run` | Print every command instead of running it. Rendered files are kept in a temporary directory whose path is printed at the end. |
@@ -334,9 +333,7 @@ On a second run it:
 
 Run it with the same options as the first time. Without `--prod` the
 script takes the development path: it installs the development packages
-and skips `collectstatic` and the system files. Without
-`--auto-summary-time`, `setup_schedules` puts the nightly AI jobs back to
-their default time.
+and skips `collectstatic` and the system files.
 
 !!! warning "`--force` also replaces the certbot-managed site"
     `--force` overwrites every system file that differs from its

@@ -583,7 +583,7 @@ def _grep(text: str, query: str, width: int = GREP_DEFAULT_WIDTH) -> list[dict]:
 
 def _matter_state(matter) -> str:
     """The jurisdictions.STATES id matching the matter's jurisdiction text."""
-    from apps.case.research.jurisdictions import STATES
+    from apps.case.jurisdictions import STATES
 
     jurisdiction = (getattr(matter, "jurisdiction", "") or "").strip().lower()
     if not jurisdiction:
@@ -598,8 +598,7 @@ def _opinion_for_cluster(cluster_id: int) -> dict | None:
     """Cluster metadata plus the full concatenated opinion text, cached.
 
     One fetch_cluster call, then every sub-opinion (majority first,
-    concurrences and dissents after, same as the research pipeline's
-    _get_all_opinion_texts) up to OPINION_TEXT_CAP. Returns None when the
+    concurrences and dissents after) up to OPINION_TEXT_CAP. Returns None when the
     cluster does not resolve; text may still be empty (old scanned
     opinions). The working set reads this cache and never fetches.
     """
@@ -1498,9 +1497,8 @@ def make_agent_executor(
         }
 
     def _search_caselaw(tool_input):
-        from apps.case.research.courtlistener import search_opinions
-        from apps.case.research.jurisdictions import get_court_ids
-        from apps.case.research.tasks import sanitize_query
+        from apps.case.courtlistener import sanitize_query, search_opinions
+        from apps.case.jurisdictions import get_court_ids
 
         raw = tool_input.get("queries") or []
         if isinstance(raw, str):

@@ -67,7 +67,7 @@ nav = [
       { "Email" = "guide/email.md" },
       { "Notes" = "guide/notes.md" },
       { "Drafts" = "guide/drafts.md" },
-      { "Research" = "guide/research.md" },
+      { "Case law" = "guide/research.md" },
       { "AI chat" = "guide/ai-chat.md" },
     ] },
     { "Administer" = [
@@ -101,7 +101,6 @@ nav = [
       { "AI" = [
         { "The AI context system" = "dev/subsystems/ai/context.md" },
         { "Agentic chat" = "dev/subsystems/ai/agent-chat.md" },
-        { "Research tab" = "dev/subsystems/ai/research-tab.md" },
       ] },
       { "Notes and drafts" = "dev/subsystems/notes-and-drafts.md" },
       { "Email and intakes" = "dev/subsystems/email-and-intakes.md" },
@@ -176,6 +175,8 @@ nav = [
       { "2026-08-18: The user picks which cases a research run reads" = "decisions/2026-08-18-research-selection-gate.md" },
       { "2026-08-20: The token estimate is 2.5 characters per token" = "decisions/2026-08-20-token-estimate-at-two-and-a-half-chars.md" },
       { "2026-10-02: What the AI says about money follows what the screens show" = "decisions/2026-10-02-ai-money-follows-the-screens.md" },
+      { "2026-10-06: The Plan chat and the nightly auto threads are retired" = "decisions/2026-10-06-plan-chat-and-auto-threads-retired.md" },
+      { "2026-10-06: The Research tab is retired" = "decisions/2026-10-06-research-tab-retired.md" },
       { "Claude Desktop: packaging roadmap" = "decisions/claude-desktop-roadmap.md" },
       { "Research Chat (retired 2026-08-16)" = "decisions/research-chat-retired.md" },
     ] },

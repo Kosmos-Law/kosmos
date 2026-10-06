@@ -1,5 +1,5 @@
 """The CourtListener request throttle (shared by citation vetting and the
-research pipeline)."""
+agent chat's CourtListener tools)."""
 
 
 def test_throttle_retries_429_with_retry_after(monkeypatch):

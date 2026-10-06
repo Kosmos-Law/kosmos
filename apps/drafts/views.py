@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 def _get_conversation(conv_id):
     """A matter conversation. Membership of its matter is checked centrally
-    from the URL; an intake or agenda chat (no matter, so that check passes
-    it) has no drafts and is not found here."""
+    from the URL; an intake chat (no matter, so that check passes it) has
+    no drafts and is not found here."""
     return get_object_or_404(
         Conversation.objects.select_related("matter"),
         pk=conv_id,

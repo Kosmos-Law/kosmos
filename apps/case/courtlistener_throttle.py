@@ -2,9 +2,8 @@
 
 Every CourtListener request in the app (citation lookups, cluster/opinion
 fetches, searches, forward-citation queries) funnels through
-``throttled_request`` so concurrent callers — the vetting thread pool, the
-Research tab's pipeline, and the agent chat's CourtListener tools (which
-call the research module's fetchers) — share one polite request rate
+``throttled_request`` so concurrent callers — the vetting thread pool and
+the agent chat's CourtListener tools — share one polite request rate
 instead of stampeding the API. Since CourtListener's May
 2026 policy change, limits are per-account membership tiers (ours: Free
 Law Project Tier 3, 20/minute, 250/hour, 1,000/day), so the spacing is

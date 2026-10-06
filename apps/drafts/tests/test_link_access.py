@@ -14,6 +14,7 @@ from django.test import Client
 from apps.case.ai.models import Conversation
 from apps.drafts import services
 from apps.drafts.models import CompanionRound, CompanionToken, DraftLink
+from apps.intakes.models import Intake
 
 pytestmark = pytest.mark.django_db
 
@@ -65,8 +66,9 @@ class TestLinkedFileMustBeInTheMatterFolder:
         assert not DraftLink.objects.exists()
 
     def test_a_chat_with_no_matter_has_no_drafts(self, client, user, drive):
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
-        base = f"/case/ai/conversations/{agenda.id}/draft"
+        intake = Intake.objects.create(name="Prospect", status="Open")
+        chat = Conversation.objects.create(intake=intake, title="Intake", user=user)
+        base = f"/case/ai/conversations/{chat.id}/draft"
         assert client.post(f"{base}/link/", {"file": "in-folder"}).status_code == 404
         assert client.get(f"{base}/picker/").status_code == 404
         assert not DraftLink.objects.exists()

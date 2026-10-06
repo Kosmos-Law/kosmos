@@ -5,7 +5,7 @@ attach to a task, and events are dated appointments and deadlines that
 mirror to one shared Google Calendar. The work spans `apps/tasks/`,
 `apps/checklists/`, `apps/calendar/`, the matter-scoped tabs under
 `apps/matters/tasks/` and `apps/matters/events/`, and the Dash
-(`apps/dash/`), which lists the day's events and hosts the Plan chat.
+(`apps/dash/`), which lists the day's events.
 
 What the screens look like is in the user guide:
 [Tasks](../../guide/tasks.md) and [Calendar](../../guide/calendar.md).
@@ -24,7 +24,7 @@ What the screens look like is in the user guide:
 | `apps/calendar/google.py`, `sync.py` | The Google Calendar API (push, pull, title parsing); `push_event()`, `reconcile()`, `scheduled_sync()` |
 | `apps/calendar/views.py`, `events.py`, `filter.py`, `access.py` | The Events page, the FullCalendar feed, the deadline calculator; who may reach which events |
 | `apps/matters/events/` | The matter Events tab |
-| `apps/dash/views.py`, `agenda.py`, `middleware.py` | The Dash sections, the Plan chat, the once-a-day Dash redirect |
+| `apps/dash/views.py`, `middleware.py` | The Dash sections, the once-a-day Dash redirect |
 | `templates/tasks/`, `checklists/`, `calendar/`, `dash/`, `emails/daily_digest.*` | Templates |
 | `static/js/tasks-board.js`, `static/js/events-calendar.js` | Board drag and drop; the FullCalendar page |
 
@@ -118,10 +118,10 @@ rule is `process_quick_task_description()` in `apps/tasks/services.py`:
 Length is checked in one place, `quick_add_refusal()`: fewer than
 `DESCRIPTION_MIN_LENGTH` (4) characters, or more than the column's 200,
 answers `422` with an error toast and leaves the input as typed. The same
-limits are enforced by `TaskForm.clean_description()` and, for AI-created
-tasks, by `create_task_from_ai_entry()`, which truncates to 200 and
-refuses under 4. Due date defaults to today; importance and assignee come
-from the active filter.
+limits are enforced by `TaskForm.clean_description()` and, for tasks
+created through the API, by `create_task_from_ai_entry()`, which
+truncates to 200 and refuses under 4. Due date defaults to today;
+importance and assignee come from the active filter.
 
 ### Statuses and the checklist guard
 
@@ -258,24 +258,13 @@ id. Its status filter and sort are per-matter session keys
 (`matter_events_filter_<id>`, `matter_events_sort_<id>`); the list or
 calendar toggle is shared across matters.
 
-### The Dash and the Plan chat
+### The Dash
 
 `dash_index` in `apps/dash/views.py` shows the next seven Pending events
 (past-due ones sort first and stay until marked), the unbilled-time
 section and, for administrators, the collections section.
 `DailyDashCheckMiddleware` redirects each user to the Dash on their first
 full page load of the day (`CustomUser.last_dash_check`).
-
-The Plan chat (`apps/dash/agenda.py`) suggests an agenda from the user's
-open matters, active tasks, upcoming events, recent time entries and, with
-the Intakes permission, open intakes. It reuses the case chat's
-`Conversation` and `Message` models (one live conversation per user,
-`Conversation.agenda_user`) and its status protocol;
-`scheduled_refresh_daily_plans` pre-generates each user's plan overnight
-from the auto summaries, in prod only. At the user's direction the model
-emits a `create-tasks` fenced block, which `_apply_task_blocks()` turns
-into `Task` rows through `create_task_from_ai_entry()`. The fenced-write
-mechanism is described in [The AI context system](ai/context.md).
 
 ## Background work
 
@@ -290,9 +279,6 @@ mechanism is described in [The AI context system](ai/context.md).
 - `calendar-sync` runs `scheduled_sync()` in `apps/calendar/sync.py` every
   two minutes: `reconcile()`, then `sync_from_google()`. It does nothing
   until the calendar is connected; `sync_calendar` runs it by hand.
-- `auto-daily-plan` queues one `generate_overnight_plan` task per active
-  user (`run_daily_plans` on demand). A failed generation keeps the
-  previous plan.
 
 The schedules and their times are listed in the
 [scheduled jobs reference](../../reference/schedules.md).
@@ -312,8 +298,7 @@ through `include_id` the one matter a form was opened from or an item
 already sits on). Bulk actions re-filter the session's selection through
 `tasks_for_user()` before acting. The matter tabs use
 `@matter_access_required` on the matter id in the URL. There are no task
-or calendar permission flags; the Plan chat withholds the intakes section
-without `perm_intakes`. The matrix is in the
+or calendar permission flags. The matrix is in the
 [permissions reference](../../reference/permissions.md).
 
 ## Things that bite
@@ -324,9 +309,8 @@ without `perm_intakes`. The matrix is in the
   matter with a warning toast. The AI path, when enabled, does not have
   this problem.
 - **The "visible events" rule lives in one place.** `events_for_user()`
-  in `apps/calendar/access.py` is what the Dash, the Plan chat's
-  `_on_visible_matter()` and the digest call for events (and
-  `tasks_for_user()` for tasks). Do not write the `Q(matter__isnull=True)
+  in `apps/calendar/access.py` is what the Dash and the digest call for
+  events (and `tasks_for_user()` for tasks). Do not write the `Q(matter__isnull=True)
   | Q(matter__in=...)` expression again; call the helper.
 - **`google_synced_at` is set with `.update()`, never `.save()`.** Both
   `push_event()` and the pull pin it to `F("updated_at")` without touching

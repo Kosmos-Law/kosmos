@@ -1,6 +1,6 @@
 """Cross-process status store for background AI chat runs.
 
-Every chat surface (case Analysis, intake chat, agenda chat) runs its
+Every chat surface (case Analysis, intake chat) runs its
 model call on a daemon thread inside the web worker and reports progress
 under ``ai_status_<conversation_id>``, polled by the shared case:ai-status
 view. The store must be visible across processes: prod runs several

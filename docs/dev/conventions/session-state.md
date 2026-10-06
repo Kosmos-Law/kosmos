@@ -191,7 +191,7 @@ def stored_sort_key(filter_data, valid_keys, default):
 FilterSet's own `order_by` filter; `sort_keys(fields)` builds it from a
 tuple for a list without one. The sort view answers 400 to a key outside
 the set (`facts_sort()` in `apps/case/facts/views.py`); the reader
-substitutes the default. Full Cases (`apps/case/caselaws/views.py`)
+substitutes the default. Saved case law (`apps/case/caselaws/views.py`)
 takes the bare column name from the header and stores it with a
 direction, defaulting to descending for a new column; before the check
 (2026-10-02, "a list's sort takes only the list's own keys") a stray

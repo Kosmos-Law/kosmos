@@ -16,7 +16,7 @@ variable belongs to stays off or falls back until it is set.
 |---|---|---|
 | `SECRET_KEY` | **Required** | Django's secret key. Generate one with: python3 -c 'import secrets; print(secrets.token_urlsafe(50))' |
 | `DEBUG` | `False` | Django debug mode. Always False in production. (boolean) |
-| `ENV` | **Required** | Name of this environment: prod or dev. The scheduled AI jobs (matter summaries and daily plans) run only when this is prod. dev keeps login sessions in files under .dev-sessions/ and marks the interface as a development instance. |
+| `ENV` | **Required** | Name of this environment: prod or dev. dev keeps login sessions in files under .dev-sessions/ and marks the interface as a development instance. |
 | `ALLOWED_HOSTS` | **Required** | Comma-separated host names the application answers to. (comma-separated list) |
 | `CSRF_TRUSTED_ORIGINS` | empty | Comma-separated full origins (scheme, host and port when not the default) trusted for form posts. Needed behind a reverse proxy. (comma-separated list) |
 | `PUBLIC_BASE_URL` | empty | Scheme and host used to build absolute links outside a web request, such as payment links in emails sent by the background worker. Blank falls back to the host of the request that triggered the send, when there is one. |

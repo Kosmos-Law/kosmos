@@ -60,7 +60,7 @@
           {% elif opinion_text %}
             <pre class="caselaw-text-raw">{{ opinion_text }}</pre>
           {% elif fetch_error %}
-            <div class="research-error caselaw-fetch-error">
+            <div class="caselaw-fetch-error">
               <i class="icon-alert-triangle"></i>
               {{ fetch_error }}
             </div>
@@ -103,7 +103,7 @@
           {% empty %}
             {% if preview_mode %}
               <div class="no-highlights">
-                This case is not saved to the matter, so it cannot be highlighted yet. Bookmark it from the research results, then open it from Full Cases.
+                This case is not saved to the matter, so it cannot be highlighted yet. Save it to the matter's case law, then open it from there.
               </div>
             {% else %}
               <div class="no-highlights">No highlights yet. Select text and click the Highlight button to create one.</div>

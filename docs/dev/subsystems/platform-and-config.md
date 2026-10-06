@@ -50,9 +50,7 @@ Two variables with no default decide the shape of a run:
   `DEBUG` is sometimes toggled for testing while `ENV` is stable. `dev`
   keeps sessions in files under `.dev-sessions/` instead of the database
   (the comment explains: a development database that is rebuilt from a
-  snapshot would otherwise sign every device out). The nightly AI
-  schedules run only when `ENV` is exactly `prod`
-  (`apps/case/ai/auto_summary.py`, `apps/dash/agenda.py`). The `env`
+  snapshot would otherwise sign every device out). The `env`
   context processor passes the value to templates, which show the
   development banner, the dev favicon and `dev.css` when it is `dev`.
 
@@ -128,7 +126,8 @@ project entries. On the way in they run in this order:
    the user lacks (`/invoicing/` and `/reports/` by prefix, `/intakes/`
    and the intake-emails settings); and the `PERMISSION_PATTERNS`, which
    gate matter-scoped paths such as `/matters/<id>/rates` and `/ledger`
-   (`perm_financial`) and the Research tab routes (`perm_research`). Its
+   (`perm_financial`) and saved case law and the case viewer
+   (`perm_research`). Its
    `process_view()` then enforces matter membership for everything under
    `/case/`: `user_may_use_route()` in `apps/accounts/access.py` resolves
    the matter from whichever id the URL names (document, fact,
@@ -291,8 +290,8 @@ authenticated, all with `Cache-Control: no-store`:
   `CACHES["default"]`. The AI run status has its own database cache for
   exactly this reason; rate-limit counters accept the imprecision.
 - **`ENV` and `DEBUG` are independent.** A machine with `DEBUG=True` and
-  `ENV=prod` runs the nightly AI jobs against whatever database it has.
-  The value that gates them is `ENV`.
+  `ENV=prod` keeps sessions in the database and shows no development
+  banner. Code that must know which environment it is in tests `ENV`.
 - **`AuditMixin` depends on the request thread.** `created_by` is filled
   from the thread local, so a model saved from a worker task or a
   management command records no user unless the caller sets one.

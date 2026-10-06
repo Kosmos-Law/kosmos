@@ -1,5 +1,8 @@
 # The user picks which cases a research run reads (2026-08-18)
 
+The Research tab and this pipeline were retired on 2026-10-06. See
+[The Research tab is retired](2026-10-06-research-tab-retired.md).
+
 The Research tab pipeline, rebuilt on 2026-08-17, briefs a case from its
 entire opinion cluster: two CourtListener credits and a full-opinion
 model call per case. Searches are cheap by comparison (one credit each),
@@ -65,8 +68,8 @@ restarts, because the whole run state is in the database.
 
 ## Related
 
-- [Research tab pipeline](../dev/subsystems/ai/research-tab.md), "Flow"
-  step 4 and "Budgets".
+- [The Research tab is retired](2026-10-06-research-tab-retired.md):
+  the developer page on the pipeline was removed with it.
 - [Research chat (retired 2026-08-16)](research-chat-retired.md): the
   agentic loop whose unbounded reads this pipeline replaced.
 - [AI chat runs on threads, research runs on the

@@ -51,13 +51,12 @@ when unsure whether the user wants them saved, answer in prose and ask."""
 def _save_entry(entry, matter, requesting_user):
     """Save one authority, or return None if the entry is unusable.
 
-    Mirrors research_save_to_caselaws: the CaseLaw row is built from the
-    cluster so citation-less slip opinions still save. An authority
+    The CaseLaw row is built from the cluster so citation-less slip opinions still save. An authority
     already in the library gets the proposition appended to its notes
     instead of a duplicate row ((matter, cluster_id) is unique).
     """
+    from apps.case.caselaws.tasks import generate_caselaw_summary
     from apps.case.courtlistener import fetch_cluster, format_citations_with_year
-    from apps.case.research.tasks import generate_caselaw_summary
 
     try:
         cluster_id = int(entry.get("cluster_id") or 0)

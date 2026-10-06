@@ -8,7 +8,7 @@ pytestmark = pytest.mark.django_db
 
 WRAPPERS = [
     ("emails", "emailsChanged", "emails-list"),
-    ("research", "researchChanged", "research-list"),
+    ("caselaws", "caselawsChanged", "caselaws-list"),
 ]
 
 
