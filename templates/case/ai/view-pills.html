@@ -1,0 +1,19 @@
+{% comment %}
+  Switches the AI tab between its conversations and the matter's saved case
+  law (what the agentic chat's research tools save). Case law needs the
+  Research permission, so without it there is nothing to switch to.
+{% endcomment %}
+{% if user.is_admin or user.perm_research %}
+  <div class="mode-pills">
+    <a href="{% url 'case:ai-index' matter.id %}"
+       hx-get="{% url 'case:tab-content' matter_id=matter.id tab='ai' %}"
+       hx-target=".detail-body"
+       hx-push-url="{% url 'case:ai-index' matter.id %}"
+       class="mode-pill{% if ai_view == 'conversations' %} active{% endif %}">Conversations</a>
+    <a href="{% url 'case:caselaws-index' matter.id %}"
+       hx-get="{% url 'case:tab-content' matter_id=matter.id tab='caselaws' %}"
+       hx-target=".detail-body"
+       hx-push-url="{% url 'case:caselaws-index' matter.id %}"
+       class="mode-pill{% if ai_view == 'caselaws' %} active{% endif %}">Case Law</a>
+  </div>
+{% endif %}

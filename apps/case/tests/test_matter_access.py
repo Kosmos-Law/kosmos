@@ -141,11 +141,10 @@ def limited_client(user):
     return client
 
 
-def test_research_is_refused_without_the_research_permission(limited_client, matter):
-    assert limited_client.get(f"/case/{matter.id}/research/").status_code == 403
-    assert limited_client.get("/case/research/query/1/status/").status_code == 403
+def test_case_law_is_refused_without_the_research_permission(limited_client, matter):
+    assert limited_client.get(f"/case/{matter.id}/caselaws/").status_code == 403
     # The tab-switch route reaches the same page by another address.
-    assert limited_client.get(f"/case/{matter.id}/tab/research/").status_code == 403
+    assert limited_client.get(f"/case/{matter.id}/tab/caselaws/").status_code == 403
     assert limited_client.get(f"/case/{matter.id}/tab/documents/").status_code == 200
 
 
@@ -164,6 +163,6 @@ def test_intake_email_settings_are_refused_without_the_intakes_permission(
 
 
 def test_the_same_pages_open_with_the_permissions_on(client, matter):
-    assert client.get(f"/case/{matter.id}/research/").status_code == 200
+    assert client.get(f"/case/{matter.id}/caselaws/").status_code == 200
     assert client.get(f"/matters/{matter.id}/rates").status_code == 200
     assert client.get("/settings/intake-emails/").status_code == 200

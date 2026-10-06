@@ -5,6 +5,7 @@ Provides functions to look up citations and retrieve full opinion text.
 """
 
 import logging
+import re
 from dataclasses import dataclass
 from datetime import date
 from typing import Optional
@@ -353,3 +354,137 @@ def fetch_case_by_citation(citation_text: str) -> dict:
         "html": opinion.html_with_citations,
         "error": "",
     }
+
+
+def search_opinions(query, court="", limit=5, order_by="score desc", filed_after=""):
+    """
+    Search CourtListener for opinions matching a query.
+
+    Args:
+        query: Natural language search query
+        court: CourtListener court ID to filter by (empty for all)
+        limit: Number of results to return
+        order_by: CL sort expression ("score desc" relevance default;
+            "dateFiled desc" for the newest-first slice)
+        filed_after: ISO date (YYYY-MM-DD) lower bound on dateFiled
+            (empty for no bound)
+
+    Returns:
+        List of result dicts with case_name, court, date_filed, etc.
+    """
+    api_token = get_api_token()
+    if not api_token:
+        return [], 0
+
+    params = {
+        "q": query,
+        "type": "o",
+        "order_by": order_by,
+        "page_size": limit,
+        "highlight": "on",
+    }
+    if court:
+        params["court"] = court
+    if filed_after:
+        params["filed_after"] = filed_after
+
+    try:
+        response = throttled_request(
+            "get",
+            f"{API_V4_URL}/search/",
+            headers={"Authorization": f"Token {api_token}"},
+            params=params,
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            logger.error(
+                "CourtListener search failed: %s - %s",
+                response.status_code,
+                response.text[:200],
+            )
+            return [], response.status_code
+
+        data = response.json()
+        results = []
+
+        for item in data.get("results", [])[:limit]:
+            cluster_id = item.get("cluster_id")
+
+            # Build snippet from opinion excerpts, falling back to syllabus
+            snippet = ""
+            opinions = item.get("opinions", [])
+            if opinions:
+                snippets = [
+                    op.get("snippet", "").strip()
+                    for op in opinions
+                    if op.get("snippet", "").strip()
+                ]
+                snippet = " … ".join(snippets)
+            if not snippet:
+                snippet = item.get("syllabus", "")
+
+            results.append(
+                {
+                    "case_name": item.get("caseName", ""),
+                    "citation": item.get("citation", []),
+                    "court": item.get("court", ""),
+                    "date_filed": item.get("dateFiled", ""),
+                    "cluster_id": cluster_id,
+                    "snippet": snippet,
+                    "score": item.get("score"),
+                    "cite_count": item.get("citeCount", 0),
+                    "courtlistener_url": (
+                        f"{COURTLISTENER_BASE_URL}{item['absolute_url']}"
+                        if item.get("absolute_url")
+                        else ""
+                    ),
+                }
+            )
+
+        return results, 200
+
+    except requests.RequestException as e:
+        logger.exception("Error searching CourtListener: %s", e)
+        return [], 0
+
+
+def sanitize_query(query):
+    """Validate and fix common CourtListener query syntax issues.
+
+    Returns the sanitized query string.
+    """
+    # Fix word~N (invalid: fuzzy doesn't take integer distance).
+    # word~ is valid (fuzzy), "phrase"~N is valid (proximity).
+    # Match bare word (not after a closing quote) followed by ~N
+    query = re.sub(r'(?<!")~(\d+)', "~", query)
+
+    # Fix unbalanced parentheses
+    depth = 0
+    for ch in query:
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth < 0:
+                # More closing than opening — strip this excess
+                break
+    if depth > 0:
+        query += ")" * depth
+    elif depth < 0:
+        # Remove excess closing parens from the end
+        while depth < 0 and query.endswith(")"):
+            query = query[:-1]
+            depth += 1
+
+    # Fix unbalanced quotes — append a closing quote if odd count
+    if query.count('"') % 2 != 0:
+        query += '"'
+
+    # Remove fielded searches (e.g. court_id:xxx) — court filtering is separate
+    query = re.sub(r"\b\w+_id:\S+", "", query)
+
+    # Collapse multiple spaces
+    query = re.sub(r"  +", " ", query).strip()
+
+    return query

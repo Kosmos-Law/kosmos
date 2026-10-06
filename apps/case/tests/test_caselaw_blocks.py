@@ -34,7 +34,7 @@ def _fake_courtlistener(monkeypatch):
         lambda cid: dict(CLUSTER) if cid == 888 else {},
     )
     monkeypatch.setattr(
-        "apps.case.research.tasks.generate_caselaw_summary", lambda pk: None
+        "apps.case.caselaws.tasks.generate_caselaw_summary", lambda pk: None
     )
 
 
