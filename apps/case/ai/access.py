@@ -1,7 +1,6 @@
 """Who may reach an AI conversation, and what its context may carry.
 
-A conversation belongs to exactly one of a matter, an intake or one user's
-agenda. Routes that name a matter conversation in the URL path are checked
+A conversation belongs to exactly one of a matter or an intake. Routes that name a matter conversation in the URL path are checked
 for matter membership centrally (apps/accounts/middleware.py); that check
 passes anything with no matter, and never sees an id that arrives in the
 query string or the body. The helpers here cover both gaps.
@@ -26,14 +25,12 @@ def accessible_matters(user):
 
 
 def user_may_use_conversation(user, conversation):
-    """A matter chat needs the matter, an intake chat the Intakes
-    permission, and an agenda chat is its owner's alone."""
+    """A matter chat needs the matter and an intake chat the Intakes
+    permission."""
     if conversation.matter_id:
         return user.has_matter_access(conversation.matter)
     if conversation.intake_id:
         return user.is_admin or user.perm_intakes
-    if conversation.agenda_user_id:
-        return conversation.agenda_user_id == user.id
     # Attached to nothing (should not happen): only whoever started it.
     return user.is_admin or conversation.user_id == user.id
 

@@ -76,7 +76,6 @@ Then start the app in two terminals:
 | `--db-name`, `--db-user`, `--db-password` | database settings (default `kosmos` / `kosmos` / `kosmos`); values in an existing `config/.env` win |
 | `--no-superuser` | skip the superuser prompt |
 | `--seed-intake-forms` | also run `manage.py seed_intake_forms` |
-| `--auto-summary-time "30 1"` | passed to `setup_schedules` |
 | `--yes` | skip the confirmation prompt |
 | `--dry-run` | print every command instead of running it; rendered files are left in a temp dir for inspection |
 | `--force` | production only: overwrite system files that differ from the templates and remove nginx's default site |

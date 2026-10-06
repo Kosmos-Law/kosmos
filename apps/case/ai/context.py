@@ -164,8 +164,6 @@ def _fetch_caselaw_opinion_text(caselaw) -> str:
 def collect_context_items(
     matter,
     current_conversation=None,
-    since=None,
-    include_auto=False,
 ) -> list[ContextItem]:
     """
     Collect items that are always included in context (ai_context="always"
@@ -178,25 +176,14 @@ def collect_context_items(
     Args:
         matter: The Matter object
         current_conversation: Optional current Conversation to exclude from references
-        since: Optional datetime — only include items updated at or after it
-            (used by the nightly auto-summary to build an incremental delta)
-        include_auto: Include ai_context="auto" Documents/CaseLaw (and all
-            Notes) with full content instead of leaving them to the selector
 
     Returns a list of ContextItem objects sorted by importance (most important first).
     """
     items = []
 
-    docs = Document.objects.filter(matter=matter).exclude(ai_context="never")
-    if since:
-        docs = docs.filter(updated_at__gte=since)
-
-    # Collect Documents — only "always" items get full content here
-    for doc in docs:
-        if doc.ai_context == "auto" and not include_auto:
-            continue  # Handled by selector
-
-        # ai_context="always" — include full content
+    # Collect Documents — only "always" items get full content here; "auto"
+    # ones are handled by the selector.
+    for doc in Document.objects.filter(matter=matter, ai_context="always"):
         content_parts = [f"**Document [doc:{doc.id}]: {doc.name}** ({doc.category})"]
         if doc.date:
             content_parts[0] += f" - {doc.date}"
@@ -218,8 +205,6 @@ def collect_context_items(
     highlights = Highlight.objects.filter(document__matter=matter).select_related(
         "document"
     )
-    if since:
-        highlights = highlights.filter(updated_at__gte=since)
     for hl in highlights:
         text_preview = hl.text[:500] if hl.text else ""
         if hl.text and len(hl.text) > 500:
@@ -245,8 +230,6 @@ def collect_context_items(
     facts = Fact.objects.filter(matter=matter).prefetch_related(
         "documents", "highlights"
     )
-    if since:
-        facts = facts.filter(updated_at__gte=since)
     for fact in facts:
         content = f"**Fact [{fact.date}]:** {fact.description}"
 
@@ -268,39 +251,8 @@ def collect_context_items(
             )
         )
 
-    # Collect Notes — notes carry no AI knobs, so they are all selector
-    # material; full content only lands here in include_auto mode. Full
-    # content, no truncation (parity with Documents).
-    notes = Note.objects.filter(matter=matter)
-    if not include_auto:
-        notes = notes.none()
-    if since:
-        notes = notes.filter(updated_at__gte=since)
-    for note in notes:
-        content_parts = [f"**Note [note:{note.id}]: {note.title}**"]
-        if note.category:
-            content_parts[0] += f" [{note.get_category_display()}]"
-        if note.topic:
-            content_parts[0] += f" - {note.topic}"
-        if note.content:
-            content_parts.append(note.content)
-
-        items.append(
-            ContextItem(
-                importance=note.importance,
-                item_type="note",
-                content="\n".join(content_parts),
-                source_id=note.id,
-            )
-        )
-
     # Collect Case Law — only "always" items
-    caselaw_qs = CaseLaw.objects.filter(matter=matter).exclude(ai_context="never")
-    if not include_auto:
-        caselaw_qs = caselaw_qs.filter(ai_context="always")
-    if since:
-        caselaw_qs = caselaw_qs.filter(updated_at__gte=since)
-    for caselaw in caselaw_qs:
+    for caselaw in CaseLaw.objects.filter(matter=matter, ai_context="always"):
         content_parts = [f"**Case Law: {caselaw.case_name}**, {caselaw.citation}"]
         if caselaw.court:
             content_parts.append(f"Court: {caselaw.court}")
@@ -327,31 +279,19 @@ def collect_context_items(
 
     # Collect Emails (synced from Gmail) — grouped by thread, one item per
     # thread. Only "always" emails get full content here; "auto" threads are
-    # chosen by the selector. With `since`, a thread is included when it has
-    # new messages, rendering only those (older ones flagged as omitted) so
-    # incremental auto-summaries see just the delta.
+    # chosen by the selector.
     # dedup: a message synced from two mailboxes contributes once.
     emails_qs = (
-        Email.objects.filter(matter=matter)
+        Email.objects.filter(matter=matter, ai_context="always")
         .dedup()
-        .exclude(ai_context="never")
         .prefetch_related("attachment_files")
     )
-    if not include_auto:
-        emails_qs = emails_qs.filter(ai_context="always")
     for thread_emails in group_by_thread(emails_qs):
-        shown = thread_emails
-        if since:
-            shown = [e for e in thread_emails if e.updated_at >= since]
-            if not shown:
-                continue
         items.append(
             ContextItem(
-                importance=max(e.importance for e in shown),
+                importance=max(e.importance for e in thread_emails),
                 item_type="email",
-                content=format_email_thread(
-                    shown, omitted_earlier=len(thread_emails) - len(shown)
-                ),
+                content=format_email_thread(thread_emails),
                 source_id=min(e.id for e in thread_emails),
             )
         )
@@ -360,8 +300,6 @@ def collect_context_items(
     reference_convos = Conversation.objects.filter(
         matter=matter, ai_context="always"
     ).order_by("-updated_at")
-    if since:
-        reference_convos = reference_convos.filter(updated_at__gte=since)
     if current_conversation:
         reference_convos = reference_convos.exclude(id=current_conversation.id)
 
@@ -467,8 +405,8 @@ def build_request_info(user):
 
 
 def build_chat_history(conversation) -> list[dict]:
-    """Provider-ready history for a conversation, shared by the case,
-    intake, and agenda chats.
+    """Provider-ready history for a conversation, shared by the case
+    and intake chats.
 
     Every message is prefixed with its sent date-time so the model can
     follow the chronology (REQUEST_INFO_TEMPLATE tells it the stamps are
@@ -757,13 +695,12 @@ def assemble_matter_context_with_selection(
             invoices are offered to the selector only with the Financial
             permission. Time entries carry their rate, fee, comp flag and
             invoice status for every user, as the Activity screens show
-            them. With no user (the nightly auto-summary, whose output
-            every member of the matter reads) there is no billing detail
-            at all: no invoices, and time entries without money.
+            them. With no user there is no billing detail at all: no
+            invoices, and time entries without money.
         conversation: Optional Conversation (excluded from reference conversations)
         include_library: Offer firm-library notes (standalone notes in
             AI-library folders) to the selector, and inject "always" library
-            notes. The nightly auto-summary turns this off.
+            notes.
         on_activity: Optional callback receiving one-line progress notes
             (chat surfaces them in the live activity log).
     """
@@ -1228,7 +1165,7 @@ def format_time_entries(matter, include_billing=False) -> str:
     With ``include_billing`` each entry also carries its rate, fee, comp
     flag and the invoice it sits on. The Activity screens show those to
     every user who can see the matter, so every requesting user gets them;
-    only a run for no user (the nightly auto-summary) leaves them out.
+    only a run for no user leaves them out.
     """
     entries = (
         TimeEntry.objects.filter(matter=matter)

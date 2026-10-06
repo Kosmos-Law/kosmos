@@ -206,8 +206,7 @@ def quick_add_refusal(description):
 
 
 # ── AI-entry validation ──────────────────────────────────────────────────────
-# Shared by the agenda chat's create-tasks blocks and the tasks tab's AI
-# command interface. Every resolver is forgiving: unresolvable input means
+# Shared by the tasks quick-add AI and the API's task creation. Every resolver is forgiving: unresolvable input means
 # None (or the fallback), never an exception.
 
 

@@ -1,5 +1,5 @@
 /* AI chat history panel: bottom collapse toggle + drag-to-resize.
-   Shared by the case AI, agenda, and intake chat windows, which render the
+   Shared by the case AI and intake chat windows, which render the
    same .ai-chat-sidebar markup. Mirrors the notes editor's panel: the
    toggle glyph tracks state (an open panel shows the close glyph), and the
    resizer drags to resize with double-click to reset. */

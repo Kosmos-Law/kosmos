@@ -90,8 +90,7 @@ class Command(BaseCommand):
                 "",
             )
             if value:
-                # Queryset update: keep updated_at honest for the
-                # auto-summary's since= filtering (rows are "immutable").
+                # Queryset update: rows are "immutable" once synced.
                 Email.objects.filter(pk=email.pk).update(message_id=value.strip()[:998])
                 updated += 1
         self.stdout.write(

@@ -346,32 +346,13 @@ def schedule_specs():
     for func in ast.walk(tree):
         if not (isinstance(func, ast.FunctionDef) and func.name == "schedule_specs"):
             continue
-        # Parameter defaults, to resolve f-string crons such as
-        # f"{auto_summary_time} * * 1".
-        names = [a.arg for a in func.args.args]
-        defaults = dict(
-            zip(names[-len(func.args.defaults) :], func.args.defaults, strict=True)
-            if func.args.defaults
-            else []
-        )
         for node in ast.walk(func):
             if not (
                 isinstance(node, ast.Call)
                 and getattr(node.func, "id", "") == "ScheduleSpec"
             ):
                 continue
-            values = []
-            for arg in node.args:
-                if isinstance(arg, ast.JoinedStr):
-                    text = ""
-                    for part in arg.values:
-                        if isinstance(part, ast.Constant):
-                            text += part.value
-                        else:
-                            text += ast.literal_eval(defaults[part.value.id])
-                    values.append(text)
-                else:
-                    values.append(ast.literal_eval(arg))
+            values = [ast.literal_eval(arg) for arg in node.args]
             description = ""
             for kw in node.keywords:
                 if kw.arg == "description":
@@ -390,9 +371,7 @@ def render_schedules():
         "is running.",
         "",
         "Times are in the firm's time zone, the `TIME_ZONE` variable in",
-        "`config/.env`. The two AI summary jobs share a start time that",
-        "`setup_schedules --auto-summary-time` can change; the default is",
-        "shown.",
+        "`config/.env`.",
         "",
         "| Job | When | What it does |",
         "|---|---|---|",

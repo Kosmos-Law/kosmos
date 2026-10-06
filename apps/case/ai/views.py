@@ -606,7 +606,7 @@ def _cite_state(conversation):
 def _statusbar_html(conversation, live, ctx=None):
     """Out-of-band fragment for the persistent chat status bar.
 
-    Case chats only: the intake/agenda windows have no #ai-chat-statusbar
+    Case chats only: the intake window has no #ai-chat-statusbar
     target, and an unmatched out-of-band fragment logs an htmx error.
     Appended to htmx responses with response.write; htmx plucks it out
     before the main swap and morphs it into the standing container
@@ -668,7 +668,7 @@ def _poll_ended(conversation=None):
 @login_required
 def ai_status(request, conv_id):
     """Return current AI processing status for polling."""
-    # Shared by the case, intake and agenda chats. Only a matter chat is
+    # Shared by the case and intake chats. Only a matter chat is
     # covered by the central matter check, so each kind is checked here.
     conversation = conversation_for_user(conv_id, request.user)
 

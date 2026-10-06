@@ -8,9 +8,7 @@ safe to run again at any time, and they do nothing unless the worker
 is running.
 
 Times are in the firm's time zone, the `TIME_ZONE` variable in
-`config/.env`. The two AI summary jobs share a start time that
-`setup_schedules --auto-summary-time` can change; the default is
-shown.
+`config/.env`.
 
 | Job | When | What it does |
 |---|---|---|
@@ -20,9 +18,6 @@ shown.
 | `drive-sync-nightly-full` | Daily at 03:30 (`30 3 * * *`) | Full re-crawl of every linked Drive folder, to catch anything the incremental sync missed. |
 | `gmail-sync` | Every 2 minutes (`*/2 * * * *`) | Syncs labelled Gmail messages onto their mapped matters, across every connected mailbox. Does nothing until a mailbox is connected and a label is linked to a matter. |
 | `gmail-sync-weekly-full` | Monday at 03:15 (`15 3 * * 1`) | Full Gmail re-sync of every linked label. |
-| `auto-summary-nightly` | Daily except Monday at 01:30 (`30 1 * * 0,2-6`) | Queues an incremental refresh of the AI Auto Summary (and then the Auto Agenda) for every open matter. Runs only when ENV=prod. |
-| `auto-summary-weekly-rebuild` | Monday at 01:30 (`30 1 * * 1`) | Rebuilds every open matter's AI Auto Summary from the full record, so summaries do not drift by compounding on earlier summaries. Runs only when ENV=prod. |
-| `auto-daily-plan` | Daily at 02:45 (`45 2 * * *`) | Queues the AI daily plan for every active user, after the night's matter summaries have refreshed. Runs only when ENV=prod. |
 | `chat-purge-weekly` | Sunday at 03:00 (`0 3 * * 0`) | Deletes AI chat history for matters that have been closed for longer than CHAT_RETENTION_DAYS (180 by default; 0 keeps chats indefinitely). |
 | `payments-reconcile` | Hourly at 15 minutes past (`15 * * * *`) | Asks the payment processor for the current state of every online payment and trust deposit still in flight, and settles, confirms or reverses it. The backstop for a webhook that never arrived. |
 
@@ -36,8 +31,5 @@ shown.
 | `drive-sync-nightly-full` | `apps.drive.google.scheduled_sync_full` |
 | `gmail-sync` | `apps.mail.google.scheduled_sync` |
 | `gmail-sync-weekly-full` | `apps.mail.google.scheduled_sync_full` |
-| `auto-summary-nightly` | `apps.case.ai.auto_summary.scheduled_refresh_auto_summaries` |
-| `auto-summary-weekly-rebuild` | `apps.case.ai.auto_summary.scheduled_refresh_auto_summaries_full` |
-| `auto-daily-plan` | `apps.dash.agenda.scheduled_refresh_daily_plans` |
 | `chat-purge-weekly` | `apps.case.ai.purge.scheduled_purge_closed_chats` |
 | `payments-reconcile` | `apps.invoicing.pay.reconcile.poll_pending` |

@@ -5,8 +5,8 @@ context and runs apply_fact_blocks() over the response. The AI proposes
 timeline entries in a ```create-facts``` fenced block; each block is
 replaced in the stored message with a confirmation list, so both the user
 and the AI's later turns see what happened. A malformed block is left as
-text and creates nothing (same contract as the agenda chat's
-create-tasks blocks).
+text and creates nothing (same contract as the intake chat's
+update-intake blocks).
 """
 
 import json

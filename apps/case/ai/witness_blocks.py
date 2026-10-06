@@ -5,8 +5,7 @@ system context and runs apply_witness_blocks() over the response. The AI
 proposes witnesses in a ```create-witnesses``` fenced block; each block
 is replaced in the stored message with a confirmation list, so both the
 user and the AI's later turns see what happened. A malformed block is
-left as text and creates nothing (same contract as create-facts and the
-agenda chat's create-tasks blocks).
+left as text and creates nothing (same contract as create-facts).
 """
 
 import json

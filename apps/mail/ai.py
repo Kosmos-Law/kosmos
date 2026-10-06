@@ -23,22 +23,13 @@ def thread_subject(emails):
     return next((e.subject for e in emails if e.subject), "(no subject)")
 
 
-def format_email_thread(emails, omitted_earlier=0):
-    """Format a thread's messages (oldest first) for an AI prompt.
-
-    ``omitted_earlier`` marks messages hidden by an incremental ``since``
-    cutoff so the model knows the thread has prior history.
-    """
-    total = len(emails) + omitted_earlier
+def format_email_thread(emails):
+    """Format a thread's messages (oldest first) for an AI prompt."""
+    total = len(emails)
     parts = [
         f"**Email thread: {thread_subject(emails)}** "
         f"({total} message{'s' if total != 1 else ''})"
     ]
-    if omitted_earlier:
-        parts.append(
-            f"(thread continues earlier: {omitted_earlier} older "
-            f"message{'s' if omitted_earlier != 1 else ''} not shown)"
-        )
     for email in emails:
         line = (
             f"--- From: {email.sender or '(unknown)'} | "

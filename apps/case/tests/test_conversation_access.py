@@ -2,7 +2,7 @@
 
 The central matter check covers a conversation named in the URL path. These
 guard what it cannot see: a conversation id sent in the query string or the
-body, the chats that have no matter (intake, agenda), and the links that
+body, the chats that have no matter (intake), and the links that
 used to change things on a plain GET.
 """
 
@@ -31,6 +31,11 @@ def _login(username, **fields):
     client.get("/dash/")  # Set daily dash session to avoid redirect
     client.user = user
     return client
+
+
+def _intake_chat(user):
+    intake = Intake.objects.create(name="Prospect", status="Open")
+    return Conversation.objects.create(intake=intake, title="Intake", user=user)
 
 
 @pytest.fixture
@@ -168,16 +173,16 @@ class TestConversationIdFromTheRequest:
         assert other_conversation.messages.count() == 2
         assert status_cache.get(f"ai_status_{other_conversation.id}") is None
 
-    def test_send_refuses_an_agenda_conversation(
+    def test_send_refuses_an_intake_conversation(
         self, restricted_client, matter, user, _no_worker
     ):
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
+        intake_chat = _intake_chat(user)
         response = restricted_client.post(
             reverse("case:ai-send", args=[matter.id]),
-            {"message": "Hello", "conversation_id": agenda.id},
+            {"message": "Hello", "conversation_id": intake_chat.id},
         )
         assert response.status_code == 404
-        assert agenda.messages.count() == 0
+        assert intake_chat.messages.count() == 0
 
     def test_send_to_own_conversation_still_works(
         self, restricted_client, matter, _no_worker
@@ -202,45 +207,7 @@ class TestConversationIdFromTheRequest:
 
 
 class TestStatusAndCancel:
-    """ai_status and cancel_request serve all three kinds of chat."""
-
-    def test_agenda_chat_is_its_owners_alone(self, user, live_status):
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
-        Message.objects.create(
-            conversation=agenda, role="user", content="Plan my day", user=user
-        )
-        key = live_status(agenda)
-        stranger = _login("stranger")
-
-        response = stranger.get(reverse("case:ai-status", args=[agenda.id]))
-        assert response.status_code == 403
-        assert b"PRIVATE REPLY" not in response.content
-        # The reply is still waiting for its owner.
-        assert status_cache.get(key)["status"] == "complete"
-        assert agenda.messages.count() == 1
-
-    def test_agenda_owner_collects_the_reply(self, client, user, live_status):
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
-        Message.objects.create(
-            conversation=agenda, role="user", content="Plan my day", user=user
-        )
-        live_status(agenda)
-        response = client.get(reverse("case:ai-status", args=[agenda.id]))
-        assert response.status_code == 200
-        assert b"PRIVATE REPLY" in response.content
-
-    def test_another_user_cannot_cancel_an_agenda_run(self, user, live_status):
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
-        Message.objects.create(
-            conversation=agenda, role="user", content="Plan my day", user=user
-        )
-        key = live_status(agenda, status="thinking")
-        stranger = _login("stranger")
-
-        response = stranger.post(reverse("case:ai-cancel", args=[agenda.id]))
-        assert response.status_code == 403
-        assert status_cache.get(key)["status"] == "thinking"
-        assert agenda.messages.count() == 1
+    """ai_status and cancel_request serve both kinds of chat."""
 
     def test_intake_chat_needs_the_intakes_permission(self, user, live_status):
         intake = Intake.objects.create(name="Prospect", status="Open")
@@ -316,33 +283,33 @@ class TestBulkSelection:
     """The bulk actions act on the ids held in the matter's selection, so
     only that matter's conversations may enter it or be acted on."""
 
-    def test_an_agenda_chat_cannot_be_selected(self, restricted_client, matter, user):
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
+    def test_an_intake_chat_cannot_be_selected(self, restricted_client, matter, user):
+        intake_chat = _intake_chat(user)
         response = restricted_client.post(
-            reverse("case:ai-toggle-select", args=[matter.id, agenda.id])
+            reverse("case:ai-toggle-select", args=[matter.id, intake_chat.id])
         )
         assert response.status_code == 404
 
     def test_bulk_delete_stays_inside_the_matter(self, client, matter, user):
         mine = Conversation.objects.create(matter=matter, title="Mine", user=user)
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
+        intake_chat = _intake_chat(user)
         session = client.session
-        session[f"selected_conversations_{matter.id}"] = [mine.id, agenda.id]
+        session[f"selected_conversations_{matter.id}"] = [mine.id, intake_chat.id]
         session.save()
 
         client.post(reverse("case:ai-bulk-delete", args=[matter.id]))
         assert not Conversation.objects.filter(pk=mine.pk).exists()
-        assert Conversation.objects.filter(pk=agenda.pk).exists()
+        assert Conversation.objects.filter(pk=intake_chat.pk).exists()
 
     def test_bulk_set_context_stays_inside_the_matter(self, client, matter, user):
         mine = Conversation.objects.create(matter=matter, title="Mine", user=user)
-        agenda = Conversation.objects.create(agenda_user=user, title="Agenda")
+        intake_chat = _intake_chat(user)
         session = client.session
-        session[f"selected_conversations_{matter.id}"] = [mine.id, agenda.id]
+        session[f"selected_conversations_{matter.id}"] = [mine.id, intake_chat.id]
         session.save()
 
         client.post(reverse("case:ai-bulk-set-context", args=[matter.id, "never"]))
         mine.refresh_from_db()
-        agenda.refresh_from_db()
+        intake_chat.refresh_from_db()
         assert mine.ai_context == "never"
-        assert agenda.ai_context == "auto"
+        assert intake_chat.ai_context == "auto"

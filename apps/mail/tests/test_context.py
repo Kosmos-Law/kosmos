@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 import pytest
 from django.utils import timezone
 
@@ -43,43 +41,12 @@ def test_always_emails_grouped_by_thread(matter):
 def test_auto_emails_left_to_selector(matter):
     make_email(matter, "m1", ai_context="auto")
     assert not any(i.item_type == "email" for i in collect_context_items(matter))
-    assert any(
-        i.item_type == "email" for i in collect_context_items(matter, include_auto=True)
-    )
 
 
 def test_never_emails_excluded(matter):
     make_email(matter, "m1", ai_context="never")
-    items = collect_context_items(matter, include_auto=True)
+    items = collect_context_items(matter)
     assert not any(i.item_type == "email" for i in items)
-
-
-def test_since_renders_only_new_messages(matter):
-    old = make_email(matter, "m1", ai_context="always", body_text="Old message")
-    cutoff = timezone.now() + timedelta(minutes=5)
-    Email.objects.filter(pk=old.pk).update(updated_at=timezone.now())
-
-    new = make_email(matter, "m2", ai_context="always", body_text="New message")
-    Email.objects.filter(pk=new.pk).update(updated_at=cutoff + timedelta(minutes=5))
-
-    items = [
-        i for i in collect_context_items(matter, since=cutoff) if i.item_type == "email"
-    ]
-    assert len(items) == 1
-    assert "New message" in items[0].content
-    assert "Old message" not in items[0].content
-    assert "thread continues earlier" in items[0].content
-
-
-def test_since_skips_threads_with_no_new_mail(matter):
-    old = make_email(matter, "m1", ai_context="always")
-    Email.objects.filter(pk=old.pk).update(updated_at=timezone.now())
-    cutoff = timezone.now() + timedelta(minutes=5)
-
-    items = [
-        i for i in collect_context_items(matter, since=cutoff) if i.item_type == "email"
-    ]
-    assert items == []
 
 
 def test_manifest_one_item_per_thread(matter):

@@ -23,7 +23,7 @@ class ScheduleSpec:
     description: str = ""
 
 
-def schedule_specs(auto_summary_time="30 1"):
+def schedule_specs():
     return (
         ScheduleSpec(
             "daily-digest",
@@ -80,36 +80,6 @@ def schedule_specs(auto_summary_time="30 1"):
             description="Full Gmail re-sync of every linked label.",
         ),
         ScheduleSpec(
-            "auto-summary-nightly",
-            "apps.case.ai.auto_summary.scheduled_refresh_auto_summaries",
-            f"{auto_summary_time} * * 0,2-6",
-            description=(
-                "Queues an incremental refresh of the AI Auto Summary (and "
-                "then the Auto Agenda) for every open matter. Runs only when "
-                "ENV=prod."
-            ),
-        ),
-        ScheduleSpec(
-            "auto-summary-weekly-rebuild",
-            "apps.case.ai.auto_summary.scheduled_refresh_auto_summaries_full",
-            f"{auto_summary_time} * * 1",
-            description=(
-                "Rebuilds every open matter's AI Auto Summary from the full "
-                "record, so summaries do not drift by compounding on earlier "
-                "summaries. Runs only when ENV=prod."
-            ),
-        ),
-        ScheduleSpec(
-            "auto-daily-plan",
-            "apps.dash.agenda.scheduled_refresh_daily_plans",
-            "45 2 * * *",
-            description=(
-                "Queues the AI daily plan for every active user, after the "
-                "night's matter summaries have refreshed. Runs only when "
-                "ENV=prod."
-            ),
-        ),
-        ScheduleSpec(
             "chat-purge-weekly",
             "apps.case.ai.purge.scheduled_purge_closed_chats",
             "0 3 * * 0",
@@ -133,13 +103,13 @@ def schedule_specs(auto_summary_time="30 1"):
     )
 
 
-def install_schedules(names=None, auto_summary_time="30 1"):
+def install_schedules(names=None):
     """Create or update selected schedules and return ``(spec, created)`` pairs."""
     wanted = set(names) if names is not None else None
     local_now = timezone.localtime(timezone.now())
     results = []
 
-    for spec in schedule_specs(auto_summary_time=auto_summary_time):
+    for spec in schedule_specs():
         if wanted is not None and spec.name not in wanted:
             continue
         _, created = Schedule.objects.update_or_create(

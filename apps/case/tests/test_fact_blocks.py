@@ -189,7 +189,9 @@ def test_multiple_entries_in_order(user, matter):
 def test_context_exposes_source_handles(matter, document, highlight):
     from apps.case.ai.context import collect_context_items
 
-    items = collect_context_items(matter, include_auto=True)
+    document.ai_context = "always"
+    document.save(update_fields=["ai_context"])
+    items = collect_context_items(matter)
     joined = "\n".join(item.content for item in items)
     assert f"[doc:{document.id}]" in joined
     assert f"[hl:{highlight.id}]" in joined
