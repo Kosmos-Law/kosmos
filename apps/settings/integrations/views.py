@@ -12,6 +12,7 @@ from googleapiclient.discovery import build
 import apps.drive.google as drive_google
 import apps.mail.google as mail_google
 from apps.mail.models import GmailAccount
+from apps.settings.integrations.oauth import google_oauth_configured
 from utils.prepare_path import prepare_path
 from utils.toasts import toast_success
 
@@ -30,6 +31,15 @@ TOKEN_PATHS = {
     "drive": DRIVE_TOKEN_PATH,
     "email": EMAIL_TOKEN_PATH,
 }
+
+# A toast for the next load of the Integrations page, left by a view that
+# redirected there (a full-page redirect carries no HX toast header).
+PENDING_TOAST_KEY = "integrations_pending_toast"
+
+GOOGLE_OAUTH_MISSING_MSG = (
+    "Google sign-in isn't set up on this server yet, so Google can't be "
+    "connected. An administrator needs to add the OAuth client file first."
+)
 
 
 def _token_exists(file_path):
@@ -114,6 +124,10 @@ def index(request):
         # assigned matters is told how many, not which.
         "show_label_names": request.user.is_admin or request.user.perm_all_matters,
         "label_root": settings.GMAIL_LABEL_ROOT,
+        # Without the OAuth client file every Connect would fail, so the
+        # page offers none and says why instead.
+        "google_oauth_ready": google_oauth_configured(),
+        "pending_toast": request.session.pop(PENDING_TOAST_KEY, None),
     }
     if request.user.is_admin:
         context.update(_ai_context())
@@ -131,6 +145,13 @@ def _forbidden_for(request, app):
 def google_login(request, app):
     if _forbidden_for(request, app):
         return HttpResponseForbidden()
+    if not google_oauth_configured():
+        # Reached from a stale page or a typed address: say why, don't 500.
+        request.session[PENDING_TOAST_KEY] = {
+            "type": "error",
+            "message": GOOGLE_OAUTH_MISSING_MSG,
+        }
+        return redirect("settings:integrations-index")
     redirect_uri = _get_redirect_uri(request)
 
     # Create OAuth2 flow instance

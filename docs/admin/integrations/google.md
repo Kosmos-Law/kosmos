@@ -37,6 +37,17 @@ All of this happens after the app is installed and running.
    as `google_tokens.json` inside `GOOGLE_DATA_DIR`. That directory
    defaults to `google/` in the repository root.
 
+Until this file is in place (and holds a `web` or `installed` client),
+**Settings → Integrations** shows no **Connect** buttons. Administrators
+see a note pointing here, and other users see "Google sign-in isn't set up
+yet. Ask an administrator." A connect link reached anyway returns to the
+page with an error instead of failing. Meanwhile the rest of the app keeps
+quiet about Google: the event dialogs show no calendar warning, the
+Documents tab has no **Link Drive Folder** button, the AI chat has no
+**Link a draft** button, and a matter's **Emails** tab is hidden unless
+the matter already holds synced emails. The scheduled calendar and Drive
+jobs do nothing and log no warnings or errors.
+
 Kosmos writes the tokens it obtains into the same directory
 (`calendar_tokens.json`, `contact_tokens.json`, `drive_tokens.json`). Keep
 the directory readable only by the user the application runs as, and
@@ -56,6 +67,13 @@ connection made later replaces the earlier one.
 Set `CALENDAR_ID` in `config/.env` to the id of the calendar that events
 should sync with (shown in that calendar's settings in Google Calendar),
 then restart the application and the worker.
+
+Connecting the calendar without setting `CALENDAR_ID` leaves the setup
+half done. Kosmos says so: **Add Event** and **Edit Event** show a note
+that no calendar is chosen, saving an event shows the same note, and the
+`calendar-sync` job logs an error each run until it is set. While the
+calendar is not connected at all, nothing is shown and the job logs
+nothing above debug level.
 
 The sync is two-way. The `calendar-sync` job runs every two minutes: it
 pushes local changes and deletions to Google, then pulls changes from
@@ -86,6 +104,12 @@ configure.
 Kosmos mirrors PDFs from a matter's Google Drive folder into the matter's
 Documents, where they are text-extracted, searchable and available to the
 AI. Drive access is read-only: Kosmos never changes anything in Drive.
+
+The **Link Drive Folder** button on the Documents tab, and the AI chat's
+**Link a draft** button, appear only while Drive is connected. After a
+disconnect, a matter that is still linked keeps its **Drive Folder**
+button so the link can be seen and removed, and a linked draft keeps its
+badge.
 
 The mirror is append-only. Deleting, trashing or moving a file in Drive
 never removes the document from Kosmos. A document deleted in Kosmos stays

@@ -78,6 +78,21 @@ def check_credentials():
     return GmailAccount.objects.exists()
 
 
+def emails_tab_available(matter_id):
+    """Whether a matter shows its Emails tab.
+
+    Hidden only when nobody could ever connect a mailbox (Google sign-in
+    isn't set up on this server) and the matter holds no synced emails.
+    Emails synced before still show, whatever the setup is now.
+    """
+    from apps.mail.models import Email
+    from apps.settings.integrations.oauth import google_oauth_configured
+
+    return (
+        google_oauth_configured() or Email.objects.filter(matter_id=matter_id).exists()
+    )
+
+
 def build_service(account):
     """Build an authenticated Gmail v1 service for one account, or False."""
     if account is None or not account.token:

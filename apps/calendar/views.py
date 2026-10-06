@@ -43,7 +43,9 @@ def _event_change_response(
     when the (best-effort) Google sync reported failure."""
     response = HttpResponse(status=204, headers={"HX-Trigger": trigger})
     if sync_failed:
-        toast_warning(response, sync_message)
+        # A blank CALENDAR_ID fails every push; reconnecting wouldn't help,
+        # so name the real cause instead.
+        toast_warning(response, google.setup_problem() or sync_message)
     return response
 
 
@@ -252,7 +254,8 @@ def events_add(request, matter_id=None, origin="events"):
         form.fields["description"].widget.attrs.pop("autofocus", None)
         form.fields["matter"].widget.attrs["autofocus"] = "autofocus"
 
-    google_connected = google.check_credentials()
+    # Warn only about a half-finished setup, never a firm without Google.
+    google_problem = google.setup_problem()
 
     today = timezone.localdate().strftime("%Y-%m-%d")
 
@@ -270,7 +273,7 @@ def events_add(request, matter_id=None, origin="events"):
         "add": True,
         "results": None,
         "action": action,
-        "google_connected": google_connected,
+        "google_problem": google_problem,
         "form": form,
     }
 
@@ -321,7 +324,8 @@ def events_edit(request, id, origin="events"):
             use_required_attribute=False,
         )
 
-    google_connected = google.check_credentials()
+    # Warn only about a half-finished setup, never a firm without Google.
+    google_problem = google.setup_problem()
 
     context = {
         "app": "events",
@@ -330,7 +334,7 @@ def events_edit(request, id, origin="events"):
         "results": None,
         "action": f"/events/{id}/edit",
         "event": event,
-        "google_connected": google_connected,
+        "google_problem": google_problem,
         "form": form,
         "origin": origin,
     }

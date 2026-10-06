@@ -4,15 +4,20 @@ link/unlink. In an unsaved conversation (no id yet) the button first
 materializes the row via linkDraftForNewChat() (standalone window only),
 so a draft can be linked before the first prompt. Case chat is the only
 surface with drafts (the Research tab has its own), so no kind branch
-here.
+here. Without Drive connected there is nothing to link, so the link button
+is left out; a draft already linked still shows, with its unlink button.
 {% endcomment %}
+{% load ai_extras %}
+{% drive_connected as drive_on %}
 {% if not conversation.id %}
-  <button type="button"
-          class="btn-icon draft-link-btn"
-          onclick="linkDraftForNewChat()"
-          title="Link a draft (an ODT from this matter's Drive folder)">
-    <i class="icon-wifi-pen"></i>
-  </button>
+  {% if drive_on %}
+    <button type="button"
+            class="btn-icon draft-link-btn"
+            onclick="linkDraftForNewChat()"
+            title="Link a draft (an ODT from this matter's Drive folder)">
+      <i class="icon-wifi-pen"></i>
+    </button>
+  {% endif %}
 {% else %}
   {% if conversation.draft_link %}
     <span class="app-badge ai-draft-badge"
@@ -31,7 +36,7 @@ here.
             title="Unlink draft">
       <i class="icon-x"></i>
     </button>
-  {% else %}
+  {% elif drive_on %}
     <button type="button"
             class="btn-icon draft-link-btn"
             hx-get="{% url 'case:draft-picker' conversation.id %}"

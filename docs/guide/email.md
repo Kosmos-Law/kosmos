@@ -28,8 +28,14 @@ administrator.
 
 You return to the panel, which now shows **Your mailbox:** and your
 address, with a **Disconnect** button. Until someone at the firm has
-connected a mailbox, a matter's **Emails** tab says "Gmail isn't
-connected."
+connected a mailbox, a matter's **Emails** tab says "No Gmail mailbox is
+connected yet. Each person connects their own mailbox under Settings ›
+Integrations."
+
+If there is no **Connect** button and the panel says "Google sign-in isn't
+set up yet. Ask an administrator.", the server is not ready for Google
+connections yet. Until it is, a matter's **Emails** tab is hidden unless
+the matter already holds emails.
 
 Google lists everything Kosmos asks for at once: reading your mail,
 creating labels, and also Calendar, Contacts and read-only Drive. The

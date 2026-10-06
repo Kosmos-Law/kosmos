@@ -428,18 +428,3 @@ def toggle_google_sync(request, id):
     if htmx:
         return HttpResponse(status=204, headers={"HX-Refresh": "true"})
     return redirect("contacts:index")
-
-
-@login_required
-def google_list(request):
-    contacts = Contact.objects.all()
-    # for contact in contacts:
-    #     contact.google_id = ""
-    #     contact.save()
-
-    context = {
-        "app": "contacts",
-        "contacts": contacts,
-    }
-
-    return render(request, "contacts/google.html", context)

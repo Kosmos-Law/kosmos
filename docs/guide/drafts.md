@@ -69,6 +69,9 @@ again." means the file was moved or deleted after the list opened.
 
 Good to know:
 
+- The pen button appears only while the firm's Google Drive is
+  connected. A draft linked earlier keeps its badge and its unlink button
+  either way.
 - The dialog reads "Connect Google Drive and link this matter's Drive
   folder to use drafts." when the matter has no Drive folder linked, and
   "No ODT files found in this matter's Drive folder." when there is
