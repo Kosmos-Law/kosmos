@@ -187,11 +187,15 @@ def test_lookup_without_a_key_names_courtlistener_and_the_setting(
 ):
     from django.urls import reverse
 
+    from apps.case.courtlistener import lookup_citation
+
     settings.COURTLISTENER_API_TOKEN = ""
+    error = lookup_citation("410 U.S. 113").error
+    assert "CourtListener" in error
+    assert "COURTLISTENER_API_KEY" in error
+    # The Case Law pages themselves are gone without a key.
     response = client.post(
         reverse("case:caselaws-lookup", args=[matter.id]),
         {"citation": "410 U.S. 113"},
     )
-    content = response.content.decode()
-    assert "CourtListener" in content
-    assert "COURTLISTENER_API_KEY" in content
+    assert response.status_code == 404

@@ -24,6 +24,19 @@ def _integration_keys(settings):
     settings.COURTLISTENER_API_TOKEN = "test-courtlistener-token"
 
 
+@pytest.fixture(autouse=True)
+def _worker_running():
+    """Page renders see the background worker as running (the test DB has
+    no schedules, so the real check says down and would change badges and
+    banners depending on test order). config/tests/test_health.py clears
+    this to exercise the real check."""
+    from django.core.cache import cache
+
+    from config.health import WORKER_STATUS_CACHE_KEY
+
+    cache.set(WORKER_STATUS_CACHE_KEY, True, 3600)
+
+
 @pytest.fixture
 def ai_off(settings):
     """No AI provider configured (and none stored in Settings)."""
