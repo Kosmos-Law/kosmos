@@ -33,7 +33,7 @@ whichever model a user picks for a chat, and have no Claude alternative:
 - the intake assistant: the intake chat, the assessment, and reading
   forwarded email into intakes
   (see [Intakes from forwarded email](inbound-email.md));
-- the matter Research tab;
+- the summary written for each case saved to a matter;
 - the embeddings behind [semantic search](#semantic-search).
 
 A server with only an Anthropic key can hold chats with the Claude models
@@ -160,8 +160,8 @@ as `COURTLISTENER_API_KEY`.
 
 Without the token, Kosmos makes no CourtListener requests at all:
 
-- case law searches in the Research tab and in Agentic chat return no
-  results;
+- case law searches in Agentic chat return no results, and a case
+  cannot be added to a matter by citation;
 - the text of saved case law cannot be fetched, so it is missing from the
   AI's context;
 - case citations in AI replies are not verified. Each still gets a link
@@ -177,9 +177,11 @@ heavy research session can still run into the account's hourly or daily
 limit, and results will be thinner until it resets. The limits are set by
 CourtListener for your account, not by Kosmos.
 
-The court filter in the Research tab is a list of states maintained in
-the code
-([`apps/case/research/jurisdictions.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/research/jurisdictions.py)).
+The court filter for Agentic chat's case law searches is a list of
+states maintained in the code
+([`apps/case/jurisdictions.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/jurisdictions.py)),
+and a search defaults to the state named in the matter's Jurisdiction
+field.
 Each state has its supreme court, appellate courts and federal circuit.
 Federal district courts are filled in for only some states. Links for
 statute citations are likewise built in the code, and only for the
@@ -269,7 +271,8 @@ can be read during the conversation.
 
 **To Google, by the background features:** intake details and the full
 text of forwarded emails for the intake assistant; document, chat and
-note text for summaries; and chunks of documents, notes, emails,
+note text for summaries, and the opinion text of each saved case for
+its summary; and chunks of documents, notes, emails,
 highlights and facts for semantic search embeddings.
 
 **To CourtListener, when its token is set:** search queries, citations to

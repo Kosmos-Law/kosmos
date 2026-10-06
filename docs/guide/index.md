@@ -39,7 +39,7 @@ Working a case:
 - [Notes](notes.md): the firm's library and the notes kept on a matter.
 - [Drafts](drafts.md): drafting in LibreOffice with the AI's edits as
   tracked changes.
-- [Research](research.md): researching case law from inside a matter.
+- [Case law](research.md): finding case law with the AI and keeping it on a matter.
 - [AI chat](ai-chat.md): asking an AI model about a matter, and what it
   can and cannot see.
 

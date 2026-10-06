@@ -5,8 +5,7 @@ system prompt, runs a model call on a background thread, reports progress
 to a polling view, and applies the writes the model was directed to make.
 Two surfaces share it: the case chat (the matter's **AI** tab) and the
 intake chat (`apps/intakes/chat.py`). Agentic-mode internals are on
-[Agentic chat](agent-chat.md); the Research tab's pipeline is on
-[Research tab](research-tab.md).
+[Agentic chat](agent-chat.md).
 
 ## Where the code is
 
@@ -310,7 +309,7 @@ protocol. The matrix is in the
   keys, the prompt file and retention for operators;
   [Background worker](../../../admin/worker.md) covers qcluster.
 - Neighbouring pages: [Agentic chat](agent-chat.md),
-  [Research tab](research-tab.md), [MCP server and JSON APIs](../mcp.md),
+  [MCP server and JSON APIs](../mcp.md),
   [Case building](../case-building.md),
   [Notes and drafts](../notes-and-drafts.md),
   [Email and intakes](../email-and-intakes.md).

@@ -74,6 +74,7 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [The token estimate is 2.5 characters per token (2026-08-20)](2026-08-20-token-estimate-at-two-and-a-half-chars.md)
 - [What the AI says about money follows what the screens show (2026-10-02)](2026-10-02-ai-money-follows-the-screens.md)
 - [The Plan chat and the nightly auto threads are retired (2026-10-06)](2026-10-06-plan-chat-and-auto-threads-retired.md)
+- [The Research tab is retired (2026-10-06)](2026-10-06-research-tab-retired.md)
 - [Claude Desktop: packaging roadmap](claude-desktop-roadmap.md)
 - [Research Chat (retired 2026-08-16)](research-chat-retired.md)
 

@@ -55,7 +55,6 @@ access, and the things that bite.
 | [Case building](subsystems/case-building.md) | Documents, OCR, the Drive mirror, highlights, facts, witnesses, labels, search |
 | [The AI context system](subsystems/ai/context.md) | Conversations, context builders, the selector, status, fenced writes |
 | [Agentic chat](subsystems/ai/agent-chat.md) | The tool-loop chat mode |
-| [Research tab](subsystems/ai/research-tab.md) | The case-law research pipeline |
 | [Notes and drafts](subsystems/notes-and-drafts.md) | The notes editor and folders, drafts and the LibreOffice companion |
 | [Email and intakes](subsystems/email-and-intakes.md) | Gmail sync, inbound email, intakes, client forms |
 | [MCP server and JSON APIs](subsystems/mcp.md) | What Claude Desktop talks to |

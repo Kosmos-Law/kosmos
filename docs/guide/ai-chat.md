@@ -129,8 +129,8 @@ Chosen for each question:
   [Documents](documents.md));
 - the matter's notes and its synced email threads, with the text of
   their attachments (see [Email](email.md));
-- saved cases (**Full Cases** on the **Research** tab, see
-  [Research](research.md)) and other conversations set to **Auto**;
+- saved cases (the **Case Law** view of the **AI** tab, see
+  [Case law](research.md)) and other conversations set to **Auto**;
 - invoices, only when the question is about billing and you have the
   Financial permission;
 - library notes, only when one bears on the question.
@@ -198,7 +198,7 @@ word out may be answered in prose only.
 | "Add her as a witness." | "Added witness:" and the name, or "Already on the witness list:" | The **Witnesses** tab |
 | "Save that analysis to a note." | "Created note:" and the title | The matter's notes, with you as author |
 | "Add this to the note on service of process." | "Appended to note:" or "Rewrote note:" and the title ("library note" for one in the Library) | The same note, on the matter or in the Library |
-| "Save these cases." (Agentic only, with the Research permission) | "Saved to case law:" and each case | **Full Cases** on the **Research** tab, with what the case was cited for |
+| "Save these cases." (Agentic only, with the Research permission) | "Saved to case law:" and each case | The **Case Law** view of the **AI** tab, with what the case was cited for |
 
 A matter chat does not create tasks. Add them yourself (see
 [Tasks](tasks.md)).

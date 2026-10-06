@@ -76,4 +76,5 @@ highlights anchor on.
 
 - [Case building](../dev/subsystems/case-building.md), "The viewer",
   "Saved cases" and "Things that bite".
-- [Research tab pipeline](../dev/subsystems/ai/research-tab.md).
+- [The Research tab is retired](2026-10-06-research-tab-retired.md)
+  (the developer page on its pipeline was removed with it).

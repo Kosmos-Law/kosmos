@@ -23,9 +23,8 @@ LawPay/AffiniPay or Stripe with trust and operating accounts routed
 separately. Clients can be asked for trust deposits the same way.
 
 **Case building.** Documents with OCR text extraction, highlights and
-citations, a chronological fact timeline, witness tracking, case law pulled
-from CourtListener, and a Research tab that assembles full-opinion briefs
-with citation chasing.
+citations, a chronological fact timeline, witness tracking, and case law
+pulled from CourtListener and saved to the matter.
 
 **AI assistance.** Per-matter chat with a context system that selects the
 relevant documents, notes, case law and prior conversations for each question

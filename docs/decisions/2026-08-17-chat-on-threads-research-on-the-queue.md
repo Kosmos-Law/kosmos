@@ -1,5 +1,9 @@
 # AI chat runs on threads, research runs on the queue (2026-08-17)
 
+The Research tab pipeline was retired on 2026-10-06; the chat half of
+this record still holds. See
+[The Research tab is retired](2026-10-06-research-tab-retired.md).
+
 The application has two kinds of long AI work. A chat turn (case, intake
 and agenda chats, classic and agentic) takes seconds to minutes and the
 user watches it; a Research tab run takes many minutes across several
@@ -85,8 +89,8 @@ that errors a run stranded for thirty minutes.
 
 - [AI chat and context](../dev/subsystems/ai/context.md), "Status and
   the poller" and "Background work".
-- [Research tab pipeline](../dev/subsystems/ai/research-tab.md),
-  "Background work".
+- [The Research tab is retired](2026-10-06-research-tab-retired.md):
+  the developer page on the pipeline was removed with it.
 - [Shared state lives in the database
   cache](2026-08-17-shared-state-in-the-database-cache.md): the store
   the status and the context-reuse entry live in.

@@ -39,7 +39,7 @@ database and run when the worker comes back. Until then:
 | Intakes from forwarded email | The message is stored, but no intake is created from it. |
 | Gmail | Attachment text is not extracted, and linking a label to a matter does not pull its messages in. |
 | Google Drive | Saving a folder mapping does not pull its files in. |
-| Research tab | A run stays in progress, then is marked as an error after 30 minutes so it can be run again. |
+| Saved case law | A case saved to a matter gets no summary. |
 | Every scheduled job | No daily digest email, no Google Calendar, Drive or Gmail sync, no chat purge. |
 
 ### What does not use the worker

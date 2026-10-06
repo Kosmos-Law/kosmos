@@ -151,7 +151,7 @@ An administrator's row is marked "admin": its switches are on and locked.
 | **Financial** | **Invoicing** (invoices, payments and trust), the **Rates** and **Ledger** tabs of a matter, the **Financials** figures on a matter's **Overview**, and the **Trust** tab of a client's contact page. |
 | **Intakes** | The **Intakes** page, and **Intake Forms** and **Intake Emails** in Settings. |
 | **Reports** | The **Reports** page, and the whole firm's figures under **Work in Progress** on the Dash. This switch starts off for a new user. The other four start on. |
-| **Research** | The **Research** tab in a matter's case file. |
+| **Research** | A matter's saved case law (the **Case Law** view of its **AI** tab), and case law search in an Agentic chat. |
 
 ### Limit a user to assigned matters
 

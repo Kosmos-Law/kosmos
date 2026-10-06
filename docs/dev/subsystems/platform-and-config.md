@@ -126,7 +126,8 @@ project entries. On the way in they run in this order:
    the user lacks (`/invoicing/` and `/reports/` by prefix, `/intakes/`
    and the intake-emails settings); and the `PERMISSION_PATTERNS`, which
    gate matter-scoped paths such as `/matters/<id>/rates` and `/ledger`
-   (`perm_financial`) and the Research tab routes (`perm_research`). Its
+   (`perm_financial`) and saved case law and the case viewer
+   (`perm_research`). Its
    `process_view()` then enforces matter membership for everything under
    `/case/`: `user_may_use_route()` in `apps/accounts/access.py` resolves
    the matter from whichever id the URL names (document, fact,

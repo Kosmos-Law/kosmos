@@ -23,7 +23,7 @@ subsystem pages group them.
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
 | [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/search` | Documents and OCR, highlights, facts, witnesses, labels, the case search tab and the saved case law; the Google Drive mirror; the global search modal. |
-| [AI](subsystems/ai/context.md) | `apps/case/ai`, `apps/case/research` | The context builders, the chat surfaces, the agent tool loop, the semantic index; the Research tab pipeline. |
+| [AI](subsystems/ai/context.md) | `apps/case/ai` | The context builders, the chat surfaces, the agent tool loop (with its CourtListener research tools), the semantic index. |
 | [Notes and drafts](subsystems/notes-and-drafts.md) | `apps/notes`, `apps/drafts` | The notes editor, folders and library; draft links and the LibreOffice companion (`companion_src/`). |
 | [Email and intakes](subsystems/email-and-intakes.md) | `apps/mail`, `apps/intakes` | Gmail sync onto matters; intakes, the inbound Mailgun webhook, the client forms. |
 | Settings | `apps/settings` | One package per Settings page (`firm/`, `users/`, `permissions/`, `appearance/`, `integrations/`, `claude/`, and so on) and the `Firm` record. |
@@ -35,7 +35,9 @@ endpoint in `api.py` that the MCP server's `search_kosmos` tool calls).
 None of
 the directories under `apps/` is vestigial: every one is installed and
 routed. There is no `billing`, `lab` or `research` app; billing lives in
-`apps/invoicing` and research in `apps/case/research`. Three packages have no `urls.py`:
+`apps/invoicing` and case-law research in the agentic chat's tools
+(`apps/case/ai/agent_tools.py`) over the CourtListener client in
+`apps/case/courtlistener.py`. Three packages have no `urls.py`:
 `apps/mail` and `apps/drafts` have their views mounted from
 `apps/case/urls.py`, and `apps/drive` has no views at all (it is driven
 by signals, the worker and management commands).

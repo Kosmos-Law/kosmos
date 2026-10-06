@@ -5,8 +5,9 @@ the Google Drive mirror that feeds them, highlights, the timeline of facts,
 witnesses, labels, saved case law, and search inside the matter. It is one
 Django app, `apps/case`, with one sub-package per tab, plus `apps/drive`
 (the mirror) and `apps/search` (the sidebar search across matters). The
-Research tab and the AI tab are documented on their own pages; this page
-only links to them.
+AI tab is documented on its own pages; this page only links to them.
+Saved case law is a view of the AI tab in the interface but its code and
+model live here.
 
 ## Where the code is
 
@@ -19,7 +20,8 @@ only links to them.
 | `apps/case/highlights/` | Highlights tab and the viewer's highlight endpoints |
 | `apps/case/facts/`, `apps/case/witnesses/` | Timeline and Witnesses tabs, the Timeline PDF |
 | `apps/case/labels/` | Labels tab and the apply-labels modal used by every tab |
-| `apps/case/caselaws/` | Saved cases and the case-law viewer |
+| `apps/case/caselaws/` | Saved cases (the AI tab's Case Law view), the case-law viewer, the summary task |
+| `apps/case/courtlistener.py`, `courtlistener_throttle.py`, `jurisdictions.py` | The CourtListener client (citation lookup, cluster and opinion fetches, opinion search); the process-wide request throttle; the state court lists |
 | `apps/case/search/`, `apps/case/search_config.py` | Search inside a matter; watson registration |
 | `apps/search/` | The sidebar search across matters, contacts, intakes and notes |
 | `apps/accounts/middleware.py`, `apps/accounts/access.py` | Matter membership enforced from the URL |
@@ -255,8 +257,23 @@ markup is CourtListener's, the viewer anchors highlights on it, and when
 the viewers were hardened in October 2026 (highlight JSON and research
 excerpts) this one was left as it is pending a real sanitiser. Saved
 cases and the viewer need `perm_research`, enforced by URL pattern in the
-middleware. The rest of the research pipeline is in
-[Research tab](ai/research-tab.md).
+middleware.
+
+The list is a view of the AI tab: `templates/case/ai/view-pills.html`
+puts a Conversations | Case Law switch in both toolbars, shown only to an
+admin or a `perm_research` user. `/case/<id>/caselaws/` and the
+`caselaws` tab key render the list with the AI tab marked active in the
+case navigation. Cases also arrive from the agentic chat's `save-caselaw`
+block (see [Agentic chat](ai/agent-chat.md)), which builds the row from
+`fetch_cluster()` so a citation-less slip opinion saves too.
+
+Jurisdictions (`apps/case/jurisdictions.py`) feed the agent's
+`search_caselaw` court filter: a state lists its supreme and appellate
+courts and home circuit, and federal adds the state's district courts,
+that circuit and the Supreme Court. District lists are filled in as users
+need them (Georgia so far); verify any new id against the CourtListener
+courts endpoint, because a typo silently narrows every search that uses
+the filter.
 
 ### Search
 
@@ -280,7 +297,7 @@ the MCP server.
 |---|---|---|
 | `apps.case.documents.tasks.process_document_ocr` | upload, file replacement, mbox import, Drive ingest, retry and force | `ocr_status="failed"`, `ocr_error` set, badge offers retry |
 | `apps.case.documents.tasks.generate_document_summary` | the OCR task | logged, document keeps no summary |
-| `apps.case.research.tasks._generate_caselaw_summary` | `caselaws_save`, through `generate_caselaw_summary()` | see [Research tab](ai/research-tab.md) |
+| `apps.case.caselaws.tasks._generate_caselaw_summary` | `caselaws_save` and the agent's `save-caselaw` block, through `generate_caselaw_summary()` | logged, the case keeps no summary |
 | `apps.drive.records.resync_mapping_by_id` | the Drive Folder modal | logged; the nightly full pass catches up |
 | `apps.drive.google.scheduled_sync`, `scheduled_sync_full` | schedules `drive-sync` and `drive-sync-nightly-full` | a 410 on the cursor re-bootstraps; other errors raise and the next tick retries |
 
@@ -301,8 +318,8 @@ views in `views.py` that take a matter id also carry
 cannot see is checked in the app: a matter in a form or POST body
 (`documents/access.py`), a source or label id in a body
 (`facts/access.py`, `labels/views.py`), and lists that would reach across
-matters (`documents_for_user()` on the duplicate warning). Saved cases,
-the case-law viewer and the Research tab need `perm_research`. The
+matters (`documents_for_user()` on the duplicate warning). Saved cases
+and the case-law viewer need `perm_research`. The
 matrix is in the [permissions reference](../../reference/permissions.md).
 
 ## Things that bite
@@ -331,6 +348,10 @@ matrix is in the [permissions reference](../../reference/permissions.md).
 - **Sort keys from the session reach `order_by()`.** A stored key the
   list does not know would 500 every load; use `sorting.py` for any new
   sortable list.
+- **The CourtListener throttle is per process.** `courtlistener_throttle.py`
+  spaces requests within one process; qcluster workers, the vetting
+  thread pool and the agent's research tools each keep their own clock,
+  so the account's per-minute limit is the real ceiling.
 - **The case-law viewer trusts CourtListener's HTML.** Any change to how
   opinions are fetched must keep that in mind, or add a sanitiser with an
   allow-list of CourtListener's own elements.
@@ -338,11 +359,11 @@ matrix is in the [permissions reference](../../reference/permissions.md).
 ## Related
 
 - Guide: [Documents](../../guide/documents.md), [Timeline, witnesses
-  and highlights](../../guide/facts.md), [Research](../../guide/research.md)
+  and highlights](../../guide/facts.md), [Case law](../../guide/research.md)
 - Admin: [Google Workspace](../../admin/integrations/google.md) (the Drive
   connection), [Storage](../../admin/integrations/storage.md)
 - Subsystems: [Matters](matters.md), [AI context](ai/context.md),
-  [Research tab](ai/research-tab.md), [Notes and drafts](notes-and-drafts.md),
+  [Agentic chat](ai/agent-chat.md), [Notes and drafts](notes-and-drafts.md),
   [Email and intakes](email-and-intakes.md) (the Emails tab),
   [MCP](mcp.md) (the case JSON API), [Operations](operations.md)
 - Conventions: [HTMX and Alpine](../conventions/htmx-alpine.md),

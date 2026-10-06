@@ -60,7 +60,7 @@ Work reaches it two ways. Code queues a task with
 callers are the OCR pipeline (`apps/case/documents/tasks.py`, `signals.py`,
 `views.py`), the Drive and Gmail syncs, note and document summaries
 (`apps/notes/tasks.py`), semantic re-indexing (`apps/case/ai/semantic.py`),
-the Research tab (`apps/case/research/tasks.py`), the inbound intake
+saved case-law summaries (`apps/case/caselaws/tasks.py`), the inbound intake
 webhook (`apps/intakes/inbound.py`), payment webhooks
 (`apps/invoicing/pay/views.py`). Or a `Schedule` row fires on its cron and the cluster calls the schedule's `func`.
 
