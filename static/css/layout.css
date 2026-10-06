@@ -71,6 +71,24 @@ body {
   width: 100%;
 }
 
+/* Email-not-configured banner (admins only, base.html): an in-flow strip
+   at the top of the content column in the warning-toast wash, so it
+   reads as a standing notice rather than an error. */
+.email-banner {
+  align-items: center;
+  background: var(--toast-warning-body-bg);
+  border-bottom: 1px solid var(--border-medium);
+  color: var(--color-primary);
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.email-banner i {
+  color: var(--warning);
+  flex-shrink: 0;
+}
+
 /* Spacing utilities */
 .mb-0 { margin-bottom: 0; }
 .mb-2 { margin-bottom: 0.5rem; }

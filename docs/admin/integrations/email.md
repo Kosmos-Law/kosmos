@@ -44,12 +44,31 @@ application at start-up.
 
 When `EMAIL_BACKEND` is not set, the mode follows `DEBUG`: `console` when
 `DEBUG` is on, `smtp` when it is off. The development template
-`config/.env.dev` sets `console` explicitly, so a production file that
-began as a copy of it must be changed to `smtp`.
+`config/.env.dev` sets `console` explicitly. The installer fills in `smtp`
+and the server settings for a production install (its `--smtp-*`
+options, or the questions it asks), unless you pass `--no-email`. A
+production file made any other way from a copy of the template must be
+changed to `smtp` by hand.
 
 In `console` mode you can still sign in: read the code from the output of
 `python manage.py runserver`. Under the supplied gunicorn configuration,
 which captures the workers' output, it is written to `logs/error.log`.
+There is no way to sign in without the code.
+
+On a production server (`DEBUG` off) in `console` mode, Kosmos does not
+pretend mail went out:
+
+- Admins see a banner across the top of every page: outbound email is not
+  configured, so messages are written to the server log instead of being
+  sent.
+- Sending an invoice, a reminder, a payment or trust deposit request, an
+  intake email or an intake form link still goes through and is recorded
+  as before, but the confirmation reads "Email is not set up, so this
+  message was logged on the server instead of sent." in place of the usual
+  "sent" message.
+- The **Email Out** note that an intake email adds starts with **Not
+  delivered.**
+- The digest's **Send Test** says the test was logged instead of sent.
 
 ## Configure SMTP
 
@@ -212,7 +231,8 @@ to their assigned matters see only those matters in their digest.
 
 5. Optionally, under **Settings → Notifications**, enable the digest and
    click **Send Test**. It reports "no email sent" when you have no tasks
-   or events to list, which is not a failure.
+   or events to list, which is not a failure. If the mail server refuses
+   the message, the error is shown under the button and in a notice.
 
 ## Troubleshooting
 
@@ -227,8 +247,8 @@ does not allow.
 must be `console`, `locmem` or `smtp`.
 
 **No code arrives and no error is shown.** Check that `EMAIL_BACKEND` is
-not still `console`: in that mode the "message" is in the application's
-output. Otherwise the provider accepted the message, so look in the
+not still `console` (an admin sees a banner saying so on every page): in
+that mode the "message" is in the application's output. Otherwise the provider accepted the message, so look in the
 provider's logs and the recipient's spam folder.
 
 **Invoices fail to send but sign-in codes arrive.** The provider may be

@@ -139,6 +139,12 @@
         <span class="mobile-topbar-wordmark" aria-hidden="true">{% include "components/kosmos-wordmark.html" %}</span>
       </a>
     </header>
+    {% if email_not_delivering and user.is_admin %}
+      <div class="email-banner" role="status">
+        <i class="icon-mail" aria-hidden="true"></i>
+        <span>Outbound email is not configured, so messages are written to the server log instead of being sent. Sign-in codes are there too. Set EMAIL_BACKEND=smtp in config/.env (see Outgoing email in the admin docs).</span>
+      </div>
+    {% endif %}
     <div id="toast-container"
          class="toast-container position-fixed top-0 end-0 p-3"></div>
     {% block content %}

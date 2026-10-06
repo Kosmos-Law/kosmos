@@ -37,7 +37,7 @@ from apps.management.selection import (
 )
 from apps.matters.ledger.get_ledger_data import get_ledger_context
 from apps.matters.models import Matter
-from utils.toasts import toast_error, toast_success
+from utils.toasts import toast_email_sent, toast_error
 
 from .filters import InvoiceFilter
 from .forms import EditInvoiceForm, InvoiceForm
@@ -929,7 +929,7 @@ def invoices_send(request, pk):
             status=204,
             headers={"HX-Trigger": "invoiceDetailChanged, invoicesChanged"},
         )
-        toast_success(response, f"Invoice #{invoice.id} sent to {recipient}.")
+        toast_email_sent(response, f"Invoice #{invoice.id} sent to {recipient}.")
         return response
 
     context = {
@@ -981,7 +981,7 @@ def invoices_send_reminder(request, pk):
             status=204,
             headers={"HX-Trigger": "invoiceDetailChanged, invoicesChanged"},
         )
-        toast_success(
+        toast_email_sent(
             response, f"Reminder for invoice #{invoice.id} sent to {recipient}."
         )
         return response

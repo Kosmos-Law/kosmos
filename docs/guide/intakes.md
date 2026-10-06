@@ -137,6 +137,13 @@ merge fields, so type the greeting yourself). Check **Reply-To** and click
 **Email Out**. A copy goes to the firm's intake email address, if one is
 set. Templates are kept under **Settings → Intake Emails**.
 
+If your firm's server has no outgoing email set up, nothing leaves it.
+Kosmos then says "Email is not set up, so this message was logged on the
+server instead of sent." and the **Email Out** note starts with **Not
+delivered.** The same warning replaces the "sent" message for invoices,
+payment requests and intake form links. Ask your administrator to set up
+email.
+
 ## Intakes that arrive by email
 
 Your firm may have an intake address. Forward a prospective client's
