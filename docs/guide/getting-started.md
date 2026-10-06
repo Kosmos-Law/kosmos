@@ -48,15 +48,15 @@ The first time you open Kosmos each day, it takes you to the **Dash**,
 whichever page you asked for. After that it leaves you alone until the
 next day. The Dash shows up to three sections:
 
+- **Upcoming Events**: the next seven pending events on the matters you
+  can see, earliest first. An event whose date has passed stays here
+  until it is no longer pending. Click a card to open the event.
 - **Work in Progress**: work that is recorded but not yet billed, as a
   chart and a table of **Hours**, **Gross**, **Comp** and **Net** for each
   matter. It starts on **This Month**. Use the date button on the right to
   pick another period. You see your own work. Administrators, and users
   with the Reports permission, see the whole firm's and can switch
   between **By User** and **By Matter**.
-- **Upcoming Events**: the next seven pending events on the matters you
-  can see, earliest first. An event whose date has passed stays here
-  until it is no longer pending. Click a card to open the event.
 - **Collections**: **Past Due** balances and matters with **Low Trust
   Available (Pending)**. Only administrators see this section.
 

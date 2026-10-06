@@ -27,7 +27,7 @@
 }
 
 /* On the dash the WIP section is single, so drop its report-only bottom margin
-   and let the .dashboard row gap alone separate it from Upcoming Events. */
+   and let the .dashboard row gap alone separate it from the next row. */
 #dash-wip .wip-section {
   margin-bottom: 0;
 }
@@ -42,6 +42,12 @@
 /* ==========================================================================
  Upcoming events — card grid (reuses the kanban-card visual language)
 ========================================================================== */
+
+/* With no upcoming events the section renders nothing, but its reload wrapper
+   would still take a flex slot (and a row gap) at the top of the dash. */
+#dash-events:not(:has(.dash-row)) {
+  display: none;
+}
 
 .events-header {
   align-items: center;

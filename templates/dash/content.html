@@ -1,17 +1,17 @@
 {% load humanize %}
 <div class="dashboard">
-  {# Row 1: Work in Progress — admins toggle by user/matter; others see only self #}
+  {# Row 1: Upcoming events — card grid, reloads on event edits, hidden when empty #}
+  <div id="dash-events"
+       hx-trigger="eventsChanged from:body"
+       hx-get="{% url 'dash:events-section' %}"
+       hx-target="this">{% include "dash/events_section.html" %}</div>
+  {# Row 2: Work in Progress — admins toggle by user/matter; others see only self #}
   <div class="dash-row">
     <div id="dash-wip"
          hx-trigger="wipChanged from:body"
          hx-get="{% url 'dash:wip-section' %}{% if wip_preview_user %}?view=user{% endif %}"
          hx-target="this">{% include "dash/wip_section.html" %}</div>
   </div>
-  {# Row 2: Upcoming events — card grid, reloads on event edits, hidden when empty #}
-  <div id="dash-events"
-       hx-trigger="eventsChanged from:body"
-       hx-get="{% url 'dash:events-section' %}"
-       hx-target="this">{% include "dash/events_section.html" %}</div>
   {# Row 3: Collections — past due | low trust available, admins only #}
   {% if show_collections %}
     <div class="dash-row">
