@@ -262,12 +262,16 @@ Without the token, Kosmos makes no CourtListener requests at all:
 - saved case law is hidden on every matter, and its addresses (the list,
   adding by citation, the case viewer) answer 404. Cases already saved
   stay in the database and reappear when the token is set again;
-- case law searches in Agentic chat return no results;
+- Agentic chat is not offered the case law search tools, and its
+  research method is left out of the AI's instructions;
+- the text of case law already saved cannot be fetched, so it is missing
+  from the AI's context;
 - case citations in AI replies are not verified. Each still gets a link
   to a CourtListener search so a person can check it by hand. Statute
   citations still get links, which do not depend on CourtListener.
 
-No message tells the user that the token is the reason.
+Restart both services after setting the token. The search tools
+are offered from the next question on.
 
 CourtListener limits requests per account. Kosmos spaces its requests a
 quarter of a second apart within each process and, when CourtListener

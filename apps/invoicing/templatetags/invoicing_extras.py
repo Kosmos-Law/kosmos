@@ -42,3 +42,11 @@ def ledger_visible_to(invoice, user):
     detail page's Ledger tab): the invoice has a matter and the user can reach
     it. The financial permission is already required for all of invoicing."""
     return invoice.matter is not None and user.has_matter_access(invoice.matter)
+
+
+@register.simple_tag
+def ledes_available():
+    """Whether Download Ledes can be offered (LAW_FIRM_ID is set)."""
+    from apps.invoicing.invoices.functions import ledes_available as available
+
+    return available()

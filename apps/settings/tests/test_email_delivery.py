@@ -22,7 +22,7 @@ from utils.toasts import toast_email_sent
 pytestmark = pytest.mark.django_db
 
 CONSOLE = "django.core.mail.backends.console.EmailBackend"
-BANNER = b'class="email-banner"'
+BANNER = b"Outbound email is not configured"
 
 
 @pytest.mark.parametrize(

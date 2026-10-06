@@ -1,8 +1,9 @@
 """Agent mode's case-law research needs the Research permission.
 
 The CourtListener tools are offered to the model, and run, only for a user
-who could open the Research tab. The case law already saved on the matter
-is matter material and stays readable.
+who could open the Research tab, and only when CourtListener is configured
+(COURTLISTENER_API_KEY). The case law already saved on the matter is matter
+material and stays readable.
 """
 
 import json
@@ -12,6 +13,7 @@ import pytest
 from apps.accounts.models import CustomUser
 from apps.case.ai.agent_prompt import build_agent_system
 from apps.case.ai.agent_tools import (
+    COURTLISTENER_UNCONFIGURED_REFUSAL,
     RESEARCH_TOOLS,
     build_agent_tools,
     make_agent_executor,
@@ -25,6 +27,11 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def _no_semantic_pass(monkeypatch):
     monkeypatch.setattr("apps.case.ai.agent_tools.semantic_entries", lambda *a, **k: [])
+
+
+@pytest.fixture(autouse=True)
+def _courtlistener_key(settings):
+    settings.COURTLISTENER_API_TOKEN = "test-token"
 
 
 @pytest.fixture
@@ -143,3 +150,48 @@ def test_prompt_carries_the_research_method_only_with_research(
     segments, _ = build_agent_system(matter, no_research, conversation, message)
     assert "## Legal Research Method" not in segments[0]
     assert "save-caselaw" not in segments[2]
+
+
+def test_research_tools_withheld_without_a_courtlistener_key(settings):
+    settings.COURTLISTENER_API_TOKEN = ""
+    offered = {t["name"] for t in build_agent_tools(include_research=True)}
+    assert not set(RESEARCH_TOOLS) & offered
+    assert "read_caselaw" in offered
+
+
+@pytest.mark.parametrize("name", RESEARCH_TOOLS)
+def test_research_tools_refuse_without_a_courtlistener_key(
+    matter, user, courtlistener, settings, name
+):
+    settings.COURTLISTENER_API_TOKEN = ""
+    execute = make_agent_executor(matter, None, user=user)
+    payload, outcome = run(execute, name, query="spoliation")
+    assert outcome["is_error"]
+    assert payload["error"] == COURTLISTENER_UNCONFIGURED_REFUSAL
+    assert courtlistener == []
+
+
+def test_prompt_drops_the_research_method_without_a_courtlistener_key(
+    matter, user, settings
+):
+    settings.COURTLISTENER_API_TOKEN = ""
+    conversation = Conversation.objects.create(
+        matter=matter, title="Agent", kind="agent", user=user
+    )
+    segments, _ = build_agent_system(matter, user, conversation, "Research this.")
+    assert "## Legal Research Method" not in segments[0]
+
+
+def test_lookup_without_a_key_names_courtlistener_and_the_setting(
+    client, matter, settings
+):
+    from django.urls import reverse
+
+    settings.COURTLISTENER_API_TOKEN = ""
+    response = client.post(
+        reverse("case:caselaws-lookup", args=[matter.id]),
+        {"citation": "410 U.S. 113"},
+    )
+    content = response.content.decode()
+    assert "CourtListener" in content
+    assert "COURTLISTENER_API_KEY" in content

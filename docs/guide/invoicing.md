@@ -117,6 +117,12 @@ Northside Logistics", and opens on **Time**.
 | **History** | **Delivery History** (each email) and **Payment History** (payments and credits applied), with **Invoice total** and **Outstanding**. |
 | **Ledger** | The matter's ledger, if you can see the matter. |
 
+The download button at the top of the page, and on each row of the
+**Invoices** list, offers **Download PDF**. It also offers **Download
+Ledes**, a LEDES 1998B file for clients that take electronic bills, once
+an administrator has set the firm's LEDES id (`LAW_FIRM_ID`). Until then
+that choice is not shown. A void invoice offers only the PDF.
+
 While the invoice is a draft you can change what is on it:
 
 - Click an entry's text to edit or delete it. A comp entry shows "comp"

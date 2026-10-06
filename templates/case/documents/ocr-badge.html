@@ -1,5 +1,16 @@
+{% load worker_health %}
 {% if document.file.name|slice:"-4:"|lower == ".pdf" %}
-  {% if document.ocr_status == 'pending' %}
+  {% if document.ocr_status == 'pending' or document.ocr_status == 'processing' %}
+    {% background_worker_down as worker_down %}
+  {% endif %}
+  {% if worker_down %}
+    {% comment %}
+      The background worker runs OCR. While it is stopped nothing moves,
+      so say so and stop polling rather than spin forever.
+    {% endcomment %}
+    <span class="app-badge ocr-badge badge-yellow"
+          title="The background worker isn't running. OCR resumes once it restarts.">ocr paused</span>
+  {% elif document.ocr_status == 'pending' %}
     <span class="app-badge ocr-badge badge-yellow"
           hx-get="{% url 'case:ocr-badge' document.id %}{% if hide_on_bypass %}?hide_on_bypass=1{% endif %}"
           hx-trigger="every 3s"

@@ -441,6 +441,11 @@ class TestBatchRunner:
 
 
 class TestResearchTools:
+    @pytest.fixture(autouse=True)
+    def _courtlistener_key(self, settings):
+        # The CourtListener tools are offered and run only with a key.
+        settings.COURTLISTENER_API_TOKEN = "test-token"
+
     def _cache_opinion(self, cluster_id, text, case_name="Smith v. Jones"):
         from django.core.cache import cache as django_cache
 

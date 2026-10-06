@@ -20,7 +20,7 @@ from apps.activity.flat_fees.summary import (
 from apps.activity.time.models import TimeEntry
 from apps.activity.time.summary import calculate_summary as calculate_time_summary
 from apps.invoicing.applications.models import PaymentApplication, apply_to_invoice
-from apps.invoicing.invoices.functions import generate_ledes_98b
+from apps.invoicing.invoices.functions import generate_ledes_98b, ledes_available
 from apps.invoicing.invoices.get_invoice_data import get_invoice_data
 from apps.invoicing.payments.forms import PaymentForm
 from apps.invoicing.payments.trust import sync_trust_withdrawal
@@ -768,7 +768,7 @@ def invoices_pdf_download(request, pk):
 def invoice_ledes_98b(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
 
-    if invoice.status == "VOID":
+    if invoice.status == "VOID" or not ledes_available():
         return HttpResponse(status=400)
 
     ledes_file = generate_ledes_98b(invoice)

@@ -1,5 +1,6 @@
 {% load static %}
 {% load cache_buster %}
+{% load worker_health %}
 <!DOCTYPE html>
 <head>
   <meta charset="UTF-8" content="" />
@@ -139,11 +140,24 @@
         <span class="mobile-topbar-wordmark" aria-hidden="true">{% include "components/kosmos-wordmark.html" %}</span>
       </a>
     </header>
-    {% if email_not_delivering and user.is_admin %}
-      <div class="email-banner" role="status">
-        <i class="icon-mail" aria-hidden="true"></i>
-        <span>Outbound email is not configured, so messages are written to the server log instead of being sent. Sign-in codes are there too. Set EMAIL_BACKEND=smtp in config/.env (see Outgoing email in the admin docs).</span>
-      </div>
+    {% if user.is_admin %}
+      {% comment %}
+        Admin-only notices for a server that is not fully set up: one
+        shared style, one line each.
+      {% endcomment %}
+      {% if email_not_delivering %}
+        <div class="admin-notice" role="status">
+          <i class="icon-mail" aria-hidden="true"></i>
+          <span>Outbound email is not configured, so messages are written to the server log instead of being sent. Sign-in codes are there too. Set EMAIL_BACKEND=smtp in config/.env (see Outgoing email in the admin docs).</span>
+        </div>
+      {% endif %}
+      {% background_worker_down as worker_down %}
+      {% if worker_down %}
+        <div class="admin-notice" role="status">
+          <i class="icon-triangle-alert" aria-hidden="true"></i>
+          <span>The background worker isn't running, so OCR, syncing and scheduled jobs are paused.</span>
+        </div>
+      {% endif %}
     {% endif %}
     <div id="toast-container"
          class="toast-container position-fixed top-0 end-0 p-3"></div>

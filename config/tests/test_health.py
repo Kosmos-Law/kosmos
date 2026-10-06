@@ -70,3 +70,63 @@ def test_worker_is_unavailable_when_no_schedules_are_installed(client):
     response = client.get(reverse("health-worker"))
 
     assert response.status_code == 503
+
+
+# The same check, cached, drives the admin notice in base.html.
+
+WORKER_NOTICE = "background worker isn"
+
+
+@pytest.fixture
+def clear_worker_cache():
+    from django.core.cache import cache
+
+    from config.health import WORKER_STATUS_CACHE_KEY
+
+    cache.delete(WORKER_STATUS_CACHE_KEY)
+    yield
+    cache.delete(WORKER_STATUS_CACHE_KEY)
+
+
+@pytest.mark.django_db
+def test_worker_looks_down_is_cached(clear_worker_cache):
+    from django.core.management import call_command
+
+    from config.health import worker_looks_down
+
+    assert worker_looks_down()  # no schedules installed
+    call_command("setup_schedules", verbosity=0)
+    # Still the cached answer until it expires.
+    assert worker_looks_down()
+
+
+def _page_for(role):
+    from django.test import Client
+
+    from apps.accounts.models import CustomUser
+
+    user = CustomUser.objects.create(
+        username=f"u-{role}", email=f"{role}@example.com", role=role
+    )
+    client = Client()
+    client.force_login(user)
+    client.get("/dash/")  # daily dash session, so later pages don't redirect
+    return client.get(reverse("tasks-index")).content.decode()
+
+
+@pytest.mark.django_db
+def test_admins_see_a_notice_while_the_worker_is_down(clear_worker_cache):
+    assert WORKER_NOTICE in _page_for("ADMIN")
+
+
+@pytest.mark.django_db
+def test_other_users_never_see_the_worker_notice(clear_worker_cache):
+    assert WORKER_NOTICE not in _page_for("USER")
+
+
+@pytest.mark.django_db
+def test_no_notice_while_the_worker_runs(clear_worker_cache):
+    from django.core.management import call_command
+
+    call_command("setup_schedules", verbosity=0)
+    assert WORKER_NOTICE not in _page_for("ADMIN")

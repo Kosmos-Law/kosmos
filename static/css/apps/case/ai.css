@@ -1744,48 +1744,6 @@
   to { transform: rotate(360deg); }
 }
 
-/* Header pill: citation vetting toggle */
-.ai-vet-citations-pill {
-  align-items: center;
-  background: transparent;
-  cursor: pointer;
-  display: inline-flex;
-  gap: 0.375rem;
-}
-
-.ai-vet-citations-on {
-  background: var(--status-green-bg);
-  border: 1px solid var(--status-green-line);
-  color: var(--status-green-ink);
-}
-
-.ai-vet-citations-on:hover {
-  background: var(--status-green-hover);
-}
-
-.ai-vet-citations-off {
-  background: var(--ai-raised);
-  border: 1px solid var(--border-medium);
-  color: var(--color-primary);
-}
-
-.ai-vet-citations-off:hover {
-  background: var(--background-control);
-}
-
-.ai-vet-citations-preview {
-  cursor: default;
-  opacity: 0.7;
-}
-
-/* Dark mode — the "on" pill carries .app-badge, so restore its green as a
-   coloured outline (the blanket badges.css rule would otherwise neutralise it). */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .app-badge.ai-vet-citations-on {
-  background: transparent;
-  border-color: var(--label-green-line);
-  color: var(--label-green-line);
-}
-
 /* Citation vetting modal */
 .citation-vetting-modal-body {
   display: flex;
