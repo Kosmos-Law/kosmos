@@ -200,8 +200,9 @@ Good to know:
 
     Online payment works once the person who runs your Kosmos server has
     connected a payment processor: see
-    [Online payments](../admin/integrations/payments.md). Nothing inside
-    Kosmos shows whether one is connected, so ask your administrator.
+    [Online payments](../admin/integrations/payments.md). Until then,
+    the invoice emails carry **View invoice** instead of **Pay now**, and
+    the **Request Payment** and **Request Deposit** actions are not shown.
 
 ### What the client receives
 
@@ -246,9 +247,21 @@ it.
 
 ### If online payment is not set up
 
-The emails still carry **Pay now**. The page shows the amount due and the
-invoice download, with "Online payment is not available. Please contact us
-to arrange payment." Nothing can be paid there.
+Invoice emails and invoice reminders carry a **View invoice** button
+instead of **Pay now**, and their text no longer offers to take payment.
+The page it opens shows the amount due and the invoice download, with
+"Online payment is not available. Please contact us to arrange payment."
+Nothing can be paid there. Links sent before online payment was turned off
+open the same page.
+
+Payment requests and trust deposit requests cannot be sent:
+
+- **Request Payment**, **Request Trust Deposit** and the **Trust** tab's
+  **Request Deposit** are not shown.
+- The **Requests** tab is shown only while there are requests from
+  before. They can be canceled but not resent or reminded.
+- A request form opened another way says "Online payments are not set up.
+  Requests cannot be sent." and sends nothing.
 
 ## Request payment of a balance
 

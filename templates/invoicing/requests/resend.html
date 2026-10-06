@@ -84,6 +84,7 @@
       <button type="submit"
               form="resend-form"
               id="resend-submit"
+              {% if not online_payments_enabled %}disabled{% endif %}
               class="btn btn-success btn-busy">
         <span class="btn-busy-idle">
           {% if reminder %}

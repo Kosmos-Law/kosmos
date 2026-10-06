@@ -55,7 +55,8 @@
   </td>
   <td class="amount">${{ payment_request.amount_requested|floatformat:2|intcomma }}</td>
   <td class="action-send dropdown-cell">
-    {% if payment_request.status == "SENT" %}
+    {# With online payment off a request cannot be sent again: no send actions. #}
+    {% if payment_request.status == "SENT" and online_payments_enabled %}
       {% if payment_request.annotated_send_count %}
         <div class="dropdown" x-data="dropdown()">
           <button class="button-link"

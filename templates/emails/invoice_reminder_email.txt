@@ -16,6 +16,8 @@ Invoice:     {{ invoice.id }}
 Amount Due:  ${{ amount_due|floatformat:2|intcomma }}
 {% if pay_url %}
 Pay online:  {{ pay_url }}
+{% elif view_url %}
+View online: {{ view_url }}
 {% endif %}
 {% if firm_address %}
 --
