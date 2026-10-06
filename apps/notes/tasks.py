@@ -3,6 +3,8 @@ import logging
 
 from django.core.cache import cache
 
+from apps.settings.ai import ai_enabled
+
 logger = logging.getLogger(__name__)
 
 NOTE_SUMMARY_PROMPT = (
@@ -33,7 +35,9 @@ def generate_note_summary(note_id):
     documents: the summary regenerates whenever the stored source hash no
     longer matches the content. Safe to over-queue — a matching hash no-ops.
     """
-    from apps.case.ai.gemini_client import send_to_gemini
+    if not ai_enabled():
+        return
+    from apps.case.ai.providers import complete
     from apps.notes.models import Note
 
     try:
@@ -52,10 +56,9 @@ def generate_note_summary(note_id):
         if len(note.content) > SUMMARY_TEXT_LIMIT:
             text_excerpt += "\n... (note continues)"
 
-        response_text, _, _ = send_to_gemini(
+        response_text, _, _ = complete(
             system_context=NOTE_SUMMARY_PROMPT,
             messages=[{"role": "user", "content": f"# {note.title}\n\n{text_excerpt}"}],
-            model="gemini-2.5-flash",
         )
 
         note.summary = response_text.strip()
@@ -70,6 +73,8 @@ def generate_note_summary(note_id):
 
 def queue_note_summary(note_id):
     """Queue summary generation for a note if it is a library candidate."""
+    if not ai_enabled():
+        return
     from django_q.tasks import async_task
 
     from apps.notes.models import get_library_notes
@@ -92,6 +97,8 @@ def queue_library_summary_sweep():
     Called from notes_bulk_move; the sweep can touch every library note,
     so it should not run in the request cycle.
     """
+    if not ai_enabled():
+        return
     from django_q.tasks import async_task
 
     async_task(
@@ -107,6 +114,8 @@ def queue_stale_library_summaries():
     Called through queue_library_summary_sweep() after a bulk move, and by
     the backfill_note_summaries management command.
     """
+    if not ai_enabled():
+        return
     from django_q.tasks import async_task
 
     from apps.notes.models import get_library_notes

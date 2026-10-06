@@ -55,6 +55,14 @@ def get_api_token() -> str:
     return getattr(settings, "COURTLISTENER_API_TOKEN", "")
 
 
+def caselaw_available(user) -> bool:
+    """Saved case law is offered when CourtListener is set up and the user
+    holds the Research permission (admins hold every permission)."""
+    return bool(get_api_token()) and bool(
+        user and user.is_authenticated and (user.is_admin or user.perm_research)
+    )
+
+
 def lookup_citation(citation_text: str) -> CaseLookupResult:
     """
     Look up a citation using CourtListener's citation-lookup API.

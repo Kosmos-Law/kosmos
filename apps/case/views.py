@@ -30,9 +30,26 @@ def get_tab_session_key(matter_id):
 
 
 def get_last_tab(request, matter_id):
-    """Get the last active tab for a matter, or default to documents."""
+    """Get the last active tab for a matter, or default to documents. A
+    remembered tab whose integration has since gone (AI, CourtListener)
+    falls back too."""
     tab = request.session.get(get_tab_session_key(matter_id), DEFAULT_TAB)
-    return tab if tab in VALID_TABS else DEFAULT_TAB
+    if tab not in VALID_TABS or not tab_available(request.user, tab):
+        return DEFAULT_TAB
+    return tab
+
+
+def tab_available(user, tab):
+    """Whether this server and user can show ``tab`` at all."""
+    if tab == "ai":
+        from apps.settings.ai import ai_enabled
+
+        return ai_enabled()
+    if tab == "caselaws":
+        from apps.case.courtlistener import caselaw_available
+
+        return caselaw_available(user)
+    return True
 
 
 def set_last_tab(request, matter_id, tab):

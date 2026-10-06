@@ -1,6 +1,6 @@
 import re
 
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound
 
 
 class HtmxLoginRedirectMiddleware:
@@ -51,6 +51,17 @@ class PermissionMiddleware:
         ),
     ]
 
+    # Pages that exist only when an optional integration is set up. Hidden
+    # links are not a gate: without the integration these 404 for everyone.
+    AI_PATTERN = re.compile(
+        r"^/case/(\d+/)?(tab/)?ai/"
+        r"|^/case/drafts/"
+        r"|^/intakes/\d+/(assess|chat/)"
+    )
+    CASELAW_PATTERN = re.compile(
+        r"^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/"
+    )
+
     # Where matter membership is enforced from the URL alone. /matters/ and
     # /notes/ views carry their own checks.
     MATTER_SCOPED_PREFIXES = ("/case/",)
@@ -69,6 +80,17 @@ class PermissionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if self.AI_PATTERN.match(request.path):
+            from apps.settings.ai import ai_enabled
+
+            if not ai_enabled():
+                return HttpResponseNotFound()
+        if self.CASELAW_PATTERN.match(request.path):
+            from apps.case.courtlistener import get_api_token
+
+            if not get_api_token():
+                return HttpResponseNotFound()
+
         if request.user.is_authenticated and not request.user.is_admin:
             if request.path.startswith("/admin/"):
                 return HttpResponseForbidden()

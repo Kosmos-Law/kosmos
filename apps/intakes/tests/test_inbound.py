@@ -60,7 +60,7 @@ def mock_ai(monkeypatch):
     def _set(payload):
         text = payload if isinstance(payload, str) else json.dumps(payload)
         monkeypatch.setattr(
-            "apps.case.ai.gemini_client.send_to_gemini",
+            "apps.case.ai.gemini_client.send_to_gemini_streaming",
             lambda *args, **kwargs: (text, 10, 5),
         )
 
@@ -256,7 +256,9 @@ def test_ai_still_receives_full_text(user, monkeypatch):
         seen["content"] = messages[0]["content"]
         return json.dumps(EXTRACTION), 10, 5
 
-    monkeypatch.setattr("apps.case.ai.gemini_client.send_to_gemini", fake_gemini)
+    monkeypatch.setattr(
+        "apps.case.ai.gemini_client.send_to_gemini_streaming", fake_gemini
+    )
     post_inbound({"body-plain": FORWARDED_BODY})
     assert "promising case" in seen["content"]
 
@@ -423,3 +425,24 @@ def test_invalid_source_and_phone_handled(user, mock_ai):
     intake = Intake.objects.get()
     assert intake.source == "Unknown"
     assert intake.phone == "not a number"
+
+
+def test_without_ai_the_intake_comes_from_the_raw_message(
+    user, ai_off, assessment_calls, monkeypatch
+):
+    """No AI provider: no extraction call, no failure, no first assessment;
+    the note carries the message itself."""
+
+    def no_call(*args, **kwargs):
+        raise AssertionError("no AI call without a provider")
+
+    monkeypatch.setattr("apps.case.ai.gemini_client.send_to_gemini_streaming", no_call)
+    post_inbound()
+
+    inbound = InboundEmail.objects.get()
+    assert inbound.status == "processed"
+    assert inbound.error == ""
+    note = Note.objects.get()
+    assert "AI summary" not in note.details
+    assert "fence over my property line" in note.details
+    assert assessment_calls == []

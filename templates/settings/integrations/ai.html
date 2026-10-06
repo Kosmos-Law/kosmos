@@ -1,0 +1,43 @@
+{% comment %}
+  One row per AI provider. A key in config/.env wins and cannot be changed
+  here; otherwise an admin enters one (checked with the provider before it is
+  saved) or removes it. Posts via htmx from the button, not a <form>, so the
+  browser never offers to save the key as a password.
+{% endcomment %}
+<div id="ai-settings" class="integrations-list">
+  {% for provider in ai_providers %}
+    <div class="integrations-item integrations-item-stacked">
+      <div class="integrations-item-row">
+        <span>{{ provider.label }}</span>
+        {% if provider.source == "env" %}
+          <span class="ai-key-source">Set in config/.env</span>
+        {% elif provider.source == "settings" %}
+          <button type="button"
+                  class="btn btn-danger"
+                  hx-post="{% url 'settings:ai-key-save' provider.id %}"
+                  hx-vals='{"key": ""}'
+                  hx-target="#ai-settings"
+                  hx-swap="outerHTML"
+                  hx-confirm="Remove the {{ provider.label }} key? AI features that need it stop working.">
+            Remove
+          </button>
+        {% else %}
+          <span class="ai-key-entry" id="ai-key-{{ provider.id }}">
+            <input type="password"
+                   name="key"
+                   autocomplete="off"
+                   placeholder="API key"
+                   aria-label="{{ provider.label }} API key">
+            <button type="button"
+                    class="btn btn-success"
+                    hx-post="{% url 'settings:ai-key-save' provider.id %}"
+                    hx-include="#ai-key-{{ provider.id }}"
+                    hx-target="#ai-settings"
+                    hx-swap="outerHTML">Save</button>
+          </span>
+        {% endif %}
+      </div>
+      {% if provider.error %}<p class="ai-key-error">{{ provider.error }}</p>{% endif %}
+    </div>
+  {% endfor %}
+</div>

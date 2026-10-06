@@ -92,7 +92,7 @@ class TestLibrarySelection:
     def test_short_circuit_without_library(self):
         items = [_mk("document", 1)]
         content_map = {("document", 1): "doc text"}
-        with patch("apps.case.ai.selector.send_to_gemini") as send:
+        with patch("apps.case.ai.selector.complete") as send:
             selected, unselected = select_context(items, content_map, "q", 10_000)
         assert not send.called
         assert selected == ["doc text"]
@@ -101,7 +101,7 @@ class TestLibrarySelection:
         items = [_mk("document", 1), _mk("library", 2)]
         content_map = {("document", 1): "doc text", ("library", 2): "lib text"}
         with patch(
-            "apps.case.ai.selector.send_to_gemini",
+            "apps.case.ai.selector.complete",
             return_value=('{"selected": [{"type": "library", "id": 2}]}', 1, 1),
         ) as send:
             selected, unselected = select_context(items, content_map, "q", 10_000)

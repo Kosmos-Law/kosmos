@@ -13,6 +13,8 @@ from django.utils import timezone
 from ocrmypdf import hookimpl
 from pypdf import PdfReader
 
+from apps.settings.ai import ai_enabled
+
 from .ocr_progress import DatabaseProgressBar
 
 logger = logging.getLogger(__name__)
@@ -253,14 +255,15 @@ def process_document_ocr(document_id, force=False):
         )
 
         # Queue AI summary generation
-        from django_q.tasks import async_task
+        if ai_enabled():
+            from django_q.tasks import async_task
 
-        async_task(
-            "apps.case.documents.tasks.generate_document_summary",
-            document_id,
-            task_name=f"Summary-{document_id}",
-            group="summary_generation",
-        )
+            async_task(
+                "apps.case.documents.tasks.generate_document_summary",
+                document_id,
+                task_name=f"Summary-{document_id}",
+                group="summary_generation",
+            )
 
     except Exception as e:
         logger.exception(f"OCR failed for document {document_id}")
@@ -286,7 +289,9 @@ def generate_document_summary(document_id):
     Called automatically after OCR completes, or as a backfill task.
     The summary is used in the manifest for intelligent context selection.
     """
-    from apps.case.ai.gemini_client import send_to_gemini
+    if not ai_enabled():
+        return
+    from apps.case.ai.providers import complete
     from apps.case.models import Document
 
     try:
@@ -306,10 +311,9 @@ def generate_document_summary(document_id):
         if len(document.ocr_text) > SUMMARY_TEXT_LIMIT:
             text_excerpt += "\n... (document continues)"
 
-        response_text, _, _ = send_to_gemini(
+        response_text, _, _ = complete(
             system_context=SUMMARY_PROMPT,
             messages=[{"role": "user", "content": text_excerpt}],
-            model="gemini-2.5-flash",
         )
 
         document.summary = response_text.strip()

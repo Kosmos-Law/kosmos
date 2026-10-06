@@ -232,6 +232,26 @@ Settings Contacts - Column Layout
   margin: 0;
 }
 
+/* AI provider rows: a key typed in place, or where an existing one lives. */
+.ai-key-entry {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ai-key-entry input {
+  width: 12rem;
+}
+
+.ai-key-source {
+  color: var(--color-muted);
+}
+
+.integrations-item .ai-key-error {
+  color: var(--error);
+  margin: 0;
+}
+
 /* The labels a mailbox still needs, one per line so the exact names are
    easy to read and copy (they must match character for character). */
 .missing-label-list {

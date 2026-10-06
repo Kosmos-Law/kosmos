@@ -498,10 +498,11 @@ def _quick_add_ai_entry(request):
     prefix matcher (the default)."""
     from apps.settings.models import Firm
     from apps.tasks.ai import interpret_quick_add
+    from apps.tasks.tasks import quick_add_ai_enabled
 
-    firm = Firm.objects.first()
-    if not (firm and firm.quick_task_ai):
+    if not quick_add_ai_enabled():
         return None
+    firm = Firm.objects.first()
 
     recent_matter = None
     last_matter_id = request.session.get("last_quick_task_matter")

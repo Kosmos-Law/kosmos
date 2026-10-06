@@ -21,8 +21,8 @@ from apps.mail.ai import (
 from apps.mail.models import Email
 from apps.notes.models import Note, get_library_notes
 
-from .gemini_client import send_to_gemini
 from .models import Conversation
+from .providers import complete
 
 logger = logging.getLogger(__name__)
 
@@ -523,10 +523,9 @@ def select_context(
     prompt = f"USER'S QUESTION: {user_message}\n\nAVAILABLE MATERIALS:\n{manifest_text}"
 
     try:
-        response_text, _, _ = send_to_gemini(
+        response_text, _, _ = complete(
             system_context=SELECTOR_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
-            model="gemini-2.5-flash",
         )
 
         selected_keys = _parse_selector_response(response_text)

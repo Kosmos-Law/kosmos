@@ -53,6 +53,8 @@
     {% if case_law.date_filed %}{{ case_law.date_filed|date:"Y-m-d" }}{% endif %}
   </td>
   <td class="col-added">{{ case_law.created_at|date:"Y-m-d" }}</td>
-  <td class="col-ai" id="caselaw-ai-{{ case_law.id }}">{% include "case/caselaws/ai-context-cell.html" %}</td>
+  {% if ai_enabled %}
+    <td class="col-ai" id="caselaw-ai-{{ case_law.id }}">{% include "case/caselaws/ai-context-cell.html" %}</td>
+  {% endif %}
   <td class="col-importance dropdown-cell">{% include "case/caselaws/importance-display.html" %}</td>
 </tr>

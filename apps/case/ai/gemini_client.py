@@ -14,10 +14,10 @@ import logging
 import time
 from typing import Callable
 
-from django.conf import settings
 from django.core.cache import cache as django_cache
 from google.genai import types
 
+from apps.settings.ai import gemini_key
 from google import genai
 
 from .agent_types import (
@@ -133,7 +133,7 @@ def send_to_gemini_streaming(
         google.genai.errors.APIError: If the API call fails
         InterruptedError: If the request was cancelled
     """
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(api_key=gemini_key())
 
     cached_name = _get_or_create_gemini_cache(
         client, model, system_context, conversation_id
@@ -310,7 +310,7 @@ def send_to_gemini_with_tools(
     contents mutate every turn (Gemini's implicit cache still reports
     through cached_content_token_count).
     """
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(api_key=gemini_key())
 
     if isinstance(system_context, (list, tuple)):
         system_context = "\n\n".join(s for s in system_context if s)

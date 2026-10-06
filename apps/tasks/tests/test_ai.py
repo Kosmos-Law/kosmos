@@ -13,8 +13,8 @@ pytestmark = pytest.mark.django_db
 class TestInterpretQuickAdd:
     def _mock_gemini(self, monkeypatch, reply):
         monkeypatch.setattr(
-            "apps.case.ai.gemini_client.send_to_gemini",
-            lambda **kwargs: (reply, 10, 5),
+            "apps.case.ai.gemini_client.send_to_gemini_streaming",
+            lambda *args, **kwargs: (reply, 10, 5),
         )
 
     def test_bare_json(self, user, monkeypatch):

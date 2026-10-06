@@ -35,9 +35,12 @@
             <li {% if subapp == "matters" %}class="active"{% endif %}>
               <a href="{% url 'settings:matters-index' %}">Practice Areas</a>
             </li>
-            <li {% if subapp == "tasks" %}class="active"{% endif %}>
-              <a href="{% url 'settings:tasks-index' %}">Tasks</a>
-            </li>
+            {% comment %}Tasks holds only AI quick task entry.{% endcomment %}
+            {% if ai_enabled %}
+              <li {% if subapp == "tasks" %}class="active"{% endif %}>
+                <a href="{% url 'settings:tasks-index' %}">Tasks</a>
+              </li>
+            {% endif %}
           {% endif %}
           {% comment %}
             Everyone: non-admins see only the Case Email (Gmail) section on

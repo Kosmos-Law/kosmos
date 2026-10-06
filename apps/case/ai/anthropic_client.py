@@ -14,7 +14,8 @@ import time
 from typing import Callable
 
 import anthropic
-from django.conf import settings
+
+from apps.settings.ai import anthropic_key
 
 from .agent_types import (
     FORCED_ANSWER_NOTE,
@@ -195,7 +196,7 @@ def count_claude_tokens(
     rather than failing the chat.
     """
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        client = anthropic.Anthropic(api_key=anthropic_key())
         result = client.messages.count_tokens(
             model=model,
             system=_build_system(system_context),
@@ -265,7 +266,7 @@ def send_to_claude(
         anthropic.APIError: If the API call fails
         InterruptedError: If the request was cancelled
     """
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    client = anthropic.Anthropic(api_key=anthropic_key())
 
     formatted_messages = _format_messages(messages)
 
@@ -388,7 +389,7 @@ def send_to_claude_with_tools(
     rolling breakpoint follows the newest message, so each turn reads the
     prior turns from the prompt cache.
     """
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    client = anthropic.Anthropic(api_key=anthropic_key())
 
     convo = _format_messages(messages)
     # Block form on the newest message so the rolling marker can land on

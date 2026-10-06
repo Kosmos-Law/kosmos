@@ -572,14 +572,13 @@ class TestAgentKind:
         assert 'value="gemini-' in models
         assert 'value="claude-' not in models
 
-    def test_modal_lists_every_model_when_no_key_is_set(self, client, matter, settings):
-        settings.ANTHROPIC_API_KEY = ""
-        settings.GEMINI_API_KEY = ""
+    def test_modal_is_gone_when_no_key_is_set(self, client, matter, ai_off):
+        from django.urls import reverse
 
-        models = self._model_select(client, matter)
-
-        assert 'value="gemini-' in models
-        assert 'value="claude-' in models
+        response = client.get(
+            reverse("case:ai-new-conversation-prompt", args=[matter.id])
+        )
+        assert response.status_code == 404
 
     def test_create_conversation_honors_kind(self, client, matter):
         from django.urls import reverse

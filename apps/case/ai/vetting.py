@@ -17,7 +17,7 @@ from django.db import transaction
 
 from apps.case.courtlistener import fetch_case_by_citation
 
-from .gemini_client import send_to_gemini
+from .providers import complete
 
 logger = logging.getLogger(__name__)
 
@@ -138,10 +138,9 @@ def vet_single_citation(response_text: str, citation: dict) -> dict:
 
     prompt = _build_user_prompt(response_text, citation, opinion_text)
     try:
-        response_text_out, _, _ = send_to_gemini(
+        response_text_out, _, _ = complete(
             system_context=VETTING_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
-            model="gemini-2.5-flash",
         )
     except Exception as exc:
         logger.exception("Vetting Flash call failed for %s", cite_str)

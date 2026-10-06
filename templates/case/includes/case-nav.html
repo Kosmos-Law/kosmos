@@ -50,11 +50,24 @@
          hx-target=".detail-body"
          hx-push-url="{% url 'case:search-index' matter.id %}">Search</a>
     </li>
-    <li {% if subapp == "ai" or subapp == "caselaws" %}class="active"{% endif %}>
-      <a href="{% url 'case:ai-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='ai' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:ai-index' matter.id %}">AI</a>
-    </li>
+    {% comment %}
+      AI appears only once an AI provider is set up; saved case law is a
+      view inside it, or its own tab when AI is off and CourtListener is on.
+    {% endcomment %}
+    {% if ai_enabled %}
+      <li {% if subapp == "ai" or subapp == "caselaws" %}class="active"{% endif %}>
+        <a href="{% url 'case:ai-index' matter.id %}"
+           hx-get="{% url 'case:tab-content' matter_id=matter.id tab='ai' %}"
+           hx-target=".detail-body"
+           hx-push-url="{% url 'case:ai-index' matter.id %}">AI</a>
+      </li>
+    {% elif caselaw_available %}
+      <li {% if subapp == "caselaws" %}class="active"{% endif %}>
+        <a href="{% url 'case:caselaws-index' matter.id %}"
+           hx-get="{% url 'case:tab-content' matter_id=matter.id tab='caselaws' %}"
+           hx-target=".detail-body"
+           hx-push-url="{% url 'case:caselaws-index' matter.id %}">Case Law</a>
+      </li>
+    {% endif %}
   </ul>
 </nav>

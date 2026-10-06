@@ -6,7 +6,6 @@ import logging
 import threading
 import time
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Max
 from django.db.models.functions import Coalesce
@@ -25,6 +24,7 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
+from apps.settings.ai import ANTHROPIC, GEMINI, configured_providers
 
 from .access import (
     accessible_matters,
@@ -58,19 +58,14 @@ VALID_LLMS = {key for key, _ in Conversation.LLM_CHOICES} | set(RETIRED_LLMS)
 def available_llm_choices():
     """The models a new conversation can use on this server: those whose
     provider has an API key configured. Offering the rest only leads to a
-    chat that answers with the provider's authentication error. With no key
-    at all the full list is returned, so the picker is never empty and the
-    chat itself reports what is missing."""
-    choices = [
+    chat that answers with the provider's authentication error. The AI tab
+    is hidden without any key, so the list is never empty in use."""
+    providers = configured_providers()
+    return [
         (key, label)
         for key, label in Conversation.LLM_CHOICES
-        if (
-            settings.ANTHROPIC_API_KEY
-            if key.startswith("claude")
-            else settings.GEMINI_API_KEY
-        )
+        if (ANTHROPIC if key.startswith("claude") else GEMINI) in providers
     ]
-    return choices or list(Conversation.LLM_CHOICES)
 
 
 # Modes a new conversation may be created in. "research" is retired and

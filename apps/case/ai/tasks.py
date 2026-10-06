@@ -5,9 +5,12 @@ Background tasks for AI chat processing.
 import logging
 import time
 
+from apps.settings.ai import ai_enabled
+
 from .anthropic_client import count_claude_tokens, send_to_claude
 from .citations import citations_to_dict, verify_all_citations
-from .gemini_client import send_to_gemini, send_to_gemini_streaming
+from .gemini_client import send_to_gemini_streaming
+from .providers import complete
 from .selector import MODEL_HARD_LIMITS, estimate_tokens
 from .status import FINAL_TTL, RUNNING_TTL, RunHeartbeat, status_cache
 
@@ -610,6 +613,8 @@ def generate_conversation_summary(conversation_id):
     Called after each AI response and as a backfill task.
     Always overwrites existing summary (conversations grow over time).
     """
+    if not ai_enabled():
+        return
     from .models import Conversation
 
     try:
@@ -636,10 +641,9 @@ def generate_conversation_summary(conversation_id):
         text = text[:CONVERSATION_TEXT_LIMIT] + "\n... (conversation continues)"
 
     try:
-        response_text, _, _ = send_to_gemini(
+        response_text, _, _ = complete(
             system_context=CONVERSATION_SUMMARY_PROMPT,
             messages=[{"role": "user", "content": text}],
-            model="gemini-2.5-flash",
         )
 
         conversation.summary = response_text.strip()

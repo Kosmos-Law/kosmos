@@ -92,6 +92,16 @@
           {% endif %}
         </div>
       </div>
+      <h2 class="settings-section">AI</h2>
+      <hr />
+      <p class="detail-text">
+        AI features are optional and stay hidden until a provider key is set:
+        chat on a matter, intake assessments, document and note summaries, and
+        AI quick task entry. Either provider runs all of them; with both,
+        background work uses Gemini and chats offer both. Matter search by
+        meaning needs a Gemini key.
+      </p>
+      {% include "settings/integrations/ai.html" %}
     {% endif %}
     <h2 class="settings-section">Case Email</h2>
     <hr />

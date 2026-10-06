@@ -155,9 +155,11 @@
       just wrote (the forms pane appeared inside the notes list after every
       note save). The container has no id, so settle never touches it.
     {% endcomment %}
-    <div class="intake-main"
-         x-data="{ pane: ['forms', 'assessment'].includes(localStorage.getItem('intake_pane')) ? localStorage.getItem('intake_pane') : 'notes' }"
-         :class="'pane-' + pane">
+    <div class="intake-main" x-data="{ pane: ['forms'
+      {% if ai_enabled %}
+        , 'assessment'
+      {% endif %}
+      ].includes(localStorage.getItem('intake_pane')) ? localStorage.getItem('intake_pane') : 'notes' }" :class="'pane-' + pane">
       {% comment %}
         The card carries both class anchors: .intake-panel scopes the
         form-builder rules, .intake-notes the assessment-pane rules.
@@ -175,12 +177,14 @@
                       class="mode-pill"
                       :class="pane === 'notes' ? 'active' : ''"
                       @click="pane = 'notes'; localStorage.setItem('intake_pane', 'notes')">Notes</button>
-              <button type="button"
-                      class="mode-pill"
-                      :class="pane === 'assessment' ? 'active' : ''"
-                      @click="pane = 'assessment'; localStorage.setItem('intake_pane', 'assessment')">
-                Assessment
-              </button>
+              {% if ai_enabled %}
+                <button type="button"
+                        class="mode-pill"
+                        :class="pane === 'assessment' ? 'active' : ''"
+                        @click="pane = 'assessment'; localStorage.setItem('intake_pane', 'assessment')">
+                  Assessment
+                </button>
+              {% endif %}
             </div>
             {# The pane's action rides beside the pills, 1rem off them #}
             <div class="intake-panel-actions">
@@ -202,25 +206,27 @@
                  hx-trigger="click">
                 <i class="icon-plus"></i>
               </a>
-              <button type="button"
-                      id="assess-run"
-                      class="btn btn-success btn-busy pane-action pane-action-assessment"
-                      hx-post="{% url 'intakes:assess' intake.id %}"
-                      hx-target="#intakeAssessment"
-                      hx-indicator="#assess-run"
-                      hx-disabled-elt="#assess-run">
-              <span class="btn-busy-idle"><i class="icon-refresh-cw"></i>
-              {% if intake.assessed_at %}
-                Update
-              {% else %}
-                Assess
-              {% endif %}
-            </span>
-            <span class="btn-busy-loading"><span class="btn-spinner"></span> Assessing…</span>
-          </button>
-          <a href="{% url 'intakes:chat' intake.id %}"
-             target="_blank"
-             class="btn btn-success pane-action pane-action-assessment"><i class="icon-message-circle"></i> Chat</a>
+              {% if ai_enabled %}
+                <button type="button"
+                        id="assess-run"
+                        class="btn btn-success btn-busy pane-action pane-action-assessment"
+                        hx-post="{% url 'intakes:assess' intake.id %}"
+                        hx-target="#intakeAssessment"
+                        hx-indicator="#assess-run"
+                        hx-disabled-elt="#assess-run">
+                <span class="btn-busy-idle"><i class="icon-refresh-cw"></i>
+                {% if intake.assessed_at %}
+                  Update
+                {% else %}
+                  Assess
+                {% endif %}
+              </span>
+              <span class="btn-busy-loading"><span class="btn-spinner"></span> Assessing…</span>
+            </button>
+            <a href="{% url 'intakes:chat' intake.id %}"
+               target="_blank"
+               class="btn btn-success pane-action pane-action-assessment"><i class="icon-message-circle"></i> Chat</a>
+          {% endif %}
         </div>
       </div>
       <div class="toolbar-right"></div>
@@ -265,7 +271,9 @@
         {% endfor %}
       {% endif %}
     </div>
-    <div id="intakeAssessment">{% include "intakes/assessment.html" %}</div>
+    {% if ai_enabled %}
+      <div id="intakeAssessment">{% include "intakes/assessment.html" %}</div>
+    {% endif %}
   </div>
 </div>
 </div>

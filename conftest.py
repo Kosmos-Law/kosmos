@@ -14,6 +14,29 @@ def django_db_setup(django_db_setup, django_db_blocker):
 
 
 @pytest.fixture(autouse=True)
+def _integration_keys(settings):
+    """Every test sees the optional integrations as set up, with keys no
+    provider accepts: the same on a laptop whose config/.env holds real
+    keys as in CI with none, and a stray real API call fails instead of
+    spending. Use ``ai_off`` / ``courtlistener_off`` for the unset case."""
+    settings.GEMINI_API_KEY = "test-gemini-key"
+    settings.ANTHROPIC_API_KEY = "test-anthropic-key"
+    settings.COURTLISTENER_API_TOKEN = "test-courtlistener-token"
+
+
+@pytest.fixture
+def ai_off(settings):
+    """No AI provider configured (and none stored in Settings)."""
+    settings.GEMINI_API_KEY = ""
+    settings.ANTHROPIC_API_KEY = ""
+
+
+@pytest.fixture
+def courtlistener_off(settings):
+    settings.COURTLISTENER_API_TOKEN = ""
+
+
+@pytest.fixture(autouse=True)
 def _no_semantic_auto_index(settings):
     """Model saves must not enqueue embedding tasks during tests."""
     settings.SEMANTIC_AUTO_INDEX = False

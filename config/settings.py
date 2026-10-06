@@ -140,6 +140,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "config.context.env",
+                "config.context.integrations",
             ],
             "loaders": default_loaders if DEBUG else cached_loaders,
             "libraries": {

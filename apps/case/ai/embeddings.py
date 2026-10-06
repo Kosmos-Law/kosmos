@@ -8,9 +8,9 @@ cosine, which is scale-invariant, so the vectors are stored as returned.
 
 import logging
 
-from django.conf import settings
 from google.genai import types
 
+from apps.settings.ai import gemini_key
 from google import genai
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ def embed_texts(texts, task_type="RETRIEVAL_DOCUMENT"):
         return []
     # A wedged connection must fail, not hang a backfill or a search.
     client = genai.Client(
-        api_key=settings.GEMINI_API_KEY,
+        api_key=gemini_key(),
         http_options=types.HttpOptions(timeout=60_000),
     )
     vectors = []
