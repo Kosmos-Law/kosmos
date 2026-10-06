@@ -31,8 +31,8 @@ def get_tab_session_key(matter_id):
 
 def get_last_tab(request, matter_id):
     """Get the last active tab for a matter, or default to documents. A
-    remembered tab whose integration has since gone (AI, CourtListener)
-    falls back too."""
+    remembered tab whose integration has since gone (AI, CourtListener,
+    Gmail) falls back too."""
     tab = request.session.get(get_tab_session_key(matter_id), DEFAULT_TAB)
     if tab not in VALID_TABS or not tab_available(request.user, tab, matter_id):
         return DEFAULT_TAB
