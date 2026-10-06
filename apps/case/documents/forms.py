@@ -60,6 +60,13 @@ class FilesForm(forms.ModelForm):
         self.renderer = CustomFormRendererCompact()
         self.matter = matter
 
+        # The AI context switch means nothing until AI is set up; without
+        # it the field is dropped and the stored value left alone.
+        from apps.settings.ai import ai_enabled
+
+        if not ai_enabled():
+            del self.fields["ai_context"]
+
         # Matter choices: the Open matters the user may see, plus the matter
         # the document is on (or is being added to) whatever its status. The
         # field has no blank choice, so a document whose own matter were

@@ -33,6 +33,7 @@ from apps.intakes.assess import run_assessment
 from apps.intakes.forms import IntakeForm
 from apps.intakes.models import InboundEmail, Intake, Note
 from apps.matters.models import PracticeArea
+from apps.settings.ai import ai_enabled
 from config.helpers import normalize_phone
 from utils.ratelimit import rate_limited
 
@@ -246,7 +247,7 @@ def _extract_intake_fields(subject, text):
     """One AI call mapping the message onto intake fields. Returns
     (data, error); any failure returns ({}, reason) so the caller can
     still create a fallback intake from the raw message."""
-    from apps.case.ai.gemini_client import send_to_gemini
+    from apps.case.ai.providers import complete
 
     area_names = ", ".join(
         PracticeArea.objects.filter(is_active=True).values_list("name", flat=True)
@@ -255,9 +256,7 @@ def _extract_intake_fields(subject, text):
     message = f"Subject: {subject}\n\n{text}"
 
     try:
-        response, _, _ = send_to_gemini(
-            system_prompt, [{"role": "user", "content": message}]
-        )
+        response, _, _ = complete(system_prompt, [{"role": "user", "content": message}])
         cleaned = response.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.split("```")[1]
@@ -283,7 +282,14 @@ def process_inbound_email(inbound_email_id):
     # body-plain over stripped-text: for a forwarded message the client's
     # content is usually the quoted part that stripping removes
     text = (inbound.body_plain or inbound.stripped_text or "").strip()
-    data, error = _extract_intake_fields(inbound.subject, text[:EXTRACTION_TEXT_LIMIT])
+    # Without AI the intake is built from the raw message alone: no
+    # extracted fields, no summary, no first assessment, and no failure.
+    use_ai = ai_enabled()
+    data, error = (
+        _extract_intake_fields(inbound.subject, text[:EXTRACTION_TEXT_LIMIT])
+        if use_ai
+        else ({}, None)
+    )
 
     phone, _ = normalize_phone((data.get("phone") or "").strip())
     # Voicemail transcripts often arrive all-lowercase; title-case the name
@@ -388,4 +394,5 @@ def process_inbound_email(inbound_email_id):
     # holds a stub. It sees the note just created; failure is logged and
     # leaves the pane empty for a manual run. Even an extraction failure
     # gets one - the note carries the raw message either way.
-    run_assessment(intake)
+    if use_ai:
+        run_assessment(intake)

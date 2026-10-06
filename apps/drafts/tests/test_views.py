@@ -59,6 +59,8 @@ def test_picker_names_the_drive_folder(client, conversation, monkeypatch):
 
 
 def test_link_and_unlink_cycle(client, conversation, monkeypatch):
+    # The chip offers the link button only while Drive is connected.
+    monkeypatch.setattr("apps.drive.google.check_credentials", lambda: True)
     monkeypatch.setattr(
         services, "_fetch_drive_text", lambda fid: ("motion.odt", "TEXT")
     )
@@ -161,7 +163,11 @@ def test_drafts_tab_is_gone(client, matter):
     assert client.get(f"/case/{matter.id}/drafts/").status_code == 404
 
 
-def test_new_chat_window_shows_paperclip_before_first_message(client, matter):
+def test_new_chat_window_shows_paperclip_before_first_message(
+    client, matter, monkeypatch
+):
+    # The link button is offered only while Drive is connected.
+    monkeypatch.setattr("apps.drive.google.check_credentials", lambda: True)
     response = client.get(f"/case/{matter.id}/ai/conversations/new/")
     assert response.status_code == 200
     assert b"linkDraftForNewChat" in response.content

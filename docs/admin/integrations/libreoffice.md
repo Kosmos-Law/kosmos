@@ -41,7 +41,9 @@ answers that the edits were not applied and nothing is changed.
 - **pandoc** installed, to convert the document to text for the AI. It is
   in the package list under [Machine
   requirements](../install-manual.md#machine-requirements).
-- **An AI provider key.** See [AI providers and research](ai.md).
+- **An AI provider key.** Drafts are part of the AI chat, and without a
+  key the companion's addresses answer 404. See
+  [AI providers and research](ai.md).
 - **`PUBLIC_BASE_URL` set correctly**, as described next.
 - **The server reachable over HTTPS from users' computers.** The
   extension calls paths under `/case/drafts/companion/api/` and sends the

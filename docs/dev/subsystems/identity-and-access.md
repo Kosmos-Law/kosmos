@@ -127,9 +127,13 @@ partial update is never answered with a redirect.
 
 ### Path rules
 
-`PermissionMiddleware.__call__` runs before URL resolution, for signed-in
-non-admins only, and answers `403` with an empty body. It checks, in
-order: `/admin/`; `ADMIN_ONLY_PATHS` (the settings pages that change the
+`PermissionMiddleware.__call__` runs before URL resolution. Its first
+check applies to every request: a path matching `AI_PATTERN` while no AI
+provider is configured, or `CASELAW_PATTERN` while there is no
+CourtListener token, gets `404` (the feature does not exist on this
+server; see [AI is optional](ai/context.md#ai-is-optional)). The rest
+runs for signed-in non-admins only and answers `403` with an empty body.
+It checks, in order: `/admin/`; `ADMIN_ONLY_PATHS` (the settings pages that change the
 firm); `PERMISSION_PATHS`, a list of `(prefix, flag)` pairs; then
 `PERMISSION_PATTERNS`, compiled regexes for pages whose path begins with a
 matter id (`/matters/<id>/rates`, `/matters/<id>/ledger`, and the Research

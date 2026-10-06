@@ -45,7 +45,7 @@ class DisabledProcessor(PaymentProcessor):
         )
 
     def trust_unavailable_reason(self) -> str:
-        return "online payments are switched off (PAYMENT_PROCESSOR=none)."
+        return "online payments are not set up."
 
     def charge(self, **kwargs) -> ChargeResult:
         raise ChargeError(MESSAGE, code="disabled")

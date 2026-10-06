@@ -9,35 +9,37 @@
                   hx-swap="none">
             {{ selected_documents|length }} <i class="icon-x bulk-clear-icon"></i>
           </button>
-          <div class="dropdown" x-data="dropdown()">
-            <button type="button"
-                    class="btn-icon"
-                    x-ref="button"
-                    @click="toggle()"
-                    :aria-expanded="open">
-              <i class="icon-sparkles with-text"></i> AI <small><i class="icon-chevron-down"></i></small>
-            </button>
-            <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
-              <li>
-                <a class="dropdown-item"
-                   href="#"
-                   hx-post="{% url 'case:documents-bulk-ai' matter.id 'always' %}"
-                   hx-swap="none"><i class="icon-bookmark"></i> Always Include</a>
-              </li>
-              <li>
-                <a class="dropdown-item"
-                   href="#"
-                   hx-post="{% url 'case:documents-bulk-ai' matter.id 'auto' %}"
-                   hx-swap="none"><i class="icon-sparkles"></i> Auto</a>
-              </li>
-              <li>
-                <a class="dropdown-item"
-                   href="#"
-                   hx-post="{% url 'case:documents-bulk-ai' matter.id 'never' %}"
-                   hx-swap="none"><i class="icon-bookmark-x"></i> Never Include</a>
-              </li>
-            </ul>
-          </div>
+          {% if ai_enabled %}
+            <div class="dropdown" x-data="dropdown()">
+              <button type="button"
+                      class="btn-icon"
+                      x-ref="button"
+                      @click="toggle()"
+                      :aria-expanded="open">
+                <i class="icon-sparkles with-text"></i> AI <small><i class="icon-chevron-down"></i></small>
+              </button>
+              <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+                <li>
+                  <a class="dropdown-item"
+                     href="#"
+                     hx-post="{% url 'case:documents-bulk-ai' matter.id 'always' %}"
+                     hx-swap="none"><i class="icon-bookmark"></i> Always Include</a>
+                </li>
+                <li>
+                  <a class="dropdown-item"
+                     href="#"
+                     hx-post="{% url 'case:documents-bulk-ai' matter.id 'auto' %}"
+                     hx-swap="none"><i class="icon-sparkles"></i> Auto</a>
+                </li>
+                <li>
+                  <a class="dropdown-item"
+                     href="#"
+                     hx-post="{% url 'case:documents-bulk-ai' matter.id 'never' %}"
+                     hx-swap="none"><i class="icon-bookmark-x"></i> Never Include</a>
+                </li>
+              </ul>
+            </div>
+          {% endif %}
           <div class="dropdown" x-data="dropdown()">
             <button type="button"
                     class="btn-icon"
@@ -365,22 +367,24 @@
     to categories / proceedings in a single modal. The count is DB-only
     (apps.drive.mappings.matter_drive_status): unmapped subfolders seen by
     the last sync, proceedings without a record folder, mapped folders
-    missing in Drive.
+    missing in Drive. Hidden on a firm without Drive (drive_status.show).
   {% endcomment %}
-  <button type="button"
-          class="btn-icon"
-          hx-get="{% url 'case:documents-drive-modal' matter.id %}"
-          hx-target="#htmx-modal-container"
-          hx-trigger="click"
-          title="{% if drive_status.linked %}Drive folder: {{ drive_status.folder }}. {{ drive_status.mapped }} folder{{ drive_status.mapped|pluralize }} mapped, {{ drive_status.unmapped }} not mapped, {{ drive_status.proceedings_without_folder }} proceeding{{ drive_status.proceedings_without_folder|pluralize }} without a record folder{% if drive_status.missing %}, {{ drive_status.missing }} mapped folder{{ drive_status.missing|pluralize }} missing in Drive{% endif %}{% if drive_status.folder_missing %}. The matter folder was not found in Drive{% endif %}.{% else %}Link this matter's Google Drive folder and map its subfolders to document categories{% endif %}">
-    <i class="icon-cloud with-text"></i>
-    {% if drive_status.linked %}
-      Drive Folder
-      {% if drive_status.attention %}&middot; {{ drive_status.attention }} to map{% endif %}
-    {% else %}
-      Link Drive Folder
-    {% endif %}
-  </button>
+  {% if drive_status.show %}
+    <button type="button"
+            class="btn-icon"
+            hx-get="{% url 'case:documents-drive-modal' matter.id %}"
+            hx-target="#htmx-modal-container"
+            hx-trigger="click"
+            title="{% if drive_status.linked %}Drive folder: {{ drive_status.folder }}. {{ drive_status.mapped }} folder{{ drive_status.mapped|pluralize }} mapped, {{ drive_status.unmapped }} not mapped, {{ drive_status.proceedings_without_folder }} proceeding{{ drive_status.proceedings_without_folder|pluralize }} without a record folder{% if drive_status.missing %}, {{ drive_status.missing }} mapped folder{{ drive_status.missing|pluralize }} missing in Drive{% endif %}{% if drive_status.folder_missing %}. The matter folder was not found in Drive{% endif %}.{% else %}Link this matter's Google Drive folder and map its subfolders to document categories{% endif %}">
+      <i class="icon-cloud with-text"></i>
+      {% if drive_status.linked %}
+        Drive Folder
+        {% if drive_status.attention %}&middot; {{ drive_status.attention }} to map{% endif %}
+      {% else %}
+        Link Drive Folder
+      {% endif %}
+    </button>
+  {% endif %}
 </div>
 </div>
 <div id="files-table">{% include "case/documents/table.html" %}</div>

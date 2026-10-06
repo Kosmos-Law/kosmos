@@ -57,6 +57,11 @@ urlpatterns = [
     # Integrations
     path("settings/integrations/", integration_urls.index, name="integrations-index"),
     path(
+        "settings/integrations/ai/<str:provider>/",
+        integration_urls.ai_key_save,
+        name="ai-key-save",
+    ),
+    path(
         "settings/google/login/<str:app>",
         integration_urls.google_login,
         name="google-login",

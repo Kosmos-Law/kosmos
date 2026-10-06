@@ -1112,11 +1112,6 @@ urlpatterns = [
         name="ai-set-ai-context",
     ),
     path(
-        "case/ai/conversations/<int:conv_id>/vet-citations/<str:state>/",
-        ai.set_vet_citations,
-        name="ai-set-vet-citations",
-    ),
-    path(
         "case/ai/messages/<int:message_id>/vetting-status/",
         ai.message_vetting_status,
         name="ai-message-vetting-status",

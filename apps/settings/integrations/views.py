@@ -1,4 +1,5 @@
 import json
+import logging
 
 import google_auth_oauthlib.flow
 from django.conf import settings
@@ -11,7 +12,11 @@ from googleapiclient.discovery import build
 import apps.drive.google as drive_google
 import apps.mail.google as mail_google
 from apps.mail.models import GmailAccount
+from apps.settings.integrations.oauth import google_oauth_configured
 from utils.prepare_path import prepare_path
+from utils.toasts import toast_success
+
+logger = logging.getLogger(__name__)
 
 CONTACTS_TOKEN_PATH = settings.GOOGLE_CONTACTS_TOKEN_PATH
 CALENDAR_TOKEN_PATH = settings.GOOGLE_CALENDAR_TOKEN_PATH
@@ -26,6 +31,15 @@ TOKEN_PATHS = {
     "drive": DRIVE_TOKEN_PATH,
     "email": EMAIL_TOKEN_PATH,
 }
+
+# A toast for the next load of the Integrations page, left by a view that
+# redirected there (a full-page redirect carries no HX toast header).
+PENDING_TOAST_KEY = "integrations_pending_toast"
+
+GOOGLE_OAUTH_MISSING_MSG = (
+    "Google sign-in isn't set up on this server yet, so Google can't be "
+    "connected. An administrator needs to add the OAuth client file first."
+)
 
 
 def _token_exists(file_path):
@@ -110,7 +124,13 @@ def index(request):
         # assigned matters is told how many, not which.
         "show_label_names": request.user.is_admin or request.user.perm_all_matters,
         "label_root": settings.GMAIL_LABEL_ROOT,
+        # Without the OAuth client file every Connect would fail, so the
+        # page offers none and says why instead.
+        "google_oauth_ready": google_oauth_configured(),
+        "pending_toast": request.session.pop(PENDING_TOAST_KEY, None),
     }
+    if request.user.is_admin:
+        context.update(_ai_context())
 
     return render(request, "settings/integrations/index.html", context)
 
@@ -125,6 +145,13 @@ def _forbidden_for(request, app):
 def google_login(request, app):
     if _forbidden_for(request, app):
         return HttpResponseForbidden()
+    if not google_oauth_configured():
+        # Reached from a stale page or a typed address: say why, don't 500.
+        request.session[PENDING_TOAST_KEY] = {
+            "type": "error",
+            "message": GOOGLE_OAUTH_MISSING_MSG,
+        }
+        return redirect("settings:integrations-index")
     redirect_uri = _get_redirect_uri(request)
 
     # Create OAuth2 flow instance
@@ -217,3 +244,84 @@ def google_logout(request, app):
         file.write("")
 
     return redirect("/settings/integrations/")
+
+
+# ── AI providers ─────────────────────────────────────────────────────────────
+
+
+def _ai_context(firm=None, errors=None):
+    from apps.settings import ai
+
+    firm = firm if firm is not None else _firm_or_new()
+    return {
+        "ai_providers": [
+            {
+                "id": provider,
+                "label": ai.PROVIDER_LABELS[provider],
+                "source": ai.key_source(provider, firm),
+                "error": (errors or {}).get(provider, ""),
+            }
+            for provider in (ai.GEMINI, ai.ANTHROPIC)
+        ],
+    }
+
+
+def _firm_or_new():
+    from apps.settings.models import Firm
+
+    return Firm.objects.first() or Firm.objects.create(name="")
+
+
+def verify_ai_key(provider, key):
+    """None when ``key`` works for ``provider``, else a short reason. Lists
+    the provider's models, which costs nothing."""
+    from apps.settings import ai
+
+    try:
+        if provider == ai.GEMINI:
+            from google import genai
+
+            next(iter(genai.Client(api_key=key).models.list()), None)
+        else:
+            import anthropic
+
+            anthropic.Anthropic(api_key=key).models.list(limit=1)
+    except Exception as exc:
+        logger.info("AI key check failed for %s: %s", provider, exc)
+        return "The provider rejected this key. Check it and try again."
+    return None
+
+
+@login_required
+@require_POST
+def ai_key_save(request, provider):
+    """Save (or, with an empty value, remove) an admin-entered AI key."""
+    from apps.settings import ai
+
+    if not request.user.is_admin:
+        return HttpResponseForbidden()
+    if provider not in ai.PROVIDER_LABELS:
+        return HttpResponseBadRequest()
+    firm = _firm_or_new()
+    field = f"{provider}_api_key"
+    key = request.POST.get("key", "").strip()
+    label = ai.PROVIDER_LABELS[provider]
+
+    if key:
+        error = verify_ai_key(provider, key)
+        if error:
+            return render(
+                request,
+                "settings/integrations/ai.html",
+                _ai_context(firm, {provider: error}),
+            )
+        setattr(firm, field, ai.encrypt_key(key))
+        message = f"{label} connected"
+    else:
+        setattr(firm, field, "")
+        message = f"{label} key removed"
+    firm.save(update_fields=[field])
+
+    response = render(request, "settings/integrations/ai.html", _ai_context(firm))
+    toast_success(response, message)
+    return response

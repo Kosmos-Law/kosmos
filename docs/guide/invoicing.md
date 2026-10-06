@@ -19,7 +19,7 @@ this. Ask your administrator. It opens on **Invoices** and has seven tabs.
 | **Credits** | Amounts taken off what a client owes without money changing hands. |
 | **Collection** | Matters with a balance to collect. |
 | **Trust** | Client funds held in trust. See [Trust](trust.md). |
-| **Requests** | Requests for payment emailed to clients, and paying online. See [Payments](payments.md). |
+| **Requests** | Requests for payment emailed to clients, and paying online. Shown only when your firm takes online payments, or while older requests exist. See [Payments](payments.md). |
 
 Invoicing covers every matter in the firm. If you are limited to assigned
 matters, you still see the other matters' invoices and figures here.
@@ -117,6 +117,12 @@ Northside Logistics", and opens on **Time**.
 | **History** | **Delivery History** (each email) and **Payment History** (payments and credits applied), with **Invoice total** and **Outstanding**. |
 | **Ledger** | The matter's ledger, if you can see the matter. |
 
+The download button at the top of the page, and on each row of the
+**Invoices** list, offers **Download PDF**. It also offers **Download
+Ledes**, a LEDES 1998B file for clients that take electronic bills, once
+an administrator has set the firm's LEDES id (`LAW_FIRM_ID`). Until then
+that choice is not shown. A void invoice offers only the PDF.
+
 While the invoice is a draft you can change what is on it:
 
 - Click an entry's text to edit or delete it. A comp entry shows "comp"
@@ -199,8 +205,9 @@ The email comes from your firm's name followed by "Billing", for example
 "Example Law Billing", with the subject "Example Law - Invoice 123". It
 greets the client with "Dear Client," and carries your message, the
 client's name, the invoice number and the amount due. Its **Pay now**
-button opens a page where the client can download the PDF and, if your
-firm takes online payments, pay. See [Payments](payments.md). Replies and
+button opens a page where the client can download the PDF and pay. If your
+firm does not take online payments, the button reads **View invoice** and
+the page only offers the PDF. See [Payments](payments.md). Replies and
 blind copies go to the **Billing Email** and **Invoice BCC** addresses on
 **Settings → Firm**. See [Settings](settings.md).
 

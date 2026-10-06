@@ -18,6 +18,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.db.models.signals import post_delete, post_save
 
+from apps.settings.ai import gemini_key
+
 from .embeddings import embed_queries, embed_texts
 
 logger = logging.getLogger(__name__)
@@ -186,7 +188,7 @@ def index_object_task(kind, pk):
 
 
 def _enqueue(kind, pk):
-    if not getattr(settings, "SEMANTIC_AUTO_INDEX", True):
+    if not getattr(settings, "SEMANTIC_AUTO_INDEX", True) or not gemini_key():
         return
     try:
         from django_q.tasks import async_task
@@ -252,7 +254,8 @@ def semantic_entries(queries, matter, kinds, limit):
     from .models import MaterialChunk
 
     kinds = [k for k in kinds if k in SEMANTIC_KINDS]
-    if not kinds:
+    # Embeddings are Gemini's: without its key, search is keyword-only.
+    if not kinds or not gemini_key():
         return []
     try:
         query_vectors = embed_queries(list(queries))

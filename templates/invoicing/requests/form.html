@@ -87,6 +87,7 @@
       <button type="submit"
               form="request-form"
               id="request-submit"
+              {% if not online_payments_enabled %}disabled{% endif %}
               class="btn btn-success btn-busy">
         <span class="btn-busy-idle">Create Request</span>
         <span class="btn-busy-loading"><span class="btn-spinner"></span> Sending…</span>

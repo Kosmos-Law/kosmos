@@ -27,13 +27,13 @@ def _inline_threads(monkeypatch):
 
 @pytest.fixture
 def mock_gemini(monkeypatch):
-    """Mock both the streaming (chat) and plain (summary) Gemini calls."""
+    """Mock Gemini for both the chat turn (the deep model) and the End &
+    summarize call (the fast model)."""
 
     def _set(response="The neighbor's claim looks weak.", fail_summary=False):
         def fake_streaming(system, messages, **kwargs):
-            return response, 100, 50
-
-        def fake_plain(system, messages, **kwargs):
+            if kwargs.get("model") != "gemini-2.5-flash":
+                return response, 100, 50
             if fail_summary:
                 raise RuntimeError("Gemini unavailable")
             return "We concluded the fence claim is viable.", 10, 5
@@ -41,7 +41,6 @@ def mock_gemini(monkeypatch):
         monkeypatch.setattr(
             "apps.case.ai.gemini_client.send_to_gemini_streaming", fake_streaming
         )
-        monkeypatch.setattr("apps.case.ai.gemini_client.send_to_gemini", fake_plain)
 
     return _set
 

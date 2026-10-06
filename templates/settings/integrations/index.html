@@ -9,6 +9,14 @@
         Connect a Google account to synchronize contacts and calendar events and
         to mirror matter documents from Google Drive.
       </p>
+      {% if not google_oauth_ready %}
+        <p class="detail-text">
+          Google sign-in isn't set up on this server yet, so nothing here can
+          be connected. Save the Google OAuth client file as
+          <code>google_tokens.json</code> in the server's Google data directory,
+          as described in the administrator guide (<code>docs/admin/integrations/google.md</code>).
+        </p>
+      {% endif %}
       <div class="integrations-list">
         <div class="integrations-item">
           <span>Google Contacts</span>
@@ -20,7 +28,7 @@
                     data-confirm-title="Disconnect Google Contacts"
                     data-confirm-message="Disconnect Google Contacts for the whole firm? Kosmos stops syncing with it until an administrator connects it again."
                     data-confirm-text="Disconnect">Disconnect</button>
-          {% else %}
+          {% elif google_oauth_ready %}
             <a class="btn btn-success"
                href="{% url 'settings:google-login' 'contacts' %}">Connect</a>
           {% endif %}
@@ -35,7 +43,7 @@
                     data-confirm-title="Disconnect Google Calendar"
                     data-confirm-message="Disconnect Google Calendar for the whole firm? Kosmos stops syncing with it until an administrator connects it again."
                     data-confirm-text="Disconnect">Disconnect</button>
-          {% else %}
+          {% elif google_oauth_ready %}
             <a class="btn btn-success"
                href="{% url 'settings:google-login' 'calendar' %}">Connect</a>
           {% endif %}
@@ -51,7 +59,7 @@
                       data-confirm-title="Disconnect Google Drive"
                       data-confirm-message="Disconnect Google Drive for the whole firm? Kosmos stops syncing with it until an administrator connects it again."
                       data-confirm-text="Disconnect">Disconnect</button>
-            {% else %}
+            {% elif google_oauth_ready %}
               <a class="btn btn-success"
                  href="{% url 'settings:google-login' 'drive' %}">Connect</a>
             {% endif %}
@@ -92,6 +100,16 @@
           {% endif %}
         </div>
       </div>
+      <h2 class="settings-section">AI</h2>
+      <hr />
+      <p class="detail-text">
+        AI features are optional and stay hidden until a provider key is set:
+        chat on a matter, intake assessments, document and note summaries, and
+        AI quick task entry. Either provider runs all of them; with both,
+        background work uses Gemini and chats offer both. Matter search by
+        meaning needs a Gemini key.
+      </p>
+      {% include "settings/integrations/ai.html" %}
     {% endif %}
     <h2 class="settings-section">Case Email</h2>
     <hr />
@@ -115,7 +133,7 @@
           {% if own_gmail_account %}
             <span>Your mailbox: {{ own_gmail_account.address }}</span>
             <span>
-              {% if not own_gmail_account.can_manage_labels %}
+              {% if not own_gmail_account.can_manage_labels and google_oauth_ready %}
                 <a class="btn btn-success"
                    href="{% url 'settings:google-login' 'email' %}">Reconnect</a>
               {% endif %}
@@ -129,8 +147,14 @@
             </span>
           {% else %}
             <span>Your Gmail mailbox</span>
-            <a class="btn btn-success"
-               href="{% url 'settings:google-login' 'email' %}">Connect</a>
+            {% if google_oauth_ready %}
+              <a class="btn btn-success"
+                 href="{% url 'settings:google-login' 'email' %}">Connect</a>
+            {% elif user.role == 'ADMIN' %}
+              <span class="detail-text">Set up Google sign-in first (see above).</span>
+            {% else %}
+              <span class="detail-text">Google sign-in isn't set up yet. Ask an administrator.</span>
+            {% endif %}
           {% endif %}
         </div>
         {% if gmail_status %}
@@ -178,4 +202,17 @@
       </div>
     </div>
   </div>
+  {% if pending_toast %}
+    {% comment %}
+    Left by a view that redirected here (google_login, when Google sign-in
+    isn't set up): toasts.js loads after this block, so the toast waits for
+    the page.
+    {% endcomment %}
+    {{ pending_toast|json_script:"integrations-pending-toast" }}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        Toast.show(JSON.parse(document.getElementById("integrations-pending-toast").textContent));
+      });
+    </script>
+  {% endif %}
 {% endblock subcontent %}

@@ -187,9 +187,14 @@ you.
 
 Your firm can connect one Google Calendar for everyone. An administrator
 does this under **Settings → Integrations**. See
-[Google Workspace](../admin/integrations/google.md). Until then, **Add
-Event** and **Edit Event** say "Not connected to a Google calendar", and
-events are kept in Kosmos only.
+[Google Workspace](../admin/integrations/google.md). Until then, events
+are kept in Kosmos only and the event dialogs say nothing about Google.
+
+If the calendar is connected but the person who runs your server has not
+yet chosen which calendar to use, **Add Event** and **Edit Event** show a
+yellow note saying "Google Calendar is connected, but no calendar is
+chosen to sync with", and saving an event shows the same note. Events are
+saved in Kosmos meanwhile. Ask your administrator to finish the setup.
 
 Once it is connected, events travel both ways:
 
@@ -203,7 +208,8 @@ Once it is connected, events travel both ways:
 | Delete a synced event on Google | A **Pending** event is deleted from Kosmos. A **Complete** or **Missed** event stays in Kosmos, and so does a **Pending** event whose latest changes had not reached Google. |
 
 If Google cannot be reached when you save, a warning says the event was
-saved but did not sync. Kosmos tries again every two minutes. Ask your
+saved but did not sync ("Event saved, but couldn't sync to Google
+Calendar. Reconnect it in Settings."). Kosmos tries again every two minutes. Ask your
 administrator to reconnect if the warning keeps appearing.
 
 Good to know:

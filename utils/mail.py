@@ -9,6 +9,27 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from premailer import transform
 
+# Backends that accept a message and deliver it nowhere: console prints it
+# to the server's output, dummy drops it. locmem is left out on purpose; it is
+# the test runner's backend and stands in for a real one there.
+_UNDELIVERED_BACKENDS = (
+    "django.core.mail.backends.console.EmailBackend",
+    "django.core.mail.backends.dummy.EmailBackend",
+)
+
+# What a send reports in place of "sent" when email_delivers() is False.
+NOT_DELIVERED_MESSAGE = (
+    "Email is not set up, so this message was logged on the server instead of sent."
+)
+
+
+def email_delivers():
+    """True when outgoing mail leaves the server. False in console mode
+    (EMAIL_BACKEND=console, the development default), where every send
+    "succeeds" without reaching anyone."""
+    return settings.EMAIL_BACKEND not in _UNDELIVERED_BACKENDS
+
+
 # Content-ID under which attach_firm_logo embeds the logo; templates reference
 # it as src="cid:firm-logo" via the logo_cid context value.
 FIRM_LOGO_CID = "firm-logo"

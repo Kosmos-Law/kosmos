@@ -90,6 +90,8 @@ The three-dot menu has **Edit** (the same form as **Add Intake**), **Send
 email**, and **Add to contacts** or, once that is done, **Open contact**.
 On the right, **Forms**, **Notes** and **Assessment** switch between three
 panes. The page opens on **Notes** until you choose another.
+**Assessment** appears only when your firm has set up AI (see
+[AI](settings.md#ai)). Without it there are two panes.
 
 ### Notes
 
@@ -111,7 +113,9 @@ Good to know:
 
 ### Assessment
 
-**Assessment** holds an AI review of the intake. Click **Assess** (it
+**Assessment** holds an AI review of the intake. The pane, with its
+**Assess** and **Chat** buttons, appears only when your firm has set up
+AI. Click **Assess** (it
 reads **Update** once there is an assessment). Kosmos reads the intake's
 details and every note, and writes a **Summary**, an **Analysis**, a
 **Statute of limitations** section when it sees a concern, **Follow-up
@@ -137,6 +141,13 @@ merge fields, so type the greeting yourself). Check **Reply-To** and click
 **Email Out**. A copy goes to the firm's intake email address, if one is
 set. Templates are kept under **Settings → Intake Emails**.
 
+If your firm's server has no outgoing email set up, nothing leaves it.
+Kosmos then says "Email is not set up, so this message was logged on the
+server instead of sent." and the **Email Out** note starts with **Not
+delivered.** The same warning replaces the "sent" message for invoices,
+payment requests and intake form links. Ask your administrator to set up
+email.
+
 ## Intakes that arrive by email
 
 Your firm may have an intake address. Forward a prospective client's
@@ -145,7 +156,10 @@ address, and Kosmos turns it into an intake. Ask your administrator for
 the address. (Administrators: see
 [Intakes from forwarded email](../admin/integrations/inbound-email.md).)
 
-A new intake appears in the list, **Open** and dated today:
+A new intake appears in the list, **Open** and dated today. What Kosmos
+does with the message depends on whether your firm has set up AI.
+
+With AI:
 
 - An AI reads the message and fills in what it finds: name, phone, email,
   address, disputed property address, value, practice area (only one from
@@ -157,13 +171,23 @@ A new intake appears in the list, **Open** and dated today:
 - Kosmos then runs an assessment, so **Assessment** is filled in and the
   importance may already be adjusted.
 
-A message with no name becomes "Unknown caller" and the phone number, or
-takes the email's subject as its name. Attachments are not kept, and no
-contact or matter is created. When the email address or phone number in a
-forwarded message matches an existing intake, Kosmos adds the message as a
-note to the newest matching intake and opens no new one. The intake's
+Without AI, the intake is named after the email's subject ("Unknown
+inquiry" if it has none) and nothing else is filled in. Its first note,
+from **Kosmos** with the type **Email In**, holds the forwarded message as
+it was written, without anything you typed above it. Fill in the details
+yourself from the note. A follow-up is not matched to an earlier intake,
+so each forwarded message opens a new one.
+
+With AI, a message with no name becomes "Unknown caller" and the phone
+number, or takes the email's subject as its name. When the email address
+or phone number in a forwarded message matches an existing intake, Kosmos
+adds the message as a note to the newest matching intake and opens no new
+one. The intake's
 details and assessment are left alone. If its status was **Unresponsive**,
 it becomes **Open** again.
+
+Either way, attachments are not kept, and no contact or matter is
+created.
 
 Good to know:
 

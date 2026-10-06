@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from apps.case.ai.models import Conversation, Message
+from apps.case.ai.providers import DEEP, chat_llm
 from apps.case.ai.status import (
     FINAL_TTL,
     RUNNING_TTL,
@@ -35,8 +36,9 @@ from config.helpers import normalize_phone
 
 logger = logging.getLogger(__name__)
 
-# Fixed model for intake chats (no picker); an existing dispatch key.
-INTAKE_CHAT_MODEL = "gemini-pro-latest"
+# Intake chats have no picker: they run at the "deep" tier on whichever
+# provider is configured (apps/case/ai/providers.py), recorded on the
+# conversation so later turns stay on the same provider.
 
 CHAT_PREAMBLE = """You are discussing a prospective-client INTAKE with the firm - a potential
 case that has not been accepted yet. Help the attorney think it through:
@@ -199,7 +201,7 @@ def _process_intake_chat(conversation_id, intake_id, user_id):
     uses, so the shared case:ai-status polling cycle works unchanged."""
     from django.contrib.auth import get_user_model
 
-    from apps.case.ai.gemini_client import send_to_gemini_streaming
+    from apps.case.ai.providers import ANTHROPIC, GEMINI, complete
 
     cache_key = f"ai_status_{conversation_id}"
 
@@ -237,10 +239,11 @@ def _process_intake_chat(conversation_id, intake_id, user_id):
         def on_thought(thought):
             update_status("thinking", thought[:300])
 
-        response_text, input_tokens, output_tokens = send_to_gemini_streaming(
+        response_text, input_tokens, output_tokens = complete(
             system_context,
             chat_history,
-            model=INTAKE_CHAT_MODEL,
+            DEEP,
+            prefer=GEMINI if conversation.llm.startswith("gemini") else ANTHROPIC,
             on_thought=on_thought,
             is_cancelled=is_cancelled,
             conversation_id=conversation.id,
@@ -287,7 +290,7 @@ def chat_window(request, id):
     is_new = conversation is None
     if is_new:
         conversation = Conversation(
-            intake=intake, llm=INTAKE_CHAT_MODEL, vet_citations=False
+            intake=intake, llm=chat_llm(DEEP), vet_citations=False
         )
         messages = []
     else:
@@ -320,7 +323,7 @@ def chat_send(request, id):
         conversation = Conversation.objects.create(
             intake=intake,
             title=title,
-            llm=INTAKE_CHAT_MODEL,
+            llm=chat_llm(DEEP),
             vet_citations=False,
         )
 
@@ -391,7 +394,7 @@ def chat_end(request, id):
     """End & summarize: post the conclusions as a Kosmos comment, then
     delete the conversation. On summary failure the conversation is kept
     so nothing is lost."""
-    from apps.case.ai.gemini_client import send_to_gemini
+    from apps.case.ai.providers import complete
 
     intake = get_object_or_404(Intake, pk=id)
     conversation = _live_conversation(intake)
@@ -399,10 +402,9 @@ def chat_end(request, id):
         return render(request, "intakes/chat-closed.html", {"intake": intake})
 
     try:
-        summary, _, _ = send_to_gemini(
+        summary, _, _ = complete(
             SUMMARY_PROMPT,
             [{"role": "user", "content": _transcript(conversation)}],
-            model="gemini-2.5-flash",
         )
         summary = summary.strip()
         if not summary:

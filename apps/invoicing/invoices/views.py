@@ -20,7 +20,7 @@ from apps.activity.flat_fees.summary import (
 from apps.activity.time.models import TimeEntry
 from apps.activity.time.summary import calculate_summary as calculate_time_summary
 from apps.invoicing.applications.models import PaymentApplication, apply_to_invoice
-from apps.invoicing.invoices.functions import generate_ledes_98b
+from apps.invoicing.invoices.functions import generate_ledes_98b, ledes_available
 from apps.invoicing.invoices.get_invoice_data import get_invoice_data
 from apps.invoicing.payments.forms import PaymentForm
 from apps.invoicing.payments.trust import sync_trust_withdrawal
@@ -37,7 +37,7 @@ from apps.management.selection import (
 )
 from apps.matters.ledger.get_ledger_data import get_ledger_context
 from apps.matters.models import Matter
-from utils.toasts import toast_error, toast_success
+from utils.toasts import toast_email_sent, toast_error
 
 from .filters import InvoiceFilter
 from .forms import EditInvoiceForm, InvoiceForm
@@ -768,7 +768,7 @@ def invoices_pdf_download(request, pk):
 def invoice_ledes_98b(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
 
-    if invoice.status == "VOID":
+    if invoice.status == "VOID" or not ledes_available():
         return HttpResponse(status=400)
 
     ledes_file = generate_ledes_98b(invoice)
@@ -929,7 +929,7 @@ def invoices_send(request, pk):
             status=204,
             headers={"HX-Trigger": "invoiceDetailChanged, invoicesChanged"},
         )
-        toast_success(response, f"Invoice #{invoice.id} sent to {recipient}.")
+        toast_email_sent(response, f"Invoice #{invoice.id} sent to {recipient}.")
         return response
 
     context = {
@@ -981,7 +981,7 @@ def invoices_send_reminder(request, pk):
             status=204,
             headers={"HX-Trigger": "invoiceDetailChanged, invoicesChanged"},
         )
-        toast_success(
+        toast_email_sent(
             response, f"Reminder for invoice #{invoice.id} sent to {recipient}."
         )
         return response

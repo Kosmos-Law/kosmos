@@ -71,6 +71,25 @@ body {
   width: 100%;
 }
 
+/* Admin-only notices across the top of the content column for a server
+   that is not fully set up (base.html: email not delivering, background
+   worker down). An in-flow strip in the warning-toast wash, so it reads as
+   a standing notice rather than an error. */
+.admin-notice {
+  align-items: center;
+  background: var(--toast-warning-body-bg);
+  border-bottom: 1px solid var(--border-medium);
+  color: var(--color-primary);
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.admin-notice i {
+  color: var(--warning);
+  flex-shrink: 0;
+}
+
 /* Spacing utilities */
 .mb-0 { margin-bottom: 0; }
 .mb-2 { margin-bottom: 0.5rem; }

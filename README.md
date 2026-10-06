@@ -5,7 +5,7 @@
 # Kosmos
 
 Kosmos is a web-based practice management application for small law firms,
-with case building and AI-assisted legal analysis built in. It is a Django
+with case building and optional AI-assisted legal analysis built in. It is a Django
 application backed by PostgreSQL, with HTMX for interactivity and a
 background worker for syncs, OCR and AI jobs. The emphasis is a clean,
 simple interface and the efficient execution of core functionality.
@@ -30,7 +30,10 @@ pulled from CourtListener and saved to the matter.
 relevant documents, notes, case law and prior conversations for each question
 within the model's budget. An agentic mode can search the matter and
 CourtListener itself, and chat can write back into the record: facts,
-witnesses, notes and saved case law. Claude and Gemini are supported.
+witnesses, notes and saved case law. Claude and Gemini are supported, and
+either one runs every AI feature. AI is optional: until a provider key is
+set (in `config/.env` or by an admin under Settings > Integrations), no AI
+appears anywhere in the application.
 
 **Notes and drafting.** A rich-text notes editor with folders, matter-scoped
 and general libraries that feed the AI, and AI-proposed edits applied to
@@ -72,6 +75,9 @@ Then start the app in two terminals:
 | Option | Effect |
 | --- | --- |
 | `--db-name`, `--db-user`, `--db-password` | database settings (default `kosmos` / `kosmos` / `kosmos`); values in an existing `config/.env` win |
+| `--smtp-host`, `--smtp-port`, `--smtp-user`, `--smtp-password` | production only: outgoing mail server (port default `587`, STARTTLS); sets `EMAIL_BACKEND=smtp`. Required with `--prod` unless `--no-email`; prompted for when interactive |
+| `--from-email` | production only: one sender address for all mail (default `noreply@`, `billing@` and `kosmos@` at the domain) |
+| `--no-email` | production only: install without outgoing mail; every message, sign-in codes included, is only written to the log |
 | `--no-superuser` | skip the superuser prompt |
 | `--seed-intake-forms` | also run `manage.py seed_intake_forms` |
 | `--yes` | skip the confirmation prompt |
@@ -84,17 +90,19 @@ For a non-interactive superuser, export `DJANGO_SUPERUSER_USERNAME`,
 ### Production
 
 ```bash
-scripts/install.sh --prod --domain kosmos.example.com
+scripts/install.sh --prod --domain kosmos.example.com \
+  --smtp-host smtp.example.com --smtp-user kosmos@example.com \
+  --smtp-password '<password>' --from-email office@example.com
 sudo certbot --nginx -d kosmos.example.com
 ```
 
 `--prod` generates a production `config/.env` (`DEBUG=False`, a generated
-database password, the hostname in `ALLOWED_HOSTS` and friends), installs
+database password, the hostname in `ALLOWED_HOSTS` and friends, SMTP), installs
 nginx, renders the systemd units and nginx site from
 [`deploy/`](deploy/README.md), runs `collectstatic`, and starts
 `law.socket`, `law.service` and `qcluster.service`. Certbot adds TLS; later
 runs of the installer leave a certbot-managed file alone. Then fill in the
-blanks in `config/.env` (SMTP, `ADMINS`, API keys, object storage) and
+blanks in `config/.env` (`ADMINS`, API keys, object storage) and
 restart the two services.
 
 ### Manual installation and configuration
@@ -118,7 +126,8 @@ The application reads only `config/.env`. Two templates live beside it:
 `config/.env.example` documents every variable, including the optional
 integrations (Google, AI providers, CourtListener, payments, Mailgun inbound
 email, DigitalOcean Spaces). Each integration stays off until its keys are
-set.
+set. The AI provider keys can also be entered in the application, under
+Settings > Integrations.
 
 ## Development
 

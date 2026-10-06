@@ -213,6 +213,14 @@
                       </td>
                     </tr>
                   </table>
+                {% elif view_url %}
+                  <table role="presentation" class="btn" cellpadding="0" cellspacing="0" style="margin: 4px 0 0;">
+                    <tr>
+                      <td>
+                        <a href="{{ view_url }}">View invoice</a>
+                      </td>
+                    </tr>
+                  </table>
                 {% endif %}
               </td>
             </tr>

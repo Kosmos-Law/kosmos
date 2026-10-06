@@ -119,7 +119,7 @@ def run_assessment(intake):
     """One AI call over everything on the intake. Updates assessment,
     assessed_at, and (when the AI takes a position) importance. Returns an
     error string on failure, leaving the stored assessment untouched."""
-    from apps.case.ai.gemini_client import send_to_gemini
+    from apps.case.ai.providers import complete
 
     area_names = ", ".join(
         PracticeArea.objects.filter(is_active=True).values_list("name", flat=True)
@@ -127,7 +127,7 @@ def run_assessment(intake):
     system_prompt = ASSESSMENT_PROMPT.format(area_names=area_names)
 
     try:
-        response, _, _ = send_to_gemini(
+        response, _, _ = complete(
             system_prompt, [{"role": "user", "content": _intake_context(intake)}]
         )
         cleaned = response.strip()

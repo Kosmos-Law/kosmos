@@ -46,7 +46,7 @@ them.
 
 ## What the migration deletes
 
-`apps/case/migrations/0093_delete_research_tab.py` drops the four
+`apps/case/migrations/0094_delete_research_tab.py` drops the four
 models and their tables: `ResearchQuery` (every research question and
 its answer), `ResearchResult` (the candidates and their briefs, triage
 scores and treatment fields), `CaseBrief` (saved case briefs) and
@@ -79,7 +79,7 @@ Recoverable from git history at the parent of commit `c70da1a05`.
 
 - Commit `c70da1a05`, "Remove the Research tab; saved case law becomes
   a view of the AI tab" (2026-10-06).
-- The comment heading migration `0093`.
+- The comment heading migration `0094`.
 - `templates/case/ai/view-pills.html`, the Conversations | Case Law
   switch.
 

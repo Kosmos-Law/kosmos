@@ -65,7 +65,13 @@
             <input type="checkbox"
                    name="attach_pdf"
                    {% if attach_pdf %}checked{% endif %}>
-            Attach invoice PDF (always available at the pay link)
+            Attach invoice PDF (always available at the
+            {% if online_payments_enabled %}
+              pay
+            {% else %}
+              invoice
+            {% endif %}
+            link)
           </label>
         </div>
       </form>

@@ -82,6 +82,8 @@
   <td class="col-pages">{{ document.page_count|default:"" }}</td>
   <td class="col-date">{% include "case/documents/date-display.html" %}</td>
   <td class="col-added">{{ document.created_at|date:"Y-m-d" }}</td>
-  <td class="col-ai" id="doc-ai-{{ document.id }}">{% include "case/documents/ai-context-cell.html" %}</td>
+  {% if ai_enabled %}
+    <td class="col-ai" id="doc-ai-{{ document.id }}">{% include "case/documents/ai-context-cell.html" %}</td>
+  {% endif %}
   <td class="col-importance dropdown-cell">{% include "case/documents/importance-display.html" %}</td>
 </tr>

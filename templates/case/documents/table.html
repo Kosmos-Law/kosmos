@@ -7,7 +7,7 @@
       <col class="col-pages">
       <col class="col-date">
       <col class="col-added">
-      <col class="col-ai">
+      {% if ai_enabled %}<col class="col-ai">{% endif %}
       <col class="col-importance">
     </colgroup>
     <tr>
@@ -41,14 +41,16 @@
           <i class="icon-chevrons-up-down"></i>
         </button>
       </th>
-      <th class="col-ai">
-        AI
-        <button class="btn-sort {% if 'ai_context' in current_order %}active{% endif %}"
-                hx-get="{% url 'case:documents-sort' matter.id 'ai_context' %}"
-                hx-target="#documents">
-          <i class="icon-chevrons-up-down"></i>
-        </button>
-      </th>
+      {% if ai_enabled %}
+        <th class="col-ai">
+          AI
+          <button class="btn-sort {% if 'ai_context' in current_order %}active{% endif %}"
+                  hx-get="{% url 'case:documents-sort' matter.id 'ai_context' %}"
+                  hx-target="#documents">
+            <i class="icon-chevrons-up-down"></i>
+          </button>
+        </th>
+      {% endif %}
       <th class="col-importance">
         <button class="btn-sort {% if 'importance' in current_order %}active{% endif %}"
                 hx-get="{% url 'case:documents-sort' matter.id '-importance' %}"
@@ -62,7 +64,8 @@
       {% include "case/documents/row.html" %}
     {% empty %}
       <tr>
-        <td colspan="8" class="empty-message">No documents found.</td>
+        <td colspan="{% if ai_enabled %}8{% else %}7{% endif %}"
+            class="empty-message">No documents found.</td>
       </tr>
     {% endfor %}
   </table>

@@ -30,7 +30,7 @@ def _clear_cache():
 class TestGenerateNoteSummary:
     def test_generates_and_stores_hash(self, library_note):
         with patch(
-            "apps.case.ai.gemini_client.send_to_gemini",
+            "apps.case.ai.gemini_client.send_to_gemini_streaming",
             return_value=("Covers adverse possession requirements.", 10, 5),
         ) as send:
             tasks.generate_note_summary(library_note.id)
@@ -45,7 +45,7 @@ class TestGenerateNoteSummary:
         library_note.summary = "Existing"
         library_note.summary_source_hash = tasks.summary_hash(library_note.content)
         library_note.save(update_fields=["summary", "summary_source_hash"])
-        with patch("apps.case.ai.gemini_client.send_to_gemini") as send:
+        with patch("apps.case.ai.gemini_client.send_to_gemini_streaming") as send:
             tasks.generate_note_summary(library_note.id)
         assert not send.called
 
@@ -56,7 +56,7 @@ class TestGenerateNoteSummary:
         library_note.content = "Completely new content about easements."
         library_note.save(update_fields=["content"])
         with patch(
-            "apps.case.ai.gemini_client.send_to_gemini",
+            "apps.case.ai.gemini_client.send_to_gemini_streaming",
             return_value=("New summary.", 10, 5),
         ) as send:
             tasks.generate_note_summary(library_note.id)
@@ -69,7 +69,7 @@ class TestGenerateNoteSummary:
             author=user, matter=matter, title="M", content="text"
         )
         empty = Note.objects.create(author=user, title="Empty", content="")
-        with patch("apps.case.ai.gemini_client.send_to_gemini") as send:
+        with patch("apps.case.ai.gemini_client.send_to_gemini_streaming") as send:
             tasks.generate_note_summary(matter_note.id)
             tasks.generate_note_summary(empty.id)
         assert not send.called
@@ -79,11 +79,13 @@ class TestGenerateNoteSummary:
         library_note.save(update_fields=["content"])
         captured = {}
 
-        def fake_send(system_context, messages, model):
+        def fake_send(system_context, messages, **kwargs):
             captured["content"] = messages[0]["content"]
             return ("Summary.", 1, 1)
 
-        with patch("apps.case.ai.gemini_client.send_to_gemini", side_effect=fake_send):
+        with patch(
+            "apps.case.ai.gemini_client.send_to_gemini_streaming", side_effect=fake_send
+        ):
             tasks.generate_note_summary(library_note.id)
         # title header + capped excerpt + continuation marker
         assert len(captured["content"]) < tasks.SUMMARY_TEXT_LIMIT + 200

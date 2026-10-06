@@ -17,6 +17,7 @@ from apps.invoicing.pay.links import (
     request_pay_url,
     request_statement_pdf_url,
 )
+from apps.invoicing.processors import online_payments_enabled
 from apps.invoicing.requests.models import PaymentRequestTransmission
 from apps.settings.models import Firm
 from utils.mail import (
@@ -31,6 +32,16 @@ from utils.mail import (
 
 class PaymentRequestSendError(Exception):
     pass
+
+
+# A request is an ask to pay online: with online payment off its link could
+# only tell the client to contact the firm, so no request email goes out.
+PAYMENTS_OFF_ERROR = "Online payments are not set up. Requests cannot be sent."
+
+
+def _refuse_when_payments_off():
+    if not online_payments_enabled():
+        raise PaymentRequestSendError(PAYMENTS_OFF_ERROR)
 
 
 def _log(
@@ -109,8 +120,10 @@ def send_payment_request(
     and history reflect that the client was given access to it. Nothing is
     ever attached; the links serve the PDFs behind the request's signed token.
     Returns True; raises PaymentRequestSendError on a bad/empty address list or
-    send failure. Every attempt is logged as a PaymentRequestTransmission.
+    send failure, or when online payment is off. Every attempt that reaches
+    an address check is logged as a PaymentRequestTransmission.
     """
+    _refuse_when_payments_off()
     is_trust = payment_request.is_trust
     matter = None if is_trust else payment_request.matter
     client = payment_request.client if is_trust else (matter.client if matter else None)
@@ -266,8 +279,10 @@ def send_request_reminder(
     Includes the same pay link, no attachments. Logs a reminder-kind
     transmission on the request AND on each invoice the request's earlier
     sends attached (the reminder concerns those invoices); the days-since
-    clocks are untouched.
+    clocks are untouched. Refused (PaymentRequestSendError) when online
+    payment is off.
     """
+    _refuse_when_payments_off()
     is_trust = payment_request.is_trust
     matter = None if is_trust else payment_request.matter
     client = payment_request.client if is_trust else (matter.client if matter else None)

@@ -25,6 +25,8 @@ Usage in views:
 
 import json
 
+from utils.mail import NOT_DELIVERED_MESSAGE, email_delivers
+
 
 def add_toast(
     response,
@@ -109,3 +111,12 @@ def toast_warning(response, message, title=None, duration=5000):
 def toast_info(response, message, title=None, duration=5000):
     """Add an info toast to the response."""
     return add_toast(response, "info", message, title, duration)
+
+
+def toast_email_sent(response, message, **kwargs):
+    """The success toast for a send, unless email is not set up: then a
+    warning that the message only reached the server log, so the screen
+    never claims a delivery that did not happen."""
+    if email_delivers():
+        return toast_success(response, message, **kwargs)
+    return toast_warning(response, NOT_DELIVERED_MESSAGE, duration=0)

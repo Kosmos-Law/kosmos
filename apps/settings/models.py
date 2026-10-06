@@ -43,6 +43,10 @@ class Firm(AuditMixin):
     quick_task_ai_model = models.CharField(
         max_length=20, choices=QUICK_TASK_AI_MODELS, default="gemini-flash"
     )
+    # AI provider keys entered under Settings > Integrations, encrypted
+    # (apps/settings/ai.py). A key in config/.env takes precedence.
+    gemini_api_key = models.TextField(blank=True, default="")
+    anthropic_api_key = models.TextField(blank=True, default="")
 
     class Meta:
         verbose_name_plural = "firms"

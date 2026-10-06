@@ -77,20 +77,15 @@ def interpret_quick_add(text, user, recent_matter=None, model="gemini-flash"):
         ]
     )
     messages = [{"role": "user", "content": text}]
-    if model == "claude-sonnet":
-        from apps.case.ai.anthropic_client import send_to_claude
+    from apps.case.ai.providers import ANTHROPIC, GEMINI, complete
 
-        response, _, _ = send_to_claude(
-            system_context, messages, model="claude-sonnet-4-6"
-        )
-    else:
-        from apps.case.ai.gemini_client import send_to_gemini
-
-        response, _, _ = send_to_gemini(
-            system_context=system_context,
-            messages=messages,
-            model="gemini-2.5-flash",
-        )
+    # The firm's model choice is a preference: with only the other
+    # provider configured, quick-add runs there instead.
+    response, _, _ = complete(
+        system_context,
+        messages,
+        prefer=ANTHROPIC if model == "claude-sonnet" else GEMINI,
+    )
     cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", response.strip())
     try:
         entry = json.loads(cleaned)

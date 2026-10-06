@@ -133,6 +133,18 @@ RESEARCH_REFUSAL = (
     "Case-law research is not available to this user (no Research "
     "permission). Answer from the case law saved on the matter."
 )
+COURTLISTENER_UNCONFIGURED_REFUSAL = (
+    "Case-law search is not configured (no CourtListener API key). Answer "
+    "from the case law saved on the matter."
+)
+
+
+def courtlistener_configured() -> bool:
+    """The CourtListener tools need an API key (COURTLISTENER_API_KEY).
+    Without one every call would fail, so they are not offered at all."""
+    from apps.case.courtlistener import get_api_token
+
+    return bool(get_api_token())
 
 
 def agent_sections(include_financial: bool) -> list[str]:
@@ -154,7 +166,8 @@ def build_agent_tools(
 ) -> list[dict]:
     """Provider-neutral tool specs for one agent turn, for one user:
     read_invoice and the rates section need the Financial permission, the
-    CourtListener tools the Research permission."""
+    CourtListener tools the Research permission and a configured
+    CourtListener API key."""
     section_enum = [
         name
         for name in (
@@ -511,7 +524,7 @@ def build_agent_tools(
     withheld = set()
     if not include_financial:
         withheld.update(FINANCIAL_TOOLS)
-    if not include_research:
+    if not include_research or not courtlistener_configured():
         withheld.update(RESEARCH_TOOLS)
     return [tool for tool in tools if tool["name"] not in withheld]
 
@@ -1795,6 +1808,9 @@ def make_agent_executor(
     if not include_research:
         for tool_name in RESEARCH_TOOLS:
             handlers[tool_name] = _refusal(RESEARCH_REFUSAL)
+    elif not courtlistener_configured():
+        for tool_name in RESEARCH_TOOLS:
+            handlers[tool_name] = _refusal(COURTLISTENER_UNCONFIGURED_REFUSAL)
 
     # -- dispatch -----------------------------------------------------------
 

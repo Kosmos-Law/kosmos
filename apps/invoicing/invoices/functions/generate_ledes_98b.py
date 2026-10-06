@@ -36,6 +36,14 @@ HEADER_FIELDS = [
     "CLIENT_MATTER_ID",
 ]
 
+
+def ledes_available() -> bool:
+    """LEDES files need the firm's ID (LAW_FIRM_ID in config/.env). Without
+    it every line would carry a blank LAW_FIRM_ID, which e-billing systems
+    reject, so the download is not offered."""
+    return bool(getattr(settings, "LAW_FIRM_ID", ""))
+
+
 HEADER = f"LEDES1998B[]\n{'|'.join(HEADER_FIELDS)}[]\n"
 
 

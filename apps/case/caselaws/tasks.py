@@ -2,14 +2,17 @@
 
 import logging
 
-from apps.case.ai.gemini_client import send_to_gemini
+from apps.case.ai.providers import complete
 from apps.case.courtlistener import fetch_cluster, fetch_opinion
+from apps.settings.ai import ai_enabled
 
 logger = logging.getLogger(__name__)
 
 
 def generate_caselaw_summary(caselaw_id):
     """Queue the 200-word AI summary for a CaseLaw entry."""
+    if not ai_enabled():
+        return
     from django_q.tasks import async_task
 
     async_task(
@@ -22,6 +25,8 @@ def generate_caselaw_summary(caselaw_id):
 
 def _generate_caselaw_summary(caselaw_id):
     """Fetch opinion text and generate a 200-word summary."""
+    if not ai_enabled():
+        return
     from apps.case.models import CaseLaw
 
     try:
@@ -56,7 +61,7 @@ def _generate_caselaw_summary(caselaw_id):
             f"Opinion Text:\n{truncated}"
         )
 
-        response_text, _, _ = send_to_gemini(
+        response_text, _, _ = complete(
             system_prompt, [{"role": "user", "content": user_prompt}]
         )
 

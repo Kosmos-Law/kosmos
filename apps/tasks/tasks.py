@@ -58,12 +58,13 @@ def toggle_chip_pin(user, target_id):
 
 
 def quick_add_ai_enabled():
-    """Whether the firm has opted into AI quick task entry (the input's
-    placeholder teaches the active syntax)."""
+    """Whether the firm has opted into AI quick task entry and AI is set
+    up (the input's placeholder teaches the active syntax)."""
+    from apps.settings.ai import ai_enabled
     from apps.settings.models import Firm
 
     firm = Firm.objects.first()
-    return bool(firm and firm.quick_task_ai)
+    return bool(firm and firm.quick_task_ai) and ai_enabled()
 
 
 def get_user_chips(request, users, user_id):

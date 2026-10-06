@@ -95,9 +95,11 @@ when the response says `ok: false`.
 
 ### Quick add
 
-`tasks_add_quick` takes one typed line. When the firm has switched on
-`Firm.quick_task_ai` (Settings), `_quick_add_ai_entry()` asks Gemini Flash
-(`apps/tasks/ai.py`) for a description, matter, assignee, due date and
+`tasks_add_quick` takes one typed line. When `quick_add_ai_enabled()` is
+true (the firm has switched on `Firm.quick_task_ai` in Settings and an AI
+provider is configured), `_quick_add_ai_entry()` asks the fast tier
+(`apps/tasks/ai.py`, through `providers.complete()` with the firm's
+`quick_task_ai_model` as the preferred provider) for a description, matter, assignee, due date and
 importance; any failure falls through to the legacy parser. The legacy
 rule is `process_quick_task_description()` in `apps/tasks/services.py`:
 

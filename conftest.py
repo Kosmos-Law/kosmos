@@ -14,6 +14,42 @@ def django_db_setup(django_db_setup, django_db_blocker):
 
 
 @pytest.fixture(autouse=True)
+def _integration_keys(settings):
+    """Every test sees the optional integrations as set up, with keys no
+    provider accepts: the same on a laptop whose config/.env holds real
+    keys as in CI with none, and a stray real API call fails instead of
+    spending. Use ``ai_off`` / ``courtlistener_off`` for the unset case."""
+    settings.GEMINI_API_KEY = "test-gemini-key"
+    settings.ANTHROPIC_API_KEY = "test-anthropic-key"
+    settings.COURTLISTENER_API_TOKEN = "test-courtlistener-token"
+
+
+@pytest.fixture(autouse=True)
+def _worker_running():
+    """Page renders see the background worker as running (the test DB has
+    no schedules, so the real check says down and would change badges and
+    banners depending on test order). config/tests/test_health.py clears
+    this to exercise the real check."""
+    from django.core.cache import cache
+
+    from config.health import WORKER_STATUS_CACHE_KEY
+
+    cache.set(WORKER_STATUS_CACHE_KEY, True, 3600)
+
+
+@pytest.fixture
+def ai_off(settings):
+    """No AI provider configured (and none stored in Settings)."""
+    settings.GEMINI_API_KEY = ""
+    settings.ANTHROPIC_API_KEY = ""
+
+
+@pytest.fixture
+def courtlistener_off(settings):
+    settings.COURTLISTENER_API_TOKEN = ""
+
+
+@pytest.fixture(autouse=True)
 def _no_semantic_auto_index(settings):
     """Model saves must not enqueue embedding tasks during tests."""
     settings.SEMANTIC_AUTO_INDEX = False

@@ -16,7 +16,7 @@ the code reads it.
 | `config/.env.example` | Every variable the application reads, with a comment that becomes its description in the generated reference. |
 | `config/urls.py` | The URL root and the two media-routing functions. |
 | `config/health.py` | The three health views. |
-| `config/context.py` | The `env` context processor. |
+| `config/context.py` | The `env` and `integrations` context processors. |
 | `config/helpers.py` | `normalize_phone()`, `dictfetchall()`, `MultipleOrderingFilter`, `timestamp_to_eastern()`, the `dump*` helpers. |
 | `config/wsgi.py`, `config/asgi.py` | Entry points; gunicorn runs `config.wsgi:application`. |
 | `apps/accounts/middleware.py` | `HtmxLoginRedirectMiddleware`, `PermissionMiddleware`. |
@@ -119,7 +119,13 @@ project entries. On the way in they run in this order:
    `HX-Redirect` set to the same location. HTMX follows that with a full
    navigation, so an expired session takes the page to the sign-in form
    instead of swapping the sign-in form into a list.
-4. **`PermissionMiddleware`** (`apps/accounts/middleware.py`). For a
+4. **`PermissionMiddleware`** (`apps/accounts/middleware.py`). First,
+   for every request, it answers 404 on the pages of an optional
+   integration that is not set up: `AI_PATTERN` (the AI tab, the drafts
+   companion, intake assessment and chat) without an AI key,
+   `CASELAW_PATTERN` (saved case law and the cluster viewer) without a
+   CourtListener token; see
+   [AI is optional](ai/context.md#ai-is-optional). Then, for a
    signed-in user who is not an admin, it refuses with 403: `/admin/`;
    the `ADMIN_ONLY_PATHS` (the Users, Permissions, Firm, Contacts, Matters
    and Tasks settings pages); any path in `PERMISSION_PATHS` whose flag

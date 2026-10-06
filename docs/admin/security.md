@@ -34,7 +34,7 @@ All of these live in `config/.env`. Their defaults are in the
 | Setting | What to set | Why |
 |---|---|---|
 | `DEBUG` | `False` | With it on, error pages show source code and settings, Django serves `media/` to anyone when storage is local, OAuth is allowed over plain HTTP, email defaults to the console, and the cookie and proxy settings under [Django security settings](#django-security-settings) are not applied. |
-| `SECRET_KEY` | A long random value used nowhere else | It signs sessions, password-reset links, payment links and intake-form links. Anyone who has it can forge them. The value in `config/.env.dev` is public. |
+| `SECRET_KEY` | A long random value used nowhere else | It signs sessions, password-reset links, payment links and intake-form links, and encrypts AI keys entered under Settings → Integrations. Anyone who has it can forge them. The value in `config/.env.dev` is public. |
 | `ALLOWED_HOSTS` | Your host name only | Requests for any other host are refused. |
 | `CSRF_TRUSTED_ORIGINS` | `https://kosmos.example.com` | The origin Django accepts form posts from, in addition to the host the request itself names. |
 | `ENV` | `prod` | |
@@ -47,7 +47,10 @@ a `config/.env` that already exists, so on a server that began as a
 development install, check each of these by hand.
 
 Changing `SECRET_KEY` later signs every user out and invalidates every
-payment link, intake-form link and password-reset link already sent.
+payment link, intake-form link and password-reset link already sent. AI
+keys entered under **Settings → Integrations** can no longer be read
+either, and must be entered again (see
+[AI providers and research](integrations/ai.md#in-settings)).
 
 ## TLS and nginx
 
@@ -273,8 +276,10 @@ emails carry a link to that page.
 
 - `none` switches online payment off. The page shows the amount due and
   the invoice or statement to download, and asks the client to contact the
-  firm. Nothing can be charged or recorded. The installer writes this
-  value for a production install.
+  firm. Nothing can be charged or recorded. Invoice emails link to the page
+  as "View invoice" instead of "Pay now", and payment and trust deposit
+  requests cannot be sent. The installer writes this value for a
+  production install.
 - `fake` is for development. The page shows a simulated form, and
   submitting it records the invoice as paid although no money moves. It is
   the built-in default when the variable is missing, and the value in
@@ -398,7 +403,9 @@ Each of these is off until its keys are set.
   or summary draws on (document text, notes, emails, timeline), text sent
   for semantic indexing, forwarded intake email, the firm's user names and
   titles, and the name and email address of the user who asked. Keys are in
-  the [environment reference](../reference/environment.md#ai-and-research).
+  the [environment reference](../reference/environment.md#ai-and-research)
+  or, encrypted in the database, under **Settings → Integrations**. With
+  no AI key, nothing is sent and every AI feature is hidden.
 - **Google Workspace**: calendar events and contacts are synchronized in
   both directions. Drive files and Gmail messages are read into Kosmos.
   See [Google Workspace](integrations/google.md).

@@ -167,11 +167,13 @@
                     Please find attached your invoice.
                     The invoice details are included in the PDF attachment.
                   </p>
-                {% else %}
+                {% elif pay_url %}
                   <p class="para">
                     Your invoice is ready. You can view, download, and pay it
                     securely at the link below.
                   </p>
+                {% else %}
+                  <p class="para">Your invoice is ready. You can view and download it at the link below.</p>
                 {% endif %}
                 <p class="para">
                   If you have any questions about this invoice, please reply to this email{% if billing_email %} or contact us at <a href="mailto:{{ billing_email }}">{{ billing_email }}</a>{% endif %}.
@@ -195,6 +197,14 @@
                     <tr>
                       <td>
                         <a href="{{ pay_url }}">Pay now</a>
+                      </td>
+                    </tr>
+                  </table>
+                {% elif view_url %}
+                  <table role="presentation" class="btn" cellpadding="0" cellspacing="0" style="margin: 4px 0 0;">
+                    <tr>
+                      <td>
+                        <a href="{{ view_url }}">View invoice</a>
                       </td>
                     </tr>
                   </table>

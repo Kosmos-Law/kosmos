@@ -48,6 +48,8 @@ Two limits to know about:
   `/health/worker/` exists. It is answered by the web application, from
   what the worker leaves in the database, so it works while the worker is
   down. After a restart of the worker it can take a minute to recover.
+  The same test drives the notice administrators see at the top of every
+  page while the worker is down (see [Background worker](worker.md)).
 
 ## Where the logs are
 

@@ -254,7 +254,7 @@ been reported as success.
 | Name | Adapter | Notes |
 |---|---|---|
 | `fake` | `processors/fake.py` | The default; an in-process registry driven by token strings (`fake-ok`, `fake-decline`, `fake-soft-decline`, `fake-ach-return`, `fake-ach-fail`) with `simulate_settlement()`, `simulate_deposit()` and `simulate_event()` for tests. It records payments although no money moves |
-| `none` | `processors/none.py` | Links still serve the documents; the page says to contact the firm; nothing can be charged. What a production install should run until a processor is configured |
+| `none` | `processors/none.py` | Links still serve the documents; the page says to contact the firm; nothing can be charged. `online_payments_enabled()` is false, so invoice emails link "View invoice" instead of "Pay now", `send.py` refuses every request send, and the request actions are hidden. What a production install should run until a processor is configured |
 | `lawpay` | `processors/lawpay.py` | AffiniPay REST; webhooks are unsigned and verified by re-fetching the transaction |
 | `stripe` | `processors/stripe.py` | Single account, Stripe Elements, signed webhooks; cannot take trust deposits |
 | `confido` | `processors/confido.py` | GraphQL; the server mints a payment session first (`client_config()` hits the API), the client submits to it, the server completes it; HMAC-SHA512 signed webhooks |
@@ -290,6 +290,13 @@ must reach the trust account and nowhere else". eCheck is offered on the
 pay form only when the adapter sets `ClientConfig.echeck`; the LawPay
 adapter leaves it off because the firm's eCheck accounts were suspended,
 though the bank charge path remains intact.
+
+`online_payments_enabled()` in `processors/factory.py` is the one check
+for "online payment is off" (the processor is `none`). Templates read it
+as `online_payments_enabled` from the `config.context.payments` context
+processor, which also offers `payment_requests_exist` (a callable, so the
+query runs only where the Invoicing sub-nav asks) to keep the Requests tab
+while older requests exist.
 
 **Webhooks and reconciliation.** `processor_webhook()` at
 `/webhooks/<processor>/` answers `200` at once and hands the raw body and

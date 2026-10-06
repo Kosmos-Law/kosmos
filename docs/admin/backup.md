@@ -19,7 +19,7 @@ restoring it.
 | The database | PostgreSQL, the database named by `DB_NAME` in `config/.env` (the installer's default is `kosmos`) | Almost everything: matters, contacts, time and billing, trust ledgers, notes, AI conversations, emails synced from Gmail, extracted document text, the search indexes, the task queue and schedules, user accounts and sessions. |
 | Uploaded files, local storage | `media/` in the checkout, when `STORAGE_BACKEND=local` | Documents (`media/documents/`), stored invoice PDFs (`media/invoices/`) and the firm logo (`media/company/`). |
 | Uploaded files, object storage | The bucket named by `DIGITAL_OCEAN_BUCKET_NAME`, when `STORAGE_BACKEND=s3` | The same files, under the same paths, in an S3-compatible bucket instead of `media/`. |
-| Configuration | `config/.env` | Holds `SECRET_KEY`, the database password and every API key. It is not in git. |
+| Configuration | `config/.env` | Holds `SECRET_KEY`, the database password and every API key set there (AI keys entered under Settings → Integrations are in the database, encrypted with `SECRET_KEY`). It is not in git. |
 | Google credentials | The directory named by `GOOGLE_DATA_DIR` (default `google/` in the checkout) | The OAuth client file you downloaded from Google (`google_tokens.json`) and the tokens Kosmos obtained for Calendar, Contacts and Drive. Not in git. |
 | The code version | The git commit of the checkout | Record it with each backup: `git rev-parse HEAD`. |
 
@@ -49,7 +49,8 @@ Things you do not need to back up:
 Keep the same `SECRET_KEY` across a restore. Payment links and client
 intake-form links in emails the firm has already sent are signed with it,
 so a restored server with a new key rejects those links. A new key also
-signs every user out.
+signs every user out, and makes AI keys entered under Settings →
+Integrations unreadable, so they have to be entered again.
 
 ### Treat backups as confidential
 

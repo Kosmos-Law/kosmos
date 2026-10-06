@@ -38,6 +38,7 @@ are only required when that mode is selected. Never expose a production local
 `MEDIA_ROOT` directly through a web server because it contains confidential
 client documents.
 
-Leave `SEMANTIC_AUTO_INDEX=False` until `GEMINI_API_KEY` is set. Saving a
-record with it on queues an embedding task that needs Gemini, and without a
-key every one of those tasks fails and writes an error to the log.
+`SEMANTIC_AUTO_INDEX` needs a Gemini key, set as `GEMINI_API_KEY` or under
+**Settings → Integrations**. Without one, saving a record queues nothing, so
+the setting has no effect. AI itself is optional: with no AI key set, every
+AI feature is hidden. See [AI providers and research](integrations/ai.md).

@@ -990,6 +990,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "anthropic" },
     { name = "croniter" },
+    { name = "cryptography" },
     { name = "django" },
     { name = "django-cleanup" },
     { name = "django-environ" },
@@ -1037,6 +1038,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = "==1.0.0" },
     { name = "croniter", specifier = "==6.0.0" },
+    { name = "cryptography", specifier = "==49.0.0" },
     { name = "django", specifier = "==4.2.30" },
     { name = "django-cleanup", specifier = "==8.1.0" },
     { name = "django-environ", specifier = "==0.11.2" },

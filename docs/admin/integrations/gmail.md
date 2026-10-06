@@ -104,7 +104,9 @@ Each user does this once, signed in as themselves:
    "Your mailbox:" followed by the address.
 
 Any user can connect their own mailbox. Admin rights are needed only for
-the firm-wide Calendar, Contacts and Drive connections. A user has one
+the firm-wide Calendar, Contacts and Drive connections. Without the OAuth
+client file there is no **Connect** button, and a matter's **Emails** tab
+is hidden unless it already holds synced emails. A user has one
 mailbox at a time, and connecting again replaces it.
 
 The access token is stored in the database with the user's account, not

@@ -86,7 +86,12 @@ the session (`set_last_tab`, keyed by matter), and `_get_case_tab_data()`
 dispatches to the tab's `get_*_data()` function, which the tab's own
 `index` and `list` views also call, so a full page load and an HTMX swap
 build the same context. `VALID_TABS` in `apps/case/views.py` is the list a
-stored tab is checked against.
+stored tab is checked against, and `tab_available(user, tab)` drops the
+`ai` tab when no AI provider is configured and `caselaws` without a
+CourtListener token or `perm_research`, so a remembered tab that has
+gone falls back to Documents. `case-nav.html` shows the AI tab only with
+`ai_enabled`, and otherwise a Case Law tab when `caselaw_available` (see
+[AI is optional](ai/context.md#ai-is-optional)).
 
 `case-content.html` and `case-tab-content.html` wrap every tab in a `div`
 that re-fetches its list on a `*Changed` event from `body`
@@ -139,7 +144,7 @@ file with the OCR'd PDF, and stores the result as `completed`. A
 progress-bar plugin (`ocr_progress.DatabaseProgressBar`) writes
 `ocr_pages_done` so the badge can show pages. Afterwards the search vector
 is set from the first 900k characters (Postgres rejects a tsvector input
-over 1MB) and `generate_document_summary` is queued. Failures set `failed`
+over 1MB) and, when `ai_enabled()`, `generate_document_summary` is queued. Failures set `failed`
 and `ocr_error`; `retry_ocr` re-queues a failed document, `accept_ocr`
 promotes `extracted` to `completed`, and `force_ocr` re-runs with
 `force=True` for a document whose text layer was wrong. The badge
@@ -259,11 +264,15 @@ excerpts) this one was left as it is pending a real sanitiser. Saved
 cases and the viewer need `perm_research`, enforced by URL pattern in the
 middleware.
 
-The list is a view of the AI tab: `templates/case/ai/view-pills.html`
-puts a Conversations | Case Law switch in both toolbars, shown only to an
-admin or a `perm_research` user. `/case/<id>/caselaws/` and the
-`caselaws` tab key render the list with the AI tab marked active in the
-case navigation. Cases also arrive from the agentic chat's `save-caselaw`
+With AI configured the list is a view of the AI tab:
+`templates/case/ai/view-pills.html` puts a Conversations | Case Law
+switch in both toolbars, shown only when `caselaw_available` (a
+CourtListener token, and an admin or a `perm_research` user).
+`/case/<id>/caselaws/` and the `caselaws` tab key render the list with
+the AI tab marked active in the case navigation. Without AI the list is
+its own Case Law tab, with no AI column, bulk AI menu or summary.
+Without a CourtListener token the list, lookup and viewer 404
+(`CASELAW_PATTERN` in `PermissionMiddleware`). Cases also arrive from the agentic chat's `save-caselaw`
 block (see [Agentic chat](ai/agent-chat.md)), which builds the row from
 `fetch_cluster()` so a citation-less slip opinion saves too.
 
@@ -282,7 +291,8 @@ Search inside a matter (`apps/case/search/views.py`) is hybrid:
 registered in `apps/case/search_config.py`), keeping the document,
 highlight, fact and note hits on this matter, then meaning matches from
 the pgvector index (`apps/case/ai/semantic.py`, `semantic_entries()`)
-appended and marked `semantic`. Highlights on case law are left out
+appended and marked `semantic` (none without a Gemini key, which the
+embeddings need). Highlights on case law are left out
 because the result row renders document highlights only. The importance
 filter means "at least this important", as on the other tabs. The sidebar
 search (`apps/search/`)
@@ -296,8 +306,8 @@ the MCP server.
 | Task | Queued by | On failure |
 |---|---|---|
 | `apps.case.documents.tasks.process_document_ocr` | upload, file replacement, mbox import, Drive ingest, retry and force | `ocr_status="failed"`, `ocr_error` set, badge offers retry |
-| `apps.case.documents.tasks.generate_document_summary` | the OCR task | logged, document keeps no summary |
-| `apps.case.caselaws.tasks._generate_caselaw_summary` | `caselaws_save` and the agent's `save-caselaw` block, through `generate_caselaw_summary()` | logged, the case keeps no summary |
+| `apps.case.documents.tasks.generate_document_summary` | the OCR task, only with AI configured | logged, document keeps no summary |
+| `apps.case.caselaws.tasks._generate_caselaw_summary` | `caselaws_save` and the agent's `save-caselaw` block, through `generate_caselaw_summary()`, only with AI configured | logged, the case keeps no summary |
 | `apps.drive.records.resync_mapping_by_id` | the Drive Folder modal | logged; the nightly full pass catches up |
 | `apps.drive.google.scheduled_sync`, `scheduled_sync_full` | schedules `drive-sync` and `drive-sync-nightly-full` | a 410 on the cursor re-bootstraps; other errors raise and the next tick retries |
 

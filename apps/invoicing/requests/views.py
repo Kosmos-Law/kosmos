@@ -11,10 +11,15 @@ from django.views.decorators.http import require_POST
 
 from apps.contacts.models import Contact
 from apps.invoicing.pay.balance import matter_balance_cents
-from apps.invoicing.processors import ProcessorConfigError, get_processor
+from apps.invoicing.processors import (
+    ProcessorConfigError,
+    get_processor,
+    online_payments_enabled,
+)
 from apps.invoicing.requests.filters import PaymentRequestFilter
 from apps.invoicing.requests.models import PaymentRequest, PaymentRequestTransmission
 from apps.invoicing.requests.send import (
+    PAYMENTS_OFF_ERROR,
     PaymentRequestSendError,
     days_since_requested,
     send_payment_request,
@@ -22,7 +27,7 @@ from apps.invoicing.requests.send import (
 )
 from apps.management.pagination import CustomPaginator
 from apps.matters.models import Matter
-from utils.toasts import toast_success
+from utils.toasts import toast_email_sent
 
 # Filter keys that don't count toward the "filter is active" toolbar highlight:
 # status has its own quick-buttons, and the POST carries the CSRF token.
@@ -125,6 +130,13 @@ def requests_filter_status(request, status):
     return HttpResponse(status=204, headers={"HX-Trigger": "requestsChanged"})
 
 
+def _payments_off_error():
+    """The refusal every request form shows while online payment is off, or
+    '' when it is on. A request's link could not take the payment, so none
+    is created or sent (send.py refuses too)."""
+    return "" if online_payments_enabled() else PAYMENTS_OFF_ERROR
+
+
 def _open_matters():
     return Matter.objects.exclude(status__in=["Pending", "Closed"]).order_by("name")
 
@@ -143,9 +155,11 @@ def requests_new(request):
         include_invoices = "include_invoices" in request.POST
         matter = _open_matters().filter(pk=matter_id).first() if matter_id else None
 
-        error = ""
+        error = _payments_off_error()
         amount = None
-        if not matter:
+        if error:
+            pass
+        elif not matter:
             error = "Please select a matter."
         else:
             balance = Decimal(matter_balance_cents(matter)) / 100
@@ -192,7 +206,7 @@ def requests_new(request):
                 response = HttpResponse(
                     status=204, headers={"HX-Trigger": "requestsChanged"}
                 )
-                toast_success(response, f"Payment request sent to {to}.")
+                toast_email_sent(response, f"Payment request sent to {to}.")
                 return response
 
         context = {
@@ -221,7 +235,7 @@ def requests_new(request):
         # the PDFs in the email itself.
         "include_statement": False,
         "include_invoices": False,
-        "error": "",
+        "error": _payments_off_error(),
     }
     return render(request, "invoicing/requests/form.html", context)
 
@@ -253,6 +267,8 @@ def _trust_requests_unavailable():
     """An error to show staff when the configured processor cannot put a
     deposit in the trust account, or '' when it can. Sending the request
     anyway would hand the client a link that cannot be paid."""
+    if not online_payments_enabled():
+        return PAYMENTS_OFF_ERROR
     try:
         reason = get_processor().trust_unavailable_reason()
     except ProcessorConfigError as exc:
@@ -341,7 +357,7 @@ def requests_new_trust(request):
                 response = HttpResponse(
                     status=204, headers={"HX-Trigger": "requestsChanged"}
                 )
-                toast_success(response, f"Trust deposit request sent to {to}.")
+                toast_email_sent(response, f"Trust deposit request sent to {to}.")
                 return response
 
         context = {
@@ -427,7 +443,7 @@ def requests_resend(request, pk):
                 if payment_request.is_trust
                 else "Payment request"
             )
-            toast_success(response, f"{label} resent to {to}.")
+            toast_email_sent(response, f"{label} resent to {to}.")
             return response
         context = {
             "payment_request": payment_request,
@@ -448,7 +464,7 @@ def requests_resend(request, pk):
         # Off by default — downloadable at the pay link (see requests_add).
         "include_statement": False,
         "include_invoices": False,
-        "error": "",
+        "error": _payments_off_error(),
     }
     return render(request, "invoicing/requests/resend.html", context)
 
@@ -484,7 +500,7 @@ def requests_send_reminder(request, pk):
                 if payment_request.is_trust
                 else "Payment reminder"
             )
-            toast_success(response, f"{label} sent to {to}.")
+            toast_email_sent(response, f"{label} sent to {to}.")
             return response
         context = {
             "payment_request": payment_request,
@@ -504,6 +520,6 @@ def requests_send_reminder(request, pk):
         "to": payment_request.recipient_email,
         "cc": "",
         "message": "",
-        "error": "",
+        "error": _payments_off_error(),
     }
     return render(request, "invoicing/requests/resend.html", context)

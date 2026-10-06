@@ -12,12 +12,11 @@ it tells you. It also covers the smaller chat on an intake.
 | A matter's **AI** tab, on the **Case** side | Questions about one matter, answered from its case file. Most of this page is about this chat. |
 | **Chat** on an intake | **Intake Chat**, a chat about a prospective client. See [The intake chat](#the-intake-chat). |
 
-Kosmos has no AI of its own. The person who runs your server connects it
-to Anthropic (the Claude models), to Google (the Gemini models) or to
-both: see [AI providers and research](../admin/integrations/ai.md). If
-neither is connected, a chat still opens, and the reply to your first
-question reads "Error: Unable to get response." followed by the
-provider's message.
+Kosmos has no AI of its own, and AI is optional. An administrator
+connects it to Anthropic (the Claude models), to Google (the Gemini
+models) or to both, under **Settings → Integrations** (see
+[AI](settings.md#ai)). Until one is connected, none of the places above
+appear: there is no **AI** tab on matters and no **Chat** on intakes.
 
 ## Start a conversation on a matter
 
@@ -273,8 +272,9 @@ conversation when a later chat chooses what to load.
 
 ## The intake chat
 
-**Chat** on an intake opens **Intake Chat**, which is given that intake's
-details, notes and assessment and can change the intake's fields when you
+**Chat** on an intake opens **Intake Chat**. It uses Gemini when it is
+connected and Claude otherwise, and keeps the same one for the life of
+the chat. It is given that intake's details, notes and assessment and can change the intake's fields when you
 tell it to. An intake has one chat, shared by everyone with the Intakes
 permission. The save button ends it and posts a summary of its
 conclusions to the intake's notes. See
@@ -293,9 +293,10 @@ and are not deleted with the chats.
 
 Each question is sent, with the parts of the matter described above, to
 the provider of the model you chose: Anthropic for a Claude model, Google
-for a Gemini model. Whichever model you choose, Google's Gemini also does
-the supporting work when it is connected: choosing what to load, writing
-summaries and checking citations. The text of each reply is sent to
+for a Gemini model. Whichever model you choose, the supporting work
+(choosing what to load, writing summaries and checking citations) goes to
+Google's Gemini when it is connected, and to Anthropic when only Anthropic
+is. The text of each reply is sent to
 CourtListener to look up the cases it cites, and so are the case law
 searches of an Agentic conversation. Whether that is acceptable for a
 given client is a decision for the firm:

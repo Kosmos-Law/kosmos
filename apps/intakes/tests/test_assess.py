@@ -19,7 +19,7 @@ def mock_ai(monkeypatch):
     def _set(payload):
         text = payload if isinstance(payload, str) else json.dumps(payload)
         monkeypatch.setattr(
-            "apps.case.ai.gemini_client.send_to_gemini",
+            "apps.case.ai.gemini_client.send_to_gemini_streaming",
             lambda *args, **kwargs: (text, 10, 5),
         )
 
@@ -105,3 +105,15 @@ def test_detail_shows_stored_assessment(client, intake, mock_ai):
     response = client.get(f"/intakes/{intake.id}/")
     assert b"Solid boundary dispute" in response.content
     assert b"Update" in response.content
+
+
+def test_detail_has_no_assessment_or_chat_without_ai(client, intake, ai_off):
+    html = client.get(f"/intakes/{intake.id}/").content.decode()
+    assert "Assessment" not in html
+    assert f"/intakes/{intake.id}/chat/" not in html
+    assert 'id="intakeAssessment"' not in html
+
+
+def test_assess_and_chat_routes_are_gone_without_ai(client, intake, ai_off):
+    assert client.post(f"/intakes/{intake.id}/assess").status_code == 404
+    assert client.get(f"/intakes/{intake.id}/chat/").status_code == 404

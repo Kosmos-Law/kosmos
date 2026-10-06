@@ -5,7 +5,7 @@ The case AI chat has two modes, chosen when a conversation is created
 
 - **Classic** (`kind="classic"`): one completion over a preloaded matter
   context (`context.assemble_matter_context_with_selection()` and the
-  Gemini Flash selector; see [AI chat and context](context.md)).
+  fast-tier selector; see [AI chat and context](context.md)).
 - **Agentic** (`kind="agent"`): a tool loop. The model gets a small,
   cache-stable orientation and read-only tools, decides which materials to
   open, and narrates as it goes. Modeled on how a coding agent works a

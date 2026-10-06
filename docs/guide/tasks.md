@@ -96,8 +96,8 @@ This one has 212. Shorten it and press Enter again."
 
 !!! note
 
-    If your administrator has switched on **AI Quick Task Entry** under
-    **Settings → Tasks**, the box reads **Describe a task in plain
+    If your firm has set up AI and your administrator has switched on
+    **AI Quick Task Entry** under **Settings → Tasks**, the box reads **Describe a task in plain
     language**. Write the matter, person, date and priority in your own
     words. Anything you leave out is filled in as above.
 

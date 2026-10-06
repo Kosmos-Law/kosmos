@@ -42,6 +42,16 @@ database and run when the worker comes back. Until then:
 | Saved case law | A case saved to a matter gets no summary. |
 | Every scheduled job | No daily digest email, no Google Calendar, Drive or Gmail sync, no chat purge. |
 
+Kosmos does say so in two places. Administrators see a notice at the top
+of every page: "The background worker isn't running, so OCR, syncing and
+scheduled jobs are paused." Other users do not see it. And for everyone,
+a PDF's **ocr pending** or **ocr running** badge changes to **ocr
+paused** and stops checking for progress; reload the page once the
+worker is back. Both use the same test as `/health/worker/` (see
+[Monitoring](monitoring.md)), so they also appear when `setup_schedules`
+has never been run. Each web process remembers the answer for a minute,
+so the notice can take that long to appear or to clear.
+
 ### What does not use the worker
 
 AI chat replies do not go through the worker. Each chat request runs on a
@@ -224,6 +234,7 @@ there is no reason to run them on a new install.
 systemctl is-active qcluster.service
 ```
 
-Then upload a small PDF to a matter. Within a minute or so its status
-should move from pending to extracted or completed. If it stays pending,
+As an administrator, check that no worker notice shows at the top of
+the page. Then upload a small PDF to a matter. Within a minute or so its
+status should move from pending to extracted or completed. If it stays pending,
 see [Monitoring](monitoring.md) for where to look.
