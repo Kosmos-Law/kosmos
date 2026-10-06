@@ -4,6 +4,10 @@
 # ai_context="always", so left behind they would feed every case chat a
 # summary that never refreshes again. Their Django-Q schedules go too, or
 # qcluster would keep trying to import the deleted functions.
+#
+# The agenda_user column is dropped in 0093, not here: Postgres refuses an
+# ALTER TABLE in the same transaction as row deletes whose deferred
+# foreign-key checks are still pending.
 
 from django.db import migrations
 
@@ -36,12 +40,4 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(delete_retired, migrations.RunPython.noop),
-        migrations.RemoveField(
-            model_name='conversation',
-            name='agenda_user',
-        ),
-        migrations.RemoveField(
-            model_name='historicalconversation',
-            name='agenda_user',
-        ),
     ]
