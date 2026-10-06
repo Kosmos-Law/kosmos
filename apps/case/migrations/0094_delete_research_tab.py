@@ -8,7 +8,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('case', '0092_remove_agenda_and_auto_threads'),
+        ('case', '0093_remove_conversation_agenda_user'),
     ]
 
     operations = [
