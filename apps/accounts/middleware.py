@@ -57,6 +57,7 @@ class PermissionMiddleware:
         r"^/case/(\d+/)?(tab/)?ai/"
         r"|^/case/drafts/"
         r"|^/intakes/\d+/(assess|chat/)"
+        r"|^/settings/tasks/"
     )
     CASELAW_PATTERN = re.compile(
         r"^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/"

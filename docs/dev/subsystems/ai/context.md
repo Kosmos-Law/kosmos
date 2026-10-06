@@ -239,8 +239,8 @@ Four layers keep a server without a key free of AI:
   and bulk menu on Documents and Case Law, and the Settings > Tasks menu
   entry.
 - **Routes.** `PermissionMiddleware.__call__` matches `AI_PATTERN`
-  (`/case/…/ai/`, `/case/drafts/`, `/intakes/<id>/assess` and
-  `/intakes/<id>/chat/`) and answers 404 for everyone, admins included,
+  (`/case/…/ai/`, `/case/drafts/`, `/intakes/<id>/assess`,
+  `/intakes/<id>/chat/` and `/settings/tasks/`) and answers 404 for everyone, admins included,
   when `ai_enabled()` is false. `CASELAW_PATTERN` does the same for saved
   case law and the cluster viewer when there is no CourtListener token.
   Both run before the permission checks.
@@ -252,8 +252,7 @@ Four layers keep a server without a key free of AI:
   semantic enqueue and the inbound intake pipeline check `ai_enabled()`
   (or `gemini_key()`) first and return. `FilesForm` drops `ai_context`,
   leaving the stored value alone. `quick_add_ai_enabled()` requires both
-  `Firm.quick_task_ai` and `ai_enabled()`. Settings > Tasks itself is
-  only hidden from the menu, not gated.
+  `Firm.quick_task_ai` and `ai_enabled()`.
 
 Saved case law follows CourtListener rather than AI:
 `courtlistener.caselaw_available(user)` is a token plus admin or

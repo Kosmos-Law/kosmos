@@ -50,7 +50,7 @@ it.
 
 | Order | Rule (list in the source) | Path | Who passes |
 |---|---|---|---|
-| 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…` | Everyone when an AI provider key is set; nobody (404) when none is |
+| 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
 | 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
 | 1 | Prefix | `/admin/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |
@@ -77,13 +77,13 @@ The patterns as written in the source:
 and for rule 0:
 
 ```
-AI_PATTERN       ^/case/(\d+/)?(tab/)?ai/|^/case/drafts/|^/intakes/\d+/(assess|chat/)
+AI_PATTERN       ^/case/(\d+/)?(tab/)?ai/|^/case/drafts/|^/intakes/\d+/(assess|chat/)|^/settings/tasks/
 CASELAW_PATTERN  ^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/
 ```
 
-Settings > Tasks (`/settings/tasks/`) is hidden from the menu when no AI
-provider is set up, since it holds only AI quick task entry, but it is not
-in rule 0.
+Settings > Tasks (`/settings/tasks/`) holds only AI quick task entry, so
+it is in `AI_PATTERN` too: hidden from the menu and 404 when no AI
+provider is set up.
 
 What sits under each path:
 

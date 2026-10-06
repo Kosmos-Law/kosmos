@@ -80,9 +80,9 @@ variable belongs to stays off or falls back until it is set.
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | empty | Anthropic API key, for the Claude models in AI chat. |
-| `GEMINI_API_KEY` | empty | Google Gemini API key, for the Gemini models and for the embeddings behind semantic search. |
-| `SEMANTIC_AUTO_INDEX` | `True` | Re-embed a record for semantic search whenever it is saved. The built-in default is True. Keep it False until GEMINI_API_KEY is set, or every save queues an embedding task that fails and logs an error; then set it to True and run manage.py build_semantic_index once. (boolean) |
+| `ANTHROPIC_API_KEY` | empty | Anthropic API key, for the Claude models. |
+| `GEMINI_API_KEY` | empty | Google Gemini API key, for the Gemini models and for the embeddings behind semantic search (the one feature only Gemini provides). |
+| `SEMANTIC_AUTO_INDEX` | `True` | Re-embed a record for semantic search whenever it is saved. The built-in default is True; nothing is queued while no Gemini key is set. After setting one, run manage.py build_semantic_index once. (boolean) |
 | `COURTLISTENER_API_KEY` | empty | CourtListener API token, for case law search and citation checking. |
 | `CHAT_RETENTION_DAYS` | `180` | Days after a matter closes before the weekly purge deletes its AI chats. 0 keeps them indefinitely. (integer) |
 

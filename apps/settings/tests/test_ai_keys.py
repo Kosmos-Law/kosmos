@@ -114,3 +114,7 @@ class TestSettingsPage:
     def test_tasks_settings_hidden_without_ai(self, admin_client, ai_off):
         html = admin_client.get("/settings/integrations/").content.decode()
         assert "/settings/tasks/" not in html
+
+
+def test_tasks_settings_404_without_ai(admin_client, ai_off):
+    assert admin_client.get("/settings/tasks/").status_code == 404

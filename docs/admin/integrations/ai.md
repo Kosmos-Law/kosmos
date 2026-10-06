@@ -150,10 +150,11 @@ set:
 - library notes: run `python manage.py backfill_note_summaries`;
 - semantic search: run `build_semantic_index` (see
   [Semantic search](#semantic-search));
-- documents get a summary the next time their text is extracted, and
-  until then the selector goes by their name and description. Saved
-  cases added while AI was off keep no summary. There is no backfill
-  command for either.
+- documents: opening a matter's AI tab queues summaries for up to 20 of
+  its documents that lack one, each time it is opened; until then the
+  selector goes by a document's name and description;
+- saved cases added while AI was off keep no summary. There is no
+  backfill for them.
 
 ## The model list in matter chat
 
