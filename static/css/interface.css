@@ -176,6 +176,19 @@ i.icon-plus {
   vertical-align: middle;
 }
 
+/* Admin-only notice at the top of the content area when the background
+   worker (qcluster) looks stopped (base.html, config/health.py). A quiet
+   yellow wash with warning ink, so it reads in every theme. */
+.worker-notice {
+  align-items: center;
+  background: var(--hl-wash-yellow);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--warning);
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
 /* Basic — active controls take the house emphasis pair: azure wash
    fill inside a rail-azure border, slate text (tokens in colors.css).
    Borderless dropdown menu rows carry the wash alone, like selected

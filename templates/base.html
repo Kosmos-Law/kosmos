@@ -1,5 +1,6 @@
 {% load static %}
 {% load cache_buster %}
+{% load worker_health %}
 <!DOCTYPE html>
 <head>
   <meta charset="UTF-8" content="" />
@@ -139,6 +140,15 @@
         <span class="mobile-topbar-wordmark" aria-hidden="true">{% include "components/kosmos-wordmark.html" %}</span>
       </a>
     </header>
+    {% if user.is_admin %}
+      {% background_worker_down as worker_down %}
+      {% if worker_down %}
+        <div class="worker-notice" role="status">
+          <i class="icon-triangle-alert" aria-hidden="true"></i>
+          <span>The background worker isn't running, so OCR, syncing and scheduled jobs are paused.</span>
+        </div>
+      {% endif %}
+    {% endif %}
     <div id="toast-container"
          class="toast-container position-fixed top-0 end-0 p-3"></div>
     {% block content %}

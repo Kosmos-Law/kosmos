@@ -20,7 +20,7 @@ import logging
 from apps.settings.models import Firm
 
 from .access import has_financial_access, has_research_access
-from .agent_tools import DEFAULT_BUDGET, AgentBudget
+from .agent_tools import DEFAULT_BUDGET, AgentBudget, courtlistener_configured
 from .agent_working_set import (
     WORKING_SET_MAX_CHARS,
     build_working_set,
@@ -287,7 +287,8 @@ def build_agent_system(
     # Built for the user who asked: invoices are indexed only with the
     # Financial permission, and the research method (with the save-caselaw
     # protocol that depends on it) only with the Research permission, to
-    # match the tools agent.py offers.
+    # match the tools agent.py offers. The method also needs a CourtListener
+    # API key, since without one the search tools are not offered.
     include_research = has_research_access(user)
     include_invoices = has_financial_access(user)
     items = build_material_index(
@@ -301,7 +302,11 @@ def build_agent_system(
             AGENT_PROTOCOL_TEMPLATE.format(
                 max_tool_calls=budget.max_tool_calls, max_chars=budget.max_chars
             ),
-            *([RESEARCH_PROTOCOL] if include_research else []),
+            *(
+                [RESEARCH_PROTOCOL]
+                if include_research and courtlistener_configured()
+                else []
+            ),
             SOURCE_LINKING,
             f"## Current Matter: {matter.name}",
             format_matter_overview(matter),

@@ -1150,27 +1150,6 @@ def set_ai_context(request, conv_id, state):
 
 
 @login_required
-@require_POST
-def set_vet_citations(request, conv_id, state):
-    """Toggle the vet_citations flag on a conversation (on/off)."""
-    if state not in ("on", "off"):
-        return HttpResponse(status=400)
-
-    conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
-    )
-
-    conversation.vet_citations = state == "on"
-    conversation.save(update_fields=["vet_citations"])
-
-    return render(
-        request,
-        "case/ai/vet-citations-pill.html",
-        {"conversation": conversation},
-    )
-
-
-@login_required
 def citation_vetting_detail(request, message_id, citation_index):
     """Return a modal fragment describing the Flash vetting verdict for one citation."""
     message = get_object_or_404(

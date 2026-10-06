@@ -28,6 +28,7 @@ PDF and has one of four categories: **Correspondence**, **Discovery**,
 |---|---|
 | **ocr pending** | The file is waiting to have its text read. |
 | **ocr running** | The text is being read. A scan shows the pages done, for example **ocr running (12/40)**. |
+| **ocr paused** | The background worker that reads files is not running, so nothing will happen until it is back. Tell your administrator. Reload the page once it is fixed. |
 | **ocr failed** | The text could not be read. Hover over the badge for the reason. Click **Retry** on the badge to try again. |
 | **duplicate** | Another document on this matter has the same file or the same pages. Hover to see which. Click to open that document in a new browser tab. |
 | A coloured tag | A label. See [Labels](#labels). |

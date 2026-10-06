@@ -103,6 +103,11 @@ class TestIndex:
 
 
 class TestSystem:
+    @pytest.fixture(autouse=True)
+    def _courtlistener_key(self, settings):
+        # The research method is included only with a CourtListener key.
+        settings.COURTLISTENER_API_TOKEN = "test-token"
+
     def test_segments(self, matter, user, pinned_document):
         logs = []
         (segment_a, working_set, segment_b), carried = build_agent_system(

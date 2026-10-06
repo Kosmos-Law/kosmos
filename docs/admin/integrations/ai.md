@@ -160,15 +160,20 @@ as `COURTLISTENER_API_KEY`.
 
 Without the token, Kosmos makes no CourtListener requests at all:
 
-- case law searches in Agentic chat return no results, and a case
-  cannot be added to a matter by citation;
+- Agentic chat is not offered the case law search tools, and its
+  research method is left out of the AI's instructions. It answers from
+  the case law already saved on the matter;
+- a case cannot be added to a matter by citation. The lookup says that
+  CourtListener isn't configured and that an administrator sets
+  `COURTLISTENER_API_KEY` in `config/.env`;
 - the text of saved case law cannot be fetched, so it is missing from the
   AI's context;
 - case citations in AI replies are not verified. Each still gets a link
   to a CourtListener search so a person can check it by hand. Statute
   citations still get links, which do not depend on CourtListener.
 
-No message tells the user that the token is the reason.
+Restart both services after setting the token. The search tools
+are offered from the next question on.
 
 CourtListener limits requests per account. Kosmos spaces its requests a
 quarter of a second apart within each process and, when CourtListener

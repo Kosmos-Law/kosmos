@@ -1,5 +1,6 @@
 {% load static %}
 {% load humanize %}
+{% load invoicing_extras %}
 {% block head %}
   <link rel="stylesheet" href="{% static 'css/apps/activity.css' %}" />
 {% endblock head %}
@@ -68,7 +69,8 @@
                  target="_blank"
                  href="{% url 'invoicing:invoices-pdf-download' invoice.id %}"><i class="icon-file-pdf"></i> Download PDF</a>
             </li>
-            {% if invoice.status != 'VOID' %}
+            {% ledes_available as ledes_ok %}
+            {% if invoice.status != 'VOID' and ledes_ok %}
               <li>
                 <a class="dropdown-item"
                    target="_blank"
