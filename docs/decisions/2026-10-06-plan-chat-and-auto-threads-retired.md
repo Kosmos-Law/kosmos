@@ -42,8 +42,12 @@ start.
 
 `apps/case/migrations/0092_remove_agenda_and_auto_threads.py` deletes
 every agenda chat, then every matter conversation with no user titled
-"Auto Summary" or "Auto Agenda", drops the field, and deletes the three
-`Schedule` rows. The agenda chats have no owner field left to hang on.
+"Auto Summary" or "Auto Agenda", and deletes the three `Schedule` rows.
+`0093_remove_conversation_agenda_user.py` then drops the field. The two
+are separate because Postgres refuses to alter a table in the same
+transaction as row deletes whose deferred foreign-key checks are still
+pending; the combined version failed on the first production deploy and
+rolled back without changing anything. The agenda chats have no owner field left to hang on.
 The auto threads were `ai_context="always"`, so left in place they would
 have been loaded in full into every Classic chat on their matter, a
 summary that would never be refreshed again. The schedule rows go
@@ -72,7 +76,7 @@ Recoverable from git history at the parent of commit `28a6209c3`.
 
 - Commit `28a6209c3`, "Remove the dash Plan chat and the nightly Auto
   Summary / Auto Agenda threads" (2026-10-06).
-- The comment heading migration `0092`, which gives the reasons for each
+- The comments heading migrations `0092` and `0093`, which give the reasons for each
   deletion.
 
 ## Related
