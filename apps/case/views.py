@@ -34,7 +34,8 @@ def get_last_tab(request, matter_id):
     remembered tab whose integration has since gone (AI, CourtListener,
     Gmail) falls back too."""
     tab = request.session.get(get_tab_session_key(matter_id), DEFAULT_TAB)
-    if tab not in VALID_TABS or not tab_available(request.user, tab, matter_id):
+    user = getattr(request, "user", None)
+    if tab not in VALID_TABS or not tab_available(user, tab, matter_id):
         return DEFAULT_TAB
     return tab
 
