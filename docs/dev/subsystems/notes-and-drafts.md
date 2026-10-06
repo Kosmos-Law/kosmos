@@ -181,6 +181,12 @@ described in [MCP](mcp.md).
 
 ### Drafts: companion-first
 
+Drafts exist only with AI configured: the link routes live under
+`/case/ai/` and the companion's setup, download and API under
+`/case/drafts/`, and `PermissionMiddleware` answers 404 on both while
+`ai_enabled()` is false (see
+[AI is optional](ai/context.md#ai-is-optional)).
+
 The design, stated in `apps/drafts/models.py`: there is no server-side
 working copy, no version chain and no publish step. The document in
 Writer is the working copy, Ctrl+Z is version control, and saving the
@@ -273,8 +279,11 @@ Recorded so nobody rebuilds them.
 | `apps.notes.tasks.generate_note_summary` | `note_autosave` on a Library note (debounced two minutes through the cache), `backfill_note_summaries` | logged; the summary stays stale and is retried on the next save |
 | `apps.notes.tasks.queue_stale_library_summaries` | `notes_bulk_move`, through `queue_library_summary_sweep()`; `backfill_note_summaries` | logged |
 
-The edit round wait runs inside the AI chat task on the worker, not as a
-task of its own. Drafts have no schedule; see
+Both summary tasks, and `queue_note_summary()` and
+`queue_library_summary_sweep()` that queue them, return at once when no
+AI provider is configured (`apps.settings.ai.ai_enabled()`), so a server
+without AI queues nothing. The edit round wait runs inside the AI chat
+task on the worker, not as a task of its own. Drafts have no schedule; see
 [Scheduled jobs](../../reference/schedules.md).
 
 ## Access

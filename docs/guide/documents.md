@@ -21,7 +21,7 @@ PDF and has one of four categories: **Correspondence**, **Discovery**,
 | **Pg.** | The number of pages, once Kosmos has read the file. |
 | **Date** | The document's own date. Click it to change it, then press Enter. A document with no date shows a calendar button. |
 | **Added** | The day the document was added to Kosmos. |
-| **AI** | **Auto**, **Always** or **Never**: whether the AI reads this document. See [AI chat](ai-chat.md). |
+| **AI** | **Auto**, **Always** or **Never**: whether the AI reads this document. See [AI chat](ai-chat.md). Shown only when your firm has set up AI. |
 | (flag) | The importance, from **Highest** to **Lowest**. New documents are **Normal**. Click the icon to change it. |
 
 | Badge | What it means |
@@ -76,7 +76,7 @@ pending** badge.
 | **Proceeding** | No | Appears only for **Record** and **Discovery**. Starts as the matter's primary proceeding. |
 | **Name** | Yes | 255 characters at most. |
 | **Description** | No | Shown under the name in the list. |
-| **AI Context** | Yes | **Auto** (the default), **Always** or **Never**. |
+| **AI Context** | Yes | **Auto** (the default), **Always** or **Never**. Shown only when your firm has set up AI. |
 | **File** | Yes | A PDF, or one email saved as an mbox file. |
 
 If the same file, or a PDF with the same pages, is already on a matter
@@ -104,8 +104,8 @@ badge beside the name refreshes every three seconds.
   Kosmos straightens the pages and replaces the stored file with a copy
   whose text can be selected and searched.
 - Kosmos then records the page count, adds the text to the matter's
-  search, and writes a short summary that the AI uses to decide which
-  documents to read.
+  search and, when your firm has set up AI, writes a short summary that
+  the AI uses to decide which documents to read.
 
 When the badge disappears, the document is ready. For a PDF that already
 had text, **Edit Details** shows **ocr bypassed**: click **OK** to accept
@@ -224,7 +224,8 @@ Drive." See [Documents from Google Drive](#documents-from-google-drive).
 
 To act on several documents at once, tick their checkboxes. The toolbar
 changes to a count (click it to clear the selection) and the bulk actions:
-**AI**, **Category**, **Matter**, **Importance** and a trash button.
+**AI** (when your firm has set up AI), **Category**, **Matter**,
+**Importance** and a trash button.
 **Matter** asks you to confirm the move. It leaves documents from Drive
 where they are and says how many, for example "1 document from Google Drive was not moved. It follows its
 folder in Google Drive. To move it to another matter, move the file in
@@ -301,7 +302,8 @@ first: every word you type must appear, and a word also matches longer
 words that begin with it. Up to 20 results that are close in meaning but
 use different words follow, each with a **meaning match** badge and the
 passage that matched. Meaning matches appear only if your administrator
-has switched that feature on, and they leave out documents whose **AI**
+has switched that feature on with Google Gemini as an AI provider, and
+they leave out documents whose **AI**
 setting is **Never**.
 
 **Filters**, at the right, narrows the results by **Document Type** (the

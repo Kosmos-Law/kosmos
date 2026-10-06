@@ -220,7 +220,7 @@ Good to know:
 
 ## Emails and the AI
 
-The AI chat on a matter can read the matter's emails, one conversation
+When your firm has set up AI, the AI chat on a matter can read the matter's emails, one conversation
 at a time, with the text read from their attachments. Once an email is
 promoted, the AI reads the document instead. The **Search** tab does not
 search emails. See [AI chat](ai-chat.md).

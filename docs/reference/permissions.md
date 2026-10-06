@@ -31,10 +31,18 @@ All are fields on `CustomUser`
 
 Source:
 [`apps/accounts/middleware.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/accounts/middleware.py).
-The rules run only for a request that is signed in. A request with no
-session passes through untouched and is handled by the view (normally a
-redirect to `/accounts/login/`). A blocked request gets HTTP 403 with an
-empty body, not a redirect.
+Rule 0 runs for every request. The others run only for a request that
+is signed in; a request with no session passes through them untouched
+and is handled by the view (normally a redirect to `/accounts/login/`). A
+request blocked by rules 1 to 5 gets HTTP 403 with an empty body, not a
+redirect.
+
+Rule 0 is not a permission: it removes the pages of an optional
+integration that is not set up on this server. They answer HTTP 404 for
+everyone, admins included, whatever their flags. An AI provider counts as
+set up when its key is in `config/.env` or stored under Settings >
+Integrations; see
+[AI providers and research](../admin/integrations/ai.md#without-an-ai-key).
 
 Rules 1 to 4 test the request path before the URL is resolved and are
 skipped for an admin. Rule 5 runs once the URL is resolved, from the ids in
@@ -42,6 +50,8 @@ it.
 
 | Order | Rule (list in the source) | Path | Who passes |
 |---|---|---|---|
+| 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…` | Everyone when an AI provider key is set; nobody (404) when none is |
+| 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
 | 1 | Prefix | `/admin/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/permissions/` | Admin role only |
@@ -57,12 +67,23 @@ it.
 | 4 | Pattern (`PERMISSION_PATTERNS`) | The saved case law under `/case/caselaws/…` and `/case/<id>/caselaws/…`, the tab-switch address `/case/<id>/tab/caselaws/`, and the case viewer `/case/<id>/viewer/cluster/…` | Admin, or `perm_research` |
 | 5 | Matter membership (`MATTER_SCOPED_PREFIXES`, `process_view`) | Everything under `/case/` | Admin, `perm_all_matters`, or a member of every matter the URL's ids belong to. The lookup is set out under Matter membership below. |
 
-The two patterns as written in the source:
+The patterns as written in the source:
 
 ```
 ^/matters/\d+/(rates|ledger)(/|$)
 ^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/
 ```
+
+and for rule 0:
+
+```
+AI_PATTERN       ^/case/(\d+/)?(tab/)?ai/|^/case/drafts/|^/intakes/\d+/(assess|chat/)
+CASELAW_PATTERN  ^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/
+```
+
+Settings > Tasks (`/settings/tasks/`) is hidden from the menu when no AI
+provider is set up, since it holds only AI quick task entry, but it is not
+in rule 0.
 
 What sits under each path:
 
@@ -81,7 +102,7 @@ What sits under each path:
 | `/reports/` | All reports. |
 | `/matters/<id>/rates…` | A matter's Rates page and its list, add, edit and delete routes. |
 | `/matters/<id>/ledger…` | A matter's Ledger tab, list and PDF. |
-| `/case/caselaws/…`, `/case/<id>/caselaws/…`, `/case/<id>/viewer/cluster/…` | The saved case law (the AI tab's Case Law view), adding a case by citation, and the case viewer. |
+| `/case/caselaws/…`, `/case/<id>/caselaws/…`, `/case/<id>/viewer/cluster/…` | The saved case law (the AI tab's Case Law view, or its own Case Law tab when no AI provider is set up), adding a case by citation, and the case viewer. |
 | `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, notes, emails, case search, AI chats and drafts. |
 
 ## Gates checked in views

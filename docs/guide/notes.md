@@ -301,6 +301,9 @@ Good to know:
 
 ## Notes and the AI
 
+This section applies when your firm has set up AI (see
+[AI](settings.md#ai)). Without it, notes are never sent anywhere.
+
 Every library note is offered to the AI on every matter, and a matter's
 notes are offered on that matter. There is no setting to hold a note
 back. Kosmos writes a short summary of each library note in the

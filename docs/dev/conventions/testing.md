@@ -117,12 +117,22 @@ in other apps' `conftest.py` files still creates a second one, so a test
 that looks a practice area up by name can get two. Prefer the fixture's
 instance to a lookup by name.
 
-Two autouse fixtures in the root `conftest.py` apply to every test:
-`_no_semantic_auto_index` sets `SEMANTIC_AUTO_INDEX = False` so model
-saves do not enqueue embedding tasks, and `use_local_storage` points
-`STORAGES` and `MEDIA_ROOT` at a temporary directory. The docstring of
-the second records why both are set: with only `STORAGES` overridden,
-uploads once leaked into the real `media/` directory.
+Three autouse fixtures in the root `conftest.py` apply to every test:
+`_integration_keys` sets `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` and
+`COURTLISTENER_API_TOKEN` to fake values, so every test sees AI and
+CourtListener as set up (the same on a laptop whose `config/.env` holds
+real keys as in CI with none) and a stray real API call fails instead of
+spending; `_no_semantic_auto_index` sets `SEMANTIC_AUTO_INDEX = False` so
+model saves do not enqueue embedding tasks; and `use_local_storage`
+points `STORAGES` and `MEDIA_ROOT` at a temporary directory. The
+docstring of the last records why both are set: with only `STORAGES`
+overridden, uploads once leaked into the real `media/` directory.
+
+Two opt-in fixtures there cover the unset case: `ai_off` blanks both AI
+keys (no key is stored on the test database's `Firm` either), and
+`courtlistener_off` blanks the CourtListener token. Request them in a
+test of what a server without AI or CourtListener shows; see
+`apps/case/tests/test_ai_optional.py`.
 
 ## Fixtures
 

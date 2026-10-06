@@ -101,7 +101,7 @@ A matter has two sides. Click a pill to change sides.
 | Side | Tabs |
 |---|---|
 | **Detail** | **Overview**, **Contacts**, **Rates**, **Activity**, **Events**, **Tasks**, **Proceedings**, **Settlement**, **Ledger** |
-| **Case** | **Documents**, **Highlights**, **Timeline**, **Witnesses**, **Notes**, **Emails**, **Labels**, **Search**, **AI** |
+| **Case** | **Documents**, **Highlights**, **Timeline**, **Witnesses**, **Notes**, **Emails**, **Labels**, **Search**, **AI** (or **Case Law**) |
 
 **Detail** is the office side of the matter: who is involved, what work
 was recorded, what is scheduled, the court proceedings and the money.
@@ -109,8 +109,10 @@ was recorded, what is scheduled, the court proceedings and the money.
 them, the fact timeline, witnesses, notes, email, and the AI tools with
 the matter's saved case law. Kosmos reopens each side on the tab you last used there.
 
-**Rates** and **Ledger** need the Financial permission. Saved case law (the
-**Case Law** view of the **AI** tab) needs the Research permission. Ask your administrator. The tabs are described in
+**AI** appears only when your firm has set up AI. Without it, saved case
+law has a **Case Law** tab of its own in that place, and there may be
+neither. **Rates** and **Ledger** need the Financial permission. Saved
+case law needs the Research permission. Ask your administrator. The tabs are described in
 [Matters](matters.md).
 
 ### Move to another matter

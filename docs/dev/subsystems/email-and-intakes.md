@@ -204,7 +204,8 @@ duplicate `message_id` is a Mailgun retry, answered 200) and
 `process_inbound_email` is queued, inline if the queue is down.
 
 The worker sends the subject and body (capped at `EXTRACTION_TEXT_LIMIT`)
-to Gemini with `EXTRACTION_PROMPT` and maps the JSON onto an `Intake`:
+to `providers.complete()` (fast tier) with `EXTRACTION_PROMPT` and maps
+the JSON onto an `Intake`:
 name (title-cased, or "Unknown caller <phone>", or the subject), phone
 through `normalize_phone()`, practice area by exact name, source
 validated against `IntakeForm.Meta.SOURCES`. The first note holds the
@@ -221,7 +222,11 @@ last ten digits of the phone. A matched intake in Unresponsive goes back
 to Open. A new intake gets `run_assessment()` straight away so the
 Assessment pane is never a stub. Extraction failure still creates the
 intake from the raw message and records the error on the `InboundEmail`
-row. Setup and the smoke test are in
+row. Without an AI provider (`ai_enabled()` false) the extraction and
+the assessment are skipped, not failed: the intake is named from the
+subject, the note holds the stripped message with no summary, the row is
+`processed`, and with no extracted email or phone a follow-up cannot
+match. Setup and the smoke test are in
 [Intakes from forwarded email](../../admin/integrations/inbound-email.md).
 
 ### The Intakes page
@@ -232,17 +237,21 @@ row. Setup and the smoke test are in
 flags open intakes with notes by someone else since then. `detail_index`
 shows the notes (through `render_markdown()`), the linked contact, the
 forms card (`submissions_for_intake()`) and the Assessment pane. `assess`
-re-runs `run_assessment()`, one Gemini call over the fields and the full
+re-runs `run_assessment()`, one `providers.complete()` call over the fields and the full
 notes chronology that stores Markdown sections (summary, analysis,
 limitations, follow-up questions, documents) and, when the AI takes a
 position, sets `importance`. The intake chat (`apps/intakes/chat.py`) is
 the case chat's machinery with intake context, one live conversation per
-intake (`Conversation.intake`); at the user's direction it applies an
+intake (`Conversation.intake`), on the deep tier of whichever provider
+it was created with (`chat_llm(DEEP)` is stored as its `llm`); at the user's direction it applies an
 `update-intake` fenced block to the fields, and "End & summarize" files a
 Comment note. See [The AI context system](ai/context.md) for the status
 protocol and fenced-block writes. `send_email` (`apps/intakes/send.py`)
 sends a template email as plain text, Reply-To the firm's intake inbox,
-and records it as an "Email Out" note.
+and records it as an "Email Out" note. The Assessment pane, `assess`
+and the chat routes exist only with AI configured: the template hides
+them and `PermissionMiddleware` answers 404 (see
+[AI is optional](ai/context.md#ai-is-optional)).
 
 ### Converting an intake
 

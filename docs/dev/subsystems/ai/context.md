@@ -5,7 +5,9 @@ system prompt, runs a model call on a background thread, reports progress
 to a polling view, and applies the writes the model was directed to make.
 Two surfaces share it: the case chat (the matter's **AI** tab) and the
 intake chat (`apps/intakes/chat.py`). Agentic-mode internals are on
-[Agentic chat](agent-chat.md).
+[Agentic chat](agent-chat.md). All of it is optional: with no provider
+key configured, none of it is reachable (see
+[AI is optional](#ai-is-optional)).
 
 ## Where the code is
 
@@ -15,12 +17,15 @@ intake chat (`apps/intakes/chat.py`). Agentic-mode internals are on
 | `apps/case/ai/views.py` | The case chat views: list, send, status poll, cancel, Compose Prompt, context preview |
 | `apps/case/ai/tasks.py` | `process_ai_request()` (the classic turn), `finalize_response()`, `armed_write_protocols()`, the model dispatch tables, the window-fit guard |
 | `apps/case/ai/context.py` | The context builders: section formatters, `collect_context_items()`, `assemble_matter_context_with_selection()`, `build_request_info()`, `build_chat_history()` |
-| `apps/case/ai/selector.py` | The Gemini Flash selector: `build_manifest()`, `select_context()`, token estimates and model limits |
+| `apps/case/ai/selector.py` | The context selector (fast tier): `build_manifest()`, `select_context()`, token estimates and model limits |
 | `apps/case/ai/prompts/legal.md` | The legal system prompt |
 | `apps/case/ai/status.py`, `access.py` | The cross-process status store and heartbeat; who may use a conversation and the Financial and Research gates |
 | `apps/case/ai/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
+| `apps/case/ai/providers.py` | `complete()`, the one call for AI work that is not a matter chat; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
+| `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
+| `config/context.py` | The `integrations` context processor: `ai_enabled` and `caselaw_available` for templates |
 | `apps/case/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
-| `apps/case/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links or note chips; citation extraction and CourtListener verification; the Flash vetting job |
+| `apps/case/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links or note chips; citation extraction and CourtListener verification; the fast-tier vetting job |
 | `apps/case/ai/purge.py` | The closed-matter chat purge |
 | `apps/case/ai/semantic.py`, `embeddings.py`, `pricing.py` | The pgvector index behind the agent's `search_materials`; estimated cost for the status bar |
 | `templates/case/ai/` | The chat window, `status.html` (the poller), `prompt-editor-modal.html`, message partials |
@@ -34,7 +39,7 @@ A `Conversation` belongs to exactly one of a `matter` or an `intake`
 the retired `research`) are fixed when the conversation is created.
 `ai_context` (`auto`, `always`, `never`) says whether this conversation is
 offered to other conversations on the matter as a reference, and `summary`
-is the Flash-written précis the selector reads. `vet_citations` turns the
+is the fast-tier précis the selector reads. `vet_citations` turns the
 post-answer vetting job on.
 
 A `Message` has a `role`, `content`, the sending `user` for user messages,
@@ -155,7 +160,8 @@ index) the `always` items are listed too, flagged `pinned`, each with the
 `select_context()` skips the model call when the matter items total under
 `SMALL_MATTER_THRESHOLD` (30,000 words) and there are no invoices or
 library items: everything goes in. Otherwise `SELECTOR_SYSTEM_PROMPT` and
-the formatted manifest go to `gemini-2.5-flash`, which returns a JSON list
+the formatted manifest go to `providers.complete()` at the fast tier,
+which returns a JSON list
 of `{type, id}`; if the call or the parse fails, `_fallback_by_importance()`
 fills the budget by importance. Invoices and library notes never ride the
 short-circuit or the fallback: they enter only when the selector names them.
@@ -175,17 +181,91 @@ what to edit in it.
 The picker keys in `Conversation.LLM_CHOICES` map to provider model ids
 in `tasks.CLAUDE_MODELS` and `tasks.GEMINI_MODELS`; retired keys stay in
 the tables so old conversations still send, and
-`views.available_llm_choices()` hides a provider's models when its key is
-not configured. Keys come from `ANTHROPIC_API_KEY` and `GEMINI_API_KEY`
-in `config/settings.py` (see the
-[environment reference](../../../reference/environment.md)). Every model in
+`views.available_llm_choices()` offers only the models whose provider is
+in `configured_providers()`. The clients read their key through
+`apps.settings.ai.gemini_key()` and `anthropic_key()`, never from
+`settings` directly: the `ANTHROPIC_API_KEY` and `GEMINI_API_KEY`
+settings from `config/.env` (see the
+[environment reference](../../../reference/environment.md)) first, then
+a key an admin stored under Settings > Integrations. Every model in
 both tables has a one-million-token window. Each client marks the system
 prompt cacheable (Anthropic's `cache_control`; a Gemini `cachedContents`
 object held ten minutes for prompts over 130k characters) and streams so
 a cancel stops the bill. Fable keys carry Anthropic's server-side refusal
-fallback to Opus 5 (`anthropic_client.FALLBACK_MODELS`). Gemini Flash is
-hard-wired for the selector, conversation summaries and citation vetting,
-Gemini Pro for the intake chat.
+fallback to Opus 5 (`anthropic_client.FALLBACK_MODELS`).
+
+Everything else goes through `providers.complete(system, messages,
+tier)`: the selector, conversation, document, note and case summaries,
+citation vetting, intake extraction and assessment, the intake chat and
+AI quick-add. A tier maps to one model per provider (`MODELS`: `fast` is
+`gemini-2.5-flash` or `claude-sonnet-4-6`, `deep` is `gemini-pro-latest`
+or `claude-sonnet-5`), and `provider(prefer)` picks the preferred
+provider when it has a key, else the first configured one, Gemini first.
+So either key alone runs every feature. The intake chat stores
+`chat_llm(DEEP)` as its `Conversation.llm` and passes the matching
+`prefer` on each turn, so a chat stays on the provider it started on;
+quick-add passes the firm's model choice as `prefer`. With no provider,
+`complete()` raises `AINotConfigured`, which callers never reach in
+practice because the gates below stop them first.
+
+Embeddings are the exception: `embeddings.py` is Gemini-only. Without
+`gemini_key()`, `semantic._enqueue()` queues nothing and
+`semantic_entries()` returns an empty list, so search is keyword-only
+with no error.
+
+### AI is optional
+
+`apps.settings.ai.ai_enabled()` is true when `configured_providers()` is
+non-empty. A provider is configured when its key is in `config/.env` or
+stored on the `Firm` row (`gemini_api_key`, `anthropic_api_key`). Stored
+keys are Fernet tokens under a key derived from `SECRET_KEY`
+(`_fernet()`), so a new `SECRET_KEY` makes `decrypt_key()` return ""
+with a logged warning, and the provider counts as unconfigured. The
+admin-only form is `ai_key_save` in `apps/settings/integrations/views.py`
+(`templates/settings/integrations/ai.html`): `verify_ai_key()` lists the
+provider's models with the candidate key before saving it, and an empty
+value removes it. `FirmAdmin` in `apps/settings/admin.py` excludes both
+fields from the Django admin. There is no cache: each check reads the
+`Firm` row (at most once per call), so a saved key takes effect in every
+process at once.
+
+Four layers keep a server without a key free of AI:
+
+- **Templates.** The `config.context.integrations` context processor puts
+  lazy `ai_enabled` and `caselaw_available` in every template context
+  (evaluated only when a template reads them). They hide the AI tab and
+  its Case Law switch (`case-nav.html`, `case/ai/view-pills.html`), the
+  intake Assessment pill and its Assess and Chat buttons, the AI column
+  and bulk menu on Documents and Case Law, and the Settings > Tasks menu
+  entry.
+- **Routes.** `PermissionMiddleware.__call__` matches `AI_PATTERN`
+  (`/case/…/ai/`, `/case/drafts/`, `/intakes/<id>/assess` and
+  `/intakes/<id>/chat/`) and answers 404 for everyone, admins included,
+  when `ai_enabled()` is false. `CASELAW_PATTERN` does the same for saved
+  case law and the cluster viewer when there is no CourtListener token.
+  Both run before the permission checks.
+- **The remembered tab.** `tab_available(user, tab)` in
+  `apps/case/views.py` says whether `ai` or `caselaws` can be shown;
+  `get_last_tab()` falls back to Documents for a stored tab that no
+  longer is.
+- **Background work.** Every summary task, its queueing helper, the
+  semantic enqueue and the inbound intake pipeline check `ai_enabled()`
+  (or `gemini_key()`) first and return. `FilesForm` drops `ai_context`,
+  leaving the stored value alone. `quick_add_ai_enabled()` requires both
+  `Firm.quick_task_ai` and `ai_enabled()`. Settings > Tasks itself is
+  only hidden from the menu, not gated.
+
+Saved case law follows CourtListener rather than AI:
+`courtlistener.caselaw_available(user)` is a token plus admin or
+`perm_research`. With AI on, the list is a view of the AI tab; with AI
+off, `case-nav.html` shows it as its own Case Law tab.
+
+Tests: the root `conftest.py` gives every test fake Gemini, Anthropic and
+CourtListener keys (autouse `_integration_keys`), the same on a laptop
+with real keys in `config/.env` as in CI, so a stray real call fails
+instead of spending. Request the `ai_off` or `courtlistener_off` fixture
+to test the unset case; `apps/case/tests/test_ai_optional.py` and
+`apps/settings/tests/test_ai_keys.py` are the examples.
 
 ### Status and the poller
 

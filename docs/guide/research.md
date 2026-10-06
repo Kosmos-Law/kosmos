@@ -11,15 +11,25 @@ before, read [Matters](matters.md) first. The chat itself is described in
 
 You need the Research permission to search case law from a chat, to see
 a matter's saved cases and to open them. Ask your administrator. Your
-firm must also have connected CourtListener and at least one AI
-provider, which an administrator does once (see
-[AI providers and research](../admin/integrations/ai.md)).
+firm must also have connected CourtListener, which the person who runs
+your server does once (see
+[AI providers and research](../admin/integrations/ai.md#courtlistener)).
+Without it, saved case law does not appear at all. Having the AI find
+cases also needs an AI provider (see [AI](settings.md#ai)).
 
 The cases come from CourtListener, a free database of court opinions run
-by the Free Law Project. A matter's saved cases are on its **AI** tab:
-click **Case**, then **AI**, then **Case Law** at the right of the
-toolbar. **Conversations** beside it takes you back to the chats. Without
-the Research permission the switch is not shown.
+by the Free Law Project. Where a matter's saved cases are depends on
+whether your firm uses AI:
+
+- With AI, they are on the matter's **AI** tab: click **Case**, then
+  **AI**, then **Case Law** at the right of the toolbar.
+  **Conversations** beside it takes you back to the chats.
+- Without AI, they have a **Case Law** tab of their own on the **Case**
+  side. You add cases by citation, read them and highlight them as
+  described below. There is no **AI** column and no summary, and the
+  sections of this page about the AI do not apply.
+
+Without the Research permission neither is shown.
 
 ## Find cases with the AI
 
@@ -55,8 +65,8 @@ it. There are two ways to add one.
   case name, in **Citation** and click **Look Up**. Check the preview
   and click **Add to Matter**.
 
-Kosmos writes a short summary of each saved case (about 200 words) a few
-moments after it is added.
+When AI is set up, Kosmos writes a short summary of each saved case
+(about 200 words) a few moments after it is added.
 
 ## Work with saved cases
 
@@ -64,8 +74,8 @@ In **Case Law**, type in **Search cases...** to match case names and
 citations. Click a case name for **View Case**, **View on CourtListener**
 and **Delete**. **Delete** removes the case from the matter, with any
 highlights made in it. Use the flag column to set a case's importance,
-from **Highest** to **Lowest**. Tick cases to set **AI** or **Labels** for
-several at once, or to delete them.
+from **Highest** to **Lowest**. Tick cases to set **AI** (when AI is set
+up) or **Labels** for several at once, or to delete them.
 
 **View Case** opens the opinion in a new tab. Select a passage and click
 the highlighter button to save it as a [highlight](facts.md#highlights).
@@ -84,7 +94,8 @@ The searches and citations go to CourtListener, and the opinions the AI
 reads come from CourtListener. Your question and what the AI reads are
 sent to the provider of the chat's model, as for any other question (see
 [What leaves the firm](ai-chat.md#what-leaves-the-firm)). The opinion
-text of each saved case is sent to Google Gemini to write its summary.
+text of each saved case is sent to the AI provider (Google Gemini when it
+is connected, otherwise Anthropic) to write its summary.
 Whatever you type into the question is sent as written, so leave out
 names and details it does not need. For the full list, see
 [AI providers and research](../admin/integrations/ai.md#what-is-sent-to-the-providers).

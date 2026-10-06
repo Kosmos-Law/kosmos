@@ -9,7 +9,13 @@ original message text. If extraction fails, the intake is still created
 from the raw message and the stored `InboundEmail` row records the error
 (visible in the Django admin).
 
-Follow-ups work the same way: forward them to the same address. When the
+Without an AI key ([AI providers](ai.md#without-an-ai-key)) the address
+still works: the intake is created from the raw message, named after the
+subject, with no extracted fields, no AI summary and no assessment, and
+the row is `processed`, not `failed`. Follow-ups are not matched, since
+matching uses the extracted email and phone.
+
+Follow-ups work the same way (with AI): forward them to the same address. When the
 extracted sender email (or, failing that, a 10-digit phone match) matches
 an existing intake, the message is logged as a note on that intake instead
 of opening a duplicate; the most recent matching intake wins. A follow-up

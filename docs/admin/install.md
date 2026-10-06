@@ -276,7 +276,9 @@ Things worth knowing about the shipped configuration:
 
 3. **Fill in `config/.env`.** At least outgoing email (`EMAIL_BACKEND=smtp`
    and the `EMAIL_*` settings) and `ADMINS`. Then whichever integrations
-   the firm uses: AI provider keys, payments, object storage, Google.
+   the firm uses: AI provider keys (optional, and they can be entered
+   later under Settings > Integrations instead), payments, object
+   storage, Google.
    See [Configuration](configuration.md) and the
    [environment variable reference](../reference/environment.md).
 

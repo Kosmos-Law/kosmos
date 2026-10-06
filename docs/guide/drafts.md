@@ -5,6 +5,8 @@ matter. It covers how to link a document to an AI chat, have the AI edit
 it as tracked changes in LibreOffice Writer, and what happens to the link
 afterwards. You should already know how to open a matter
 ([Matters](matters.md)) and start a chat on it ([AI chat](ai-chat.md)).
+Drafts are part of the AI chat, so they are available only when your
+firm has set up AI (see [AI](settings.md#ai)).
 
 ## What a draft is
 

@@ -23,8 +23,8 @@ permissions.
 | **Permissions** | Administrators | What each user can open. |
 | **Contacts** | Administrators | The groups, roles and relationship types offered for contacts. |
 | **Practice Areas** | Administrators | The practice areas offered on matters and intakes. |
-| **Tasks** | Administrators | How the quick task line reads what you type. |
-| **Integrations** | Everyone | Google connections. A user who is not an administrator sees only **Case Email**. |
+| **Tasks** | Administrators, once AI is set up | How the quick task line reads what you type. |
+| **Integrations** | Everyone | Google connections and AI providers. A user who is not an administrator sees only **Case Email**. |
 | **Claude Desktop** | Everyone | Connecting the Claude Desktop app to Kosmos. |
 | **Intake Forms** | Administrators and users with the Intakes permission | Forms sent to prospective clients. |
 | **Intake Emails** | Administrators and users with the Intakes permission | Ready-made emails for intakes. |
@@ -151,7 +151,7 @@ An administrator's row is marked "admin": its switches are on and locked.
 | **Financial** | **Invoicing** (invoices, payments and trust), the **Rates** and **Ledger** tabs of a matter, the **Financials** figures on a matter's **Overview**, and the **Trust** tab of a client's contact page. |
 | **Intakes** | The **Intakes** page, and **Intake Forms** and **Intake Emails** in Settings. |
 | **Reports** | The **Reports** page, and the whole firm's figures under **Work in Progress** on the Dash. This switch starts off for a new user. The other four start on. |
-| **Research** | A matter's saved case law (the **Case Law** view of its **AI** tab), and case law search in an Agentic chat. |
+| **Research** | A matter's saved case law (the **Case Law** view of its **AI** tab, or a **Case Law** tab of its own when AI is not set up), and case law search in an Agentic chat. |
 
 ### Limit a user to assigned matters
 
@@ -224,7 +224,9 @@ it, leaving them with none.
 
 **Settings → Tasks** has one section, **Quick Task Entry**. It sets how
 the quick-add line at the top of the [Tasks](tasks.md) page reads what is
-typed into it, for everyone at the firm.
+typed into it, for everyone at the firm. The page appears in the menu
+only once an AI provider is set up (see [AI](#ai)). Without one, the
+quick-add line always reads "Matter - Description".
 
 | Field | What it does |
 |---|---|
@@ -232,16 +234,15 @@ typed into it, for everyone at the firm.
 | **Quick Task AI Model** | **Gemini Flash** or **Claude Sonnet**. Used only when **AI Quick Task Entry** is **Yes**. |
 
 Click **Save Task Settings**. If the AI cannot be reached, the line falls
-back to matching "Matter - Description". The model you pick works only if
-the person who runs your server has set up that AI provider: see
-[AI providers](../admin/integrations/ai.md).
+back to matching "Matter - Description". If the provider of the model you
+pick has no key, Kosmos uses the other provider's model.
 
 ## Integrations
 
-**Settings → Integrations** connects Kosmos to Google. An administrator
-sees **Google Account**, three connections that serve the whole firm
-through one Google account, and **Case Email**. Everyone else sees only
-**Case Email**.
+**Settings → Integrations** connects Kosmos to Google and to the AI
+providers. An administrator sees **Google Account**, three connections
+that serve the whole firm through one Google account, **AI** and **Case
+Email**. Everyone else sees only **Case Email**.
 
 | Connection | What it does once connected |
 |---|---|
@@ -281,9 +282,39 @@ Good to know:
 - Connecting with a different Google account replaces the earlier
   connection.
 
+### AI
+
+AI in Kosmos is optional. Until a provider is set up, Kosmos shows no AI
+anywhere: no **AI** tab on matters, no **Assessment** or **Chat** on
+intakes, no **AI** column on documents, and no **Settings → Tasks**.
+Setting one up turns all of them on for everyone at the firm.
+
+**AI** has a row for **Google Gemini** and one for **Anthropic Claude**.
+One is enough. Either provider runs every AI feature. With both, chats
+offer the models of both, and the work Kosmos does in the background
+(summaries, intake assessments, reading forwarded email) uses Gemini.
+Search by meaning inside a matter needs Gemini. Without it, search
+matches your words only.
+
+To set one up:
+
+1. Create an API key in the firm's account with Google or Anthropic.
+2. Paste it into **API key** on that provider's row and click **Save**.
+
+Kosmos checks the key with the provider before it saves it. If the
+provider refuses it, the row reads "The provider rejected this key. Check
+it and try again." and nothing is saved. A saved key shows **Remove** in
+place of the box. Click **Remove** and confirm to delete it. If it was
+the only key, the AI features disappear again.
+
+A row that reads "Set in config/.env" has a key set by the person who
+runs your server. It cannot be changed here. What is sent to each
+provider, and the cost, are described in
+[AI providers and research](../admin/integrations/ai.md).
+
 !!! note
 
-    Sending email, file storage, AI providers and online payments have no
+    Sending email, file storage, CourtListener and online payments have no
     screen in Settings. The person who runs your server sets them up, along
     with the Google project behind these connections: see
     [Google](../admin/integrations/google.md) and

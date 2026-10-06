@@ -89,9 +89,10 @@ it:
 cp config/.env.dev config/.env
 ```
 
-Edit `DB_*` if your database differs. Leave `SEMANTIC_AUTO_INDEX=False`
-until you have a `GEMINI_API_KEY`, or every model save queues an embedding
-task that fails. What each variable does is in
+Edit `DB_*` if your database differs. With no AI key the application runs
+with every AI surface hidden; set `GEMINI_API_KEY` or `ANTHROPIC_API_KEY`
+(or enter one under Settings > Integrations) to work on AI features.
+`SEMANTIC_AUTO_INDEX` does nothing without a Gemini key. What each variable does is in
 [Configuration](../admin/configuration.md) and the generated
 [environment reference](../reference/environment.md).
 
