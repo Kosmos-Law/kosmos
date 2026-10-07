@@ -1385,7 +1385,7 @@ body:has(.note-page.standalone) {
 /* Drive folder picker (Notes tab "Link Drive Folder" modal) */
 /* Dark mode — active panel tab follows the nav convention: hover-fill
    background, no border, the colored text alone marks it (sidebar.css). */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .note-panel-left .panel-tab.active {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .note-panel-left .panel-tab.active {
   background: var(--background-sidebar-active);
   border-color: transparent;
   color: var(--selected-color);

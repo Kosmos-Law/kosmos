@@ -547,19 +547,19 @@
    matching how buttons.css and badges.css treat the darks.
    ========================================================================== */
 
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])
   .fb-palette-item,
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])
   .fb-field {
   background: transparent;
 }
 
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])
   .fb-palette-item:hover {
   background: var(--background-section);
 }
 
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])
   .fb-field-layout {
   background: var(--background-section);
 }
