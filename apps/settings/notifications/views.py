@@ -1,8 +1,11 @@
 import logging
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
+from apps.intakes.access import can_see_intakes
 from apps.tasks.digest import send_digest_for_user
 from utils.mail import email_delivers
 from utils.toasts import toast_error
@@ -32,6 +35,17 @@ def toggle_weekends(request):
     user = request.user
     user.digest_include_weekends = not user.digest_include_weekends
     user.save(update_fields=["digest_include_weekends"])
+    return render(request, "settings/notifications/preferences.html")
+
+
+@login_required
+@require_POST
+def toggle_new_intakes(request):
+    user = request.user
+    if not can_see_intakes(user):
+        raise PermissionDenied
+    user.notify_new_intakes = not user.notify_new_intakes
+    user.save(update_fields=["notify_new_intakes"])
     return render(request, "settings/notifications/preferences.html")
 
 

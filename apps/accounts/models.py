@@ -38,6 +38,9 @@ class CustomUser(AbstractUser):
     last_dash_check = models.DateField(null=True, blank=True)
     digest_enabled = models.BooleanField(default=False)
     digest_include_weekends = models.BooleanField(default=False)
+    # Email this user when someone else adds an intake (Settings >
+    # Notifications). Only reaches users who may see intakes.
+    notify_new_intakes = models.BooleanField(default=False)
     perm_all_matters = models.BooleanField(default=True)
     perm_financial = models.BooleanField(default=True)
     perm_intakes = models.BooleanField(default=True)

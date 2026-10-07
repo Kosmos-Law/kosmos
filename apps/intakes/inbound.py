@@ -32,6 +32,7 @@ from apps.accounts.models import CustomUser
 from apps.intakes.assess import run_assessment
 from apps.intakes.forms import IntakeForm
 from apps.intakes.models import InboundEmail, Intake, Note
+from apps.intakes.notify import notify_new_intake
 from apps.matters.models import PracticeArea
 from apps.settings.ai import ai_enabled
 from config.helpers import normalize_phone
@@ -396,3 +397,8 @@ def process_inbound_email(inbound_email_id):
     # gets one - the note carries the raw message either way.
     if use_ai:
         run_assessment(intake)
+
+    # After the assessment, so the pane is filled by the time the link is
+    # opened. The forwarder created the intake and is not told about it.
+    forwarder = CustomUser.objects.filter(email__iexact=inbound.sender).first()
+    notify_new_intake(intake, creator=forwarder)
