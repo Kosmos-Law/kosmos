@@ -135,6 +135,21 @@
 
   document.documentElement.setAttribute('data-sky-motion', skyMotion());
 
+  // Matcha Lavender's wash runs high (the default) or low, per device the
+  // same way.
+  var MIST_INTENSITY_KEY = 'mist-intensity';
+
+  function mistIntensity() {
+    return localStorage.getItem(MIST_INTENSITY_KEY) === 'low' ? 'low' : 'high';
+  }
+
+  window.setMistIntensity = function (value) {
+    localStorage.setItem(MIST_INTENSITY_KEY, value);
+    document.documentElement.setAttribute('data-mist-intensity', mistIntensity());
+  };
+
+  document.documentElement.setAttribute('data-mist-intensity', mistIntensity());
+
   // Reflect the stored setting onto the settings-page radios. Runs on load and
   // after every htmx swap, since the settings content arrives via a boosted
   // swap where an inline script would not reliably re-run.
@@ -145,6 +160,8 @@
     if (input) input.checked = true;
     var sky = document.getElementById('sky-motion');
     if (sky) sky.value = skyMotion();
+    var mist = document.getElementById('mist-intensity');
+    if (mist) mist.value = mistIntensity();
   }
 
   syncRadios();

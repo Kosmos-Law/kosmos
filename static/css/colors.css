@@ -370,6 +370,19 @@
   --past-due-bg: var(--due-soon-bg);
 }
 
+/* Matcha Lavender at low intensity (Appearance, per device like the theme;
+   data-mist-intensity is set before first paint in base.html): the theme's
+   first wash, before it was strengthened and the sun was added. Green and
+   lavender only, at about half the strength. */
+[data-theme="matcha-lavender"][data-mist-intensity="low"] {
+  --mist-wash:
+    radial-gradient(55vmax 20vmax at 15% 0%, color-mix(in oklab, var(--mist-light) 55%, transparent), transparent 70%),
+    radial-gradient(60vmax 45vmax at 10% 55%, color-mix(in oklab, var(--mist-light) 60%, transparent), transparent 70%),
+    radial-gradient(50vmax 40vmax at 95% 10%, color-mix(in oklab, var(--mist-shade) 55%, transparent), transparent 70%),
+    radial-gradient(60vmax 50vmax at 90% 100%, color-mix(in oklab, var(--mist-shade) 45%, transparent), transparent 70%),
+    radial-gradient(55vmax 40vmax at 35% 110%, color-mix(in oklab, var(--emerald-100) 50%, transparent), transparent 70%);
+}
+
 /* ==========================================================================
    Nord Light — the second LIGHT theme, cosmic's daytime counterpart.
 

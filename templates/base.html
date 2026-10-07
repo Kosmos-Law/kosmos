@@ -120,6 +120,10 @@
         'data-sky-motion',
         localStorage.getItem('sky-motion') === 'off' ? 'off' : 'on'
       );
+      document.documentElement.setAttribute(
+        'data-mist-intensity',
+        localStorage.getItem('mist-intensity') === 'low' ? 'low' : 'high'
+      );
     })();
   </script>
 </head>

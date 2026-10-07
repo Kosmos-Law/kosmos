@@ -56,11 +56,13 @@
   gap: 0 3rem;
 }
 
-.sky-motion-option {
+.sky-motion-option,
+.mist-intensity-option {
   display: none;
 }
 
-[data-theme="kosmic"] .sky-motion-option {
+[data-theme="kosmic"] .sky-motion-option,
+[data-theme="matcha-lavender"] .mist-intensity-option {
   display: flex;
   align-items: center;
   gap: 0.75rem;

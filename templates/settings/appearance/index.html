@@ -57,6 +57,17 @@
         <option value="off">No</option>
       </select>
     </div>
+    {% comment %}
+      Matcha Lavender only (settings.css shows it under that theme): the
+      strength of the wash. Outside the fieldset, as above.
+    {% endcomment %}
+    <div class="mist-intensity-option">
+      <label for="mist-intensity">Color intensity</label>
+      <select id="mist-intensity" onchange="setMistIntensity(this.value)">
+        <option value="high">High</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
   </div>
   <h2 class="settings-section">Navigation</h2>
   <hr />

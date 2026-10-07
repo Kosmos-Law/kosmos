@@ -41,7 +41,11 @@ surfaces over it live together in `static/css/matcha-lavender.css`, scoped
 to the theme, rather than spread across the component files: they are one
 effect, and every card surface that lets the light through is listed there.
 Floating surfaces (dialogs, menus, the phone drawer and top bar) stay solid
-and take a sheen instead, so nothing under them shows through.
+and take a sheen instead, so nothing under them shows through. Its colour
+intensity is a per-device setting on Appearance, like Kosmic's sky motion:
+`data-mist-intensity` on `<html>` (set before first paint in `base.html`,
+kept in step by `theme.js`) is `high` by default, and `low` swaps in the
+theme's first, softer wash without the sun.
 
 **Kosmic is cosmic plus the sky.** It shares cosmic's Nord ramp block,
 and its own block in `colors.css` only makes the ground surfaces
