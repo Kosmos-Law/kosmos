@@ -298,6 +298,11 @@
     radial-gradient(60vmax 50vmax at 90% 100%, color-mix(in oklab, var(--mist-shade) 45%, transparent), transparent 70%),
     radial-gradient(55vmax 40vmax at 35% 110%, color-mix(in oklab, var(--emerald-100) 50%, transparent), transparent 70%);
 
+  /* The field behind the wash (matcha-lavender.css): a photograph of tea
+     terraces, ghosted under this veil of the page's own colour. Raise it
+     to fade the field further, lower it to bring the field forward. */
+  --mist-field-veil: color-mix(in oklab, var(--background-body) 80%, transparent);
+
   /* Grain over the wash: tone-on-tone, the ink at this strength */
   --mist-ink: var(--stone-700);
   --mist-grain: 0.07;
