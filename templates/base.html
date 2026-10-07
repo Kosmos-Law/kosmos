@@ -89,6 +89,7 @@
   <link rel="stylesheet" href="{% static_v 'css/apps/notes.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/apps/notes-editor.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/toasts.css' %}" />
+  <link rel="stylesheet" href="{% static_v 'css/matcha-lavender.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/kosmic.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/kosmic-stars.css' %}" />
   {% if env == 'dev' %}
@@ -108,7 +109,7 @@
       var legacy = {
         sky: 'light', kosmos: 'light', latte: 'light',
         'everforest-light': 'light', 'kosmos-dark': 'dark', mocha: 'dark',
-        oxford: 'basic'
+        oxford: 'basic', 'matcha-mist': 'matcha-lavender'
       };
       if (legacy[setting]) setting = legacy[setting];
       var resolved = setting === 'auto'
@@ -118,6 +119,10 @@
       document.documentElement.setAttribute(
         'data-sky-motion',
         localStorage.getItem('sky-motion') === 'off' ? 'off' : 'on'
+      );
+      document.documentElement.setAttribute(
+        'data-mist-intensity',
+        localStorage.getItem('mist-intensity') === 'low' ? 'low' : 'high'
       );
     })();
   </script>

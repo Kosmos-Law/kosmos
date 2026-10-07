@@ -34,6 +34,10 @@
         <span>Matcha <small>(light)</small></span>
       </label>
       <label class="theme-option">
+        <input type="radio" name="theme" value="matcha-lavender">
+        <span>Matcha Lavender <small>(light)</small></span>
+      </label>
+      <label class="theme-option">
         <input type="radio" name="theme" value="cosmic">
         <span>Nord <small>(dark)</small></span>
       </label>
@@ -51,6 +55,17 @@
       <select id="sky-motion" onchange="setSkyMotion(this.value)">
         <option value="on">Yes</option>
         <option value="off">No</option>
+      </select>
+    </div>
+    {% comment %}
+      Matcha Lavender only (settings.css shows it under that theme): the
+      strength of the wash. Outside the fieldset, as above.
+    {% endcomment %}
+    <div class="mist-intensity-option">
+      <label for="mist-intensity">Color intensity</label>
+      <select id="mist-intensity" onchange="setMistIntensity(this.value)">
+        <option value="high">High</option>
+        <option value="low">Low</option>
       </select>
     </div>
   </div>

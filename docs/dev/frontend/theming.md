@@ -2,7 +2,9 @@
 
 Theming is **token-first**, with **co-located structural overrides**.
 
-There are **eight themes**. Four are light: `light` (Matcha), `basic`
+There are **nine themes**. Five are light: `light` (Matcha),
+`matcha-lavender` (Matcha with weather: a still wash of green, lavender and
+sunlit yellow behind the page, see-through cards, veiled chrome), `basic`
 (after the 2017 LawPay UI: white ground, navy buttons, azure accents;
 formerly `oxford`, and the `--oxford-*` palette keeps the source name),
 `nord-light` (Nord's Snow Storm surfaces, Polar Night text, frost blue
@@ -25,11 +27,25 @@ every `:root` (light) default and their blocks in `colors.css` only
 repoint colour tokens. Light structural rules are the unscoped defaults,
 so they get them for free; a rule scoped to `[data-theme="light"]` alone
 does NOT apply to them. Scope to
-`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="letterhead"])`
+`:is([data-theme="light"], [data-theme="matcha-lavender"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="letterhead"])`
 (or the subset that needs it) when a light structural rule must reach the
 other light themes. Retired themes: `sky`, `kosmos`, `kosmos-dark`,
-`latte`, `mocha`, `everforest-light`; renamed: `oxford` to `basic`
+`latte`, `mocha`, `everforest-light`; renamed: `oxford` to `basic`, `matcha-mist` to `matcha-lavender`
 (`theme.js` migrates stored settings).
+
+**Matcha Lavender is Matcha plus an atmosphere.** Its `colors.css` block adds
+the light (`--mist-*`: the wash, the sun, the sheens, the veil, the
+see-through card colour) and darkens text, borders and selection a touch to
+hold against it. The rules that lay the wash behind the page and clear the
+surfaces over it live together in `static/css/matcha-lavender.css`, scoped
+to the theme, rather than spread across the component files: they are one
+effect, and every card surface that lets the light through is listed there.
+Floating surfaces (dialogs, menus, the phone drawer and top bar) stay solid
+and take a sheen instead, so nothing under them shows through. Its colour
+intensity is a per-device setting on Appearance, like Kosmic's sky motion:
+`data-mist-intensity` on `<html>` (set before first paint in `base.html`,
+kept in step by `theme.js`) is `high` by default, and `low` swaps in the
+theme's first, softer wash without the sun.
 
 **Kosmic is cosmic plus the sky.** It shares cosmic's Nord ramp block,
 and its own block in `colors.css` only makes the ground surfaces
