@@ -13,6 +13,7 @@ from apps.intakes.filter_intakes import ORDER_FIELDS, IntakeFilter
 from apps.intakes.forms import IntakeForm, NoteForm
 from apps.intakes.intakes import get_table_data
 from apps.intakes.models import Intake, Note, UserIntakeView
+from apps.intakes.notify import notify_new_intake
 from apps.management.filter_manager import filter_data_from_post
 from apps.matters.models import PracticeArea
 from utils.safe_markdown import render_markdown
@@ -199,6 +200,7 @@ def add(request):
             intake = form.save(commit=False)
             intake.user_id = request.user.id
             intake.save()
+            notify_new_intake(intake, creator=request.user, request=request)
 
             return HttpResponse(status=204, headers={"HX-Trigger": "intakesChanged"})
 

@@ -1,0 +1,13 @@
+{% autoescape off %}{% if creator %}{{ creator.full_name }} added a new intake.{% else %}A new intake was added.{% endif %}
+
+Name: {{ intake.name }}{% if intake.phone %}
+Phone: {{ intake.phone }}{% endif %}{% if intake.email %}
+Email: {{ intake.email }}{% endif %}{% if intake.practice_area %}
+Practice area: {{ intake.practice_area.name }}{% endif %}{% if intake.source %}
+Source: {{ intake.source }}{% endif %}
+
+Open it in Kosmos: {{ url }}
+
+---
+You get this email because New Intake Emails are on in Settings > Notifications.
+{% endautoescape %}

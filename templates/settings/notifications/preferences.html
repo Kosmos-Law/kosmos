@@ -41,4 +41,20 @@
       </div>
     {% endif %}
   {% endif %}
+  {% if user.is_admin or user.perm_intakes %}
+    <div class="notifications-item">
+      <span>New Intake Emails</span>
+      {% if user.notify_new_intakes %}
+        <button class="btn btn-danger"
+                hx-post="{% url 'settings:toggle-new-intakes' %}"
+                hx-target="#notification-preferences"
+                hx-swap="outerHTML">Disable</button>
+      {% else %}
+        <button class="btn btn-success"
+                hx-post="{% url 'settings:toggle-new-intakes' %}"
+                hx-target="#notification-preferences"
+                hx-swap="outerHTML">Enable</button>
+      {% endif %}
+    </div>
+  {% endif %}
 </div>

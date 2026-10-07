@@ -152,6 +152,11 @@ urlpatterns = [
         name="toggle-weekends",
     ),
     path(
+        "settings/notifications/toggle-new-intakes/",
+        notification_urls.toggle_new_intakes,
+        name="toggle-new-intakes",
+    ),
+    path(
         "settings/notifications/send-test/",
         notification_urls.send_test_digest,
         name="send-test-digest",

@@ -446,3 +446,35 @@ def test_without_ai_the_intake_comes_from_the_raw_message(
     assert "AI summary" not in note.details
     assert "fence over my property line" in note.details
     assert assessment_calls == []
+
+
+def test_new_intake_emails_opted_in_users_but_not_the_forwarder(user, mock_ai):
+    from django.core import mail
+
+    from apps.accounts.models import CustomUser
+
+    user.notify_new_intakes = True
+    user.save()
+    CustomUser.objects.create(
+        username="coordinator", email="coordinator@example.com", notify_new_intakes=True
+    )
+    mock_ai(EXTRACTION)
+    post_inbound()
+    assert [m.to for m in mail.outbox] == [["coordinator@example.com"]]
+    assert mail.outbox[0].subject == "New intake: Jane Roe"
+
+
+def test_follow_up_on_a_known_intake_sends_no_email(user, mock_ai):
+    from django.core import mail
+
+    from apps.accounts.models import CustomUser
+
+    CustomUser.objects.create(
+        username="coordinator", email="coordinator@example.com", notify_new_intakes=True
+    )
+    mock_ai(EXTRACTION)
+    post_inbound()
+    mail.outbox.clear()
+    post_inbound({"Message-Id": "<second@mail.example.com>"})
+    assert Intake.objects.count() == 1
+    assert mail.outbox == []
