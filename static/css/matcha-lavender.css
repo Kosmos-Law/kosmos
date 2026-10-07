@@ -1,15 +1,15 @@
 /* ==========================================================================
-   Matcha Mist — the weather behind the page.
+   Matcha Lavender — the weather behind the page.
 
-   Adapted from cpl's Matcha Mist (theme-matcha-mist.css + atmosphere.css),
+   Adapted from cpl's Matcha Lavender (theme-matcha-lavender.css + atmosphere.css),
    without the moving mist (cpl has it paused) and without the tab window:
    Kosmos's nav is pills, not tabs. What it keeps is the still wash of light
    behind every page, the grain over it, the veiled chrome, the see-through
    cards, and the sheen on what floats over the page.
 
-   Every colour here is a token in the matcha-mist block of colors.css; this
+   Every colour here is a token in the matcha-lavender block of colors.css; this
    file only says which surfaces carry them. Everything is scoped to
-   data-theme="matcha-mist", so the other themes pay nothing for it.
+   data-theme="matcha-lavender", so the other themes pay nothing for it.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -21,17 +21,17 @@
    once.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-mist"] {
+[data-theme="matcha-lavender"] {
   background-color: var(--background-body);
 }
 
-[data-theme="matcha-mist"] body {
+[data-theme="matcha-lavender"] body {
   background-color: transparent;
   isolation: isolate;
 }
 
-[data-theme="matcha-mist"] body::before,
-[data-theme="matcha-mist"] body::after {
+[data-theme="matcha-lavender"] body::before,
+[data-theme="matcha-lavender"] body::after {
   content: "";
   inset: 0;
   pointer-events: none;
@@ -39,12 +39,12 @@
   z-index: -1;
 }
 
-[data-theme="matcha-mist"] body::before {
+[data-theme="matcha-lavender"] body::before {
   background: var(--mist-wash);
 }
 
 /* Grain: tone-on-tone, drawn as a mask so the ink follows the theme */
-[data-theme="matcha-mist"] body::after {
+[data-theme="matcha-lavender"] body::after {
   background: var(--mist-ink);
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.1 -.35'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
   opacity: var(--mist-grain);
@@ -59,24 +59,24 @@
    would stack into a solid panel.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-mist"] :is(.card, .table, .event-card) {
+[data-theme="matcha-lavender"] :is(.card, .table, .event-card) {
   background: var(--mist-card);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 6%),
     0 0.75rem 2rem -1rem var(--mist-card-shadow);
 }
 
-[data-theme="matcha-mist"] .card :is(.card, .table) {
+[data-theme="matcha-lavender"] .card :is(.card, .table) {
   background: transparent;
   box-shadow: none;
 }
 
 /* The dash's due and past-due cards keep their yellow, let through */
-[data-theme="matcha-mist"] .event-card:is(.is-today, .is-tomorrow) {
+[data-theme="matcha-lavender"] .event-card:is(.is-today, .is-tomorrow) {
   background: var(--due-soon-bg);
 }
 
-[data-theme="matcha-mist"] .event-card.past-due {
+[data-theme="matcha-lavender"] .event-card.past-due {
   background: var(--past-due-bg);
 }
 
@@ -86,7 +86,7 @@
    bar rather than on it.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-mist"] :is(.sidebar-nav li.active a, .subnav .active) {
+[data-theme="matcha-lavender"] :is(.sidebar-nav li.active a, .subnav .active) {
   background: color-mix(in srgb, var(--selected-background) 85%, transparent);
 }
 
@@ -95,7 +95,7 @@
    it shows through, and takes a sheen of the light laid over it.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-mist"] :is(.modal-content, .confirm-modal-dialog, .cmd-palette) {
+[data-theme="matcha-lavender"] :is(.modal-content, .confirm-modal-dialog, .cmd-palette) {
   background-image: var(--mist-sheen);
   box-shadow:
     0 1.5rem 3rem -1rem var(--mist-shadow),
@@ -104,19 +104,19 @@
 
 /* Menus: the sheen on the menu, so the items are cleared to let it
    through (the hovered one still lights up) */
-[data-theme="matcha-mist"] .dropdown-menu {
+[data-theme="matcha-lavender"] .dropdown-menu {
   background-color: var(--background-light);
   background-image: var(--mist-sheen-soft);
 }
 
-[data-theme="matcha-mist"] .dropdown-menu li:not(:hover) {
+[data-theme="matcha-lavender"] .dropdown-menu li:not(:hover) {
   background: transparent;
 }
 
 /* Phones: the sidebar is a drawer over the page and the top bar is sticky
    over it, so both go solid (Matcha's sidebar colour) under the sheen. */
 @media (width <= 768px) {
-  [data-theme="matcha-mist"] :is(.sidebar, .mobile-topbar) {
+  [data-theme="matcha-lavender"] :is(.sidebar, .mobile-topbar) {
     background-color: var(--stone-200);
     background-image: var(--mist-sheen);
   }

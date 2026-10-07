@@ -6,8 +6,8 @@
    dark (gb-*) values. Component CSS consumes var(--token) and stays
    theme-agnostic — it flips automatically when the tokens change.
 
-   EIGHT themes. Five light — light (Matcha), matcha-mist (Matcha with a
-   wash of light behind see-through surfaces; matcha-mist.css),
+   EIGHT themes. Five light — light (Matcha), matcha-lavender (Matcha with a
+   wash of light behind see-through surfaces; matcha-lavender.css),
    nord-light (Nord Snow Storm),
    basic (after the 2017 LawPay UI: white ground, navy buttons, azure
    accents), letterhead (after a firm engagement letter: bone
@@ -267,8 +267,8 @@
 }
 
 /* ==========================================================================
-   Matcha Mist — Matcha with weather: morning mist over a tea field.
-   Adapted from cpl's theme of the same name (theme-matcha-mist.css).
+   Matcha Lavender — Matcha with weather: morning mist over a tea field.
+   Adapted from cpl's theme of the same name (theme-matcha-lavender.css).
 
    Structurally it IS Matcha: every :root token stands, and this block only
    adds the light and repoints the colours that have to hold against it.
@@ -278,9 +278,9 @@
    wash; the cards and tables are the card colour taken halfway to white and
    let through, so the wash shows behind them. Text, borders and selection
    go a touch darker to hold on the see-through surfaces. The rules that put
-   all this on the page are in matcha-mist.css.
+   all this on the page are in matcha-lavender.css.
    ========================================================================== */
-[data-theme="matcha-mist"] {
+[data-theme="matcha-lavender"] {
   /* ------------------------------------------------------------------
      The light. Turn these dials and every surface follows.
      ------------------------------------------------------------------ */

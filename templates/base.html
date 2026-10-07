@@ -89,7 +89,7 @@
   <link rel="stylesheet" href="{% static_v 'css/apps/notes.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/apps/notes-editor.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/toasts.css' %}" />
-  <link rel="stylesheet" href="{% static_v 'css/matcha-mist.css' %}" />
+  <link rel="stylesheet" href="{% static_v 'css/matcha-lavender.css' %}" />
   {% if env == 'dev' %}
     <link rel="stylesheet" href="{% static_v 'css/dev.css' %}" />
   {% endif %}
@@ -107,7 +107,7 @@
       var legacy = {
         sky: 'light', kosmos: 'light', latte: 'light',
         'everforest-light': 'light', 'kosmos-dark': 'dark', mocha: 'dark',
-        oxford: 'basic'
+        oxford: 'basic', 'matcha-mist': 'matcha-lavender'
       };
       if (legacy[setting]) setting = legacy[setting];
       var resolved = setting === 'auto'

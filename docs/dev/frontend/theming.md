@@ -3,7 +3,7 @@
 Theming is **token-first**, with **co-located structural overrides**.
 
 There are **eight themes**. Five are light: `light` (Matcha),
-`matcha-mist` (Matcha with weather: a still wash of green and lavender light
+`matcha-lavender` (Matcha with weather: a still wash of green and lavender light
 behind the page, see-through cards, veiled chrome), `basic`
 (after the 2017 LawPay UI: white ground, navy buttons, azure accents;
 formerly `oxford`, and the `--oxford-*` palette keeps the source name),
@@ -26,20 +26,20 @@ every `:root` (light) default and their blocks in `colors.css` only
 repoint colour tokens. Light structural rules are the unscoped defaults,
 so they get them for free; a rule scoped to `[data-theme="light"]` alone
 does NOT apply to them. Scope to
-`:is([data-theme="light"], [data-theme="matcha-mist"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="letterhead"])`
+`:is([data-theme="light"], [data-theme="matcha-lavender"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="letterhead"])`
 (or the subset that needs it) when a light structural rule must reach the
 other light themes.
 
-**Matcha Mist is Matcha plus an atmosphere.** Its `colors.css` block adds
+**Matcha Lavender is Matcha plus an atmosphere.** Its `colors.css` block adds
 the light (`--mist-*`: the wash, the sheens, the veil, the see-through card
 colour) and darkens text, borders and selection a touch to hold against it.
 The rules that lay the wash behind the page and clear the surfaces over it
-live together in `static/css/matcha-mist.css`, scoped to the theme, rather
+live together in `static/css/matcha-lavender.css`, scoped to the theme, rather
 than spread across the component files: they are one effect, and any
 surface that should let the light through is listed there. Floating
 surfaces (dialogs, menus, the phone drawer and top bar) stay solid and take
 a sheen instead, so nothing under them shows through. Retired themes: `sky`, `kosmos`, `kosmos-dark`,
-`latte`, `mocha`, `everforest-light`; renamed: `oxford` to `basic`
+`latte`, `mocha`, `everforest-light`; renamed: `oxford` to `basic`, `matcha-mist` to `matcha-lavender`
 (`theme.js` migrates stored settings).
 
 All theme colour variables are authored in **oklch** (`palette.css` ramps and
