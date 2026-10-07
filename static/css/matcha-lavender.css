@@ -59,22 +59,52 @@
 /* --------------------------------------------------------------------------
    The cards: the see-through card colour (--mist-card) and a soft
    green-gray shadow that lifts them off the wash, lighter than the one
-   under dialogs. Tables are cards here: their cells are clear (the
-   --background-td token), so the table carries the one surface. A table
-   or card inside a card is cleared to a section of it, or the two layers
-   would stack into a solid panel.
+   under dialogs. One list of every card surface, so they all let the same
+   amount through:
+     .card, .event-card          the cards proper
+     .table, .totals-table table tables (their cells are clear, by the
+                                 --background-td token, so the table
+                                 carries the one surface)
+     .fc .fc-scrollgrid          the calendar's grid
+     .contacts-detail > .detail  the contact detail panel
+     .activity-chart-canvas-wrap the report charts, and the dash's donut
+     .wip-donut                  (bare on the page in Matcha, a card here)
+   A card surface inside another is cleared to a section of it, or the two
+   layers would stack into a near-solid panel.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-lavender"] :is(.card, .table, .event-card) {
+[data-theme="matcha-lavender"] :is(
+  .card,
+  .event-card,
+  .table,
+  .totals-table table,
+  .fc .fc-scrollgrid,
+  .contacts-detail > .detail,
+  .activity-chart-canvas-wrap,
+  .wip-donut
+) {
   background: var(--mist-card);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 6%),
     0 0.75rem 2rem -1rem var(--mist-card-shadow);
 }
 
-[data-theme="matcha-lavender"] .card :is(.card, .table) {
+[data-theme="matcha-lavender"] :is(.card, .table, .contacts-detail > .detail) :is(.card, .table, .totals-table table) {
   background: transparent;
   box-shadow: none;
+}
+
+/* The charts take a card's frame to go with its fill */
+[data-theme="matcha-lavender"] :is(.activity-chart-canvas-wrap, .wip-donut) {
+  border: solid 1px var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+/* Total rows are a head's band, let through as the heads are, not the
+   solid control colour */
+[data-theme="matcha-lavender"] :is(.total, tr.total th, tr.total td) {
+  background: var(--background-th);
 }
 
 /* The dash's due and past-due cards keep their yellow, let through */
