@@ -287,21 +287,22 @@
   --mist-light: var(--lime-100);
   --mist-shade: var(--violet-200);
 
-  /* The page: green along the top left and low on the left, lavender high
-     on the right and gathering in the far corner, a little sea-green
-     underfoot. The top is the strongest, so the bar over it runs green to
-     lavender. */
-  --mist-wash:
-    radial-gradient(55vmax 20vmax at 15% 0%, color-mix(in oklab, var(--mist-light) 55%, transparent), transparent 70%),
-    radial-gradient(60vmax 45vmax at 10% 55%, color-mix(in oklab, var(--mist-light) 60%, transparent), transparent 70%),
-    radial-gradient(50vmax 40vmax at 95% 10%, color-mix(in oklab, var(--mist-shade) 55%, transparent), transparent 70%),
-    radial-gradient(60vmax 50vmax at 90% 100%, color-mix(in oklab, var(--mist-shade) 45%, transparent), transparent 70%),
-    radial-gradient(55vmax 40vmax at 35% 110%, color-mix(in oklab, var(--emerald-100) 50%, transparent), transparent 70%);
+  /* The sun: the warm yellow where the light breaks through, a little
+     left of centre, around the middle of the page */
+  --mist-sun: var(--yellow-150);
 
-  /* The field behind the wash (matcha-lavender.css): a photograph of tea
-     terraces, ghosted under this veil of the page's own colour. Raise it
-     to fade the field further, lower it to bring the field forward. */
-  --mist-field-veil: color-mix(in oklab, var(--background-body) 80%, transparent);
+  /* The page: the sun breaking through in the middle, green along the
+     top left and low on the left, lavender high on the right and
+     gathering in the far corner, a little sea-green underfoot. The top is
+     the strongest, so the bar over it runs green to lavender. The sun is
+     the top layer, so it glows over the colours it meets. */
+  --mist-wash:
+    radial-gradient(75vmax 32vmax at 45% 52%, color-mix(in oklab, var(--mist-sun) 50%, transparent), transparent 75%),
+    radial-gradient(55vmax 22vmax at 15% 0%, color-mix(in oklab, var(--mist-light) 90%, transparent), transparent 70%),
+    radial-gradient(60vmax 45vmax at 5% 60%, color-mix(in oklab, var(--mist-light) 95%, transparent), transparent 70%),
+    radial-gradient(50vmax 40vmax at 95% 10%, color-mix(in oklab, var(--mist-shade) 85%, transparent), transparent 70%),
+    radial-gradient(60vmax 50vmax at 90% 100%, color-mix(in oklab, var(--mist-shade) 75%, transparent), transparent 70%),
+    radial-gradient(55vmax 40vmax at 35% 110%, color-mix(in oklab, var(--emerald-100) 85%, transparent), transparent 70%);
 
   /* Grain over the wash: tone-on-tone, the ink at this strength */
   --mist-ink: var(--stone-700);

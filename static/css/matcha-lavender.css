@@ -13,22 +13,16 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   The ground. The root carries the field: a photograph of tea terraces
-   under a morning sky, ghosted behind a veil of the page's own colour
-   (--mist-field-veil) so only its shapes and light come through. The wash
-   and the grain are fixed layers over it, behind the body (which isolates,
-   so z-index -1 puts them above the root and below everything on the
-   page), and the body itself is cleared to let them all through. Fixed, so
-   the field and the light stay put while the page scrolls over them. The
-   field sits low, so the terraces stay in view and the sky gives way to
-   the bar.
+   The ground. The page's own colour sits on the root, the wash and the
+   grain are fixed layers behind the body (which isolates, so z-index -1
+   puts them above that ground and below everything on the page), and the
+   body itself is cleared to let them through. Fixed, so the light stays
+   put while the page scrolls over it, and gradients only, so it is drawn
+   once.
    -------------------------------------------------------------------------- */
 
 [data-theme="matcha-lavender"] {
-  background:
-    linear-gradient(var(--mist-field-veil), var(--mist-field-veil)) fixed,
-    url("../images/matcha-lavender-field.webp") center bottom / cover fixed,
-    var(--background-body);
+  background-color: var(--background-body);
 }
 
 [data-theme="matcha-lavender"] body {
