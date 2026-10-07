@@ -1,12 +1,14 @@
 /* ==========================================================================
-   THEMING CONVENTION (four light themes + three dark themes)
+   THEMING CONVENTION (five light themes + three dark themes)
    --------------------------------------------------------------------------
    Theming is token-first. `:root` below defines every semantic token in its
    LIGHT value; the dark block further down RE-DEFINES those same tokens with
    dark (gb-*) values. Component CSS consumes var(--token) and stays
    theme-agnostic — it flips automatically when the tokens change.
 
-   SEVEN themes. Four light — light (Matcha), nord-light (Nord Snow Storm),
+   EIGHT themes. Five light — light (Matcha), matcha-mist (Matcha with a
+   wash of light behind see-through surfaces; matcha-mist.css),
+   nord-light (Nord Snow Storm),
    basic (after the 2017 LawPay UI: white ground, navy buttons, azure
    accents), letterhead (after a firm engagement letter: bone
    paper, hairline rules, fountain-pen blue) — and three dark — dark
@@ -262,6 +264,104 @@
   --hl-wash-red: color-mix(in oklch, var(--hl-red) 50%, var(--background-td));
   --hl-wash-yellow: color-mix(in oklch, var(--hl-yellow) 50%, var(--background-td));
 
+}
+
+/* ==========================================================================
+   Matcha Mist — Matcha with weather: morning mist over a tea field.
+   Adapted from cpl's theme of the same name (theme-matcha-mist.css).
+
+   Structurally it IS Matcha: every :root token stands, and this block only
+   adds the light and repoints the colours that have to hold against it.
+   The page is a still wash of light that falls from the top left carrying
+   the tea's green, and where it runs out the shade is lavender. The chrome
+   (top bar, sidebar, detail headers, subnavs) is a thin stone veil over that
+   wash; the cards and tables are the card colour taken halfway to white and
+   let through, so the wash shows behind them. Text, borders and selection
+   go a touch darker to hold on the see-through surfaces. The rules that put
+   all this on the page are in matcha-mist.css.
+   ========================================================================== */
+[data-theme="matcha-mist"] {
+  /* ------------------------------------------------------------------
+     The light. Turn these dials and every surface follows.
+     ------------------------------------------------------------------ */
+  --mist-light: var(--lime-100);
+  --mist-shade: var(--violet-200);
+
+  /* The page: green along the top left and low on the left, lavender high
+     on the right and gathering in the far corner, a little sea-green
+     underfoot. The top is the strongest, so the bar over it runs green to
+     lavender. */
+  --mist-wash:
+    radial-gradient(55vmax 20vmax at 15% 0%, color-mix(in oklab, var(--mist-light) 55%, transparent), transparent 70%),
+    radial-gradient(60vmax 45vmax at 10% 55%, color-mix(in oklab, var(--mist-light) 60%, transparent), transparent 70%),
+    radial-gradient(50vmax 40vmax at 95% 10%, color-mix(in oklab, var(--mist-shade) 55%, transparent), transparent 70%),
+    radial-gradient(60vmax 50vmax at 90% 100%, color-mix(in oklab, var(--mist-shade) 45%, transparent), transparent 70%),
+    radial-gradient(55vmax 40vmax at 35% 110%, color-mix(in oklab, var(--emerald-100) 50%, transparent), transparent 70%);
+
+  /* Grain over the wash: tone-on-tone, the ink at this strength */
+  --mist-ink: var(--stone-700);
+  --mist-grain: 0.07;
+
+  /* The sheens, for surfaces that float over the page (dialogs, menus, the
+     phone drawer): a pool of light in the lit corner and a pool of shade
+     in the far one, each a fixed size so a tall dialog is lit like a short
+     one. Soft for menus, plain for dialogs and the drawer. */
+  --mist-sheen-soft:
+    radial-gradient(24rem 12rem at 0% 0%, color-mix(in oklab, var(--mist-light) 24%, transparent), transparent),
+    radial-gradient(20rem 10rem at 100% 100%, color-mix(in oklab, var(--mist-shade) 16%, transparent), transparent);
+  --mist-sheen:
+    radial-gradient(48rem 18rem at 0% 0%, color-mix(in oklab, var(--mist-light) 42%, transparent), transparent),
+    radial-gradient(40rem 16rem at 100% 100%, color-mix(in oklab, var(--mist-shade) 26%, transparent), transparent);
+
+  /* Shadows take the light's colour too: green-gray, not black */
+  --mist-shadow: color-mix(in oklab, var(--lime-950) 28%, transparent);
+  --mist-card-shadow: color-mix(in oklab, var(--lime-950) 16%, transparent);
+
+  /* The chrome is the wash carried on up, a step darker: a thin stone veil
+     over the page's own light. Hover lays a second veil over it. */
+  --mist-veil: color-mix(in oklab, var(--stone-600) 13%, transparent);
+  --mist-veil-hover: color-mix(in oklab, var(--stone-600) 9%, transparent);
+
+  /* Cards carry no light of their own: they are the card colour taken
+     halfway to white, let through so the wash shows behind them. Body text
+     keeps better than 6:1 against them; the cards stop reading as panels,
+     somewhere under 60%, long before the text suffers. */
+  --mist-card-opacity: 65%;
+  --mist-card: color-mix(in srgb, color-mix(in oklab, var(--background-section) 50%, white) var(--mist-card-opacity), transparent);
+
+  /* ------------------------------------------------------------------
+     Matcha's tokens, adjusted to hold against the light
+     ------------------------------------------------------------------ */
+
+  /* Text a touch darker than Matcha's, halfway to the next stone */
+  --color-primary: color-mix(in oklab, var(--stone-600) 50%, var(--stone-700));
+
+  /* The selection lavender a step darker than Matcha's, to hold on the
+     see-through cards and the veiled bar */
+  --selected-background: color-mix(in oklab, var(--violet-100) 35%, var(--violet-200));
+
+  /* Borders a touch darker, so the lines in the cards hold against the
+     wash coming through them */
+  --border-medium: color-mix(in oklab, var(--stone-300) 75%, var(--stone-400));
+  --border-medium-dark: color-mix(in oklab, var(--stone-350) 80%, var(--stone-400));
+  --border-dark: color-mix(in oklab, var(--stone-400) 85%, var(--stone-500));
+  --input-border: var(--border-medium);
+
+  /* The chrome takes the veil */
+  --background-sidebar: var(--mist-veil);
+  --background-sidebar-hover: var(--mist-veil-hover);
+  --background-subnav: var(--mist-veil);
+
+  /* Table cells clear so the table's card shows through; the heads are
+     the control colour, let through as the cards are, or the head would
+     sit on the card as a solid band. The row washes follow the clear
+     cells and come out as tints over the card. */
+  --background-td: transparent;
+  --background-th: color-mix(in srgb, var(--background-control) var(--mist-card-opacity), transparent);
+
+  /* The due and past-due yellow, let through as the cards are */
+  --due-soon-bg: color-mix(in srgb, var(--yellow-50) 80%, transparent);
+  --past-due-bg: var(--due-soon-bg);
 }
 
 /* ==========================================================================
