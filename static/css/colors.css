@@ -6,16 +6,16 @@
    dark (gb-*) values. Component CSS consumes var(--token) and stays
    theme-agnostic — it flips automatically when the tokens change.
 
-   SEVEN themes. Four light — light (Matcha), nord-light (Nord Snow Storm),
+   EIGHT themes. Four light — light (Matcha), nord-light (Nord Snow Storm),
    basic (after the 2017 LawPay UI: white ground, navy buttons, azure
    accents), letterhead (after a firm engagement letter: bone
-   paper, hairline rules, fountain-pen blue) — and three dark — dark
-   (Gruvbox), cosmic (Nord), everforest.
+   paper, hairline rules, fountain-pen blue) — and four dark — dark
+   (Gruvbox), cosmic (Nord), kosmic (Nord under the sky), everforest.
    The non-Gruvbox darks ARE the dark theme structurally — they share the
    dark token block and every dark structural rule, and only repoint the
    --gb-* ramp (see the blocks after the dark block). So any "dark" rule is
-   scoped to ALL THREE:
-   `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])`.
+   scoped to ALL FOUR:
+   `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])`.
    The non-Matcha lights are light structurally: they inherit every :root
    default and their blocks below only repoint colour tokens; dark
    structural rules never apply. (Retired: sky, kosmos, kosmos-dark —
@@ -27,7 +27,7 @@
    2. Only when dark needs a structurally *different rule* (e.g. filled vs
       outline buttons, accent rail vs fill — where the colour moves to a
       different property) add a
-      `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .component`
+      `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .component`
       block, co-located at the bottom of that component's own CSS file under a
       "Dark mode —" comment. Keep the colour decision in a token, the
       structural rule in the component. Do not start a monolithic dark.css.
@@ -679,22 +679,22 @@
 /* Dark mode — bright "line" colour per highlight class, for contexts that show
    the colour as an accent (underline / rail / swatch) rather than a muddy dark
    fill. Harmless on the generic .hl-* fills, which ignore it. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .hl-yellow { --hl-line: var(--yellow-400); }
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .hl-red    { --hl-line: var(--red-400); }
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .hl-orange { --hl-line: var(--orange-400); }
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .hl-green  { --hl-line: var(--lime-400); }
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .hl-blue   { --hl-line: var(--blue-400); }
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) :is(.hl-violet, .hl-purple) { --hl-line: var(--violet-400); }
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) :is(.hl-slate, .hl-gray) { --hl-line: var(--slate-400); }
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .hl-yellow { --hl-line: var(--yellow-400); }
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .hl-red    { --hl-line: var(--red-400); }
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .hl-orange { --hl-line: var(--orange-400); }
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .hl-green  { --hl-line: var(--lime-400); }
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .hl-blue   { --hl-line: var(--blue-400); }
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) :is(.hl-violet, .hl-purple) { --hl-line: var(--violet-400); }
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) :is(.hl-slate, .hl-gray) { --hl-line: var(--slate-400); }
 
 /* Dark mode — any table row flagged with a highlight colour shows it as a bright
    left rail on the first cell, never a full-row fill (dark fills go muddy and
    dominate). Covers facts/timeline, calendar & event rows, dash totals, etc. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) tr[class*="hl-"],
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) tr[class*="hl-"] > td {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) tr[class*="hl-"],
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) tr[class*="hl-"] > td {
   background: transparent !important;
 }
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) tr[class*="hl-"] > td:first-child {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) tr[class*="hl-"] > td:first-child {
   box-shadow: inset 3px 0 0 0 var(--hl-line);
 }
 
@@ -732,7 +732,7 @@
    The bootstrap script in base.html resolves "auto" to either "light" or
    "dark" before paint, so CSS only handles the two concrete states.
    ========================================================================== */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) {
   /* Native form controls (radios, checkboxes) + scrollbars render dark */
   color-scheme: dark;
 
@@ -892,14 +892,14 @@
    Cosmic — the dark theme, on the Nord palette.
 
    Cosmic IS the dark theme structurally: it shares the entire token mapping
-   above and every co-located `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])`
+   above and every co-located `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])`
    rule. The ONLY thing it changes is the underlying ramp — the --gb-* tokens
    are repointed from Gruvbox to Nord. Because the semantic tokens above resolve
    var(--gb-*) per element, swapping the ramp re-skins the whole UI to Nord.
    (The --gb-* names are kept, not renamed, so the shared structural rules that
    reference them directly — buttons, flatpickr, calendar — still resolve here.)
    ========================================================================== */
-[data-theme="cosmic"] {
+:is([data-theme="cosmic"], [data-theme="kosmic"]) {
   /* Polar Night — deep base, lifting */
   --gb-dark:      var(--nord0);
   --gb-dark-soft: var(--nord0-soft);
@@ -928,6 +928,23 @@
 
   /* Add stays green (the dark block points it at --link, frost cyan here) */
   --add: var(--gb-bright-green);
+}
+
+/* ==========================================================================
+   Kosmic — Nord under the landing page's night sky.
+
+   Kosmic is cosmic exactly (it shares the Nord ramp block above and every
+   dark rule) with one change: the page ground is the animated sky from
+   kosmos.law (kosmic.css + components/kosmic-sky.html), and the surfaces
+   that sit flat on it let it through. The ground surfaces (page, tables,
+   cards, sidebar) are Polar Night made translucent; table cells go clear so
+   a table doesn't stack two washes. Raised surfaces (sections, controls,
+   modals, menus) stay opaque, so anything floating over the page is solid.
+   ========================================================================== */
+[data-theme="kosmic"] {
+  --background-body: color-mix(in oklch, var(--nord0) 64%, transparent);
+  --background-td: transparent;
+  --background-sidebar: color-mix(in oklch, var(--nord1) 85%, transparent);
 }
 
 /* ==========================================================================

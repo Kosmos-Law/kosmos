@@ -3,40 +3,57 @@
   <h2 class="settings-section">Theme</h2>
   <hr />
   <p class="detail-text">Theme is stored per device.</p>
-  <fieldset class="theme-options" onchange="setTheme(event.target.value)">
-    <label class="theme-option">
-      <input type="radio" name="theme" value="auto">
-      <span>Auto <small>(match system)</small></span>
-    </label>
-    <label class="theme-option">
-      <input type="radio" name="theme" value="basic">
-      <span>Basic <small>(light)</small></span>
-    </label>
-    <label class="theme-option">
-      <input type="radio" name="theme" value="everforest">
-      <span>Everforest <small>(dark)</small></span>
-    </label>
-    <label class="theme-option">
-      <input type="radio" name="theme" value="dark">
-      <span>Gruvbox <small>(dark)</small></span>
-    </label>
-    <label class="theme-option">
-      <input type="radio" name="theme" value="letterhead">
-      <span>Letterhead <small>(light)</small></span>
-    </label>
-    <label class="theme-option">
-      <input type="radio" name="theme" value="light">
-      <span>Matcha <small>(light)</small></span>
-    </label>
-    <label class="theme-option">
-      <input type="radio" name="theme" value="cosmic">
-      <span>Nord <small>(dark)</small></span>
-    </label>
-    <label class="theme-option">
-      <input type="radio" name="theme" value="nord-light">
-      <span>Nord <small>(light)</small></span>
-    </label>
-  </fieldset>
+  <div class="theme-settings">
+    <fieldset class="theme-options" onchange="setTheme(event.target.value)">
+      <label class="theme-option">
+        <input type="radio" name="theme" value="auto">
+        <span>Auto <small>(match system)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="basic">
+        <span>Basic <small>(light)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="everforest">
+        <span>Everforest <small>(dark)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="dark">
+        <span>Gruvbox <small>(dark)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="kosmic">
+        <span>Kosmic <small>(dark)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="letterhead">
+        <span>Letterhead <small>(light)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="light">
+        <span>Matcha <small>(light)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="cosmic">
+        <span>Nord <small>(dark)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="nord-light">
+        <span>Nord <small>(light)</small></span>
+      </label>
+    </fieldset>
+    {% comment %}
+      Kosmic only (settings.css shows it under that theme): stills the sky.
+      Outside the fieldset, whose onchange would take the value as a theme.
+    {% endcomment %}
+    <div class="sky-motion-option">
+      <label for="sky-motion">Animate the sky</label>
+      <select id="sky-motion" onchange="setSkyMotion(this.value)">
+        <option value="on">Yes</option>
+        <option value="off">No</option>
+      </select>
+    </div>
+  </div>
   <h2 class="settings-section">Navigation</h2>
   <hr />
   <p class="detail-text">
