@@ -359,7 +359,7 @@
 
 /* Dark mode — the stone-200/stone-700 fill is a raw light palette value, so the
    avatar reads as a bright blob on the dark UI. Blend it into a soft dark chip. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .participant-badge {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .participant-badge {
   background: var(--background-control);
   color: var(--color-primary);
 }
@@ -509,13 +509,13 @@
 /* Dark mode — these LLM badges carry .app-badge, so the blanket outline rule in
    badges.css strips their hue; restore it as a coloured outline (.app-badge.X
    out-specifies the blanket [data-theme] .app-badge rule). */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .app-badge:is(.ai-llm-claude, .ai-llm-claude-opus, .ai-llm-claude-opus-4-6, .ai-llm-claude-opus-5, .ai-llm-claude-opus-5-5, .ai-llm-claude-sonnet-5, .ai-llm-claude-fable, .ai-llm-claude-fable-5-1) {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .app-badge:is(.ai-llm-claude, .ai-llm-claude-opus, .ai-llm-claude-opus-4-6, .ai-llm-claude-opus-5, .ai-llm-claude-opus-5-5, .ai-llm-claude-sonnet-5, .ai-llm-claude-fable, .ai-llm-claude-fable-5-1) {
   background: transparent;
   border-color: var(--label-purple-line);
   color: var(--label-purple-line);
 }
 
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .app-badge:is(.ai-llm-gemini-flash, .ai-llm-gemini-pro, .ai-llm-gemini-pro-latest) {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .app-badge:is(.ai-llm-gemini-flash, .ai-llm-gemini-pro, .ai-llm-gemini-pro-latest) {
   background: transparent;
   border-color: var(--label-green-line);
   color: var(--label-green-line);
@@ -861,7 +861,7 @@
 }
 
 /* Dark mode — --link is a bright aqua here, so flip the icon to dark for contrast. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .ai-send-btn {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .ai-send-btn {
   color: var(--gb-dark);
 }
 
@@ -1583,7 +1583,7 @@
   background: var(--stone-200);
 }
 
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .prompt-editor-content .ProseMirror :is(mark, .note-hl) {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .prompt-editor-content .ProseMirror :is(mark, .note-hl) {
   color: var(--stone-900);
 }
 
@@ -2162,7 +2162,7 @@
 /* Dark mode — highlighted text (==text==) drops the yellow fill (it reads muddy
    against the dark surface) and moves the colour onto a bright underline (the
    shared "line" yellow, fixed across themes) under otherwise-normal text. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .ai-markdown mark {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .ai-markdown mark {
   background: none;
   border-radius: 0;
   padding: 0;
@@ -2647,7 +2647,7 @@
 /* Dark mode — the Agentic badge carries .app-badge, so the blanket outline
    rule in badges.css strips its hue; restore it as a coloured outline like
    the model badges. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) .app-badge.ai-kind-agent {
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .app-badge.ai-kind-agent {
   background: transparent;
   border-color: var(--label-purple-line);
   color: var(--label-purple-line);

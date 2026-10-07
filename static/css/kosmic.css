@@ -1,0 +1,296 @@
+/* ==========================================================================
+   Kosmic — the landing page's night sky behind the app.
+
+   Ported from kosmos.law's Sky.astro: the aurora that comes up across the
+   window every minute or so, the star field, the twinkling stars and
+   constellations, and the two shooting stars. The markup and images are
+   generated from that component (scripts/build-kosmic-sky.mjs); the
+   animation is here. Unlike the landing page, where the stars scroll away
+   with the hero, the whole sky is fixed to the window: the app's pages
+   scroll over it.
+
+   Each star's twinkle timing is generated too, into kosmic-stars.css.
+   The sky only exists under data-theme="kosmic". Hidden, its images are
+   never fetched, so the other themes pay nothing for it. Which surfaces let
+   it through is a token decision, in the kosmic block of colors.css.
+   ========================================================================== */
+
+.kosmic-sky {
+  display: none;
+}
+
+[data-theme="kosmic"] {
+  background-color: var(--nord0);
+}
+
+/* The body isolates, so the sky's z-index: -1 puts it above the page's
+   own ground and below everything on it. */
+[data-theme="kosmic"] body {
+  background-color: transparent;
+  isolation: isolate;
+}
+
+[data-theme="kosmic"] .kosmic-sky {
+  display: block;
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.kosmic-aurora,
+.kosmic-stars,
+.kosmic-field {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.kosmic-aurora,
+.kosmic-stars {
+  top: 0;
+  bottom: 0;
+}
+
+.kosmic-stars,
+.kosmic-field {
+  animation: kosmic-sky-fade 1.4s ease both;
+}
+
+/* The field takes over where the sky's own stars run out (they are laid
+   out in its upper 56%) and carries on to the foot of the window. */
+.kosmic-field {
+  top: 58%;
+  bottom: 0;
+  background-image: url("../images/kosmic/field.svg");
+  background-position: center top;
+}
+
+.kosmic-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      600px 420px at 16% 10%,
+      color-mix(in oklch, var(--nord8) 18%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      720px 500px at 84% 18%,
+      color-mix(in oklch, var(--nord15) 16%, transparent),
+      transparent 70%
+    );
+}
+
+.kosmic-starfield {
+  position: absolute;
+  inset: 0;
+}
+
+/* Each sheet comes up, flares and dims a few times, and goes out, then
+   waits out the rest of a minute and a half; the three follow a few seconds apart,
+   so the display spreads across the sky and never pulses as one. All the
+   while they sway from the hem: the feet stay put and the rays lean. A
+   sheet is wider than the window, so its ends stay out of sight as it
+   sways, and never narrower than 640px, so on a phone its folds are not
+   pinched shut. */
+.kosmic-aurora span {
+  --width: max(116%, 640px);
+  position: absolute;
+  top: -2%;
+  left: 50%;
+  width: var(--width);
+  height: 104%;
+  margin-left: calc(var(--width) / -2);
+  background-size: 100% 100%;
+  opacity: 0;
+  transform-origin: 50% 100%;
+  animation:
+    kosmic-aurora-show 90s ease-in-out 3s infinite,
+    kosmic-aurora-sway 37s ease-in-out infinite alternate;
+}
+
+.kosmic-aurora span:nth-child(1) {
+  background-image: url("../images/kosmic/aurora-1.svg");
+}
+
+.kosmic-aurora span:nth-child(2) {
+  background-image: url("../images/kosmic/aurora-2.svg");
+  animation-delay: 4.5s, -11s;
+  animation-duration: 90s, 47s;
+  animation-direction: normal, alternate-reverse;
+}
+
+.kosmic-aurora span:nth-child(3) {
+  background-image: url("../images/kosmic/aurora-3.svg");
+  animation-delay: 6s, -23s;
+  animation-duration: 90s, 59s;
+}
+
+/* Orion hangs at the left, Cassiopeia at the right. Positions are
+   percentages, so on a narrow window they are pinched shut. */
+@media (max-width: 64rem) {
+  .kosmic-orion {
+    display: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .kosmic-cassiopeia {
+    display: none;
+  }
+}
+
+.kosmic-shooting-star {
+  position: absolute;
+  border-radius: 99px;
+  opacity: 0;
+}
+
+.kosmic-shooting-star.ltr {
+  top: 11%;
+  left: -6%;
+  width: 110px;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--nord4) 0%, transparent),
+    color-mix(in oklch, var(--nord4) 90%, transparent)
+  );
+  /* 40s cycle: the streak itself takes 2.1s, the rest is the gap. */
+  animation: kosmic-shoot 40s linear 2s infinite;
+}
+
+.kosmic-shooting-star.rtl {
+  top: 14%;
+  right: -6%;
+  width: 85px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--nord13) 80%, transparent),
+    color-mix(in oklch, var(--nord13) 0%, transparent)
+  );
+  /* Half a cycle off the other, so the two never arrive in pairs. */
+  animation: kosmic-shoot-rtl 40s linear 22s infinite;
+}
+
+@keyframes kosmic-sky-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The generated stars call this by name (kosmic-stars.css). */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Only transforms and opacity move, so the sheets are drawn once and the
+   compositor does the rest. */
+@keyframes kosmic-aurora-show {
+  0% {
+    opacity: 0;
+  }
+  2.67% {
+    opacity: 0.75;
+  }
+  5.33% {
+    opacity: 1;
+  }
+  10.67% {
+    opacity: 0.5;
+  }
+  14.67% {
+    opacity: 0.95;
+  }
+  18.67% {
+    opacity: 0.45;
+  }
+  21.33% {
+    opacity: 0.8;
+  }
+  25.33%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes kosmic-aurora-sway {
+  0% {
+    transform: translate3d(-1.5%, 0, 0) skewX(-3deg) scaleY(0.96);
+  }
+  35% {
+    transform: translate3d(-0.3%, 0, 0) skewX(1.5deg) scaleY(1.04);
+  }
+  70% {
+    transform: translate3d(0.6%, 0, 0) skewX(-1deg) scaleY(0.99);
+  }
+  100% {
+    transform: translate3d(1.5%, 0, 0) skewX(3deg) scaleY(1.06);
+  }
+}
+
+/* The streak is rotated first and then moved along its own x axis, so it
+   travels the way it points on any shape of window. */
+@keyframes kosmic-shoot {
+  0% {
+    transform: rotate(9deg) translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  0.75% {
+    opacity: 0.85;
+  }
+  5.25%,
+  100% {
+    transform: rotate(9deg) translate3d(80vw, 0, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes kosmic-shoot-rtl {
+  0% {
+    transform: rotate(-9deg) translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.85;
+  }
+  7.5%,
+  100% {
+    transform: rotate(-9deg) translate3d(-80vw, 0, 0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kosmic-stars,
+  .kosmic-field {
+    animation: none;
+  }
+
+  .kosmic-starfield circle {
+    animation: none !important;
+  }
+
+  .kosmic-aurora,
+  .kosmic-shooting-star {
+    display: none;
+  }
+}
+
+@media print {
+  [data-theme="kosmic"] .kosmic-sky {
+    display: none;
+  }
+}

@@ -33,6 +33,11 @@ window.KosmosChartPalette = (function () {
       hue: 210, hueSpan: 90, chroma: 0.055, lMin: 0.55, lMax: 0.8, otherL: 0.55,
       grid: "oklch(0.37 0.02 250)", tick: "oklch(0.78 0.03 250)",
     },
+    kosmic: {
+      // Cosmic under the sky: the same frost arc and polar axes.
+      hue: 210, hueSpan: 90, chroma: 0.055, lMin: 0.55, lMax: 0.8, otherL: 0.55,
+      grid: "oklch(0.37 0.02 250)", tick: "oklch(0.78 0.03 250)",
+    },
     "nord-light": {
       // Cosmic's frost arc at light-theme lightness; cool polar axes.
       hue: 210, hueSpan: 90, chroma: 0.055, lMin: 0.6, lMax: 0.82, otherL: 0.88,
@@ -91,6 +96,7 @@ window.KosmosChartPalette = (function () {
     light: "oklch(88.5% 0 none)",
     dark: "oklch(0.60 0.006 70)",
     cosmic: "oklch(0.62 0.006 250)",
+    kosmic: "oklch(0.62 0.006 250)",
     "nord-light": "oklch(88.5% 0.008 250)",
     basic: "oklch(90% 0.005 240)",
     letterhead: "oklch(88.5% 0.0185 97)",
@@ -108,6 +114,7 @@ window.KosmosChartPalette = (function () {
     light: "oklch(83.5% 0 none)",
     dark: "oklch(0.482 0.018 61)",
     cosmic: "oklch(0.452 0.035 264)",
+    kosmic: "oklch(0.452 0.035 264)",
     "nord-light": "oklch(0.815 0.015 250)",
     basic: "oklch(0.852 0.014 234)",
     letterhead: "oklch(0.822 0.0237 96)",

@@ -89,6 +89,8 @@
   <link rel="stylesheet" href="{% static_v 'css/apps/notes.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/apps/notes-editor.css' %}" />
   <link rel="stylesheet" href="{% static_v 'css/toasts.css' %}" />
+  <link rel="stylesheet" href="{% static_v 'css/kosmic.css' %}" />
+  <link rel="stylesheet" href="{% static_v 'css/kosmic-stars.css' %}" />
   {% if env == 'dev' %}
     <link rel="stylesheet" href="{% static_v 'css/dev.css' %}" />
   {% endif %}
@@ -126,6 +128,7 @@
     </div>
   {% endif %}
   {% include "components/kosmos-brand-gradients.html" %}
+  {% include "components/kosmic-sky.html" %}
   {% include "sidebar.html" %}
   <div class="main-content" id="main-content">
     <header class="mobile-topbar">

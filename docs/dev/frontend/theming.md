@@ -2,20 +2,21 @@
 
 Theming is **token-first**, with **co-located structural overrides**.
 
-There are **seven themes**. Four are light: `light` (Matcha), `basic`
+There are **eight themes**. Four are light: `light` (Matcha), `basic`
 (after the 2017 LawPay UI: white ground, navy buttons, azure accents;
 formerly `oxford`, and the `--oxford-*` palette keeps the source name),
 `nord-light` (Nord's Snow Storm surfaces, Polar Night text, frost blue
 links, frost cyan selection) and `letterhead` (after a firm engagement
-letter: bone paper, hairline rules, fountain-pen blue). Three are dark:
-`dark` (Gruvbox), `cosmic` (Nord) and `everforest` (green-gray surfaces,
-cream text, signature-green links).
+letter: bone paper, hairline rules, fountain-pen blue). Four are dark:
+`dark` (Gruvbox), `cosmic` (Nord), `kosmic` (Nord under the landing
+page's animated night sky) and `everforest` (green-gray surfaces, cream
+text, signature-green links).
 
-**Cosmic and everforest are the dark theme structurally.** They share the
+**Cosmic, kosmic and everforest are the dark theme structurally.** They share the
 dark token block and every dark structural rule, and only repoint the
 `--gb-*` ramp (theme blocks in `colors.css`, palettes in `palette.css`).
-Consequence: every "dark" selector is scoped to **all three** themes as
-`:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])`.
+Consequence: every "dark" selector is scoped to **all four** themes as
+`:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])`.
 When you add a new dark structural rule, use that `:is(...)` selector so
 all the darks stay in sync.
 
@@ -30,13 +31,24 @@ other light themes. Retired themes: `sky`, `kosmos`, `kosmos-dark`,
 `latte`, `mocha`, `everforest-light`; renamed: `oxford` to `basic`
 (`theme.js` migrates stored settings).
 
+**Kosmic is cosmic plus the sky.** It shares cosmic's Nord ramp block,
+and its own block in `colors.css` only makes the ground surfaces
+(`--background-body`, `--background-sidebar`) translucent and table cells
+(`--background-td`) clear, so the sky shows through. Raised surfaces
+stay opaque. The sky itself is `templates/components/kosmic-sky.html`
+(included by `base.html`, hidden under every other theme) and
+`static/css/kosmic.css`. The markup and the images in
+`static/images/kosmic/` are generated from the landing page's
+`Sky.astro` by `scripts/build-kosmic-sky.mjs`; rerun it when that sky
+changes rather than editing the output.
+
 All theme colour variables are authored in **oklch** (`palette.css` ramps and
 any literal colours in `colors.css` theme blocks): no hex. Derivation
 formulas (`color-mix`) and component styles consume tokens as before.
 
 - **Tokens are the primary mechanism.** `static/css/colors.css` defines every
   semantic token in `:root` (light values) and re-defines the same tokens in a
-  single `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"]) { … }` block (dark
+  single `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) { … }` block (dark
   `gb-*` values). Component stylesheets consume `var(--token)` and are
   theme-agnostic: they flip automatically when the tokens change underneath
   them.
@@ -83,11 +95,11 @@ formulas (`color-mix`) and component styles consume tokens as before.
   light and dark story in one file. The only thing centralized is the token
   block in `colors.css`.
 
-Files with co-located dark (shared by all three darks) blocks include `buttons.css`,
+Files with co-located dark (shared by all four darks) blocks include `buttons.css`,
 `badges.css`, `sidebar.css`, `detail.css`, `interface.css`, `viewer.css`,
 `apps/tasks.css`, `apps/calendar.css`, `apps/matters.css`,
 `apps/case/ai.css`, `apps/case/highlights.css`, `apps/notes-editor.css`. Grep
-`:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="everforest"])` for the authoritative list.
+`:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])` for the authoritative list.
 
 Related: never use a new `font-size` below `1rem`. The smaller sizes
 already in the stylesheets are deliberate exceptions (the calendar's month
