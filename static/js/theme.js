@@ -118,6 +118,22 @@
 
   window.getThemeSetting = current;
 
+  // Kosmic's sky can be stilled, per device like the theme. The inline
+  // script in base.html sets data-sky-motion before first paint; this keeps
+  // it in step and backs the Appearance dropdown.
+  var SKY_MOTION_KEY = 'sky-motion';
+
+  function skyMotion() {
+    return localStorage.getItem(SKY_MOTION_KEY) === 'off' ? 'off' : 'on';
+  }
+
+  window.setSkyMotion = function (value) {
+    localStorage.setItem(SKY_MOTION_KEY, value);
+    document.documentElement.setAttribute('data-sky-motion', skyMotion());
+  };
+
+  document.documentElement.setAttribute('data-sky-motion', skyMotion());
+
   // Reflect the stored setting onto the settings-page radios. Runs on load and
   // after every htmx swap, since the settings content arrives via a boosted
   // swap where an inline script would not reliably re-run.
@@ -126,6 +142,8 @@
       '.theme-options input[value="' + current() + '"]'
     );
     if (input) input.checked = true;
+    var sky = document.getElementById('sky-motion');
+    if (sky) sky.value = skyMotion();
   }
 
   syncRadios();

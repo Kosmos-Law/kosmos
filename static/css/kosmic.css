@@ -89,7 +89,7 @@
 }
 
 /* Each sheet comes up, flares and dims a few times, and goes out, then
-   waits out the rest of a minute and a half; the three follow a few seconds apart,
+   waits out the rest of three minutes; the three follow a few seconds apart,
    so the display spreads across the sky and never pulses as one. All the
    while they sway from the hem: the feet stay put and the rays lean. A
    sheet is wider than the window, so its ends stay out of sight as it
@@ -107,7 +107,7 @@
   opacity: 0;
   transform-origin: 50% 100%;
   animation:
-    kosmic-aurora-show 90s ease-in-out 3s infinite,
+    kosmic-aurora-show 180s ease-in-out 3s infinite,
     kosmic-aurora-sway 37s ease-in-out infinite alternate;
 }
 
@@ -118,18 +118,19 @@
 .kosmic-aurora span:nth-child(2) {
   background-image: url("../images/kosmic/aurora-2.svg");
   animation-delay: 4.5s, -11s;
-  animation-duration: 90s, 47s;
+  animation-duration: 180s, 47s;
   animation-direction: normal, alternate-reverse;
 }
 
 .kosmic-aurora span:nth-child(3) {
   background-image: url("../images/kosmic/aurora-3.svg");
   animation-delay: 6s, -23s;
-  animation-duration: 90s, 59s;
+  animation-duration: 180s, 59s;
 }
 
-/* Orion hangs at the left, Cassiopeia at the right. Positions are
-   percentages, so on a narrow window they are pinched shut. */
+/* Orion hangs at the left, Cassiopeia at the right, Libra low in the
+   middle. Positions are percentages, so on a narrow window they are
+   pinched shut. */
 @media (max-width: 64rem) {
   .kosmic-orion {
     display: none;
@@ -137,7 +138,8 @@
 }
 
 @media (max-width: 40rem) {
-  .kosmic-cassiopeia {
+  .kosmic-cassiopeia,
+  .kosmic-libra {
     display: none;
   }
 }
@@ -158,8 +160,8 @@
     color-mix(in oklch, var(--nord4) 0%, transparent),
     color-mix(in oklch, var(--nord4) 90%, transparent)
   );
-  /* 40s cycle: the streak itself takes 2.1s, the rest is the gap. */
-  animation: kosmic-shoot 40s linear 2s infinite;
+  /* 80s cycle: the streak itself takes 2.1s, the rest is the gap. */
+  animation: kosmic-shoot 80s linear 2s infinite;
 }
 
 .kosmic-shooting-star.rtl {
@@ -173,7 +175,23 @@
     color-mix(in oklch, var(--nord13) 0%, transparent)
   );
   /* Half a cycle off the other, so the two never arrive in pairs. */
-  animation: kosmic-shoot-rtl 40s linear 22s infinite;
+  animation: kosmic-shoot-rtl 80s linear 42s infinite;
+}
+
+/* The app's own, across the lower half, where the landing page has none:
+   rarer than the other two, and timed to fall between them. */
+.kosmic-shooting-star.low {
+  top: 74%;
+  left: -6%;
+  width: 95px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--nord8) 0%, transparent),
+    color-mix(in oklch, var(--nord8) 85%, transparent)
+  );
+  /* 120s cycle; the streak takes 2.1s, as the others do. */
+  animation: kosmic-shoot-low 120s linear 22s infinite;
 }
 
 @keyframes kosmic-sky-fade {
@@ -202,25 +220,25 @@
   0% {
     opacity: 0;
   }
-  2.67% {
+  1.33% {
     opacity: 0.75;
   }
-  5.33% {
+  2.67% {
     opacity: 1;
   }
-  10.67% {
+  5.33% {
     opacity: 0.5;
   }
-  14.67% {
+  7.33% {
     opacity: 0.95;
   }
-  18.67% {
+  9.33% {
     opacity: 0.45;
   }
-  21.33% {
+  10.67% {
     opacity: 0.8;
   }
-  25.33%,
+  12.67%,
   100% {
     opacity: 0;
   }
@@ -248,10 +266,10 @@
     transform: rotate(9deg) translate3d(0, 0, 0);
     opacity: 0;
   }
-  0.75% {
+  0.375% {
     opacity: 0.85;
   }
-  5.25%,
+  2.625%,
   100% {
     transform: rotate(9deg) translate3d(80vw, 0, 0);
     opacity: 0;
@@ -263,16 +281,35 @@
     transform: rotate(-9deg) translate3d(0, 0, 0);
     opacity: 0;
   }
-  1% {
+  0.5% {
     opacity: 0.85;
   }
-  7.5%,
+  3.75%,
   100% {
     transform: rotate(-9deg) translate3d(-80vw, 0, 0);
     opacity: 0;
   }
 }
 
+@keyframes kosmic-shoot-low {
+  0% {
+    transform: rotate(-5deg) translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  0.25% {
+    opacity: 0.8;
+  }
+  1.75%,
+  100% {
+    transform: rotate(-5deg) translate3d(80vw, 0, 0);
+    opacity: 0;
+  }
+}
+
+/* A still sky: for reduced motion, and for anyone who turns the
+   animation off under Settings → Appearance (theme.js sets
+   data-sky-motion, per device like the theme). The stars stay, lit and
+   unmoving; the aurora and the shooting stars go. */
 @media (prefers-reduced-motion: reduce) {
   .kosmic-stars,
   .kosmic-field {
@@ -287,6 +324,18 @@
   .kosmic-shooting-star {
     display: none;
   }
+}
+
+[data-sky-motion="off"] :is(.kosmic-stars, .kosmic-field) {
+  animation: none;
+}
+
+[data-sky-motion="off"] .kosmic-starfield circle {
+  animation: none !important;
+}
+
+[data-sky-motion="off"] :is(.kosmic-aurora, .kosmic-shooting-star) {
+  display: none;
 }
 
 @media print {

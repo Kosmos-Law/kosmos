@@ -115,6 +115,10 @@
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : setting;
       document.documentElement.setAttribute('data-theme', resolved);
+      document.documentElement.setAttribute(
+        'data-sky-motion',
+        localStorage.getItem('sky-motion') === 'off' ? 'off' : 'on'
+      );
     })();
   </script>
 </head>

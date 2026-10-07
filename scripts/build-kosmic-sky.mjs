@@ -43,6 +43,37 @@ mkdirSync(images, { recursive: true });
 sheets.forEach((url, i) => writeFileSync(join(images, `aurora-${i + 1}.svg`), unwrap(url) + "\n"));
 writeFileSync(join(images, "field.svg"), unwrap(tileUrl) + "\n");
 
+/* The app's own additions. The landing page keeps its sky to the top of
+   the screen, round the hero; the app's sky fills the window, so it gets
+   a constellation in the lower half too. Libra sits low and central,
+   plotted from its stars' real positions (east to the left, as seen):
+   Zubeneschamali (0, the green-tinged one), Zubenelgenubi (1), Gamma (2),
+   Brachium (3, an M giant, so amber like Betelgeuse) and Upsilon (4). */
+const appConstellations = [
+  {
+    name: "libra",
+    color: "#d8dee9",
+    nodeColors: { 0: "#8fbcbb", 3: "#ebcb8b" },
+    nodeRadii: { 0: 1.9, 1: 1.8 },
+    lineOpacity: 0.12,
+    nodeR: 1.5,
+    points: [
+      [49.6, 70.0],
+      [53.2, 75.9],
+      [47.0, 74.9],
+      [51.4, 84.3],
+      [46.8, 86.8],
+    ],
+    edges: [
+      [0, 1],
+      [0, 2],
+      [1, 2],
+      [1, 3],
+      [2, 4],
+    ],
+  },
+];
+
 // Stars carry their opacity as an SVG attribute; their twinkles go to a
 // generated stylesheet, one class each, since the templates take no
 // inline styles.
@@ -53,7 +84,7 @@ const twinkling = (animation) => {
   rules.push(`.${name} {\n  animation: ${animation};\n}`);
   return ` class="${name}"`;
 };
-for (const c of constellations) {
+for (const c of [...constellations, ...appConstellations]) {
   lines.push(`      <g class="kosmic-${c.name}">`);
   for (const [a, b] of c.edges) {
     const [x1, y1] = c.points[a];
@@ -107,6 +138,7 @@ ${lines.join("\n")}
     </svg>
     <span class="kosmic-shooting-star ltr"></span>
     <span class="kosmic-shooting-star rtl"></span>
+    <span class="kosmic-shooting-star low"></span>
   </div>
 </div>
 `;
