@@ -88,95 +88,6 @@
   inset: 0;
 }
 
-/* A nebula low in the right, the app's own, after the Trifid: a bright
-   emission lobe (Nord's red and purple mixed, where the Trifid is pink), a
-   cooler reflection patch above and to its left (frost), a cluster of
-   young stars at the lobe's heart, and a purple haze round the whole. A
-   radial mask softens the box's edges. A pseudo-element painted before
-   the sky's children, so the aurora, the field and the stars all lie over
-   it. It breathes over two minutes; under reduced motion, or with the
-   sky's animation off, it simply stays. */
-[data-theme="kosmic"] .kosmic-sky::before {
-  --nebula-pink: color-mix(in oklch, var(--nord11) 55%, var(--nord15));
-  --nebula-blue: color-mix(in oklch, var(--nord9) 60%, var(--nord8));
-  content: "";
-  position: absolute;
-  right: -3%;
-  bottom: -4%;
-  width: min(430px, 64vw);
-  height: min(365px, 54vw);
-  background:
-    /* The cluster at the heart */
-    radial-gradient(
-      14px 12px at 58% 60%,
-      color-mix(in oklch, var(--nord6) 55%, transparent),
-      color-mix(in oklch, var(--nord6) 14%, transparent) 40%,
-      transparent 65%
-    ),
-    /* The emission lobe */
-    radial-gradient(
-      130px 112px at 58% 60%,
-      color-mix(in oklch, var(--nebula-pink) 36%, transparent),
-      color-mix(in oklch, var(--nebula-pink) 21%, transparent) 40%,
-      color-mix(in oklch, var(--nebula-pink) 7%, transparent) 70%,
-      transparent 100%
-    ),
-    /* The reflection patch */
-    radial-gradient(
-      120px 88px at 36% 30%,
-      color-mix(in oklch, var(--nebula-blue) 27%, transparent),
-      color-mix(in oklch, var(--nebula-blue) 11%, transparent) 50%,
-      transparent 100%
-    ),
-    /* Haze round the whole */
-    radial-gradient(
-      244px 208px at 52% 52%,
-      color-mix(in oklch, var(--nord15) 12%, transparent),
-      transparent 100%
-    );
-  filter: blur(4px);
-  mask-image: radial-gradient(closest-side at 52% 52%, #000 45%, transparent 100%);
-  -webkit-mask-image: radial-gradient(closest-side at 52% 52%, #000 45%, transparent 100%);
-  transform-origin: 58% 60%;
-  animation: kosmic-nebula-breathe 120s ease-in-out infinite alternate;
-}
-
-/* The star at the nebula's heart: the same box as the nebula, unblurred,
-   so the point stays sharp; a bright point with a small halo, twinkling
-   slowly as the sky's stars do. */
-[data-theme="kosmic"] .kosmic-sky::after {
-  content: "";
-  position: absolute;
-  right: -3%;
-  bottom: -4%;
-  width: min(430px, 64vw);
-  height: min(365px, 54vw);
-  background:
-    radial-gradient(
-      3px 3px at 58% 60%,
-      var(--nord6),
-      color-mix(in oklch, var(--nord6) 80%, transparent) 50%,
-      transparent 100%
-    ),
-    radial-gradient(
-      16px 16px at 58% 60%,
-      color-mix(in oklch, var(--nord6) 30%, transparent),
-      transparent 70%
-    );
-  animation: twinkle 7s ease-in-out infinite;
-}
-
-@keyframes kosmic-nebula-breathe {
-  from {
-    opacity: 0.88;
-    transform: scale(1) rotate(0deg);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1.04) rotate(1deg);
-  }
-}
-
 /* Each sheet comes up, flares and dims a few times, and goes out, then
    waits out the rest of three minutes; the three follow a few seconds apart,
    so the display spreads across the sky and never pulses as one. All the
@@ -413,19 +324,9 @@
   .kosmic-shooting-star {
     display: none;
   }
-
-  [data-theme="kosmic"] .kosmic-sky::before,
-  [data-theme="kosmic"] .kosmic-sky::after {
-    animation: none;
-  }
 }
 
 [data-sky-motion="off"] :is(.kosmic-stars, .kosmic-field) {
-  animation: none;
-}
-
-[data-sky-motion="off"] .kosmic-sky::before,
-[data-sky-motion="off"] .kosmic-sky::after {
   animation: none;
 }
 
