@@ -103,19 +103,19 @@
   position: absolute;
   right: -3%;
   bottom: -4%;
-  width: min(535px, 80vw);
-  height: min(455px, 68vw);
+  width: min(430px, 64vw);
+  height: min(365px, 54vw);
   background:
     /* The cluster at the heart */
     radial-gradient(
-      26px 22px at 58% 60%,
-      color-mix(in oklch, var(--nord6) 50%, transparent),
-      color-mix(in oklch, var(--nord6) 12%, transparent) 45%,
-      transparent 70%
+      14px 12px at 58% 60%,
+      color-mix(in oklch, var(--nord6) 55%, transparent),
+      color-mix(in oklch, var(--nord6) 14%, transparent) 40%,
+      transparent 65%
     ),
     /* The emission lobe */
     radial-gradient(
-      163px 140px at 58% 60%,
+      130px 112px at 58% 60%,
       color-mix(in oklch, var(--nebula-pink) 36%, transparent),
       color-mix(in oklch, var(--nebula-pink) 21%, transparent) 40%,
       color-mix(in oklch, var(--nebula-pink) 7%, transparent) 70%,
@@ -123,14 +123,14 @@
     ),
     /* The reflection patch */
     radial-gradient(
-      150px 110px at 36% 30%,
+      120px 88px at 36% 30%,
       color-mix(in oklch, var(--nebula-blue) 27%, transparent),
       color-mix(in oklch, var(--nebula-blue) 11%, transparent) 50%,
       transparent 100%
     ),
     /* Haze round the whole */
     radial-gradient(
-      305px 260px at 52% 52%,
+      244px 208px at 52% 52%,
       color-mix(in oklch, var(--nord15) 12%, transparent),
       transparent 100%
     );
@@ -139,6 +139,31 @@
   -webkit-mask-image: radial-gradient(closest-side at 52% 52%, #000 45%, transparent 100%);
   transform-origin: 58% 60%;
   animation: kosmic-nebula-breathe 120s ease-in-out infinite alternate;
+}
+
+/* The star at the nebula's heart: the same box as the nebula, unblurred,
+   so the point stays sharp; a bright point with a small halo, twinkling
+   slowly as the sky's stars do. */
+[data-theme="kosmic"] .kosmic-sky::after {
+  content: "";
+  position: absolute;
+  right: -3%;
+  bottom: -4%;
+  width: min(430px, 64vw);
+  height: min(365px, 54vw);
+  background:
+    radial-gradient(
+      3px 3px at 58% 60%,
+      var(--nord6),
+      color-mix(in oklch, var(--nord6) 80%, transparent) 50%,
+      transparent 100%
+    ),
+    radial-gradient(
+      16px 16px at 58% 60%,
+      color-mix(in oklch, var(--nord6) 30%, transparent),
+      transparent 70%
+    );
+  animation: twinkle 7s ease-in-out infinite;
 }
 
 @keyframes kosmic-nebula-breathe {
@@ -389,7 +414,8 @@
     display: none;
   }
 
-  [data-theme="kosmic"] .kosmic-sky::before {
+  [data-theme="kosmic"] .kosmic-sky::before,
+  [data-theme="kosmic"] .kosmic-sky::after {
     animation: none;
   }
 }
@@ -398,7 +424,8 @@
   animation: none;
 }
 
-[data-sky-motion="off"] .kosmic-sky::before {
+[data-sky-motion="off"] .kosmic-sky::before,
+[data-sky-motion="off"] .kosmic-sky::after {
   animation: none;
 }
 
