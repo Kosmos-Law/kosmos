@@ -425,7 +425,9 @@
     align-items: center;
     flex-direction: row;
     overflow: visible;
-    padding: 0 0.5rem;
+    /* More room on the right, so the account icon does not sit on the
+       bar's edge. */
+    padding: 0 1rem 0 0.5rem;
   }
 
   [data-nav="horizontal"] .sidebar-nav-main,
@@ -433,6 +435,11 @@
     align-items: center;
     display: flex;
     gap: 1px;
+  }
+
+  /* The icon-only utils (Search, Shortcuts, the account) breathe a little. */
+  [data-nav="horizontal"] .sidebar-nav-utils {
+    gap: 0.25rem;
   }
 
   /* Main items are text-only here — the icons read as visual noise on a
