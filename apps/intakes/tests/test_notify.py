@@ -37,7 +37,7 @@ def test_manual_add_emails_the_coordinator(client, user, coordinator, intake_dat
 
 def test_creator_is_not_emailed_about_their_own_intake(coordinator, intake_data):
     client = Client()
-    client.login(username="coordinator", password="pw")
+    client.force_login(coordinator)
     client.get("/dash/")
     client.post("/intakes/add", intake_data)
     assert Intake.objects.filter(name=intake_data["name"]).exists()

@@ -10,6 +10,7 @@ import apps.settings.matters.views as matter_urls
 import apps.settings.notifications.views as notification_urls
 import apps.settings.permissions.views as permission_urls
 import apps.settings.profile.views as profile_urls
+import apps.settings.security.views as security_urls
 import apps.settings.session.views as session_urls
 import apps.settings.tasks.views as tasks_urls
 import apps.settings.users.views as user_urls
@@ -106,6 +107,11 @@ urlpatterns = [
         name="edit-user",
     ),
     path(
+        "settings/users/reset-authenticator/<int:user_id>/",
+        user_urls.reset_authenticator,
+        name="reset-authenticator",
+    ),
+    path(
         "settings/users/add/",
         user_urls.add_user,
         name="add-user",
@@ -163,6 +169,7 @@ urlpatterns = [
     ),
     # Profile
     path("settings/profile/", profile_urls.profile_index, name="profile-index"),
+    path("settings/profile/icon/", profile_urls.nav_icon, name="nav-icon"),
     path(
         "settings/profile/personal/",
         profile_urls.personal_profile,
@@ -172,6 +179,38 @@ urlpatterns = [
         "settings/profile/personal/<str:form_type>/",
         profile_urls.personal_profile,
         name="personal-profile",
+    ),
+    # Security (the authenticator app)
+    path("settings/security/", security_urls.security_index, name="security-index"),
+    path(
+        "settings/security/authenticator/",
+        security_urls.authenticator_panel,
+        name="authenticator-panel",
+    ),
+    path(
+        "settings/security/sign-out-everywhere/",
+        security_urls.sign_out_everywhere,
+        name="sign-out-everywhere",
+    ),
+    path(
+        "settings/security/require/",
+        security_urls.require_toggle,
+        name="authenticator-require",
+    ),
+    path(
+        "settings/security/authenticator/setup/",
+        security_urls.authenticator_setup,
+        name="authenticator-setup",
+    ),
+    path(
+        "settings/security/authenticator/confirm/",
+        security_urls.authenticator_confirm,
+        name="authenticator-confirm",
+    ),
+    path(
+        "settings/security/authenticator/disable/",
+        security_urls.authenticator_disable,
+        name="authenticator-disable",
     ),
     # Appearance
     path(

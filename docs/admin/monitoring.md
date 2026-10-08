@@ -157,24 +157,37 @@ hold it.
 
 ## Failed and queued background tasks
 
-The task library's pages in the Django admin site show the state of the
-[background worker](worker.md). Sign in to Kosmos first, then open the
-URL.
+The task library's own commands show the state of the
+[background worker](worker.md), from the checkout:
 
-| Page | URL | Shows |
-|---|---|---|
-| Failed tasks | `/admin/django_q/failure/` | Every task that raised an error, with the error text. Select tasks and choose **Resubmit selected tasks to queue** to run them again. |
-| Queued tasks | `/admin/django_q/ormq/` | Tasks waiting to run. |
-| Scheduled tasks | `/admin/django_q/schedule/` | The recurring jobs, with each one's next run and a link to its last run. |
-| Successful tasks | `/admin/django_q/success/` | The most recent 250 successful tasks. Older ones are discarded. |
+| Command | Shows |
+|---|---|
+| `.venv/bin/python manage.py qinfo` | A summary: queued, scheduled, successful and failed task counts, and the cluster's uptime. |
+| `.venv/bin/python manage.py qmonitor` | The same, refreshed live, with each worker process's current task. Quit with Ctrl-C. |
 
-The admin site needs a user with staff status who also has the Admin role
-in Kosmos. The first user, created at install time, has both. Staff
-status is not something the application's own user settings grant: the
-first user can set it for another user on that user's page in the admin
-site.
+For the tasks themselves, the records are in the `django_q_task` (finished,
+with `success` false for failures and the error text in `result`),
+`django_q_ormq` (queued) and `django_q_schedule` (recurring) tables. The
+quickest view from the checkout:
 
-How to read these pages:
+```bash
+.venv/bin/python manage.py shell -c "
+from django_q.models import Failure
+for t in Failure.objects.order_by('-started')[:20]:
+    print(t.started, t.func, str(t.result)[:200])"
+```
+
+A failed task is run again from the same place:
+
+```bash
+.venv/bin/python manage.py shell -c "
+from django_q.tasks import async_task
+from django_q.models import Failure
+t = Failure.objects.get(id='<task id>')
+async_task(t.func, *t.args, **(t.kwargs or {}))"
+```
+
+How to read them:
 
 - **A queue that keeps growing** means the worker is stopped or stuck.
   A handful of entries that come and go is normal: the sync jobs run
@@ -182,8 +195,9 @@ How to read these pages:
 - **A task in Failed tasks may still be retrying.** A failed task is
   attempted up to ten times, fifteen minutes apart, before it is given
   up on.
-- **Failed tasks are never cleared automatically.** Delete them once you
-  have dealt with the cause.
+- **Failed tasks are never cleared automatically.** Delete them
+  (`Failure.objects.filter(...).delete()` in the shell) once you have
+  dealt with the cause.
 - The same failures are written to `logs/django.log`, as lines containing
   `[ERROR] django-q: Failed`.
 
@@ -196,7 +210,7 @@ monitoring you already run.
 |---|---|---|
 | The site answers | An uptime monitor on `/health/ready/`. | Covers nginx, gunicorn and the database together. |
 | The worker is running | An uptime monitor on `/health/worker/`, or `systemctl is-active qcluster.service`. | A stopped worker does not affect `/health/ready/`. Documents stop being processed and syncs stop, silently. |
-| Failed tasks | The Failed tasks page, or search `logs/django.log` for `django-q: Failed`. | The only sign that OCR, a sync or an AI job is failing. |
+| Failed tasks | `manage.py qinfo`, or search `logs/django.log` for `django-q: Failed`. | The only sign that OCR, a sync or an AI job is failing. |
 | Disk space: uploads | `du -sh media/` with local storage. | Every uploaded and mirrored document is stored here. |
 | Disk space: logs | `du -sh logs/` | Rotated weekly by the installed logrotate file. Unbounded on a hand-built install until you add it. |
 | Disk space: database | `sudo -u postgres psql -c '\l+'` | Extracted document text, synced email, AI conversations and the change history of every record all live in the database. |

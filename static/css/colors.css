@@ -1,14 +1,14 @@
 /* ==========================================================================
-   THEMING CONVENTION (five light themes + three dark themes)
+   THEMING CONVENTION (four light themes + four dark themes)
    --------------------------------------------------------------------------
    Theming is token-first. `:root` below defines every semantic token in its
    LIGHT value; the dark block further down RE-DEFINES those same tokens with
    dark (gb-*) values. Component CSS consumes var(--token) and stays
    theme-agnostic — it flips automatically when the tokens change.
 
-   NINE themes. Five light — light (Matcha), matcha-lavender (Matcha with a
-   wash of light behind see-through surfaces; matcha-lavender.css),
-   nord-light (Nord Snow Storm),
+   EIGHT themes. Four light — light (Matcha, with an optional gradient: a
+   wash of light behind see-through surfaces, data-wash on <html>;
+   matcha-gradient.css), nord-light (Nord Snow Storm),
    basic (after the 2017 LawPay UI: white ground, navy buttons, azure
    accents), letterhead (after a firm engagement letter: bone
    paper, hairline rules, fountain-pen blue) — and four dark — dark
@@ -267,10 +267,12 @@
 }
 
 /* ==========================================================================
-   Matcha Lavender — Matcha with weather: morning mist over a tea field.
-   Adapted from cpl's theme of the same name (theme-matcha-lavender.css).
+   Matcha's gradient — Matcha with weather: morning mist over a tea field.
+   Adapted from cpl's Matcha Lavender (theme-matcha-lavender.css). On when
+   Appearance's Gradient is cool or warm (data-wash on <html>, set before
+   first paint in base.html and kept in step by theme.js).
 
-   Structurally it IS Matcha: every :root token stands, and this block only
+   It IS Matcha: every :root token stands, and this block only
    adds the light and repoints the colours that have to hold against it.
    The page is a still wash of light that falls from the top left carrying
    the tea's green, and where it runs out the shade is lavender. The chrome
@@ -278,9 +280,9 @@
    wash; the cards and tables are the card colour taken halfway to white and
    let through, so the wash shows behind them. Text, borders and selection
    go a touch darker to hold on the see-through surfaces. The rules that put
-   all this on the page are in matcha-lavender.css.
+   all this on the page are in matcha-gradient.css.
    ========================================================================== */
-[data-theme="matcha-lavender"] {
+[data-theme="light"][data-wash] {
   /* ------------------------------------------------------------------
      The light. Turn these dials and every surface follows.
      ------------------------------------------------------------------ */
@@ -291,11 +293,12 @@
      left of centre, around the middle of the page */
   --mist-sun: var(--yellow-150);
 
-  /* The page: the sun breaking through in the middle, green along the
-     top left and low on the left, lavender high on the right and
-     gathering in the far corner, a little sea-green underfoot. The top is
-     the strongest, so the bar over it runs green to lavender. The sun is
-     the top layer, so it glows over the colours it meets. */
+  /* The page (the warm gradient): the sun breaking through in the
+     middle, green along the top left and low on the left, lavender high
+     on the right and gathering in the far corner, a little sea-green
+     underfoot. The top is the strongest, so the bar over it runs green to
+     lavender. The sun is the top layer, so it glows over the colours it
+     meets. */
   --mist-wash:
     radial-gradient(75vmax 32vmax at 45% 52%, color-mix(in oklab, var(--mist-sun) 50%, transparent), transparent 75%),
     radial-gradient(55vmax 22vmax at 15% 0%, color-mix(in oklab, var(--mist-light) 90%, transparent), transparent 70%),
@@ -370,17 +373,15 @@
   --past-due-bg: var(--due-soon-bg);
 }
 
-/* Matcha Lavender at low intensity (Appearance, per device like the theme;
-   data-mist-intensity is set before first paint in base.html): the theme's
-   first wash, before it was strengthened and the sun was added. Green and
-   lavender only, at about half the strength. */
-[data-theme="matcha-lavender"][data-mist-intensity="low"] {
+/* The cool gradient: the same light without the sun. Green and lavender
+   only, as the wash was before the sun was added. */
+[data-theme="light"][data-wash="cool"] {
   --mist-wash:
-    radial-gradient(55vmax 20vmax at 15% 0%, color-mix(in oklab, var(--mist-light) 55%, transparent), transparent 70%),
-    radial-gradient(60vmax 45vmax at 10% 55%, color-mix(in oklab, var(--mist-light) 60%, transparent), transparent 70%),
-    radial-gradient(50vmax 40vmax at 95% 10%, color-mix(in oklab, var(--mist-shade) 55%, transparent), transparent 70%),
-    radial-gradient(60vmax 50vmax at 90% 100%, color-mix(in oklab, var(--mist-shade) 45%, transparent), transparent 70%),
-    radial-gradient(55vmax 40vmax at 35% 110%, color-mix(in oklab, var(--emerald-100) 50%, transparent), transparent 70%);
+    radial-gradient(55vmax 22vmax at 15% 0%, color-mix(in oklab, var(--mist-light) 90%, transparent), transparent 70%),
+    radial-gradient(60vmax 45vmax at 5% 60%, color-mix(in oklab, var(--mist-light) 95%, transparent), transparent 70%),
+    radial-gradient(50vmax 40vmax at 95% 10%, color-mix(in oklab, var(--mist-shade) 85%, transparent), transparent 70%),
+    radial-gradient(60vmax 50vmax at 90% 100%, color-mix(in oklab, var(--mist-shade) 75%, transparent), transparent 70%),
+    radial-gradient(55vmax 40vmax at 35% 110%, color-mix(in oklab, var(--emerald-100) 85%, transparent), transparent 70%);
 }
 
 /* ==========================================================================

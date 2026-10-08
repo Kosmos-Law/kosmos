@@ -1,9 +1,10 @@
 from django import forms
 
+from apps.accounts.forms import UniqueEmailMixin
 from apps.accounts.models import CustomUser
 
 
-class ProfileForm(forms.ModelForm):
+class ProfileForm(UniqueEmailMixin, forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = [

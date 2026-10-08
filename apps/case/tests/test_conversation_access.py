@@ -27,7 +27,7 @@ def _login(username, **fields):
     user.set_password("pw")
     user.save()
     client = Client()
-    client.login(username=username, password="pw")
+    client.force_login(user)
     client.get("/dash/")  # Set daily dash session to avoid redirect
     client.user = user
     return client

@@ -1014,11 +1014,13 @@ dependencies = [
     { name = "premailer" },
     { name = "psycopg2-binary" },
     { name = "pymdown-extensions" },
+    { name = "pyotp" },
     { name = "pypdf" },
     { name = "pytesseract" },
     { name = "python-dateutil" },
     { name = "pytz" },
     { name = "requests" },
+    { name = "segno" },
     { name = "setuptools" },
     { name = "stripe" },
     { name = "weasyprint" },
@@ -1062,11 +1064,13 @@ requires-dist = [
     { name = "premailer", specifier = ">=3.10.0" },
     { name = "psycopg2-binary", specifier = "==2.9.10" },
     { name = "pymdown-extensions", specifier = "==10.21.3" },
+    { name = "pyotp", specifier = ">=2.10.0" },
     { name = "pypdf", specifier = ">=6.9.1" },
     { name = "pytesseract", specifier = "==0.3.13" },
     { name = "python-dateutil", specifier = "==2.9.0" },
     { name = "pytz", specifier = "==2024.1" },
     { name = "requests", specifier = ">=2.33.0" },
+    { name = "segno", specifier = ">=1.6.6" },
     { name = "setuptools", specifier = "==78.1.1" },
     { name = "stripe", specifier = ">=15.3.0" },
     { name = "weasyprint", specifier = "==69.0" },
@@ -1644,6 +1648,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pyotp"
+version = "2.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/c6/c5d96a86fd0bf6fa1bbb5c5c341ff3208638b692727a683c8289068d9a11/pyotp-2.10.0.tar.gz", hash = "sha256:d01e9703443616b03c57c700b5cbffd56a1f929c1b0f8f03131bc78c1fca9d3f", size = 18625, upload-time = "2026-06-14T03:48:49.221Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/33/7b83bde70eddaaaaef487751a9c3a5cc0c0be54620ded0e120ebdc401ff9/pyotp-2.10.0-py3-none-any.whl", hash = "sha256:1df2f6a1bcc3bb0716172a5215ddc2f8c7c7fd26a13df9927d52e1746934836c", size = 13768, upload-time = "2026-06-14T03:48:47.831Z" },
+]
+
+[[package]]
 name = "pyparsing"
 version = "3.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1959,6 +1972,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/05/04/74127fc843314818edfa81b5540e26dd537353b123a4edc563109d8f17dd/s3transfer-0.16.0.tar.gz", hash = "sha256:8e990f13268025792229cd52fa10cb7163744bf56e719e0b9cb925ab79abf920", size = 153827, upload-time = "2025-12-01T02:30:59.114Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fc/51/727abb13f44c1fcf6d145979e1535a35794db0f6e450a0cb46aa24732fe2/s3transfer-0.16.0-py3-none-any.whl", hash = "sha256:18e25d66fed509e3868dc1572b3f427ff947dd2c56f844a5bf09481ad3f3b2fe", size = 86830, upload-time = "2025-12-01T02:30:57.729Z" },
+]
+
+[[package]]
+name = "segno"
+version = "1.6.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1c/2e/b396f750c53f570055bf5a9fc1ace09bed2dff013c73b7afec5702a581ba/segno-1.6.6.tar.gz", hash = "sha256:e60933afc4b52137d323a4434c8340e0ce1e58cec71439e46680d4db188f11b3", size = 1628586, upload-time = "2025-03-12T22:12:53.324Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl", hash = "sha256:28c7d081ed0cf935e0411293a465efd4d500704072cdb039778a2ab8736190c7", size = 76503, upload-time = "2025-03-12T22:12:48.106Z" },
 ]
 
 [[package]]

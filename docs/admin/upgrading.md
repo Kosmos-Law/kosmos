@@ -139,7 +139,6 @@ Confirmed from the script. On a second run the installer:
 | `createcachetable`, `installwatson` | Run. Both do nothing if their work is already done. |
 | `buildwatson` | Runs, and reindexes every record. On a large database this is the slowest step. |
 | `setup_schedules` | Runs, and resets every scheduled job to its definition. |
-| `collectstatic` | Runs, in production. |
 | First user | Skipped when a superuser exists. |
 | `gunicorn.conf.py` | Your copy is kept. Changes to the template are not applied. |
 | systemd units, nginx files | Each is compared with the freshly rendered template. Identical: left alone. Different: the run stops and prints a diff, unless `--force`. Modified by certbot: left alone with a warning, unless `--force`. |
@@ -200,12 +199,11 @@ uv sync --frozen --no-dev
 .venv/bin/python manage.py createcachetable
 .venv/bin/python manage.py installwatson
 .venv/bin/python manage.py setup_schedules
-.venv/bin/python manage.py collectstatic --noinput
 sudo systemctl start law.socket
 sudo systemctl restart law.service qcluster.service
 ```
 
-Leave out `--no-dev` and `collectstatic` on a development machine.
+Leave out `--no-dev` on a development machine.
 
 This skips `buildwatson`. The search index is kept current as records
 are saved, and needs rebuilding only when the set of indexed fields

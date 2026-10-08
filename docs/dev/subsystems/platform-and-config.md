@@ -74,9 +74,7 @@ a run of `scripts/gen_docs_reference.py`.
 ## URLs
 
 `config/urls.py` mounts, in order: the three health URLs; `/` (the tasks
-index); `/admin/login/`, replaced by `apps.accounts.views.admin_login`
-before `admin.site.urls` because Django's own form takes a password
-alone and would skip the emailed code; `accounts/` (the project's views,
+index); `accounts/` (the project's views,
 then `django.contrib.auth.urls`); and then every app's `urls.py` included
 at the root, each app choosing its own prefix. The public, tokenized
 pages (the payment page and the client intake form) are ordinary
@@ -126,7 +124,7 @@ project entries. On the way in they run in this order:
    `CASELAW_PATTERN` (saved case law and the cluster viewer) without a
    CourtListener token; see
    [AI is optional](ai/context.md#ai-is-optional). Then, for a
-   signed-in user who is not an admin, it refuses with 403: `/admin/`;
+   signed-in user who is not an admin, it refuses with 403:
    the `ADMIN_ONLY_PATHS` (the Users, Permissions, Firm, Contacts, Matters
    and Tasks settings pages); any path in `PERMISSION_PATHS` whose flag
    the user lacks (`/invoicing/` and `/reports/` by prefix, `/intakes/`

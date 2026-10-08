@@ -7,30 +7,41 @@ on your first day.
 
 ## Sign in
 
-Your administrator gives you the address of your firm's Kosmos, a username
-and a password. Kosmos emails you a code every time you sign in, so have
-your work email open.
+Your administrator gives you the address of your firm's Kosmos and a
+password. You sign in with your work email address, and every sign-in has
+a second step: a code from an authenticator app on your phone once you
+have set one up, or, until then, a code Kosmos emails you. So have your
+work email open the first time.
 
 1. Open your firm's Kosmos address. The page reads **Log in to your
    account**.
-2. Type your **Username** and **Password** and click **Submit**. The
-   username is the one you were given, not your email address.
-3. Find the six-digit code in the email Kosmos sends you.
+2. Type your **Email** and **Password** and click **Submit**.
+3. Find the six-digit code in the email Kosmos sends you (or open your
+   authenticator app, if you have set one up).
 4. Type the code on the next page and click **Verify**.
 
 You are now in Kosmos: on the Dash if this is your first visit of the day,
 on **Tasks** otherwise.
 
-To sign out, click **Settings** (it opens on **Session**), then **Logout**.
+To sign out, click your name at the foot of the sidebar (the person icon,
+until you choose another) and then **Log out**. The same menu shows who is
+signed in and opens **Settings**.
 
 Good to know:
 
-- The code works for five minutes. After five wrong tries Kosmos discards
-  it and shows "Too many incorrect codes. Please log in again."
+- The emailed code works for five minutes. After five wrong tries Kosmos
+  discards it and shows "Too many incorrect codes. Please log in again."
 - There is no button to send the code again. Click **Back to Login** and
   sign in again. That sends a new code and cancels the old one.
-- **Logout** signs out the browser you are using, and no other. A browser
+- After five wrong passwords (or app codes) Kosmos makes you wait before
+  the next try: 30 seconds at first, longer with each further miss, up to
+  15 minutes. The page tells you how long. Nothing is locked; just wait
+  and try again.
+- **Log out** signs out the browser you are using, and no other. A browser
   you do not sign out of stays signed in until it goes eight weeks unused.
+  To sign out everywhere else at once (a lost phone, a shared computer),
+  use **Sign Out Everywhere Else** under **Settings → Security**; you
+  stay signed in where you clicked it.
 
 ### If you forget your password
 
@@ -178,13 +189,26 @@ Good to know:
 
 Everything here is under **Settings** in the sidebar.
 
-- **Settings → Profile**: your **Username**, name, **Email address** and
+- **Settings → Profile**: your **Username** (the short name shown on
+  tasks and entries), name, **Email address** (what you sign in with) and
   **Initials**. Click **Update Profile** to save. **Change Password** is
-  below it on the same page.
+  below it on the same page, and under **Icon** you can pick the icon
+  that stands for you at the foot of the sidebar (a chess piece, an
+  animal, a smile, a rose) in place of the plain person.
+- **Settings → Security**: set up an authenticator app, so your second
+  sign-in step is the code the app shows instead of an email. Click
+  **Set up an authenticator app**, scan the QR code with the app (Google
+  Authenticator, Microsoft Authenticator, Authy, 1Password or any other
+  that shows six-digit codes), type the code it shows and click
+  **Confirm**. Your firm may require this; if so, Kosmos brings you to
+  this page after you sign in and lets you go nowhere else until it is
+  done. If you lose your phone, ask an administrator to reset it.
 - **Settings → Appearance**: under **Theme**, pick **Auto** (follows your
   computer), a light theme (**Basic**, **Letterhead**, **Matcha**,
   **Nord**) or a dark one (**Everforest**, **Gruvbox**, **Kosmic**, **Nord**). Kosmic is
-  Nord over the animated night sky from the Kosmos website. Under
+  Nord over the animated night sky from the Kosmos website. Under Matcha,
+  **Gradient** lays a wash of light behind the page: **Cool** is green and
+  lavender, **Warm** adds a patch of sun; **None** is the plain page. Under
   **Navigation**, pick **Vertical** (the sidebar) or **Horizontal** (a bar
   across the top). Both apply at once. There is no save button.
 - **Settings → Notifications**: click **Enable** beside **Daily Digest

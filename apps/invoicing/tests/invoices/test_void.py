@@ -28,7 +28,7 @@ def admin_user():
 @pytest.fixture
 def admin_client(admin_user):
     client = TestClient()
-    client.login(username="Admin", password="clawboy")
+    client.force_login(admin_user)
     client.get("/dash/")
     return client
 

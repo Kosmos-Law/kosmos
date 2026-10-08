@@ -47,7 +47,7 @@ by signals, the worker and management commands).
 | File | What it does |
 |---|---|
 | `config/settings.py` | Reads `config/.env` through `django-environ`, defines `Q_CLUSTER`, the two caches, storage, email and logging. Explained in [Platform and config](subsystems/platform-and-config.md). |
-| `config/urls.py` | The health endpoints, the admin (with the sign-in form replaced by `apps.accounts.views.admin_login`), then one `include()` per app at the root, including the two public, tokenized URL sets (the payment page under `apps/invoicing/pay/urls.py` and the client intake form under `apps/intakes/client_forms/public_urls.py`). |
+| `config/urls.py` | The health endpoints, the sign-in views, then one `include()` per app at the root, including the two public, tokenized URL sets (the payment page under `apps/invoicing/pay/urls.py` and the client intake form under `apps/intakes/client_forms/public_urls.py`). |
 | `config/health.py` | `/health/live/`, `/health/ready/` and `/health/worker/`. |
 | `config/context.py` | Two context processors: `env` (the `ENV` value, which the templates use to show the development banner) and `integrations` (lazy `ai_enabled` and `caselaw_available`, which hide the optional AI and saved case-law surfaces). |
 | `config/helpers.py` | Small utilities used across apps: `normalize_phone()`, `dictfetchall()`, `MultipleOrderingFilter` for `django-filter`, and the `dump*` debugging helpers. |

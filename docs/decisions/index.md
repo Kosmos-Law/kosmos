@@ -41,6 +41,7 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [The Reports permission alone opens the reports, and starts off (2026-10-02)](2026-10-02-reports-permission-opens-the-reports.md)
 - [What deleting a matter or a contact removes (2026-10-02)](2026-10-02-what-deleting-a-matter-or-contact-removes.md)
 - [The "two shells" redesign is abandoned (2026-10-05)](2026-10-05-two-shells-redesign-abandoned.md)
+- [Sign in by email, an authenticator app in place of the emailed code, a cooldown per address, and no Django admin (2026-10-08)](2026-10-08-email-sign-in-authenticator-app-and-no-admin.md)
 
 ## Tasks, calendar, email and intakes
 

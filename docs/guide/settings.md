@@ -8,17 +8,18 @@ sections are open to every user, and the page says which.
 
 ## Open Settings
 
-Click **Settings** in the sidebar. It opens on **Session**, with the
-settings menu beside it. The entries you see depend on your role and
+Click your name at the foot of the sidebar and choose **Settings**. It
+opens on **Profile**, with the settings menu beside it. The same account
+menu shows who is signed in and holds **Log out**. The entries you see depend on your role and
 permissions.
 
 | Section | Who sees it | What it is for |
 |---|---|---|
-| **Profile** | Everyone | Your own name, email address and password. |
+| **Profile** | Everyone | Your own name, email address, password and sidebar icon. |
+| **Security** | Everyone | Your authenticator app, and signing out everywhere else. Administrators also see the firm-wide switch that requires the app. |
 | **Appearance** | Everyone | Your theme and navigation layout. |
 | **Firm** | Administrators | The firm's name, address, email addresses, logo and its own wording for invoices and reminders. |
 | **Notifications** | Everyone | Your daily digest email. |
-| **Session** | Everyone | Signing out. |
 | **Users** | Administrators | Accounts, roles and hourly rates. |
 | **Permissions** | Administrators | What each user can open. |
 | **Contacts** | Administrators | The groups, roles and relationship types offered for contacts. |
@@ -61,19 +62,45 @@ JPG file of 2 MB or less. It uploads at once: there is nothing to save. To
 change it, click the remove button beside the logo, confirm, and choose
 the new file.
 
-## Session
+## Security
 
-**Settings → Session** shows **Logged in as** with your username. Click
-**Logout** to sign out of Kosmos in this browser. You are returned to the
-sign-in page, and other browsers and devices stay signed in. A browser you
+**Settings → Security** is where you set up an authenticator app, so that
+the second step of your sign-in is the code the app shows rather than a
+code sent by email. Click **Set up an authenticator app**, scan the QR
+code with the app (or type the key shown beneath it into the app), enter
+the six-digit code the app shows and click **Confirm**. From your next
+sign-in Kosmos asks for the app's code and sends no email.
+
+Once an app is set up the page offers **Set up a new app**, for a new
+phone (the old app stops working when the new one is confirmed), and
+**Turn off**, which asks for a current code from the app and returns you
+to emailed codes. When the firm requires the app, **Turn off** is not
+offered. If you lose your phone, an administrator resets your app from
+**Settings → Users**; you get an emailed code at your next sign-in and
+set the app up again.
+
+An administrator also sees a **Firm** section on this page with
+**Require Authenticator App**. Click **Require** and every user must sign
+in with an app: a user who has not set one up is brought to this page
+after signing in and can go nowhere else until they have, and nobody can
+turn their app off. **Stop Requiring** lets each user choose again and
+removes nobody's app.
+
+**Sign Out Everywhere** is further down the page. Click **Sign Out
+Everywhere Else** and every other device and browser signed in to your
+account is signed out at once (a lost phone, a shared computer); you stay
+signed in where you clicked it. **Log out** in the account menu, by
+contrast, signs out the browser you are using and no other. A browser you
 do not sign out of stays signed in for eight weeks after you last use it.
 
 ## Users
 
 **Settings → Users** opens **User Management**, the list of accounts, ten
-to a page. Click a **Username** for **Edit** and **Switch to Inactive**,
-or a **Role** to change it. The **Attorney** column shows the user's
-title and, where there is none, "Attorney" or "Staff". The list starts
+to a page. Click a **Username** for **Edit**, **Switch to Inactive** and,
+for a user with an authenticator app, **Reset Authenticator**; or click a
+**Role** to change it. The **Attorney** column shows the user's
+title and, where there is none, "Attorney" or "Staff". The **App** column
+shows a check for each user who has set up an authenticator app. The list starts
 with active users only: click **Filter** to narrow it by username, email,
 role or status (**Not Active** or **All** shows deactivated users), then
 **Apply**. **Restore Defaults** returns to active users. Click the sort
@@ -85,14 +112,17 @@ keeps the filter in place.
 
 1. Click the **+** button beside **User Management** to open **Create
    User**.
-2. Enter **Username**, **Password**, **First name**, **Last name** and
-   **Email address**, and choose a **Role**.
+2. Enter **Username** (a short display name), **Password**, **First
+   name**, **Last name** and **Email address**, and choose a **Role**.
+   The email address is what the user signs in with: it is required, and
+   no two users can share one.
 3. Click **Submit**.
 
 The new user is in the list. Kosmos sends them nothing: give them the
-username and password yourself. Each time they sign in, Kosmos emails a
-code to their email address. Next, edit the user to fill in the remaining
-fields, and check their row under [Permissions](#permissions).
+password yourself. Each time they sign in, Kosmos emails a code to their
+email address, until they set up an authenticator app under **Settings →
+Security**. Next, edit the user to fill in the remaining fields, and
+check their row under [Permissions](#permissions).
 
 ### Edit a user
 
@@ -101,8 +131,8 @@ click **Submit**.
 
 | Field | What it does |
 |---|---|
-| **Username** | The name the user signs in with. |
-| **Email address** | Receives sign-in codes, password reset links and the daily digest. |
+| **Username** | A short display name, shown on tasks, entries and reports. It does not sign in. |
+| **Email address** | What the user signs in with. Also receives sign-in codes, password reset links and the daily digest. No two users can share one. |
 | **First name**, **Last name** | Shown wherever the user is named. |
 | **Role** | **Admin**: every settings section, every matter and all five permissions, and the only role that can delete a matter. **User**: day-to-day work within the permissions and matters an administrator gives them. You can also change it from the **Role** column of the list. It applies from the next page the user opens. |
 | **Attorney** | **Yes** or **No**. With no **Title**, the user is described as "Attorney" or "Staff". |
@@ -127,6 +157,14 @@ An administrator cannot see or reset another user's password here. A user
 changes their own under **Settings → Profile**, or clicks **Forgot
 Password?** on the sign-in page and follows the link Kosmos emails them.
 If their email address is wrong, correct it in **Edit User** first.
+
+### Reset an authenticator app
+
+When a user loses the phone with their authenticator app, click their
+username and choose **Reset Authenticator**, then confirm. They get a code
+by email at their next sign-in. If the firm requires the app, Kosmos then
+takes them to **Settings → Security** to set a new one up before they can
+do anything else.
 
 Good to know:
 

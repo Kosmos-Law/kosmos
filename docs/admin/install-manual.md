@@ -111,9 +111,8 @@ python manage.py setup_schedules       # recurring Django-Q jobs
 afterwards. Rebuild it after restoring a database from backup or changing
 which fields are indexed.
 
-With `DEBUG=False` (production), also run `python manage.py collectstatic`.
-`STATIC_ROOT` is the repository's own `static/` directory, so this only adds
-the Django admin assets; nginx serves `static/` straight from the checkout.
+There is no `collectstatic` step: nginx serves `static/` straight from
+the checkout, and no installed app adds files to it.
 
 If any problems occur during the migration process, refer to
 [Troubleshooting](troubleshooting.md#troubleshoot-running-migrations).

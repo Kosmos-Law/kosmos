@@ -47,7 +47,6 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -116,6 +115,7 @@ MIDDLEWARE = [
     "utils.middleware.CurrentUserMiddleware",
     "apps.accounts.middleware.HtmxLoginRedirectMiddleware",
     "apps.accounts.middleware.PermissionMiddleware",
+    "apps.accounts.middleware.AuthenticatorRequiredMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
@@ -274,6 +274,10 @@ else:
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.CustomUser"
+
+# Sign-in is by email address (apps/accounts/backends.py); the username is
+# a display name.
+AUTHENTICATION_BACKENDS = ["apps.accounts.backends.EmailBackend"]
 
 LOGIN_REDIRECT_URL = "tasks:index"
 LOGOUT_REDIRECT_URL = "tasks:index"

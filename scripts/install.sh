@@ -532,11 +532,6 @@ manage installwatson
 info "buildwatson reindexes every record; this takes a while on a large database"
 manage buildwatson
 manage setup_schedules
-if [ "$PROD" -eq 1 ]; then
-  # With DEBUG=False STATIC_ROOT is the repository's own static/ directory;
-  # this only adds the admin assets. Never run it in development.
-  manage collectstatic --noinput
-fi
 if [ "$SEED_INTAKE" -eq 1 ]; then manage seed_intake_forms; fi
 
 superuser_exists() {

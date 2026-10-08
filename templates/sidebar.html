@@ -109,17 +109,6 @@
           <span class="sidebar-label">Search</span>
         </a>
       </li>
-      <li {% if app == 'settings' %}class="active"{% endif %}>
-        <a href="{% url 'settings:settings' %}"
-           data-tooltip="Settings"
-           hx-boost="true"
-           hx-target="#main-content"
-           hx-select="#main-content"
-           hx-swap="outerHTML show:window:top">
-          <i class="icon-settings"></i>
-          <span class="sidebar-label">Settings</span>
-        </a>
-      </li>
       <li>
         <a href="#"
            hx-get="{% url 'settings:keyboard-shortcuts' %}"
@@ -128,6 +117,56 @@
           <i class="icon-keyboard"></i>
           <span class="sidebar-label">Shortcuts</span>
         </a>
+      </li>
+      {% comment %}
+        The account menu, last so it sits at the foot of the sidebar and at
+        the far right of the horizontal bar: who is signed in,
+        Settings and Log out. The trigger is an anchor so it takes the nav
+        item's styling (hover, active, the collapsed and horizontal
+        tooltips) as the other items do. Log out is a form: Django logs
+        out by POST.
+      {% endcomment %}
+      {% comment %}
+        Active on every settings page, read from the path: the settings
+        views set a subapp for their own menu, not the sidebar's app.
+      {% endcomment %}
+      <li class="account-menu{% if app == 'settings' or request.path|slice:':10' == '/settings/' %} active{% endif %}">
+        <div class="dropdown" x-data="dropdown()">
+          <a href="#"
+             role="button"
+             class="account-button"
+             x-ref="button"
+             @click.prevent="toggle()"
+             :aria-expanded="open"
+             aria-haspopup="menu"
+             aria-label="Account"
+             data-tooltip="{{ user.first_name|default:user.username }}">
+            <i class="icon-{{ user.nav_icon }}"></i>
+            <span class="sidebar-label">{{ user.first_name|default:user.username }}</span>
+          </a>
+          <ul class="dropdown-menu account-dropdown" x-ref="menu" x-show="open">
+            <li class="account-who">
+              <strong>{{ user.get_full_name|default:user.username }}</strong>
+              <span>{{ user.email }}</span>
+            </li>
+            <li>
+              <a class="dropdown-item"
+                 href="{% url 'settings:settings' %}"
+                 hx-boost="true"
+                 hx-target="#main-content"
+                 hx-select="#main-content"
+                 hx-swap="outerHTML show:window:top"><i class="icon-settings"></i> Settings</a>
+            </li>
+            <li>
+              <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">
+                  <i class="icon-log-out"></i> Log out
+                </button>
+              </form>
+            </li>
+          </ul>
+        </div>
       </li>
     </ul>
   </nav>

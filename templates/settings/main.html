@@ -8,6 +8,9 @@
           <li {% if subapp == "profile" %}class="active"{% endif %}>
             <a href="{% url 'settings:profile-index' %}">Profile</a>
           </li>
+          <li {% if subapp == "security" %}class="active"{% endif %}>
+            <a href="{% url 'settings:security-index' %}">Security</a>
+          </li>
           <li {% if subapp == "appearance" %}class="active"{% endif %}>
             <a href="{% url 'settings:appearance-index' %}">Appearance</a>
           </li>
@@ -18,9 +21,6 @@
           {% endif %}
           <li {% if subapp == "notifications" %}class="active"{% endif %}>
             <a href="{% url 'settings:notifications-index' %}">Notifications</a>
-          </li>
-          <li {% if subapp == "session" %}class="active"{% endif %}>
-            <a href="{% url 'settings:settings' %}">Session</a>
           </li>
           {% if user.role == 'ADMIN' %}
             <li {% if subapp == "users" %}class="active"{% endif %}>

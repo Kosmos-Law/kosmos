@@ -1,6 +1,11 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 from simple_history.models import HistoricalRecords
 
 from apps.accounts.managers import CustomUserManager
@@ -15,6 +20,36 @@ NAV_LAYOUT_OPTIONS = (
     ("horizontal", "Horizontal"),
 )
 
+# The icons a user may choose to stand for them in the sidebar's account
+# menu (Lucide names), the plain person first, as the default. The same set
+# as cpl's.
+NAV_ICONS = [
+    ("user", "Person"),
+    ("chess-king", "King"),
+    ("chess-queen", "Queen"),
+    ("chess-rook", "Rook"),
+    ("chess-bishop", "Bishop"),
+    ("chess-knight", "Knight"),
+    ("chess-pawn", "Pawn"),
+    ("hamburger", "Hamburger"),
+    ("toolbox", "Toolbox"),
+    ("smile", "Smile"),
+    ("laugh", "Laugh"),
+    ("cat", "Cat"),
+    ("dog", "Dog"),
+    ("rabbit", "Rabbit"),
+    ("squirrel", "Squirrel"),
+    ("panda", "Panda"),
+    ("turtle", "Turtle"),
+    ("feather", "Feather"),
+    ("bird", "Bird"),
+    ("birdhouse", "Birdhouse"),
+    ("rat", "Rat"),
+    ("origami", "Origami"),
+    ("rose", "Rose"),
+    ("snail", "Snail"),
+]
+
 
 class CustomUser(AbstractUser):
     google_contacts_credentials = models.TextField(null=True, blank=True)
@@ -25,6 +60,13 @@ class CustomUser(AbstractUser):
     nav_layout = models.CharField(
         max_length=20, choices=NAV_LAYOUT_OPTIONS, default="vertical"
     )
+    # The icon that stands for the user in the sidebar, opening the account
+    # menu (one of NAV_ICONS).
+    nav_icon = models.CharField(max_length=40, choices=NAV_ICONS, default="user")
+    # Bumped by Sign Out Everywhere (Settings > Security). It goes into the
+    # hash every session is checked against, so each session made before
+    # the bump stops matching and is signed out.
+    sessions_ended = models.PositiveIntegerField(default=0)
     # User ids shown as one-click filter chips on the tasks toolbar (max
     # TASK_CHIPS_CAP, enforced at the toggle endpoint). Empty means "no
     # explicit picks": small firms show everyone, large ones fall back to
@@ -60,9 +102,39 @@ class CustomUser(AbstractUser):
         "perm_research",
     )
 
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            # Users sign in with their email address, so it names one user
+            # whatever its case. Blank is left out: the inactive system user
+            # that signs notes from forwarded intake email has none.
+            models.UniqueConstraint(
+                Lower("email"),
+                condition=~Q(email=""),
+                name="accounts_customuser_email_unique",
+            ),
+        ]
+
+    def _get_session_auth_hash(self, secret=None):
+        # Django's own hash, with the sign-out-everywhere count mixed in
+        # once there is one; at nought it is exactly Django's, so adding
+        # it signed no one out.
+        value = self.password
+        if self.sessions_ended:
+            value = f"{value}:{self.sessions_ended}"
+        return salted_hmac(
+            "django.contrib.auth.models.AbstractBaseUser.get_session_auth_hash",
+            value,
+            secret=secret,
+            algorithm="sha256",
+        ).hexdigest()
+
     @property
     def is_admin(self):
         return self.role == "ADMIN"
+
+    @property
+    def has_authenticator(self):
+        return Authenticator.objects.filter(user_id=self.pk).exists()
 
     def has_matter_access(self, matter):
         if self.is_admin or self.perm_all_matters:
@@ -107,3 +179,82 @@ class EmailVerificationCode(models.Model):
         # total_seconds(), not .seconds: the latter wraps every 24 hours, so
         # an old code would read as fresh again once a day.
         return (timezone.now() - self.created_at).total_seconds() > 300  # 5 minutes
+
+
+class Authenticator(models.Model):
+    """A user's authenticator app (TOTP, RFC 6238). Once this row exists the
+    app's code is the user's second sign-in step in place of the emailed
+    code. The secret is stored as it is (apps/accounts/totp.py says why);
+    its own row keeps it out of the user's history records."""
+
+    user = models.OneToOneField(
+        CustomUser, on_delete=models.CASCADE, related_name="authenticator"
+    )
+    secret = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    # The 30-second step of the last code accepted. A code is good once:
+    # a later attempt with the same step (a code read over a shoulder) is
+    # refused even inside the clock-drift window.
+    last_counter = models.BigIntegerField(default=0)
+
+    class Meta:
+        db_table = "app_accounts_authenticator"
+
+
+# Wrong sign-ins allowed before the cooldown starts.
+FREE_FAILURES = 5
+# The first cooldown; each further failure doubles it, up to the cap.
+COOLDOWN_BASE = timedelta(seconds=30)
+COOLDOWN_CAP = timedelta(minutes=15)
+# Failures this old are forgotten before a new one is counted.
+FAILURE_MEMORY = timedelta(hours=1)
+
+
+class SignInThrottle(models.Model):
+    """Failed sign-ins per email address, as typed (lowercased), whether or
+    not the address belongs to anyone: a cooldown that applied to real
+    accounts alone would say which addresses exist. In the database, not
+    the cache, so the count is the same whichever worker answers."""
+
+    email = models.CharField(max_length=254, unique=True)
+    failures = models.PositiveIntegerField(default=0)
+    last_failure_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "app_accounts_sign_in_throttle"
+
+    @staticmethod
+    def key(email):
+        return (email or "").strip().lower()[:254]
+
+    @classmethod
+    def cooldown_for(cls, failures):
+        if failures < FREE_FAILURES:
+            return timedelta(0)
+        return min(COOLDOWN_BASE * 2 ** (failures - FREE_FAILURES), COOLDOWN_CAP)
+
+    @classmethod
+    def locked_until(cls, email):
+        """When sign-in as ``email`` may be tried again, or None if now."""
+        row = cls.objects.filter(email=cls.key(email)).first()
+        if row is None or not row.last_failure_at:
+            return None
+        until = row.last_failure_at + cls.cooldown_for(row.failures)
+        return until if until > timezone.now() else None
+
+    @classmethod
+    def record_failure(cls, email):
+        now = timezone.now()
+        row, _ = cls.objects.get_or_create(email=cls.key(email))
+        if row.last_failure_at and now - row.last_failure_at > FAILURE_MEMORY:
+            row.failures = 0
+        row.failures += 1
+        row.last_failure_at = now
+        row.save()
+        # Rows for addresses nobody has tried in a day say nothing: drop
+        # them here rather than keep a job for it.
+        cls.objects.filter(last_failure_at__lt=now - timedelta(days=1)).delete()
+
+    @classmethod
+    def clear(cls, email):
+        cls.objects.filter(email=cls.key(email)).delete()

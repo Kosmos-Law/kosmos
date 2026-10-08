@@ -77,7 +77,7 @@ What the templates add:
 |---|---|
 | `kosmos-security.conf` | Sends `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` on responses, including error responses. Refuses any path with a component that starts with a dot (`.env`, `.git`). |
 | `kosmos-ratelimit.conf` | Defines two request-rate zones keyed on the client address: `general` at 10 requests a second and `login` at 5 requests a minute. Installed only when no other nginx file already defines a `login` zone. |
-| `limit-login.conf` | Applies the `login` zone with a burst of 5 to paths that begin `/accounts/login` or `/admin/login`. That covers the password step, the code step, and `/admin/login/`, which only redirects to the password step. |
+| `limit-login.conf` | Applies the `login` zone with a burst of 5 to paths that begin `/accounts/login`. That covers the password step and both code steps. |
 | `kosmos.conf` | Applies the `general` zone with a burst of 20 to everything else that reaches the application. Limits request bodies to 100 MB. Serves `/static/` straight from the checkout. Has no location for `media/`. Passes the request on with the distribution's `proxy_params`, which set `Host`, `X-Forwarded-For` and `X-Forwarded-Proto`. |
 
 What they do not add:
@@ -119,7 +119,7 @@ below can be changed from `config/.env`, except that three of them follow
 | `X_FRAME_OPTIONS` | Set: `SAMEORIGIN` | |
 | `SECURE_CONTENT_TYPE_NOSNIFF` | Django default (on) | |
 | `SECURE_REFERRER_POLICY` | Django default (`same-origin`) | Application responses carry this value and the one nginx adds. |
-| `AUTH_PASSWORD_VALIDATORS` | Set: Django's four standard checks | Applied by password reset, `createsuperuser` and the Django admin only. See [Add a user](users.md#add-a-user). |
+| `AUTH_PASSWORD_VALIDATORS` | Set: Django's four standard checks | Applied by password reset and `createsuperuser` only. See [Add a user](users.md#add-a-user). |
 | Content Security Policy | None | |
 
 What this leaves to you:
@@ -141,39 +141,48 @@ How sign-in works is described in
 matter for hardening
 ([`apps/accounts/views.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/accounts/views.py)):
 
-- The application keeps no count of failed passwords and never locks an
-  account. The nginx `login` zone is the only brake on password guessing.
-  Do not remove it, and do not put the application behind a proxy that
-  hides client addresses from nginx.
+- Sign-in is by email address. The match is case-blind, and a database
+  constraint keeps each non-blank address to one user. A wrong address and
+  a wrong password get the same reply, and a hash is computed either way,
+  so neither the message nor the response time says which addresses exist.
+- Failed sign-ins are counted per email address as typed, in the
+  database (`SignInThrottle`), so the count is shared by every web worker.
+  After five failures (`FREE_FAILURES`) a cooldown starts at 30 seconds
+  and doubles with each further failure, up to 15 minutes. During it the
+  password is not checked at all. Wrong authenticator codes count toward
+  the same cooldown; wrong emailed codes have their own limit below. A
+  completed sign-in clears the count; an hour without a failure resets
+  it; rows nobody has tried in a day are dropped. Since the key is the
+  address and not the client, someone who knows a user's address can keep
+  that user waiting up to 15 minutes at a time. The nginx `login` zone is
+  the brake on that and on guessing across many addresses. Do not remove
+  it, and do not put the application behind a proxy that hides client
+  addresses from nginx.
 - The emailed code is six digits, generated with Python's `secrets`
   module, and stored unhashed in the database until it is used, replaced,
   found expired or discarded.
-- The code expires five minutes after it was created.
-- After five wrong codes (`MAX_CODE_ATTEMPTS`) the code is deleted and the
-  user has to pass the password step again, which issues a new code. The
-  count is kept on the code itself, so it is the same five guesses however
-  many browser sessions try it.
-- `/admin/login/` has no form of its own. It redirects to
-  `/accounts/login/`, so the Django admin is reached only through the
-  password and the emailed code.
+- The emailed code expires five minutes after it was created.
+- After five wrong emailed codes (`MAX_CODE_ATTEMPTS`) the code is deleted
+  and the user has to pass the password step again, which issues a new
+  code. The count is kept on the code itself, so it is the same five
+  guesses however many browser sessions try it.
+- An authenticator app, once set up, replaces the emailed code for that
+  user; there is no way back to the emailed code at sign-in. Codes are
+  TOTP (RFC 6238, 30-second steps, one step of drift allowed), compared in
+  constant time, and each accepted step is recorded, in one guarded
+  update, so a code is good once. The secret is stored in clear on its
+  own row (`Authenticator`): encrypting it with a key kept on the same
+  server would protect only a database copy taken without `config/.env`,
+  and would sign the whole firm out of their apps whenever `SECRET_KEY`
+  changed. A database backup therefore carries the seeds, as it carries
+  the password hashes. An administrator can require the app for every user
+  under **Settings → Security**; see
+  [The authenticator app](users.md#the-authenticator-app).
 - The address a sign-in link asks to return to (`next`) is followed only
   when it stays on the same host. Any other value is dropped and the user
   lands on the task list.
-
-The Django admin is reachable from the internet, behind the same sign-in
-as the rest of the application. Restricting it to known addresses is
-optional extra hardening. To do so, add a location to the site file (the
-address is an example):
-
-```nginx
-location ^~ /admin/ {
-    allow 203.0.113.10;
-    deny all;
-    limit_req zone=general burst=20 nodelay;
-    include proxy_params;
-    proxy_pass http://unix:/run/law.sock;
-}
-```
+- There is no Django admin site, so there is no password-only form and
+  no screen that edits records outside the application's rules.
 
 ## Uploaded files
 

@@ -37,7 +37,7 @@ changed them:
 
 Things you do not need to back up:
 
-- `.venv/` and `static/admin/`. The installer recreates both.
+- `.venv/`. The installer recreates it.
 - `logs/`. Keep them if your firm's policy calls for it. Nothing reads
   them back.
 - `.dev-sessions/`. It exists only when `ENV=dev`, where login sessions

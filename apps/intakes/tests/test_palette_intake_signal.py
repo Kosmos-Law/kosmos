@@ -20,7 +20,7 @@ def _signed_in(perm_intakes):
     user.set_password("pw")
     user.save()
     client = Client()
-    client.login(username="paletteuser", password="pw")
+    client.force_login(user)
     client.get("/dash/")
     return client
 

@@ -2,12 +2,10 @@ from pathlib import Path
 
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path, re_path
 from django.views.static import serve
 
-from apps.accounts.views import admin_login
 from apps.tasks.views import tasks_index
 from config import health
 
@@ -16,10 +14,6 @@ urlpatterns = [
     path("health/ready/", health.ready, name="health-ready"),
     path("health/worker/", health.worker, name="health-worker"),
     path("", tasks_index, name="tasks-index"),
-    # Admin. Its sign-in form is replaced first: Django's own takes a
-    # password alone and would skip the emailed code.
-    path("admin/login/", admin_login),
-    path("admin/", admin.site.urls),
     # Accounts App
     path("accounts/", include("apps.accounts.urls")),
     path("accounts/", include("django.contrib.auth.urls")),

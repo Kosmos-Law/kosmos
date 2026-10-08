@@ -8,11 +8,14 @@ pytestmark = pytest.mark.django_db
 
 
 def test_index(client):
+    """Settings opens on Profile; the Session page went with the account
+    menu."""
     response = client.get("/settings/")
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response["Location"] == reverse("settings:profile-index")
 
-    response = client.get(reverse("settings:settings"))
-    assertTemplateUsed(response, "settings/session/index.html")
+    response = client.get(reverse("settings:settings"), follow=True)
+    assertTemplateUsed(response, "settings/profile/index.html")
 
 
 # -----------------------------------------------------

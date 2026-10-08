@@ -36,3 +36,12 @@ class ActivityCategory(AuditMixin, models.Model):
                 violation_error_message="This matter already has a category with this name.",
             ),
         ]
+
+
+# The entry models live in sub-packages. Importing them here registers
+# them with the app registry as the app loads; nothing else does, now that
+# there is no admin.py to import them at start-up. (Last, as they import
+# ActivityCategory from this module.)
+from apps.activity.expenses.models import ExpenseEntry  # noqa: E402, F401
+from apps.activity.flat_fees.models import FlatFeeEntry  # noqa: E402, F401
+from apps.activity.time.models import TimeEntry  # noqa: E402, F401

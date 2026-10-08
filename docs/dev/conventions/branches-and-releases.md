@@ -186,7 +186,7 @@ step from the topical branch; in terms a contributor can run, it is:
 3. Deploy `dev` to the server. On the server that is a `git pull` of
    `dev` followed by the installer or its manual equivalent: `uv sync
    --frozen --no-dev`, `migrate`, `createcachetable`, `installwatson`,
-   `setup_schedules`, `collectstatic`, then a restart of `law.service`
+   `setup_schedules`, then a restart of `law.service`
    (gunicorn) and `qcluster.service`. Each step is written out in
    [Upgrading](../../admin/upgrading.md). The restart is not optional:
    with `DEBUG=False` each gunicorn worker caches templates until it

@@ -210,3 +210,36 @@ input:focus {
 .auth-buttons.justify-between {
   justify-content: space-between;
 }
+
+/* The eye button that shows the password. The field keeps the form's
+   input styling; the button sits inside its right edge. */
+.password-field {
+  display: block;
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 2.75rem;
+}
+
+/* Outranks .account-form button:not(.btn) above, which would otherwise
+   give this the submit button's fill and top margin. */
+.account-form .password-field button.password-toggle {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  margin: 0;
+  padding: 0.5rem;
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.account-form .password-field button.password-toggle:hover,
+.account-form .password-field button.password-toggle:focus-visible {
+  color: var(--link);
+}

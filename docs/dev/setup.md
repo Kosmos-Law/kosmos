@@ -142,8 +142,9 @@ a database the application cannot run on:
 `createcachetable` and `installwatson` are also run by the root
 `conftest.py` for the test database, for the same reason. The generated
 [commands reference](../reference/commands.md) lists every project
-command. Do not run `collectstatic` in development: with `DEBUG=True` it
-is not needed, and `STATIC_ROOT` is the repository's own `static/`.
+command. There is no `collectstatic` step in any environment: nginx
+serves the repository's own `static/`, and no installed app adds files
+to it.
 
 ## 5. Run the server and the worker
 

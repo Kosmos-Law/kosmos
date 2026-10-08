@@ -36,7 +36,7 @@ def restricted_user(matter):
 @pytest.fixture
 def restricted_client(restricted_user):
     client = Client()
-    client.login(username="restricted", password="pw")
+    client.force_login(restricted_user)
     client.get("/dash/")  # Set daily dash session to avoid redirect
     return client
 
