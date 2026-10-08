@@ -19,9 +19,9 @@ Four changes, made together:
 - **An authenticator app (TOTP) replaces the emailed code for a user who
   sets one up**, under Settings > Security. It does not sit on top of the
   emailed code: with the app enrolled, no email is sent and the emailed
-  step is closed to that user. The secret is stored encrypted with a key
-  derived from `SECRET_KEY`, as the AI keys are; the last accepted step is
-  recorded so a code is good once. The firm can require the app
+  step is closed to that user. The secret is stored in clear on its own
+  row, as cpl stores it; the last accepted step is recorded, in one
+  guarded update, so a code is good once. The firm can require the app
   (`Firm.require_authenticator`): a middleware then confines an
   unenrolled user to the Security page until they enrol. A lost phone is
   an administrator's reset from the Users page, or the
@@ -44,6 +44,15 @@ Four changes, made together:
   app would then be only as strong as the inbox, which is exactly what it
   is meant to improve on. The cost, a lost phone, is met by the
   administrator's reset and the command for the last administrator.
+- **Encrypting the secret with a key derived from `SECRET_KEY`**, as the
+  AI provider keys are. Built first, then taken out. It protects the
+  seeds only in a database copy taken without the server's `config/.env`,
+  which already holds the password hashes and the emailed codes in clear;
+  and it tied every enrolment to `SECRET_KEY`, so rotating the key, or
+  the nightly copy of production onto a development machine with another
+  key, un-enrolled everyone. The alternative of a separate shared
+  `AUTHENTICATOR_KEY` was a second secret to keep in step for a narrow
+  gain. cpl had reached the same answer.
 - **Recovery codes.** Not built. The firm has an administrator a user can
   reach, and a reset that falls back to the emailed code covers the case
   with less to explain and nothing to store.
@@ -72,9 +81,9 @@ Four changes, made together:
   without that, the registry lacked them until a URL import loaded them,
   and the test database's serialisation failed on trust's relation to
   `invoicing.Payment`.
-- Rotating `SECRET_KEY` makes every stored authenticator unreadable. Such
-  a row counts as no authenticator: the user gets the emailed code (or
-  the Security page, if the app is required) and enrols again.
+- A database backup carries the authenticator seeds, as it carries the
+  password hashes; the security checklist says so. Enrolments survive a
+  `SECRET_KEY` rotation and a copy of the database to another machine.
 - Deploying this needs the two migrations (`accounts 0019`,
   `settings 0011`) and a restart of both services. The nginx login
   location no longer needs to name `/admin/login`; an installed site file

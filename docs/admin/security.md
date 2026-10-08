@@ -169,9 +169,13 @@ matter for hardening
 - An authenticator app, once set up, replaces the emailed code for that
   user; there is no way back to the emailed code at sign-in. Codes are
   TOTP (RFC 6238, 30-second steps, one step of drift allowed), compared in
-  constant time, and each accepted step is recorded so a code is good
-  once. The secret is stored encrypted with a key derived from
-  `SECRET_KEY`. An administrator can require the app for every user
+  constant time, and each accepted step is recorded, in one guarded
+  update, so a code is good once. The secret is stored in clear on its
+  own row (`Authenticator`): encrypting it with a key kept on the same
+  server would protect only a database copy taken without `config/.env`,
+  and would sign the whole firm out of their apps whenever `SECRET_KEY`
+  changed. A database backup therefore carries the seeds, as it carries
+  the password hashes. An administrator can require the app for every user
   under **Settings → Firm**; see
   [The authenticator app](users.md#the-authenticator-app).
 - The address a sign-in link asks to return to (`next`) is followed only

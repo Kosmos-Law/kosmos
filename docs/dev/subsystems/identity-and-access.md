@@ -75,12 +75,13 @@ measures five minutes with `total_seconds()`; the comment there records
 why `.seconds` was wrong (it wraps every 24 hours).
 
 **`Authenticator`** is one row per user with an authenticator app:
-`user` (one-to-one), the TOTP `secret` encrypted with a Fernet key
-derived from `SECRET_KEY` (`apps/accounts/totp.py`, the same scheme as
-the AI keys), and `last_counter`, the 30-second step of the last code
-accepted, so a code is good once. A row whose secret no longer decrypts
-(rotated `SECRET_KEY`) is treated as no authenticator by
-`usable_authenticator()`.
+`user` (one-to-one), the TOTP `secret` in clear, and `last_counter`, the
+30-second step of the last code accepted, so a code is good once. The
+secret is deliberately not encrypted (the module docstring of
+`apps/accounts/totp.py` says why: a key on the same server protects
+little, and tying enrolments to `SECRET_KEY` un-enrols everyone when it
+rotates; cpl made the same choice). Its own row, rather than fields on
+`CustomUser`, keeps it out of `HistoricalCustomUser`.
 
 **`SignInThrottle`** is one row per email address that has failed a
 sign-in, as typed and lowercased, whether or not it belongs to a user:
@@ -118,7 +119,7 @@ mounted at `accounts/login/` and `accounts/login/verify/` ahead of
    timing is the same. A failure calls `record_failure()`. On success the
    view stores `pending_user_id` and `pending_email` in the session (the
    `next` parameter too, when `_safe_next_url()` accepts it as same-host)
-   and then branches: a user with a `usable_authenticator()` is sent to
+   and then branches: a user with an `authenticator_for()` row is sent to
    the authenticator page; anyone else gets a fresh `EmailVerificationCode`
    (any earlier one deleted), sent with `send_verification_email()`
    through `send_mail`, and the verify page.
@@ -134,7 +135,9 @@ mounted at `accounts/login/` and `accounts/login/verify/` ahead of
    wrong password, so the app gets the same budget of guesses. The code
    is checked by `totp.verify()`: the step that matches, within one step
    of drift either side, must be later than the row's `last_counter`,
-   which it then becomes. There is no route from here to the emailed
+   which it then becomes in one guarded `UPDATE … WHERE last_counter <
+   step`, so two requests racing with the same code cannot both win.
+   There is no route from here to the emailed
    code; an enrolled user who reaches `VerifyCodeView` finds no code row
    and is sent back to step 1.
 

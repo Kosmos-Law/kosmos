@@ -115,7 +115,7 @@ def authenticator_disable(request):
     session left open cannot quietly weaken the account."""
     if _required():
         return HttpResponseForbidden()
-    authenticator = totp.usable_authenticator(request.user)
+    authenticator = totp.authenticator_for(request.user)
     form = CodeForm(request.POST)
     if authenticator and (
         not form.is_valid() or not totp.verify(authenticator, form.cleaned_data["code"])

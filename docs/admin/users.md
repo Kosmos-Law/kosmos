@@ -135,10 +135,11 @@ checkout instead:
 .venv/bin/python manage.py reset_authenticator <email>
 ```
 
-The stored secrets are encrypted with a key derived from `SECRET_KEY`.
-If you change `SECRET_KEY`, every user's app stops being recognised:
-they get the emailed code at their next sign-in (or the Security page,
-if the app is required) and set the app up again.
+The app's secret is stored in the database as it is, like the password
+hashes. It does not depend on `SECRET_KEY`, so changing that key, or
+restoring the database on another machine, keeps every enrolment. Guard
+database backups accordingly; see
+[File permissions](security.md#file-permissions).
 
 ## Add a user
 

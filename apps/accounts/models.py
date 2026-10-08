@@ -132,8 +132,8 @@ class EmailVerificationCode(models.Model):
 class Authenticator(models.Model):
     """A user's authenticator app (TOTP, RFC 6238). Once this row exists the
     app's code is the user's second sign-in step in place of the emailed
-    code. The secret is stored encrypted (apps/accounts/totp.py), so a
-    database copy does not carry the seeds."""
+    code. The secret is stored as it is (apps/accounts/totp.py says why);
+    its own row keeps it out of the user's history records."""
 
     user = models.OneToOneField(
         CustomUser, on_delete=models.CASCADE, related_name="authenticator"

@@ -1,51 +1,32 @@
-"""Authenticator-app codes (TOTP) for the second sign-in step.
+"""Authenticator-app codes (TOTP, RFC 6238) for the second sign-in step.
 
-The secret is kept encrypted with a key derived from SECRET_KEY, as the AI
-provider keys are (apps/settings/ai.py). Rotating SECRET_KEY therefore
-makes every stored authenticator unreadable; such a row counts as no
-authenticator, and the user sets the app up again.
+The codes are the six digits every authenticator app shows, from a secret
+the app and the site share, changing every 30 seconds. A code is taken
+from one step either side of now, for clocks that have drifted, and never
+twice: the step of the last code taken is kept, and only a later one is
+accepted.
+
+The secret is stored as it is, like the password hashes and the emailed
+codes beside it. It is not encrypted with a key kept on the same server:
+that would protect it only in a database copy taken without the server's
+config, and would tie every enrolment to SECRET_KEY, so that rotating the
+key, or restoring the database on a machine with another key, signed the
+whole firm out of their apps. cpl made the same choice.
 """
 
-import base64
-import hashlib
 import hmac
-import logging
 
 import pyotp
 import segno
-from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.utils import timezone
 
 from .models import Authenticator
 
-logger = logging.getLogger(__name__)
-
 ISSUER = "Kosmos"
 # Steps either side of now that a code is accepted for: a phone's clock up
 # to 30 seconds out still signs in.
 DRIFT_STEPS = 1
-
-
-def _fernet():
-    digest = hashlib.sha256(
-        f"kosmos-authenticator:{settings.SECRET_KEY}".encode()
-    ).digest()
-    return Fernet(base64.urlsafe_b64encode(digest))
-
-
-def encrypt_secret(secret):
-    return _fernet().encrypt(secret.encode()).decode()
-
-
-def decrypt_secret(token):
-    try:
-        return _fernet().decrypt(token.encode()).decode()
-    except InvalidToken:
-        logger.warning(
-            "A stored authenticator cannot be decrypted (SECRET_KEY changed?)"
-        )
-        return ""
 
 
 def new_secret():
@@ -80,16 +61,9 @@ def qr_svg(uri):
     )
 
 
-def usable_authenticator(user):
-    """The user's authenticator with its secret readable, else None."""
-    row = Authenticator.objects.filter(user_id=user.pk).first()
-    if row is None:
-        return None
-    secret = decrypt_secret(row.secret)
-    if not secret:
-        return None
-    row.plain_secret = secret
-    return row
+def authenticator_for(user):
+    """The user's authenticator row, or None."""
+    return Authenticator.objects.filter(user_id=user.pk).first()
 
 
 def _matching_counter(secret, code, after=0):
@@ -112,14 +86,19 @@ def matching_counter(secret, code):
 
 def verify(authenticator, code):
     """True when ``code`` is the app's current code and has not been used.
-    The accepted step is recorded so the same code cannot sign in twice."""
+    Taking it moves the row's last step on in one guarded update, so two
+    requests racing with the same code cannot both win."""
     counter = _matching_counter(
-        authenticator.plain_secret, code, after=authenticator.last_counter
+        authenticator.secret, code, after=authenticator.last_counter
     )
     if counter is None:
         return False
-    Authenticator.objects.filter(pk=authenticator.pk).update(last_counter=counter)
-    return True
+    taken = Authenticator.objects.filter(
+        pk=authenticator.pk, last_counter__lt=counter
+    ).update(last_counter=counter)
+    if taken:
+        authenticator.last_counter = counter
+    return bool(taken)
 
 
 def enrol(user, secret, spent_counter=0):
@@ -127,6 +106,5 @@ def enrol(user, secret, spent_counter=0):
     one. ``spent_counter`` is the step of the code that confirmed the
     setup, recorded so that code cannot be the first sign-in code too."""
     Authenticator.objects.update_or_create(
-        user=user,
-        defaults={"secret": encrypt_secret(secret), "last_counter": spent_counter},
+        user=user, defaults={"secret": secret, "last_counter": spent_counter}
     )

@@ -85,7 +85,7 @@ def test_setting_up_shows_a_secret_and_saves_it_once_a_code_is_confirmed(user):
     assert response.status_code == 200
     assert "HX-Toast" in response
     row = Authenticator.objects.get(user=user)
-    assert totp.decrypt_secret(row.secret) == secret
+    assert row.secret == secret
     assert "authenticator_setup_secret" not in client.session
 
 
@@ -110,13 +110,6 @@ def test_cancelling_drops_the_pending_secret(user):
     client.get("/settings/security/authenticator/")
 
     assert "authenticator_setup_secret" not in client.session
-
-
-def test_the_secret_is_stored_encrypted(user):
-    secret = totp.new_secret()
-    totp.enrol(user, secret)
-
-    assert secret not in Authenticator.objects.get(user=user).secret
 
 
 def test_turning_off_takes_a_current_code(user):
@@ -247,17 +240,30 @@ def test_the_app_step_needs_the_password_step_first(user):
     assert response["Location"] == "/accounts/login/"
 
 
-def test_an_unreadable_secret_counts_as_no_authenticator(user, settings):
-    """SECRET_KEY rotated: the row cannot be read, so the user gets the
-    emailed code and sets the app up again."""
-    _enrolled(user)
+def test_an_enrolment_survives_a_secret_key_rotation(user, settings):
+    """Nothing about the app depends on SECRET_KEY, so a copy of the
+    database on a machine with another key keeps every enrolment."""
+    app = _enrolled(user)
     settings.SECRET_KEY = "another key entirely"
     client = Client()
+    _pass_password(client, user)
 
-    response = _pass_password(client, user)
+    client.post("/accounts/login/authenticator/", {"code": app.now()})
 
-    assert response["Location"] == "/accounts/login/verify/"
-    assert len(mail.outbox) == 1
+    assert client.session["_auth_user_id"] == str(user.pk)
+
+
+def test_two_requests_racing_with_one_code_cannot_both_win(user):
+    app = _enrolled(user)
+    row = Authenticator.objects.get(user=user)
+    code = app.now()
+
+    assert totp.verify(row, code) is True
+    # A second verifier holding the same stale row: the guarded update
+    # finds the step already taken.
+    stale = Authenticator.objects.get(user=user)
+    stale.last_counter = row.last_counter - 1
+    assert totp.verify(stale, code) is False
 
 
 # ---------------------------------------------------------------------------

@@ -93,7 +93,7 @@ class LoginView(View):
         if next_url:
             request.session["login_next_url"] = next_url
 
-        if totp.usable_authenticator(user):
+        if totp.authenticator_for(user):
             return redirect("accounts:login-authenticator")
 
         EmailVerificationCode.objects.filter(user=user).delete()
@@ -206,7 +206,7 @@ class AuthenticatorCodeView(View):
             return render(request, self.template_name, {"form": form})
 
         user = CustomUser.objects.filter(id=pending_user_id).first()
-        authenticator = totp.usable_authenticator(user) if user else None
+        authenticator = totp.authenticator_for(user) if user else None
         if authenticator is None:
             _abandon_login(request)
             return redirect("accounts:login")
