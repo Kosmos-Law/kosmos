@@ -34,10 +34,6 @@
         <span>Matcha <small>(light)</small></span>
       </label>
       <label class="theme-option">
-        <input type="radio" name="theme" value="matcha-lavender">
-        <span>Matcha Lavender <small>(light)</small></span>
-      </label>
-      <label class="theme-option">
         <input type="radio" name="theme" value="cosmic">
         <span>Nord <small>(dark)</small></span>
       </label>
@@ -58,14 +54,15 @@
       </select>
     </div>
     {% comment %}
-      Matcha Lavender only (settings.css shows it under that theme): the
-      strength of the wash. Outside the fieldset, as above.
+      Matcha only (settings.css shows it under that theme): a wash of
+      light behind the page. Outside the fieldset, as above.
     {% endcomment %}
-    <div class="mist-intensity-option">
-      <label for="mist-intensity">Color intensity</label>
-      <select id="mist-intensity" onchange="setMistIntensity(this.value)">
-        <option value="high">High</option>
-        <option value="low">Low</option>
+    <div class="gradient-option">
+      <label for="gradient">Gradient</label>
+      <select id="gradient" onchange="setGradient(this.value)">
+        <option value="none">None</option>
+        <option value="cool">Cool</option>
+        <option value="warm">Warm</option>
       </select>
     </div>
   </div>

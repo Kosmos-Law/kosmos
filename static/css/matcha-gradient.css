@@ -1,15 +1,18 @@
 /* ==========================================================================
-   Matcha Lavender — the weather behind the page.
+   Matcha's gradient — the weather behind the page.
 
-   Adapted from cpl's Matcha Lavender (theme-matcha-lavender.css + atmosphere.css),
-   without the moving mist (cpl has it paused) and without the tab window:
-   Kosmos's nav is pills, not tabs. What it keeps is the still wash of light
-   behind every page, the grain over it, the veiled chrome, the see-through
-   cards, and the sheen on what floats over the page.
+   Matcha's Appearance option "Gradient" (none, cool or warm; per device,
+   data-wash on <html>) lays a still wash of light behind every page, with
+   the grain over it, the veiled chrome, the see-through cards, and the
+   sheen on what floats over the page. Adapted from cpl's Matcha Lavender
+   (theme-matcha-lavender.css + atmosphere.css), without the moving mist
+   (cpl has it paused) and without the tab window: Kosmos's nav is pills,
+   not tabs. Cool is green and lavender; warm adds the sun.
 
-   Every colour here is a token in the matcha-lavender block of colors.css; this
+   Every colour here is a token in the gradient block of colors.css; this
    file only says which surfaces carry them. Everything is scoped to
-   data-theme="matcha-lavender", so the other themes pay nothing for it.
+   data-theme="light" with data-wash set, so plain Matcha and the other
+   themes pay nothing for it.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -21,17 +24,17 @@
    once.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-lavender"] {
+[data-theme="light"][data-wash] {
   background-color: var(--background-body);
 }
 
-[data-theme="matcha-lavender"] body {
+[data-theme="light"][data-wash] body {
   background-color: transparent;
   isolation: isolate;
 }
 
-[data-theme="matcha-lavender"] body::before,
-[data-theme="matcha-lavender"] body::after {
+[data-theme="light"][data-wash] body::before,
+[data-theme="light"][data-wash] body::after {
   content: "";
   inset: 0;
   pointer-events: none;
@@ -39,12 +42,12 @@
   z-index: -1;
 }
 
-[data-theme="matcha-lavender"] body::before {
+[data-theme="light"][data-wash] body::before {
   background: var(--mist-wash);
 }
 
 /* Grain: tone-on-tone, drawn as a mask so the ink follows the theme */
-[data-theme="matcha-lavender"] body::after {
+[data-theme="light"][data-wash] body::after {
   background: var(--mist-ink);
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.1 -.35'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
   opacity: var(--mist-grain);
@@ -67,7 +70,7 @@
    layers would stack into a near-solid panel.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-lavender"] :is(
+[data-theme="light"][data-wash] :is(
   .card,
   .event-card,
   .table,
@@ -83,13 +86,13 @@
     0 0.75rem 2rem -1rem var(--mist-card-shadow);
 }
 
-[data-theme="matcha-lavender"] :is(.card, .table, .contacts-detail > .detail) :is(.card, .table, .totals-table table) {
+[data-theme="light"][data-wash] :is(.card, .table, .contacts-detail > .detail) :is(.card, .table, .totals-table table) {
   background: transparent;
   box-shadow: none;
 }
 
 /* The charts take a card's frame to go with its fill */
-[data-theme="matcha-lavender"] :is(.activity-chart-canvas-wrap, .wip-donut) {
+[data-theme="light"][data-wash] :is(.activity-chart-canvas-wrap, .wip-donut) {
   border: solid 1px var(--border-medium);
   border-radius: var(--radius-md);
   padding: 1rem;
@@ -97,16 +100,16 @@
 
 /* Total rows are a head's band, let through as the heads are, not the
    solid control colour */
-[data-theme="matcha-lavender"] :is(.total, tr.total th, tr.total td) {
+[data-theme="light"][data-wash] :is(.total, tr.total th, tr.total td) {
   background: var(--background-th);
 }
 
 /* The dash's due and past-due cards keep their yellow, let through */
-[data-theme="matcha-lavender"] .event-card:is(.is-today, .is-tomorrow) {
+[data-theme="light"][data-wash] .event-card:is(.is-today, .is-tomorrow) {
   background: var(--due-soon-bg);
 }
 
-[data-theme="matcha-lavender"] .event-card.past-due {
+[data-theme="light"][data-wash] .event-card.past-due {
   background: var(--past-due-bg);
 }
 
@@ -116,7 +119,7 @@
    bar rather than on it.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-lavender"] :is(.sidebar-nav li.active a, .subnav .active) {
+[data-theme="light"][data-wash] :is(.sidebar-nav li.active a, .subnav .active) {
   background: color-mix(in srgb, var(--selected-background) 85%, transparent);
 }
 
@@ -125,7 +128,7 @@
    it shows through, and takes a sheen of the light laid over it.
    -------------------------------------------------------------------------- */
 
-[data-theme="matcha-lavender"] :is(.modal-content, .confirm-modal-dialog, .cmd-palette) {
+[data-theme="light"][data-wash] :is(.modal-content, .confirm-modal-dialog, .cmd-palette) {
   background-image: var(--mist-sheen);
   box-shadow:
     0 1.5rem 3rem -1rem var(--mist-shadow),
@@ -134,19 +137,19 @@
 
 /* Menus: the sheen on the menu, so the items are cleared to let it
    through (the hovered one still lights up) */
-[data-theme="matcha-lavender"] .dropdown-menu {
+[data-theme="light"][data-wash] .dropdown-menu {
   background-color: var(--background-light);
   background-image: var(--mist-sheen-soft);
 }
 
-[data-theme="matcha-lavender"] .dropdown-menu li:not(:hover) {
+[data-theme="light"][data-wash] .dropdown-menu li:not(:hover) {
   background: transparent;
 }
 
 /* Phones: the sidebar is a drawer over the page and the top bar is sticky
    over it, so both go solid (Matcha's sidebar colour) under the sheen. */
 @media (width <= 768px) {
-  [data-theme="matcha-lavender"] :is(.sidebar, .mobile-topbar) {
+  [data-theme="light"][data-wash] :is(.sidebar, .mobile-topbar) {
     background-color: var(--stone-200);
     background-image: var(--mist-sheen);
   }
