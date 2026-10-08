@@ -343,3 +343,16 @@ def test_the_command_resets_by_email(user):
 
     assert not Authenticator.objects.filter(user=user).exists()
     assert "reset" in out.getvalue()
+
+
+def test_the_app_is_told_the_firms_name(user, firm):
+    uri = totp.provisioning_uri("ABCDEFGHIJKLMNOP", user)
+
+    assert "issuer=Kosmos%20%28Test%20Firm%29" in uri
+    assert uri.startswith(
+        "otpauth://totp/Kosmos%20%28Test%20Firm%29:alice%40example.com?"
+    )
+
+
+def test_without_a_firm_name_the_app_is_told_kosmos(user):
+    assert totp.issuer() == "Kosmos"

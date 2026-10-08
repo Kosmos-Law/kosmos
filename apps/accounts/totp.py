@@ -52,8 +52,19 @@ def new_secret():
     return pyotp.random_base32()
 
 
+def issuer():
+    """What the app shows above the account: "Kosmos (Firm Name)", or
+    plain "Kosmos" before the firm has a name. A colon cannot appear in an
+    otpauth issuer, so one in the name is dropped."""
+    from apps.settings.models import Firm
+
+    firm = Firm.objects.only("name").first()
+    name = (firm.name if firm else "").replace(":", "").strip()
+    return f"{ISSUER} ({name})" if name else ISSUER
+
+
 def provisioning_uri(secret, user):
-    return pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name=ISSUER)
+    return pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name=issuer())
 
 
 def qr_svg(uri):
