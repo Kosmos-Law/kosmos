@@ -35,6 +35,28 @@ def _context(request, **extra):
 
 
 @login_required
+@require_POST
+def require_toggle(request):
+    """The firm-wide switch: every user must sign in with the app. On the
+    Security page rather than Firm, beside the setting it governs; the
+    page is everyone's, so the view checks the role itself."""
+    if not request.user.is_admin:
+        return HttpResponseForbidden()
+    firm = Firm.objects.first() or Firm.objects.create(name="")
+    firm.require_authenticator = not firm.require_authenticator
+    firm.save(update_fields=["require_authenticator"])
+    response = render(
+        request, "settings/security/firm.html", {"required": firm.require_authenticator}
+    )
+    return toast_success(
+        response,
+        "Every user must now sign in with an authenticator app."
+        if firm.require_authenticator
+        else "Each user now chooses whether to use an authenticator app.",
+    )
+
+
+@login_required
 def security_index(request):
     request.session.pop(PENDING_SECRET, None)
     return render(request, "settings/security/index.html", _context(request))

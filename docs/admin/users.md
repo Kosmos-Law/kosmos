@@ -104,8 +104,10 @@ page has **Set up a new app** (for a new phone; the old app stops working
 once the new one is confirmed) and **Turn off**, which asks for a current
 code and returns the user to emailed codes.
 
-To make the app compulsory for the whole firm, open **Settings → Firm**
-and set **Require Authenticator App** to **Yes**. From then on:
+To make the app compulsory for the whole firm, open **Settings →
+Security** as an administrator and click **Require** beside **Require
+Authenticator App** (the **Firm** section of that page, shown to
+administrators only). From then on:
 
 - A user who signs in without one is taken to **Settings → Security** and
   can open nothing else (the menu still shows; every other page sends
@@ -114,8 +116,7 @@ and set **Require Authenticator App** to **Yes**. From then on:
   the request behind it.
 - Users who already had an app notice nothing.
 
-Setting it back to **No** lets each user choose again. Nobody's app is
-removed.
+**Stop Requiring** lets each user choose again. Nobody's app is removed.
 
 The **App** column of **Settings → Users** shows a check for each user
 with an app set up.

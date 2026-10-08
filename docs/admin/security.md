@@ -176,7 +176,7 @@ matter for hardening
   and would sign the whole firm out of their apps whenever `SECRET_KEY`
   changed. A database backup therefore carries the seeds, as it carries
   the password hashes. An administrator can require the app for every user
-  under **Settings → Firm**; see
+  under **Settings → Security**; see
   [The authenticator app](users.md#the-authenticator-app).
 - The address a sign-in link asks to return to (`next`) is followed only
   when it stays on the same host. Any other value is dropped and the user

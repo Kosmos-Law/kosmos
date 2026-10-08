@@ -4,7 +4,7 @@ from django.core.validators import validate_email
 
 from apps.management.templatetags.phone_numbers import phone_number
 from apps.settings.models import Firm
-from config.helpers import YESNO_CHOICES, normalize_phone
+from config.helpers import normalize_phone
 
 MAX_LOGO_SIZE = 2 * 1024 * 1024  # 2MB
 # The logo is an ImageField, which is validated with Pillow, and Pillow does
@@ -37,12 +37,10 @@ class FirmForm(forms.ModelForm):
             "jurisdiction",
             "payment_terms",
             "invoice_trust_note",
-            "require_authenticator",
         ]
         widgets = {
             "invoice_bcc": forms.Textarea(attrs={"rows": 2}),
             "invoice_trust_note": forms.Textarea(attrs={"rows": 3}),
-            "require_authenticator": forms.Select(choices=YESNO_CHOICES),
         }
         labels = {
             "billing_email": "Billing Email",
@@ -50,10 +48,8 @@ class FirmForm(forms.ModelForm):
             "intake_email": "Intake Email",
             "payment_terms": "Payment Terms",
             "invoice_trust_note": "Invoice Trust Note",
-            "require_authenticator": "Require Authenticator App",
         }
         help_texts = {
-            "require_authenticator": "Yes: every user must sign in with a code from an authenticator app. A user without one is taken to Settings > Security after signing in and can go nowhere else until it is set up. No: each user chooses, and gets a code by email otherwise.",
             "payment_terms": "One sentence added to payment reminders, for example the terms in your fee agreement. Leave blank to say nothing.",
             "invoice_trust_note": "Printed under Funds in Trust on an invoice when the client holds money in trust. Leave blank to print the balance alone.",
             "jurisdiction": "Used for a matter that has no jurisdiction of its own: on its Overview, and in AI chat and intake assessments.",

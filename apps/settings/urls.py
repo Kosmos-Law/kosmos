@@ -187,6 +187,11 @@ urlpatterns = [
         name="authenticator-panel",
     ),
     path(
+        "settings/security/require/",
+        security_urls.require_toggle,
+        name="authenticator-require",
+    ),
+    path(
         "settings/security/authenticator/setup/",
         security_urls.authenticator_setup,
         name="authenticator-setup",

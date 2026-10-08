@@ -147,7 +147,9 @@ pending keys, calls `login()` and sends the user to `login_next_url` or
 not after the password step, so a known password does not buy unlimited
 code guesses.
 
-`AuthenticatorRequiredMiddleware` enforces `Firm.require_authenticator`:
+`AuthenticatorRequiredMiddleware` enforces `Firm.require_authenticator`
+(switched by `require_toggle` on the Security page, which checks the
+Admin role itself since the page is everyone's):
 a signed-in user without an `Authenticator` row may reach only
 `/settings/security/`, `/accounts/` (sign-out), `/static/` and `/media/`;
 any other path is a redirect there (`HX-Redirect` for an HTMX request).

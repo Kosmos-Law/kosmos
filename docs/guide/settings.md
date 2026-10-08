@@ -15,9 +15,9 @@ permissions.
 | Section | Who sees it | What it is for |
 |---|---|---|
 | **Profile** | Everyone | Your own name, email address and password. |
-| **Security** | Everyone | Your authenticator app. |
+| **Security** | Everyone | Your authenticator app. Administrators also see the firm-wide switch that requires one. |
 | **Appearance** | Everyone | Your theme and navigation layout. |
-| **Firm** | Administrators | The firm's name, address, email addresses, logo, its own wording for invoices and reminders, and whether an authenticator app is required. |
+| **Firm** | Administrators | The firm's name, address, email addresses, logo and its own wording for invoices and reminders. |
 | **Notifications** | Everyone | Your daily digest email. |
 | **Session** | Everyone | Signing out. |
 | **Users** | Administrators | Accounts, roles and hourly rates. |
@@ -56,7 +56,6 @@ details updated" confirms the save.
 | **Jurisdiction** | The firm's default jurisdiction. A matter with no jurisdiction of its own shows "Firm Default" with this value on its **Overview**, and AI chat on that matter works from it. |
 | **Payment Terms** | One sentence in the firm's own words, for example the payment terms in your fee agreement. It is added to the reminder emails for an invoice and for a payment request (not for a trust deposit request). Leave it blank and reminders say nothing about terms. |
 | **Invoice Trust Note** | Printed under **Funds in Trust** on an invoice, when the client has money in trust. Leave it blank and the invoice shows the balance alone. |
-| **Require Authenticator App** | **Yes**: every user must sign in with a code from an authenticator app. A user who has not set one up is taken to **Settings → Security** after signing in and can go nowhere else until they have. **Turn off** disappears from everyone's Security page. **No**: each user chooses, and gets a code by email otherwise. Setting it back to No removes nobody's app. |
 
 To add the logo, click the file chooser beside **Logo** and pick a PNG or
 JPG file of 2 MB or less. It uploads at once: there is nothing to save. To
@@ -75,10 +74,17 @@ sign-in Kosmos asks for the app's code and sends no email.
 Once an app is set up the page offers **Set up a new app**, for a new
 phone (the old app stops working when the new one is confirmed), and
 **Turn off**, which asks for a current code from the app and returns you
-to emailed codes. When the firm requires the app (**Settings → Firm**),
-**Turn off** is not offered. If you lose your phone, an administrator
-resets your app from **Settings → Users**; you get an emailed code at
-your next sign-in and set the app up again.
+to emailed codes. When the firm requires the app, **Turn off** is not
+offered. If you lose your phone, an administrator resets your app from
+**Settings → Users**; you get an emailed code at your next sign-in and
+set the app up again.
+
+An administrator also sees a **Firm** section on this page with
+**Require Authenticator App**. Click **Require** and every user must sign
+in with an app: a user who has not set one up is brought to this page
+after signing in and can go nowhere else until they have, and nobody can
+turn their app off. **Stop Requiring** lets each user choose again and
+removes nobody's app.
 
 ## Session
 

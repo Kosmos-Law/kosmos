@@ -304,16 +304,36 @@ def test_nobody_is_redirected_while_the_firm_does_not_require_it(user, firm):
     assert client.get("/matters/").status_code == 200
 
 
-def test_the_firm_page_saves_the_requirement(admin, firm):
+def test_an_administrator_switches_the_requirement_from_the_security_page(admin, firm):
     client = _signed_in(admin)
 
-    client.post(
-        "/settings/firm/",
-        {"name": "Test Firm", "require_authenticator": "True"},
-    )
-
+    response = client.post("/settings/security/require/")
+    assert response.status_code == 200
     firm.refresh_from_db()
     assert firm.require_authenticator is True
+
+    client.post("/settings/security/require/")
+    firm.refresh_from_db()
+    assert firm.require_authenticator is False
+
+
+def test_the_switch_is_shown_to_administrators_alone(user, admin, firm):
+    assert (
+        b"Require Authenticator App"
+        in _signed_in(admin).get("/settings/security/").content
+    )
+    assert (
+        b"Require Authenticator App"
+        not in _signed_in(user).get("/settings/security/").content
+    )
+
+
+def test_a_user_cannot_switch_the_requirement(user, firm):
+    response = _signed_in(user).post("/settings/security/require/")
+
+    assert response.status_code == 403
+    firm.refresh_from_db()
+    assert firm.require_authenticator is False
 
 
 # ---------------------------------------------------------------------------
