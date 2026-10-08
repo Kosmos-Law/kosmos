@@ -295,7 +295,10 @@ in on that browser. Both values (`SESSION_COOKIE_AGE` and
 and cannot be set from `config/.env`.
 
 To end one user's sessions on every device, deactivate the account or
-change its password.
+change its password. A user ends their own, all but the one in hand,
+with **Sign Out Everywhere Else** under **Settings → Security**: a count
+on the account (`sessions_ended`) is mixed into the hash every session is
+checked against, so bumping it signs the others out.
 
 ## Deactivate a user
 

@@ -23,7 +23,9 @@ work email open the first time.
 You are now in Kosmos: on the Dash if this is your first visit of the day,
 on **Tasks** otherwise.
 
-To sign out, click **Settings** (it opens on **Session**), then **Logout**.
+To sign out, click your name at the foot of the sidebar (the person icon,
+until you choose another) and then **Log out**. The same menu shows who is
+signed in and opens **Settings**.
 
 Good to know:
 
@@ -35,8 +37,11 @@ Good to know:
   the next try: 30 seconds at first, longer with each further miss, up to
   15 minutes. The page tells you how long. Nothing is locked; just wait
   and try again.
-- **Logout** signs out the browser you are using, and no other. A browser
+- **Log out** signs out the browser you are using, and no other. A browser
   you do not sign out of stays signed in until it goes eight weeks unused.
+  To sign out everywhere else at once (a lost phone, a shared computer),
+  use **Sign Out Everywhere Else** under **Settings → Security**; you
+  stay signed in where you clicked it.
 
 ### If you forget your password
 
@@ -187,7 +192,9 @@ Everything here is under **Settings** in the sidebar.
 - **Settings → Profile**: your **Username** (the short name shown on
   tasks and entries), name, **Email address** (what you sign in with) and
   **Initials**. Click **Update Profile** to save. **Change Password** is
-  below it on the same page.
+  below it on the same page, and under **Icon** you can pick the icon
+  that stands for you at the foot of the sidebar (a chess piece, an
+  animal, a smile, a rose) in place of the plain person.
 - **Settings → Security**: set up an authenticator app, so your second
   sign-in step is the code the app shows instead of an email. Click
   **Set up an authenticator app**, scan the QR code with the app (Google

@@ -24,7 +24,9 @@ the machinery behind it and does not repeat the gates.
 | `apps/dash/middleware.py` | `DailyDashCheckMiddleware`, the once-a-day Dash redirect |
 | `apps/<app>/access.py` | Per-application queryset narrowing and direct-hit refusals (list below) |
 | `apps/settings/users/` | The Users page: create, edit, role, status, flags, matter assignments, authenticator reset |
-| `apps/settings/security/` | Settings > Security: the user's own authenticator app |
+| `apps/settings/security/` | Settings > Security: the user's own authenticator app, Sign Out Everywhere, the firm-wide requirement |
+| `apps/settings/profile/views.py` | The profile forms and `nav_icon`, the sidebar icon picker |
+| `templates/sidebar.html` | The account menu (who is signed in, Settings, Log out) in the Settings item's place |
 | `apps/settings/permissions/` | The read-only permissions matrix page |
 | `apps/settings/claude/views.py` | Issue, rotate and revoke the API token |
 | `apps/drafts/models.py` | `CompanionToken` |
@@ -181,6 +183,20 @@ do it.
 
 Sessions, the throttle and the authenticator rows are the only sign-in
 state. Nothing is cached, so prod's several worker processes agree.
+
+Sign Out Everywhere (`sign_out_everywhere` in
+`apps/settings/security/views.py`) ends every other session on the
+account without touching the session table: `CustomUser` overrides
+`_get_session_auth_hash()` to mix `sessions_ended` into Django's hash
+once the count is above zero (at zero it is exactly Django's, so adding
+the field signed nobody out), the view bumps the count with an `F()`
+expression, and `update_session_auth_hash()` stamps the current session
+with the new value so it alone survives. Log out is a POST form in the
+sidebar's account menu, which replaced the Settings item and the Session
+page; `settings/` now redirects to Profile. The icon on that menu is
+`nav_icon`, chosen on the Profile page from `NAV_ICONS` and nothing else
+(the view checks the name against the set, as an arbitrary value would
+be written into a class attribute).
 
 `HtmxLoginRedirectMiddleware` turns the `302` a logged-out HTMX request
 would get into a `200` with an `HX-Redirect` header, so an expired session

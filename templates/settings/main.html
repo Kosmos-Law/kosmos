@@ -22,9 +22,6 @@
           <li {% if subapp == "notifications" %}class="active"{% endif %}>
             <a href="{% url 'settings:notifications-index' %}">Notifications</a>
           </li>
-          <li {% if subapp == "session" %}class="active"{% endif %}>
-            <a href="{% url 'settings:settings' %}">Session</a>
-          </li>
           {% if user.role == 'ADMIN' %}
             <li {% if subapp == "users" %}class="active"{% endif %}>
               <a href="{% url 'settings:users-index' %}">Users</a>

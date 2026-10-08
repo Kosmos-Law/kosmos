@@ -15,6 +15,7 @@
       <div class="auth-error">Your firm requires an authenticator app. Set one up below to continue.</div>
     {% endif %}
     {% include "settings/security/authenticator.html" %}
+    {% include "settings/security/sessions.html" %}
     {% if user.is_admin %}
       {% include "settings/security/firm.html" %}
     {% endif %}

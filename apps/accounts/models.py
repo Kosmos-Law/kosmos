@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 from simple_history.models import HistoricalRecords
 
 from apps.accounts.managers import CustomUserManager
@@ -19,6 +20,36 @@ NAV_LAYOUT_OPTIONS = (
     ("horizontal", "Horizontal"),
 )
 
+# The icons a user may choose to stand for them in the sidebar's account
+# menu (Lucide names), the plain person first, as the default. The same set
+# as cpl's.
+NAV_ICONS = [
+    ("user", "Person"),
+    ("chess-king", "King"),
+    ("chess-queen", "Queen"),
+    ("chess-rook", "Rook"),
+    ("chess-bishop", "Bishop"),
+    ("chess-knight", "Knight"),
+    ("chess-pawn", "Pawn"),
+    ("hamburger", "Hamburger"),
+    ("toolbox", "Toolbox"),
+    ("smile", "Smile"),
+    ("laugh", "Laugh"),
+    ("cat", "Cat"),
+    ("dog", "Dog"),
+    ("rabbit", "Rabbit"),
+    ("squirrel", "Squirrel"),
+    ("panda", "Panda"),
+    ("turtle", "Turtle"),
+    ("feather", "Feather"),
+    ("bird", "Bird"),
+    ("birdhouse", "Birdhouse"),
+    ("rat", "Rat"),
+    ("origami", "Origami"),
+    ("rose", "Rose"),
+    ("snail", "Snail"),
+]
+
 
 class CustomUser(AbstractUser):
     google_contacts_credentials = models.TextField(null=True, blank=True)
@@ -29,6 +60,13 @@ class CustomUser(AbstractUser):
     nav_layout = models.CharField(
         max_length=20, choices=NAV_LAYOUT_OPTIONS, default="vertical"
     )
+    # The icon that stands for the user in the sidebar, opening the account
+    # menu (one of NAV_ICONS).
+    nav_icon = models.CharField(max_length=40, choices=NAV_ICONS, default="user")
+    # Bumped by Sign Out Everywhere (Settings > Security). It goes into the
+    # hash every session is checked against, so each session made before
+    # the bump stops matching and is signed out.
+    sessions_ended = models.PositiveIntegerField(default=0)
     # User ids shown as one-click filter chips on the tasks toolbar (max
     # TASK_CHIPS_CAP, enforced at the toggle endpoint). Empty means "no
     # explicit picks": small firms show everyone, large ones fall back to
@@ -75,6 +113,20 @@ class CustomUser(AbstractUser):
                 name="accounts_customuser_email_unique",
             ),
         ]
+
+    def _get_session_auth_hash(self, secret=None):
+        # Django's own hash, with the sign-out-everywhere count mixed in
+        # once there is one; at nought it is exactly Django's, so adding
+        # it signed no one out.
+        value = self.password
+        if self.sessions_ended:
+            value = f"{value}:{self.sessions_ended}"
+        return salted_hmac(
+            "django.contrib.auth.models.AbstractBaseUser.get_session_auth_hash",
+            value,
+            secret=secret,
+            algorithm="sha256",
+        ).hexdigest()
 
     @property
     def is_admin(self):

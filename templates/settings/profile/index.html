@@ -4,4 +4,25 @@
        hx-trigger="load, profileReload from:body"
        hx-get="{% url 'settings:personal-profile' %}"
        hx-target="this">{% include "settings/profile/profile.html" %}</div>
+  <div class="profile-icon">
+    <h2 class="settings-section">Icon</h2>
+    <hr />
+    <p class="detail-text">The icon that stands for you in the sidebar and opens your account menu.</p>
+    <form method="post"
+          action="{% url 'settings:nav-icon' %}"
+          class="icon-picker">
+      {% csrf_token %}
+      {% for name, label in nav_icons %}
+        <button type="submit"
+                name="icon"
+                value="{{ name }}"
+                class="icon-choice{% if user.nav_icon == name %} chosen{% endif %}"
+                title="{{ label }}"
+                aria-label="{{ label }}"
+                aria-pressed="{% if user.nav_icon == name %}true{% else %}false{% endif %}">
+          <i class="icon-{{ name }}"></i>
+        </button>
+      {% endfor %}
+    </form>
+  </div>
 {% endblock subcontent %}

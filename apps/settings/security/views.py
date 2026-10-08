@@ -6,14 +6,16 @@ database, so an abandoned setup leaves nothing behind. The second checks
 a code from the app against that secret and only then saves it.
 """
 
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db.models import F
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
 from apps.accounts import totp
 from apps.accounts.forms import CodeForm
-from apps.accounts.models import Authenticator
+from apps.accounts.models import Authenticator, CustomUser
 from apps.settings.models import Firm
 from utils.toasts import toast_error, toast_success
 
@@ -32,6 +34,22 @@ def _context(request, **extra):
         "required": _required(),
         **extra,
     }
+
+
+@login_required
+@require_POST
+def sign_out_everywhere(request):
+    """End every other session on the account: bumping the count changes
+    the hash each session is checked against (CustomUser), so they stop
+    matching; this one is stamped with the new hash and stays."""
+    user = request.user
+    CustomUser.objects.filter(pk=user.pk).update(sessions_ended=F("sessions_ended") + 1)
+    user.refresh_from_db(fields=["sessions_ended"])
+    update_session_auth_hash(request, user)
+    response = render(
+        request, "settings/security/sessions.html", {"signed_out_elsewhere": True}
+    )
+    return toast_success(response, "Every other session is signed out.")
 
 
 @login_required

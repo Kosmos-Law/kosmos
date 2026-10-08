@@ -1,0 +1,16 @@
+<div id="sign-out-everywhere">
+  <h2 class="settings-section">Sign Out Everywhere</h2>
+  <hr />
+  <p class="detail-text">
+    Sign out on every other device and browser where you are signed in,
+    such as a lost phone or a shared computer. You stay signed in here.
+  </p>
+  <div class="notifications-item">
+    <span>Every other device and browser</span>
+    <button class="btn btn-secondary"
+            hx-post="{% url 'settings:sign-out-everywhere' %}"
+            hx-target="#sign-out-everywhere"
+            hx-swap="outerHTML">Sign Out Everywhere Else</button>
+  </div>
+  {% if signed_out_elsewhere %}<p class="detail-text success-msg">Every other session is signed out.</p>{% endif %}
+</div>

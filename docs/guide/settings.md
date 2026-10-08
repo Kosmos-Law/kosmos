@@ -8,18 +8,18 @@ sections are open to every user, and the page says which.
 
 ## Open Settings
 
-Click **Settings** in the sidebar. It opens on **Session**, with the
-settings menu beside it. The entries you see depend on your role and
+Click your name at the foot of the sidebar and choose **Settings**. It
+opens on **Profile**, with the settings menu beside it. The same account
+menu shows who is signed in and holds **Log out**. The entries you see depend on your role and
 permissions.
 
 | Section | Who sees it | What it is for |
 |---|---|---|
-| **Profile** | Everyone | Your own name, email address and password. |
-| **Security** | Everyone | Your authenticator app. Administrators also see the firm-wide switch that requires one. |
+| **Profile** | Everyone | Your own name, email address, password and sidebar icon. |
+| **Security** | Everyone | Your authenticator app, and signing out everywhere else. Administrators also see the firm-wide switch that requires the app. |
 | **Appearance** | Everyone | Your theme and navigation layout. |
 | **Firm** | Administrators | The firm's name, address, email addresses, logo and its own wording for invoices and reminders. |
 | **Notifications** | Everyone | Your daily digest email. |
-| **Session** | Everyone | Signing out. |
 | **Users** | Administrators | Accounts, roles and hourly rates. |
 | **Permissions** | Administrators | What each user can open. |
 | **Contacts** | Administrators | The groups, roles and relationship types offered for contacts. |
@@ -86,11 +86,11 @@ after signing in and can go nowhere else until they have, and nobody can
 turn their app off. **Stop Requiring** lets each user choose again and
 removes nobody's app.
 
-## Session
-
-**Settings → Session** shows **Logged in as** with your email address. Click
-**Logout** to sign out of Kosmos in this browser. You are returned to the
-sign-in page, and other browsers and devices stay signed in. A browser you
+**Sign Out Everywhere** is further down the page. Click **Sign Out
+Everywhere Else** and every other device and browser signed in to your
+account is signed out at once (a lost phone, a shared computer); you stay
+signed in where you clicked it. **Log out** in the account menu, by
+contrast, signs out the browser you are using and no other. A browser you
 do not sign out of stays signed in for eight weeks after you last use it.
 
 ## Users

@@ -169,6 +169,7 @@ urlpatterns = [
     ),
     # Profile
     path("settings/profile/", profile_urls.profile_index, name="profile-index"),
+    path("settings/profile/icon/", profile_urls.nav_icon, name="nav-icon"),
     path(
         "settings/profile/personal/",
         profile_urls.personal_profile,
@@ -185,6 +186,11 @@ urlpatterns = [
         "settings/security/authenticator/",
         security_urls.authenticator_panel,
         name="authenticator-panel",
+    ),
+    path(
+        "settings/security/sign-out-everywhere/",
+        security_urls.sign_out_everywhere,
+        name="sign-out-everywhere",
     ),
     path(
         "settings/security/require/",
