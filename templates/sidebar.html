@@ -126,7 +126,11 @@
         tooltips) as the other items do. Log out is a form: Django logs
         out by POST.
       {% endcomment %}
-      <li class="account-menu{% if app == 'settings' %} active{% endif %}">
+      {% comment %}
+        Active on every settings page, read from the path: the settings
+        views set a subapp for their own menu, not the sidebar's app.
+      {% endcomment %}
+      <li class="account-menu{% if app == 'settings' or request.path|slice:':10' == '/settings/' %} active{% endif %}">
         <div class="dropdown" x-data="dropdown()">
           <a href="#"
              role="button"
