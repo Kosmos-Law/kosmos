@@ -197,7 +197,7 @@ never given a public address.
   the signed link emailed to the client.
   [`config/tests/test_media_security.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/config/tests/test_media_security.py)
   holds this in place.
-- The one exception is `media/company/`, which holds the firm logo. It is
+- The one exception is `media/company/`, which holds the firm logos. It is
   served to anyone at `/media/company/…` because the public payment and
   intake pages show it. Upload nothing else there.
 - With `STORAGE_BACKEND=s3`, nothing under `media/` is routed. Files are

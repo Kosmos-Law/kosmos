@@ -90,7 +90,7 @@ What sits under each path:
 |---|---|
 | `/settings/users/` | User list, create, edit, change role, switch status, toggle a permission, matter assignments. |
 | `/settings/permissions/` | The permissions matrix page. |
-| `/settings/firm/` | Firm details and logo. |
+| `/settings/firm/` | Firm details and logos. |
 | `/settings/contacts/` | Contact roles, groups and relationship types. |
 | `/settings/matters/` | Practice areas. |
 | `/settings/tasks/` | Task settings. |

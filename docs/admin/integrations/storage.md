@@ -13,7 +13,7 @@ email text and extracted document text, lives in the database.
 |---|---|
 | Matter documents (uploaded PDFs, PDFs mirrored from Google Drive, emails promoted to documents) | `documents/<matter id>/<document id>.<extension>` |
 | Invoice PDFs | `invoices/<matter id>/<invoice id>.pdf` |
-| The firm logo | `company/<file name>` |
+| The firm logos | `company/<file name>` |
 
 The database records each file by that relative path. The same paths are
 used whichever backend is selected.
@@ -98,10 +98,11 @@ This holds for both backends. With `s3`, the browser never talks to the
 bucket for documents or invoices: the application fetches the object and
 relays it.
 
-### The one exception: the firm logo
+### The one exception: the firm logos
 
-The logo is public branding. It appears on the sign-in page, on the public
-intake form and payment pages, and in invoice PDFs.
+The logos (the logo, its dark-theme twin and the email logo under
+**Settings → Firm**) are public branding. They appear on the sign-in page,
+on the public intake form and payment pages, and in invoice PDFs.
 
 - With `local` storage, Kosmos serves `media/company/` at
   `/media/company/` without requiring a sign-in. Nothing else under
@@ -109,7 +110,8 @@ intake form and payment pages, and in invoice PDFs.
 - With `s3` storage, pages link to the logo in the bucket with a signed
   URL that expires after an hour. The bucket itself stays private.
 
-Emails embed the logo in the message instead of linking to it.
+Emails embed the email logo (or the logo, when there is none) in the
+message instead of linking to it.
 
 ### What you must not do
 
@@ -144,7 +146,7 @@ If you switch without copying, records remain but their files are missing
 from the new backend:
 
 - Opening or downloading a document answers "File not found in storage."
-- The firm logo is broken wherever it is shown.
+- The firm logos are broken wherever they are shown.
 - A client following a payment link still gets an invoice PDF, because
   that page regenerates a missing PDF from the invoice data. Other places
   that read a stored invoice PDF fail until the files are restored or

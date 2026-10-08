@@ -18,7 +18,7 @@ permissions.
 | **Profile** | Everyone | Your own name, email address, password and sidebar icon. |
 | **Security** | Everyone | Your authenticator app, and signing out everywhere else. Administrators also see the firm-wide switch that requires the app. |
 | **Appearance** | Everyone | Your theme and navigation layout. |
-| **Firm** | Administrators | The firm's name, address, email addresses, logo and its own wording for invoices and reminders. |
+| **Firm** | Administrators | The firm's name, address, email addresses, logos and its own wording for invoices and reminders. |
 | **Notifications** | Everyone | Your daily digest email. |
 | **Users** | Administrators | Accounts, roles and hourly rates. |
 | **Permissions** | Administrators | What each user can open. |
@@ -45,7 +45,9 @@ details updated" confirms the save.
 
 | Field | Where it shows up |
 |---|---|
-| **Logo** | On the sign-in page, in place of the Kosmos name. At the top of invoices and the other PDFs Kosmos produces (ledgers, statements, reports). In invoice, payment request and intake form emails, on the page where a client pays online, and on intake forms. |
+| **Logo** | On the sign-in page, in place of the Kosmos name. At the top of invoices and the other PDFs Kosmos produces (ledgers, statements, reports). On the page where a client pays online and on intake forms. The other two logos stand in for it on their own surfaces; wherever one of them is blank, this logo shows instead. |
+| **Dark-theme logo** | In place of the logo on the sign-in page, the payment page and intake forms whenever the viewer's theme is dark. Upload light-coloured artwork on a transparent background: the logo itself, if it is dark ink on a transparent background, disappears on a dark theme. |
+| **Email logo** | In invoice, payment request, reminder and intake form emails. An email program can be in dark mode too, and Kosmos cannot tell, so upload artwork on a solid white background, which reads in either. |
 | **Name** | At the top of the same PDFs, and as the sender's name on email to clients: "Example Law Billing" on invoices and payment requests, "Example Law" on intake email. An ending such as "LLC" is left off the sender's name. |
 | **Address line 1**, **Address line 2**, **City**, **State**, **Zip code** | Under the firm's name on PDFs, and at the foot of invoice, payment request and intake form emails. |
 | **Phone** | On PDFs and in intake form emails. Enter a ten-digit US number. |
@@ -57,10 +59,15 @@ details updated" confirms the save.
 | **Payment Terms** | One sentence in the firm's own words, for example the payment terms in your fee agreement. It is added to the reminder emails for an invoice and for a payment request (not for a trust deposit request). Leave it blank and reminders say nothing about terms. |
 | **Invoice Trust Note** | Printed under **Funds in Trust** on an invoice, when the client has money in trust. Leave it blank and the invoice shows the balance alone. |
 
-To add the logo, click the file chooser beside **Logo** and pick a PNG or
+To add a logo, click the file chooser beside its name and pick a PNG or
 JPG file of 2 MB or less. It uploads at once: there is nothing to save. To
 change it, click the remove button beside the logo, confirm, and choose
-the new file.
+the new file. Each preview sits on the background its logo is meant for,
+light or dark, whatever your own theme, so you can see how it will read.
+
+One logo is enough to start: upload the **Logo** alone and it shows
+everywhere. Add the other two when the one logo does not suit a dark
+theme or a dark email program.
 
 ## Security
 

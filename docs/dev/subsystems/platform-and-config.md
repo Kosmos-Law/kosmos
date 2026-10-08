@@ -86,7 +86,7 @@ Static files are served by Django only through
 handled by two functions at the bottom of the file:
 `development_media_urlpatterns()` routes `media/` only when `DEBUG` is on
 and the backend is local, and `public_branding_media_urlpatterns()`
-routes `media/company/` (the firm logo, `Firm.logo`'s `upload_to`) under
+routes `media/company/` (the firm's logos, the `Firm.logo*` fields' `upload_to`) under
 local storage in every mode, because the public intake form and the
 invoice PDF renderer load it by URL. Everything else in storage is
 reached through a view that checks access and streams the file.
@@ -173,8 +173,9 @@ Three from addresses: `SERVER_EMAIL` for error reports to `ADMINS`,
 `DEFAULT_FROM_EMAIL` for the application's mail, and
 `BILLING_FROM_EMAIL` for client-facing billing mail. `utils/mail.py`
 builds the display names (`firm_from_email()`, `billing_from_email()`,
-the matching `*_reply_to()` helpers), embeds the firm logo by content id
-(`attach_firm_logo()`) and inlines CSS for HTML mail
+the matching `*_reply_to()` helpers), embeds the firm's email logo by
+content id (`attach_firm_logo()`, from `Firm.email_logo`: the email slot,
+else the logo) and inlines CSS for HTML mail
 (`render_inlined()`). The senders are: the sign-in code
 (`apps/accounts/utils.py`), invoices and payment requests
 (`apps/invoicing/invoices/functions/send_invoice.py`,
