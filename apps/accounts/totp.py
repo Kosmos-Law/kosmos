@@ -54,10 +54,14 @@ def new_secret():
 
 def issuer():
     """What the app shows above the account: "Kosmos (Firm Name)", or
-    plain "Kosmos" before the firm has a name. A colon cannot appear in an
-    otpauth issuer, so one in the name is dropped."""
+    plain "Kosmos" before the firm has a name. On the development site
+    (ENV=dev) it is "Kosmos (dev)" instead, so the two sites' accounts are
+    told apart in the app. A colon cannot appear in an otpauth issuer, so
+    one in the name is dropped."""
     from apps.settings.models import Firm
 
+    if settings.ENV == "dev":
+        return f"{ISSUER} (dev)"
     firm = Firm.objects.only("name").first()
     name = (firm.name if firm else "").replace(":", "").strip()
     return f"{ISSUER} ({name})" if name else ISSUER

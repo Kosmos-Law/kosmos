@@ -345,7 +345,8 @@ def test_the_command_resets_by_email(user):
     assert "reset" in out.getvalue()
 
 
-def test_the_app_is_told_the_firms_name(user, firm):
+def test_the_app_is_told_the_firms_name(user, firm, settings):
+    settings.ENV = "prod"
     uri = totp.provisioning_uri("ABCDEFGHIJKLMNOP", user)
 
     assert "issuer=Kosmos%20%28Test%20Firm%29" in uri
@@ -354,5 +355,12 @@ def test_the_app_is_told_the_firms_name(user, firm):
     )
 
 
-def test_without_a_firm_name_the_app_is_told_kosmos(user):
+def test_without_a_firm_name_the_app_is_told_kosmos(user, settings):
+    settings.ENV = "prod"
     assert totp.issuer() == "Kosmos"
+
+
+def test_the_development_site_says_dev_instead_of_the_firm(firm, settings):
+    settings.ENV = "dev"
+
+    assert totp.issuer() == "Kosmos (dev)"
