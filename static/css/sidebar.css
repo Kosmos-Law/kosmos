@@ -633,11 +633,17 @@
   width: 100%;
 }
 
+/* A hover fill alone, as the sidebar's own items have: the row's text
+   keeps its colour. */
 .sidebar .sidebar-nav .account-dropdown li a:hover,
 .sidebar .sidebar-nav .account-dropdown .dropdown-item:hover {
   background: var(--background-control);
   border-radius: 0;
-  color: var(--link-hover);
+  color: var(--color-primary);
+}
+
+.sidebar .sidebar-nav .account-dropdown li:hover {
+  color: inherit;
 }
 
 .sidebar .sidebar-nav .account-dropdown li a i,
