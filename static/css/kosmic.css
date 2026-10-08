@@ -88,50 +88,67 @@
   inset: 0;
 }
 
-/* A nebula low in the right, the app's own: a few soft ellipses of Nord's
-   purple and frost, one cooler core and a faint warm thread through it,
-   blurred together and kept faint. A pseudo-element painted before the
-   sky's children, so the aurora, the field and the stars all lie over it
-   and shine through. It breathes over two minutes; under reduced motion,
-   or with the sky's animation off, it simply stays. */
+/* A nebula low in the right, the app's own, after the Trifid: a bright
+   emission lobe (Nord's red and purple mixed, where the Trifid is pink), a
+   cooler reflection patch above and to its left (frost), a cluster of
+   young stars at the lobe's heart, and a purple haze round the whole. A
+   radial mask softens the box's edges. A pseudo-element painted before
+   the sky's children, so the aurora, the field and the stars all lie over
+   it. It breathes over two minutes; under reduced motion, or with the
+   sky's animation off, it simply stays. */
 [data-theme="kosmic"] .kosmic-sky::before {
+  --nebula-pink: color-mix(in oklch, var(--nord11) 55%, var(--nord15));
+  --nebula-blue: color-mix(in oklch, var(--nord9) 60%, var(--nord8));
   content: "";
   position: absolute;
-  inset: 0;
+  right: -3%;
+  bottom: -4%;
+  width: min(535px, 80vw);
+  height: min(455px, 68vw);
   background:
+    /* The cluster at the heart */
     radial-gradient(
-      560px 300px at 86% 90%,
-      color-mix(in oklch, var(--nord8) 13%, transparent),
+      26px 22px at 58% 60%,
+      color-mix(in oklch, var(--nord6) 70%, transparent),
+      color-mix(in oklch, var(--nord6) 18%, transparent) 45%,
       transparent 70%
     ),
+    /* The emission lobe */
     radial-gradient(
-      900px 560px at 82% 96%,
-      color-mix(in oklch, var(--nord15) 15%, transparent),
-      transparent 68%
+      163px 140px at 58% 60%,
+      color-mix(in oklch, var(--nebula-pink) 50%, transparent),
+      color-mix(in oklch, var(--nebula-pink) 30%, transparent) 40%,
+      color-mix(in oklch, var(--nebula-pink) 10%, transparent) 70%,
+      transparent 100%
     ),
+    /* The reflection patch */
     radial-gradient(
-      520px 240px at 92% 80%,
-      color-mix(in oklch, var(--nord15) 11%, transparent),
-      transparent 70%
+      150px 110px at 36% 30%,
+      color-mix(in oklch, var(--nebula-blue) 38%, transparent),
+      color-mix(in oklch, var(--nebula-blue) 16%, transparent) 50%,
+      transparent 100%
     ),
+    /* Haze round the whole */
     radial-gradient(
-      380px 140px at 78% 85%,
-      color-mix(in oklch, var(--nord12) 7%, transparent),
-      transparent 72%
+      305px 260px at 52% 52%,
+      color-mix(in oklch, var(--nord15) 16%, transparent),
+      transparent 100%
     );
-  filter: blur(18px);
-  transform-origin: 85% 90%;
+  filter: blur(3px);
+  mask-image: radial-gradient(closest-side at 52% 52%, #000 45%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side at 52% 52%, #000 45%, transparent 100%);
+  transform-origin: 58% 60%;
   animation: kosmic-nebula-breathe 120s ease-in-out infinite alternate;
 }
 
 @keyframes kosmic-nebula-breathe {
   from {
-    opacity: 0.8;
+    opacity: 0.88;
     transform: scale(1) rotate(0deg);
   }
   to {
     opacity: 1;
-    transform: scale(1.06) rotate(1.5deg);
+    transform: scale(1.04) rotate(1deg);
   }
 }
 
