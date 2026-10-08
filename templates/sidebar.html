@@ -109,8 +109,18 @@
           <span class="sidebar-label">Search</span>
         </a>
       </li>
+      <li>
+        <a href="#"
+           hx-get="{% url 'settings:keyboard-shortcuts' %}"
+           hx-target="#htmx-modal-container"
+           data-tooltip="Shortcuts">
+          <i class="icon-keyboard"></i>
+          <span class="sidebar-label">Shortcuts</span>
+        </a>
+      </li>
       {% comment %}
-        The account menu, in the Settings item's place: who is signed in,
+        The account menu, last so it sits at the foot of the sidebar and at
+        the far right of the horizontal bar: who is signed in,
         Settings and Log out. The trigger is an anchor so it takes the nav
         item's styling (hover, active, the collapsed and horizontal
         tooltips) as the other items do. Log out is a form: Django logs
@@ -153,15 +163,6 @@
             </li>
           </ul>
         </div>
-      </li>
-      <li>
-        <a href="#"
-           hx-get="{% url 'settings:keyboard-shortcuts' %}"
-           hx-target="#htmx-modal-container"
-           data-tooltip="Shortcuts">
-          <i class="icon-keyboard"></i>
-          <span class="sidebar-label">Shortcuts</span>
-        </a>
       </li>
     </ul>
   </nav>
