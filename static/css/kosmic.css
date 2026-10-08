@@ -109,32 +109,32 @@
     /* The cluster at the heart */
     radial-gradient(
       26px 22px at 58% 60%,
-      color-mix(in oklch, var(--nord6) 70%, transparent),
-      color-mix(in oklch, var(--nord6) 18%, transparent) 45%,
+      color-mix(in oklch, var(--nord6) 50%, transparent),
+      color-mix(in oklch, var(--nord6) 12%, transparent) 45%,
       transparent 70%
     ),
     /* The emission lobe */
     radial-gradient(
       163px 140px at 58% 60%,
-      color-mix(in oklch, var(--nebula-pink) 50%, transparent),
-      color-mix(in oklch, var(--nebula-pink) 30%, transparent) 40%,
-      color-mix(in oklch, var(--nebula-pink) 10%, transparent) 70%,
+      color-mix(in oklch, var(--nebula-pink) 36%, transparent),
+      color-mix(in oklch, var(--nebula-pink) 21%, transparent) 40%,
+      color-mix(in oklch, var(--nebula-pink) 7%, transparent) 70%,
       transparent 100%
     ),
     /* The reflection patch */
     radial-gradient(
       150px 110px at 36% 30%,
-      color-mix(in oklch, var(--nebula-blue) 38%, transparent),
-      color-mix(in oklch, var(--nebula-blue) 16%, transparent) 50%,
+      color-mix(in oklch, var(--nebula-blue) 27%, transparent),
+      color-mix(in oklch, var(--nebula-blue) 11%, transparent) 50%,
       transparent 100%
     ),
     /* Haze round the whole */
     radial-gradient(
       305px 260px at 52% 52%,
-      color-mix(in oklch, var(--nord15) 16%, transparent),
+      color-mix(in oklch, var(--nord15) 12%, transparent),
       transparent 100%
     );
-  filter: blur(3px);
+  filter: blur(4px);
   mask-image: radial-gradient(closest-side at 52% 52%, #000 45%, transparent 100%);
   -webkit-mask-image: radial-gradient(closest-side at 52% 52%, #000 45%, transparent 100%);
   transform-origin: 58% 60%;
