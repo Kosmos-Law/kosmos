@@ -88,6 +88,53 @@
   inset: 0;
 }
 
+/* A nebula low in the right, the app's own: a few soft ellipses of Nord's
+   purple and frost, one cooler core and a faint warm thread through it,
+   blurred together and kept faint. A pseudo-element painted before the
+   sky's children, so the aurora, the field and the stars all lie over it
+   and shine through. It breathes over two minutes; under reduced motion,
+   or with the sky's animation off, it simply stays. */
+[data-theme="kosmic"] .kosmic-sky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      560px 300px at 86% 90%,
+      color-mix(in oklch, var(--nord8) 13%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      900px 560px at 82% 96%,
+      color-mix(in oklch, var(--nord15) 15%, transparent),
+      transparent 68%
+    ),
+    radial-gradient(
+      520px 240px at 92% 80%,
+      color-mix(in oklch, var(--nord15) 11%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      380px 140px at 78% 85%,
+      color-mix(in oklch, var(--nord12) 7%, transparent),
+      transparent 72%
+    );
+  filter: blur(18px);
+  transform-origin: 85% 90%;
+  animation: kosmic-nebula-breathe 120s ease-in-out infinite alternate;
+}
+
+@keyframes kosmic-nebula-breathe {
+  from {
+    opacity: 0.8;
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.06) rotate(1.5deg);
+  }
+}
+
 /* Each sheet comes up, flares and dims a few times, and goes out, then
    waits out the rest of three minutes; the three follow a few seconds apart,
    so the display spreads across the sky and never pulses as one. All the
@@ -324,9 +371,17 @@
   .kosmic-shooting-star {
     display: none;
   }
+
+  [data-theme="kosmic"] .kosmic-sky::before {
+    animation: none;
+  }
 }
 
 [data-sky-motion="off"] :is(.kosmic-stars, .kosmic-field) {
+  animation: none;
+}
+
+[data-sky-motion="off"] .kosmic-sky::before {
   animation: none;
 }
 
