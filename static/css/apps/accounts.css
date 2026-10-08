@@ -222,7 +222,9 @@ input:focus {
   padding-right: 2.75rem;
 }
 
-.account-form .password-toggle {
+/* Outranks .account-form button:not(.btn) above, which would otherwise
+   give this the submit button's fill and top margin. */
+.account-form .password-field button.password-toggle {
   background: none;
   border: none;
   color: var(--color-muted);
@@ -237,7 +239,7 @@ input:focus {
   transform: translateY(-50%);
 }
 
-.account-form .password-toggle:hover,
-.account-form .password-toggle:focus-visible {
+.account-form .password-field button.password-toggle:hover,
+.account-form .password-field button.password-toggle:focus-visible {
   color: var(--link);
 }
