@@ -77,12 +77,12 @@ urlpatterns = [
     path("settings/firm/", firm_urls.firm_index, name="firm-index"),
     path("settings/tasks/", tasks_urls.tasks_index, name="tasks-index"),
     path(
-        "settings/firm/logo/upload/",
+        "settings/firm/logo/<slug:slot>/upload/",
         firm_urls.firm_upload_logo,
         name="firm-upload-logo",
     ),
     path(
-        "settings/firm/logo/remove/",
+        "settings/firm/logo/<slug:slot>/remove/",
         firm_urls.firm_remove_logo,
         name="firm-remove-logo",
     ),

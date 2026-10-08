@@ -50,11 +50,7 @@
     <div class="cf-card">
       <header class="cf-head">
         {% if logo_url %}
-          <img class="cf-logo"
-               src="{{ logo_url }}"
-               alt="{{ firm_name }}"
-               width="152"
-               height="auto" />
+          {% include "components/firm-logo.html" with alt=firm_name class="cf-logo" width="152" %}
         {% elif firm_name %}
           <h1 class="cf-firm">{{ firm_name }}</h1>
         {% endif %}

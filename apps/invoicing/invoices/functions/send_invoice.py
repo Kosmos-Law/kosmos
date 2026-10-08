@@ -176,7 +176,7 @@ def send_invoice(
             # still serves the PDF, so the email offers it as "View invoice".
             **_invoice_links(invoice, request),
             "attach_pdf": attach_pdf,
-            "logo_cid": FIRM_LOGO_CID if company and company.logo else "",
+            "logo_cid": FIRM_LOGO_CID if company and company.email_logo else "",
             "firm_address": firm_postal_address(company),
         }
         # Client-facing: lead with the firm name, then the invoice number —
@@ -326,7 +326,7 @@ def send_reminder(
             "billing_email": billing_email,
             **_invoice_links(invoice, request),
             "attach_pdf": attach_pdf,
-            "logo_cid": FIRM_LOGO_CID if company and company.logo else "",
+            "logo_cid": FIRM_LOGO_CID if company and company.email_logo else "",
             "firm_address": firm_postal_address(company),
         }
         firm = company.name if company else ""

@@ -1,21 +1,21 @@
-{% if firm.logo %}
+{% if slot.logo %}
   <div class="firm-logo-row">
-    <div class="firm-logo-preview">
+    <div class="firm-logo-preview firm-logo-preview-{{ slot.name }}">
       {# djlint:off H006 #}
-      <img src="{{ firm.logo.url }}" alt="{{ firm.name }} logo" />
+      <img src="{{ slot.logo.url }}" alt="{{ slot.label }}" />
       {# djlint:on #}
     </div>
     <button type="button"
             class="btn-icon"
-            aria-label="Remove logo"
-            hx-post="{% url 'settings:firm-remove-logo' %}"
-            hx-target="#firm-logo"
-            hx-confirm="Remove the firm logo?">
+            aria-label="Remove {{ slot.label|lower }}"
+            hx-post="{% url 'settings:firm-remove-logo' slot.name %}"
+            hx-target="#firm-logo-{{ slot.name }}"
+            hx-confirm="Remove the {{ slot.label|lower }}?">
       <i class="icon-circle-x"></i>
     </button>
   </div>
 {% else %}
-  {{ logo_form.logo }}
-  {% if logo_form.logo.help_text %}<div class="help-text">{{ logo_form.logo.help_text }}</div>{% endif %}
-  {{ logo_form.logo.errors }}
+  {{ slot.field }}
+  {% if slot.field.help_text %}<div class="help-text">{{ slot.field.help_text }}</div>{% endif %}
+  {{ slot.field.errors }}
 {% endif %}

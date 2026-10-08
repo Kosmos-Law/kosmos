@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.urls import reverse
 
 from apps.management.templatetags.phone_numbers import phone_number
 from apps.settings.models import Firm
@@ -11,14 +12,36 @@ MAX_LOGO_SIZE = 2 * 1024 * 1024  # 2MB
 # not read SVG: offering it only produced an upload that was always refused.
 ALLOWED_LOGO_TYPES = ["image/png", "image/jpeg"]
 
+# The logo slots on the firm page, in display order: the Firm field, its
+# label, and the help text under its file chooser. One upload form each
+# (firm_logo_form); the dark and email slots fall back to the logo.
+LOGO_SLOTS = {
+    "logo": (
+        "Logo",
+        "Shown on light themes, PDFs and the public intake pages. "
+        "PNG or JPG, max 2 MB.",
+    ),
+    "logo_dark": (
+        "Dark-theme logo",
+        "Stands in for the logo on dark themes: light ink on a transparent "
+        "ground. Without one, dark themes show the logo.",
+    ),
+    "logo_email": (
+        "Email logo",
+        "Embedded in invoice and intake emails, where the reader's theme is "
+        "unknown: art on a solid white ground reads in either. Without one, "
+        "emails carry the logo.",
+    ),
+}
+
 
 class FirmForm(forms.ModelForm):
     """Firm-settings form: contact details, invoice BCC, and research
     jurisdiction — saved together by the "Save Firm Details" button.
 
     The logo is intentionally NOT part of this form: it uploads/removes on its
-    own (see FirmLogoForm + the firm-upload-logo/firm-remove-logo endpoints), so
-    changing the logo never depends on saving the rest of the details."""
+    own (see firm_logo_form + the firm-upload-logo/firm-remove-logo endpoints),
+    so changing a logo never depends on saving the rest of the details."""
 
     class Meta:
         model = Firm
@@ -112,39 +135,45 @@ class FirmForm(forms.ModelForm):
 
 
 class FirmLogoForm(forms.ModelForm):
-    """Standalone logo upload — auto-submits on file selection, independent of
-    the main firm-details form."""
+    """Base of the one-field upload forms built by firm_logo_form: validates
+    whichever slot the form carries."""
 
     class Meta:
         model = Firm
         fields = ["logo"]
-        widgets = {
-            "logo": forms.FileInput(
-                attrs={
-                    "accept": ".png,.jpg,.jpeg",
-                    # Auto-upload the moment a file is chosen; CSRF rides on the
-                    # global hx-headers set on <body>.
-                    "hx-post": "/settings/firm/logo/upload/",
-                    "hx-trigger": "change",
-                    "hx-target": "#firm-logo",
-                    "hx-encoding": "multipart/form-data",
-                }
-            ),
-        }
-        help_texts = {
-            "logo": "PNG or JPG. Max 2 MB.",
-        }
 
-    def clean_logo(self):
-        logo = self.cleaned_data.get("logo")
-
+    def clean(self):
+        cleaned = super().clean()
+        (slot,) = self._meta.fields
+        logo = cleaned.get(slot)
         if not logo or not hasattr(logo, "content_type"):
-            return logo
-
+            return cleaned
         if logo.content_type not in ALLOWED_LOGO_TYPES:
-            raise ValidationError("Only PNG and JPG files are allowed.")
+            self.add_error(slot, "Only PNG and JPG files are allowed.")
+        elif logo.size > MAX_LOGO_SIZE:
+            self.add_error(slot, "Logo must be under 2 MB.")
+        return cleaned
 
-        if logo.size > MAX_LOGO_SIZE:
-            raise ValidationError("Logo must be under 2 MB.")
 
-        return logo
+def firm_logo_form(slot, *args, **kwargs):
+    """The upload form for one logo slot — auto-submits on file selection,
+    independent of the main firm-details form."""
+    widget = forms.FileInput(
+        attrs={
+            "accept": ".png,.jpg,.jpeg",
+            # Auto-upload the moment a file is chosen; CSRF rides on the
+            # global hx-headers set on <body>.
+            "hx-post": reverse("settings:firm-upload-logo", args=[slot]),
+            "hx-trigger": "change",
+            "hx-target": f"#firm-logo-{slot}",
+            "hx-encoding": "multipart/form-data",
+        }
+    )
+    form_class = forms.modelform_factory(
+        Firm,
+        form=FirmLogoForm,
+        fields=[slot],
+        widgets={slot: widget},
+        help_texts={slot: LOGO_SLOTS[slot][1]},
+    )
+    return form_class(*args, **kwargs)

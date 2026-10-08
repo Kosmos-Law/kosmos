@@ -217,3 +217,22 @@ input:is([type="checkbox"], [type="radio"]):focus-visible,
      not a blur, so it reads soft without the fuzzy Bootstrap glow. */
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
+
+/* ==========================================================================
+Dark mode — the firm's dark-theme logo
+========================================================================== */
+
+/* components/firm-logo.html: when the firm uploaded a dark-theme logo,
+   both ride on the page and the theme shows one — the light one by
+   default, the dark twin on the four dark themes. */
+.firm-logo-dark {
+  display: none;
+}
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .firm-logo-light {
+  display: none;
+}
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .firm-logo-dark {
+  display: block;
+}

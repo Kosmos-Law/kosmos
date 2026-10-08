@@ -31,7 +31,14 @@ class Firm(AuditMixin):
     # inbox, not the Mailgun intake pipeline address - the pipeline would
     # log our own outbound copies as duplicate notes.
     intake_email = models.EmailField(blank=True)
+    # Three logo slots, one per surface. The logo is the master: light
+    # themes, PDFs and the public intake pages. The other two stand in
+    # for it where it would wash out - a light-ink twin on the dark
+    # themes, and art on a solid ground in email, where the reader's
+    # theme is unknowable. Each falls back to the logo when blank.
     logo = models.ImageField(upload_to="company/", blank=True, null=True)
+    logo_dark = models.ImageField(upload_to="company/", blank=True, null=True)
+    logo_email = models.ImageField(upload_to="company/", blank=True, null=True)
     jurisdiction = models.CharField(max_length=100, blank=True)
     # Wording that depends on a firm's own fee agreement. Blank leaves the
     # sentence out of the document.
@@ -57,3 +64,20 @@ class Firm(AuditMixin):
 
     def __str__(self):
         return self.name
+
+    @property
+    def email_logo(self):
+        """The logo to embed in outgoing email: the email slot, else the logo."""
+        return self.logo_email or self.logo
+
+
+def logo_urls(firm):
+    """Context for components/firm-logo.html on a themed page: the logo's
+    URL and, when uploaded, its dark-theme twin's. Both blank without a
+    logo - the dark twin never stands alone."""
+    if not firm or not firm.logo:
+        return {"logo_url": "", "logo_dark_url": ""}
+    return {
+        "logo_url": firm.logo.url,
+        "logo_dark_url": firm.logo_dark.url if firm.logo_dark else "",
+    }

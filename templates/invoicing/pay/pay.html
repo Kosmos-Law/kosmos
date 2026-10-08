@@ -19,11 +19,7 @@
     <div class="pay-card">
       <div class="pay-head">
         {% if logo_url %}
-          <img class="pay-logo"
-               src="{{ logo_url }}"
-               alt="{{ firm_name|firm_strip }}"
-               width="176"
-               height="auto">
+          {% include "components/firm-logo.html" with alt=firm_name|firm_strip class="pay-logo" width="176" %}
         {% else %}
           <h1>{{ firm_name|default:"Pay Invoice"|firm_strip }}</h1>
         {% endif %}

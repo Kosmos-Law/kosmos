@@ -199,7 +199,7 @@ def send_payment_request(
         "pay_url": request_pay_url(payment_request, request),
         "document_links": document_links,
         "is_trust": is_trust,
-        "logo_cid": FIRM_LOGO_CID if company and company.logo else "",
+        "logo_cid": FIRM_LOGO_CID if company and company.email_logo else "",
         "firm_address": firm_postal_address(company),
     }
     firm = company.name if company else ""
@@ -338,7 +338,7 @@ def send_request_reminder(
         "billing_email": (company.billing_email or company.email) if company else "",
         "pay_url": request_pay_url(payment_request, request),
         "is_trust": is_trust,
-        "logo_cid": FIRM_LOGO_CID if company and company.logo else "",
+        "logo_cid": FIRM_LOGO_CID if company and company.email_logo else "",
         "firm_address": firm_postal_address(company),
     }
     firm = company.name if company else ""

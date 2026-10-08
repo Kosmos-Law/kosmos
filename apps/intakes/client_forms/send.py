@@ -116,7 +116,7 @@ def send_form_link(
         "firm_name": company.name if company else "",
         "firm_email": (company.email if company else "") or "",
         "firm_phone": (company.phone if company else "") or "",
-        "logo_cid": FIRM_LOGO_CID if company and company.logo else "",
+        "logo_cid": FIRM_LOGO_CID if company and company.email_logo else "",
         "firm_address": firm_postal_address(company),
         "is_reminder": kind == "reminder",
     }

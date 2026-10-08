@@ -108,9 +108,10 @@ body.minimal-layout {
 /* In dark mode a raster logo designed for light backgrounds disappears into
    the dark surface. A small rounded pad behind it — co-extensive with the
    image, whatever its aspect ratio — carries the logo without asking anyone
-   to upload a dark variant. */
+   to upload a dark variant. A firm that did upload one shows it instead
+   (components/firm-logo.html), and the twin takes no pad. */
 @media (prefers-color-scheme: dark) {
-  .cf-logo {
+  .cf-logo:not(.firm-logo-dark) {
     background: oklch(100% 0 0);
     border-radius: 0.25rem;
     padding: 0.5rem;

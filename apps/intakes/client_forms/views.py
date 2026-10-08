@@ -50,6 +50,7 @@ from apps.intakes.client_forms.send import (
     send_form_link,
 )
 from apps.intakes.models import Intake
+from apps.settings.models import logo_urls
 from utils.toasts import toast_email_sent, toast_success
 
 FORMS_TRIGGER = "intakeFormsChanged"
@@ -216,7 +217,7 @@ def form_template_preview(request, template_id):
             "submission": shim,
             "blocks": render_blocks(schema, {}),
             "firm_name": company.name if company else "",
-            "logo_url": company.logo.url if company and company.logo else "",
+            **logo_urls(company),
             "firm_email": (company.email if company else "") or "",
             "default_caption": FormTemplate.DEFAULT_CAPTION,
             "editable": True,

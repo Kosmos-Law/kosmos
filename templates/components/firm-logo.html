@@ -1,0 +1,21 @@
+{% comment %}The firm's logo on a themed page: the logo and, when the firm
+  uploaded a dark-theme twin, that too - interface.css shows the one for
+  the theme (.firm-logo-light / .firm-logo-dark). Include with the
+logo_urls() context, alt, class, and width for the sized placements.{% endcomment %}
+{# djlint:off H006 #}
+{% if logo_dark_url %}
+  <img class="{{ class }} firm-logo-light"
+       src="{{ logo_url }}"
+       alt="{{ alt }}"
+       {% if width %}width="{{ width }}" height="auto"{% endif %} />
+  <img class="{{ class }} firm-logo-dark"
+       src="{{ logo_dark_url }}"
+       alt="{{ alt }}"
+       {% if width %}width="{{ width }}" height="auto"{% endif %} />
+{% else %}
+  <img class="{{ class }}"
+       src="{{ logo_url }}"
+       alt="{{ alt }}"
+       {% if width %}width="{{ width }}" height="auto"{% endif %} />
+{% endif %}
+{# djlint:on #}

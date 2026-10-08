@@ -52,3 +52,24 @@ def test_dead_database_falls_back_to_wordmark():
         html = render_error_page()
     assert "has-logo" not in html
     assert "Kosmos" in html
+
+
+def test_dark_logo_rides_along_for_the_theme_to_pick(settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    firm = Firm.objects.create(name="Example Law, LLC")
+    firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
+    firm.logo_dark.save("dark.gif", SimpleUploadedFile("dark.gif", TINY_GIF))
+    html = render_error_page()
+    assert 'class="auth-logo firm-logo-light"' in html
+    assert 'class="auth-logo firm-logo-dark"' in html
+    assert firm.logo.url in html
+    assert firm.logo_dark.url in html
+
+
+def test_dark_logo_alone_is_not_the_logo(settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    firm = Firm.objects.create(name="Example Law, LLC")
+    firm.logo_dark.save("dark.gif", SimpleUploadedFile("dark.gif", TINY_GIF))
+    html = render_error_page()
+    assert "has-logo" not in html
+    assert "Kosmos" in html

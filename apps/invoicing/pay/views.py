@@ -44,6 +44,7 @@ from apps.invoicing.processors import (
 )
 from apps.invoicing.processors.base import ClientConfig
 from apps.invoicing.requests.models import PaymentRequest
+from apps.settings.models import logo_urls
 from utils.ratelimit import rate_limited
 from utils.signing import read_payment_token, read_request_token
 
@@ -195,7 +196,7 @@ def pay_page(request, token):
     except PaymentError as exc:
         return _processor_unavailable(request, exc)
     matter = invoice.matter
-    from apps.settings.models import Firm
+    from apps.settings.models import Firm, logo_urls
 
     company = Firm.objects.first()
     context = {
@@ -205,7 +206,7 @@ def pay_page(request, token):
         "client_name": matter.client.name if matter and matter.client else "",
         "firm_name": company.name if company else "",
         # Signed media URL, minted per render — fine for a page, never email.
-        "logo_url": company.logo.url if company and company.logo else "",
+        **logo_urls(company),
         "amount_due": invoice.amount_remaining,
         "config": config,
         "is_paid": invoice.amount_remaining <= 0,
@@ -511,7 +512,7 @@ def balance_pay_page(request, token):
         "summary_value": summary_value,
         "firm_name": company.name if company else "",
         # Signed media URL, minted per render — fine for a page, never email.
-        "logo_url": company.logo.url if company and company.logo else "",
+        **logo_urls(company),
         "amount_due": Decimal(charge_cents) / 100,
         "config": config,
         "is_paid": pay_request.status == "PAID" or charge_cents <= 0,

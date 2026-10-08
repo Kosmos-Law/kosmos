@@ -2,13 +2,11 @@
   (firm_tags): the firm's uploaded logo when one is set, otherwise the
   Kosmos wordmark (drawn by the .auth-title::before mask in accounts.css,
   which the has-logo variant suppresses). The tag falls back to the
-wordmark when the database is unreachable, which matters on the 500 page.{% endcomment %}
+wordmark when the database is unreachable, which matters on the 500 page.
+  A dark-theme logo, when uploaded, rides along and the theme picks one
+(components/firm-logo.html).{% endcomment %}
 {% if logo_url %}
-  <div class="auth-title has-logo">
-    {# djlint:off H006 #}
-    <img class="auth-logo" src="{{ logo_url }}" alt="{{ firm_name }}" />
-    {# djlint:on #}
-  </div>
+  <div class="auth-title has-logo">{% include "components/firm-logo.html" with alt=firm_name class="auth-logo" %}</div>
 {% else %}
   <div class="auth-title">
     <span class="visually-hidden">Kosmos</span>

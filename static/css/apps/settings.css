@@ -123,8 +123,8 @@ Firm Form
   margin-bottom: 0.5rem;
 }
 
-/* Logo field: when a logo exists, the image sits beside a delete icon;
-   otherwise the file chooser is shown in its place. */
+/* Logo fields: when a slot holds a logo, the image sits beside a delete
+   icon; otherwise the file chooser is shown in its place. */
 .firm-logo-field {
   align-items: flex-start;
   display: flex;
@@ -144,7 +144,7 @@ Firm Form
   font-size: 1.25rem;
 }
 
-.firm-form #id_logo {
+.firm-form .firm-logo-field input[type="file"] {
   max-width: 23.5rem;
   padding: 0;
   width: 100%;
@@ -155,6 +155,26 @@ Firm Form
   height: auto;
   max-height: 6rem;
   max-width: 12rem;
+}
+
+/* Each preview sits on the ground its slot is drawn for, whatever the
+   theme: transparent light-ink art would vanish on a dark page, and
+   light-ink art on a light one. Literal colours on purpose — these
+   grounds must not follow the theme. */
+.firm-logo-preview-logo,
+.firm-logo-preview-logo_email {
+  background: oklch(100% 0 0);
+}
+
+.firm-logo-preview-logo_dark {
+  background: oklch(25% 0 0);
+}
+
+.firm-logo-preview-logo,
+.firm-logo-preview-logo_dark,
+.firm-logo-preview-logo_email {
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
 }
 
 /* ==========================================================================

@@ -68,7 +68,7 @@ def test_firm_logo_upload_rejects_non_image(admin_client):
 
     Firm.objects.create(name="Firm")
     bad = SimpleUploadedFile("logo.txt", b"not an image", content_type="text/plain")
-    response = admin_client.post("/settings/firm/logo/upload/", {"logo": bad})
+    response = admin_client.post("/settings/firm/logo/logo/upload/", {"logo": bad})
     assert response.status_code == 200
     assert not Firm.objects.first().logo
     assert "errorlist" in response.content.decode()

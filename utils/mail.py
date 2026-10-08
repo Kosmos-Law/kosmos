@@ -137,7 +137,8 @@ def firm_postal_address(company):
 
 
 def attach_firm_logo(email, company):
-    """CID-embed the firm logo so the HTML alternative can render it inline.
+    """CID-embed the firm's email logo so the HTML alternative can render it
+    inline (Firm.email_logo: the email slot, else the logo).
 
     Media URLs are signed and expire (object storage), so hot-linking
     company.logo.url in an email would break once archived; embedding the
@@ -147,7 +148,7 @@ def attach_firm_logo(email, company):
     a logo was attached; failures (missing file) are silently skipped — the
     templates fall back to the firm-name text via the img alt/conditional.
     """
-    logo = getattr(company, "logo", None)
+    logo = getattr(company, "email_logo", None)
     if not logo:
         return False
     try:

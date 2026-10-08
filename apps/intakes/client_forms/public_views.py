@@ -23,6 +23,7 @@ from apps.intakes.client_forms.filling import complete, merge_answers, read_answ
 from apps.intakes.client_forms.models import FormSubmission, FormTemplate
 from apps.intakes.client_forms.render import render_blocks
 from apps.intakes.client_forms.schema import presentable
+from apps.settings.models import logo_urls
 from utils.ratelimit import rate_limited
 from utils.signing import read_form_token
 
@@ -101,7 +102,7 @@ def form_page(request, token):
         ),
         "firm_name": company.name if company else "",
         # Signed media URL, minted per render — fine on a page, never in email.
-        "logo_url": company.logo.url if company and company.logo else "",
+        **logo_urls(company),
         "firm_email": (company.email if company else "") or "",
         "default_caption": FormTemplate.DEFAULT_CAPTION,
         "editable": editable,
