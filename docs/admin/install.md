@@ -228,7 +228,6 @@ is blank. What each variable does is in the
     | `installwatson` | Adds the full-text search column and trigger. |
     | `buildwatson` | Builds the search index. Reindexes every record. |
     | `setup_schedules` | Creates or updates the recurring jobs. |
-    | `collectstatic --noinput` | Production only. Adds Django's admin assets to `static/`. |
     | `seed_intake_forms` | Only with `--seed-intake-forms`. |
     | `createsuperuser` | Only if no superuser exists yet. |
 
@@ -346,9 +345,8 @@ On a second run it:
 - keeps the role and the database, resetting the role's password to the
   value in `config/.env` and the database's owner to the role;
 - runs `uv sync`, `migrate`, `createcachetable`, `installwatson`,
-  `buildwatson`, `setup_schedules` and (production) `collectstatic` again.
-  `buildwatson` reindexes every record, so on a large database this is
-  the slow part;
+  `buildwatson` and `setup_schedules` again. `buildwatson` reindexes
+  every record, so on a large database this is the slow part;
 - skips `createsuperuser` if a superuser exists;
 - keeps your `gunicorn.conf.py`;
 - compares each rendered system file with the installed one. Identical
@@ -360,7 +358,7 @@ On a second run it:
 
 Run it with the same options as the first time. Without `--prod` the
 script takes the development path: it installs the development packages
-and skips `collectstatic` and the system files.
+and skips the system files.
 
 !!! warning "`--force` also replaces the certbot-managed site"
     `--force` overwrites every system file that differs from its

@@ -1,6 +1,11 @@
 import re
 
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound
+from django.http import (
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    HttpResponseRedirect,
+)
 
 
 class HtmxLoginRedirectMiddleware:
@@ -93,9 +98,6 @@ class PermissionMiddleware:
                 return HttpResponseNotFound()
 
         if request.user.is_authenticated and not request.user.is_admin:
-            if request.path.startswith("/admin/"):
-                return HttpResponseForbidden()
-
             if any(request.path.startswith(p) for p in self.ADMIN_ONLY_PATHS):
                 return HttpResponseForbidden()
 
@@ -125,3 +127,34 @@ class PermissionMiddleware:
         ):
             return HttpResponseForbidden()
         return None
+
+
+class AuthenticatorRequiredMiddleware:
+    """When the firm requires an authenticator app, a signed-in user who has
+    none can only reach Settings > Security (to set it up) and sign out.
+    Everything else sends them there, HTMX requests by HX-Redirect."""
+
+    SETUP_PATH = "/settings/security/"
+    EXEMPT_PREFIXES = (SETUP_PATH, "/accounts/", "/static/", "/media/")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.user.is_authenticated and not request.path.startswith(
+            self.EXEMPT_PREFIXES
+        ):
+            from apps.settings.models import Firm
+
+            firm = Firm.objects.only("require_authenticator").first()
+            if (
+                firm
+                and firm.require_authenticator
+                and not request.user.has_authenticator
+            ):
+                if request.headers.get("HX-Request") == "true":
+                    response = HttpResponse(status=200)
+                    response["HX-Redirect"] = self.SETUP_PATH
+                    return response
+                return HttpResponseRedirect(self.SETUP_PATH)
+        return self.get_response(request)

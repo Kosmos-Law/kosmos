@@ -548,3 +548,11 @@ class Relationship(AuditMixin, models.Model):
 
     def __str__(self):
         return f"matter: {self.matter.id}, contact: {self.contact.id}, role: {self.role.id}"
+
+
+# Models in the sub-packages, imported here so they register with the app
+# registry as the app loads (they import Matter from this module, hence
+# last). Nothing else imports them at start-up since the admin was removed.
+import apps.matters.proceedings.models  # noqa: E402, F401
+import apps.matters.rates.models  # noqa: E402, F401
+import apps.matters.settlement.models  # noqa: E402, F401

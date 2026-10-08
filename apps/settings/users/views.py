@@ -3,13 +3,13 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
-from apps.accounts.models import ROLE_OPTIONS, CustomUser
+from apps.accounts.models import ROLE_OPTIONS, Authenticator, CustomUser
 from apps.management.filter_manager import filter_data_from_post
 from apps.matters.models import Matter
 from apps.settings.users.filters import UserFilter
 from apps.settings.users.forms import CreateUserForm, UserForm
 from apps.settings.users.users import DEFAULT_USER_FILTER, get_user_list
-from utils.toasts import toast_error
+from utils.toasts import toast_error, toast_success
 
 
 @login_required
@@ -112,6 +112,20 @@ def switch_status(request, user_id):
     user.save()
 
     return HttpResponse(status=204, headers={"HX-Trigger": "userListReload"})
+
+
+@login_required
+@require_POST
+def reset_authenticator(request, user_id):
+    """Remove a user's authenticator app (a lost phone). They get the
+    emailed code at their next sign-in, and set a new app up from there if
+    the firm requires one."""
+    if not request.user.is_admin:
+        return HttpResponseForbidden()
+    user = get_object_or_404(CustomUser, id=user_id)
+    Authenticator.objects.filter(user=user).delete()
+    response = HttpResponse(status=204, headers={"HX-Trigger": "userListReload"})
+    return toast_success(response, f"Authenticator app reset for {user.full_name}.")
 
 
 @login_required

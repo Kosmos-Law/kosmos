@@ -46,7 +46,7 @@ class TestNoteView:
         restricted.set_password("testpass123")
         restricted.save()
         c = Client()
-        c.login(username="outsider", password="testpass123")
+        c.force_login(restricted)
         c.get("/dash/")
         assert c.get(reverse("notes:note-view", args=[note.id])).status_code == 404
         assert (
@@ -886,7 +886,7 @@ class TestSearchPalette:
         Note.objects.create(author=user, matter=matter, title="Secret matter memo")
         Note.objects.create(author=user, title="Public library memo")
         c = Client()
-        c.login(username="restricted", password="testpass123")
+        c.force_login(restricted)
         c.get("/dash/")
         content = c.post(url, {"q": "memo"}).content.decode()
         assert "Public library memo" in content
@@ -1434,7 +1434,7 @@ class TestNoteAiWriteToggle:
         outsider.set_password("testpass123")
         outsider.save()
         other = Client()
-        other.login(username="toggle-outsider", password="testpass123")
+        other.force_login(outsider)
         other.get("/dash/")
         response = other.post(reverse("notes:note-ai-write", args=[note.id]))
         assert response.status_code == 404

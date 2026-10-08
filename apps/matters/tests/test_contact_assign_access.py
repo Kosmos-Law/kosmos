@@ -46,7 +46,7 @@ def restricted(matter):
 @pytest.fixture
 def restricted_client(restricted):
     client = Client()
-    client.login(username="Rae", password="clawboy")
+    client.force_login(restricted)
     client.get("/dash/")
     return client
 

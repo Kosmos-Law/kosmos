@@ -69,6 +69,7 @@
           <i class="icon-chevrons-up-down"></i>
         </button>
       </th>
+      <th class="authenticator center-data">App</th>
       <th class="is-active center-data">
         Active
         <button class="btn-sort {% if current_order == 'is_active' %}active{% endif %}"
@@ -99,6 +100,13 @@
                 <a class="dropdown-item"
                    hx-post="{% url 'settings:switch-status' user.id %}"><i class="icon-toggle-right"></i> Switch to {{ user.is_active|yesno:"Inactive,Active" }}</a>
               </li>
+              {% if user.has_authenticator %}
+                <li>
+                  <a class="dropdown-item"
+                     hx-post="{% url 'settings:reset-authenticator' user.id %}"
+                     hx-confirm="Reset the authenticator app for {{ user.full_name }}? They will get a code by email at their next sign-in."><i class="icon-smartphone"></i> Reset Authenticator</a>
+                </li>
+              {% endif %}
             </ul>
           </div>
         </td>
@@ -126,6 +134,9 @@
         </td>
         <td>{{ user.title_display }}</td>
         <td>${{ user.user_rate }}</td>
+        <td class="authenticator center-data">
+          {% if user.has_authenticator %}<i class="icon-circle-check true-bool"></i>{% endif %}
+        </td>
         <td class="is-active center-data">
           {% if user.is_active %}
             <i class="icon-circle-check true-bool"></i>
@@ -136,7 +147,7 @@
       </tr>
     {% empty %}
       <tr>
-        <td colspan="8" class="empty-message">No users found.</td>
+        <td colspan="9" class="empty-message">No users found.</td>
       </tr>
     {% endfor %}
   </table>

@@ -6,15 +6,17 @@ away again. The exact rule behind every switch is in the
 
 ## Before you begin
 
-- Outgoing email must work. Every sign-in sends a code to the user's email
-  address, so an account whose mail cannot be delivered cannot sign in. The
-  mail settings are in the
+- Outgoing email must work. A sign-in sends a code to the user's email
+  address unless they have set up an authenticator app, so an account
+  whose mail cannot be delivered cannot sign in until it has. The mail
+  settings are in the
   [environment reference](../reference/environment.md#email).
 - While `EMAIL_BACKEND=console`, nothing is delivered. The message,
   including the code, is printed to the web process log instead
   (`logs/error.log` with the gunicorn configuration in `deploy/`).
 - You need shell access to the server for the first account. After that,
-  everything on this page except the Django admin is done in the browser.
+  everything on this page is done in the browser, except the two
+  command-line repairs noted where they apply.
 
 ## Create the first administrator
 
@@ -31,46 +33,112 @@ To do it by hand, from the checkout:
 .venv/bin/python manage.py createsuperuser
 ```
 
-The account this creates is active, has the Admin role, and carries
-Django's `is_staff` and `is_superuser` flags
+The account this creates is active and has the Admin role
 ([`apps/accounts/managers.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/accounts/managers.py)).
-It is the only kind of account that can open the
-[Django admin](#the-django-admin). Run the command again whenever you need
-another one, for example after locking yourself out.
+It also carries Django's `is_staff` and `is_superuser` flags, which
+nothing in Kosmos reads. Run the command again whenever you need another
+administrator, for example after locking yourself out.
 
-Give it a real email address you can read. You will need the emailed code
-to sign in.
+Give it a real email address you can read: it is what the user signs in
+with, and the first sign-in's code goes there.
 
 ## How sign-in works
 
-1. The user enters their **username** (not their email address) and
-   password at `/accounts/login/`.
-2. If they are correct and the account is active, Kosmos deletes any
-   earlier code for that user, creates a new six-digit code, and emails it
-   to the address on the account.
-3. The user enters the code at `/accounts/login/verify/` and is signed in.
+1. The user enters their **email address** and password at
+   `/accounts/login/`. Case does not matter in the address. The username
+   is a display name and does not sign in.
+2. If they are correct and the account is active, the second step depends
+   on the user:
+    - **With an authenticator app set up**, the user enters the code the
+      app shows at `/accounts/login/authenticator/`. No email is sent.
+    - **Without one**, Kosmos deletes any earlier code for that user,
+      creates a new six-digit code, emails it to the address on the
+      account, and the user enters it at `/accounts/login/verify/`.
+3. The user is signed in.
 
 What to know about it:
 
-- The code is good for five minutes. After that it is refused with "Code
-  has expired. Please log in again."
-- Five wrong codes in a row discard the code. The user sees "Too many
-  incorrect codes. Please log in again." and starts over with the
+- The emailed code is good for five minutes. After that it is refused
+  with "Code has expired. Please log in again."
+- Five wrong emailed codes in a row discard the code. The user sees "Too
+  many incorrect codes. Please log in again." and starts over with the
   password, which sends a new code.
 - Every sign-in asks for a code. There is no "remember this device".
-- There is no resend button. To get a new code, go back to the login page
-  and enter the password again. That replaces the earlier code.
-- Wrong passwords are not counted, and no account is ever locked. The only
-  throttle on the password step is the one nginx applies. See the
-  [security checklist](security.md#tls-and-nginx).
+- There is no resend button. To get a new emailed code, go back to the
+  login page and enter the password again. That replaces the earlier code.
+- An app code is accepted once. The same code cannot sign in twice, even
+  within its 30 seconds. A phone whose clock is up to 30 seconds out still
+  signs in.
+- A user with an app cannot fall back to the emailed code. If the phone
+  is lost, see [Reset a user's authenticator app](#reset-a-users-authenticator-app).
+- **Repeated failures start a cooldown.** Kosmos counts wrong passwords
+  and wrong app codes per email address as typed, whether or not the
+  address belongs to anyone. The first five failures are free. The fifth
+  starts a 30-second wait, and each further failure doubles it, up to 15
+  minutes. During the wait the sign-in page answers "Too many failed
+  sign-ins. Try again in N minutes." without checking the password. A
+  completed sign-in clears the count, and so does an hour without a
+  failure. There is no permanent lock, and nothing to unlock. The nginx
+  limit in the [security checklist](security.md#tls-and-nginx) applies on
+  top of this.
 - On a production server sign-in works only over HTTPS. See
   [Django security settings](security.md#django-security-settings).
 - **Forgot Password?** on the login page emails a reset link (Django's
   standard flow; the link is good for three days). Setting a new password
   does not sign the user in. They still go through the two steps above.
-- Both the code and the reset link go to the same mailbox. Anyone who
-  controls a user's mailbox can therefore take over that user's Kosmos
-  account. Ask users to protect their email accounts accordingly.
+- For a user without an app, both the code and the reset link go to the
+  same mailbox. Anyone who controls that mailbox can take over the user's
+  Kosmos account. Ask users to protect their email accounts, or require
+  the app (below).
+
+## The authenticator app
+
+Any app that shows time-based six-digit codes (TOTP) works: Google
+Authenticator, Microsoft Authenticator, Authy, 1Password and the like.
+
+Each user sets up their own under **Settings → Security**: click **Set up
+an authenticator app**, scan the QR code (or type the key shown under it
+into the app), then enter the code the app shows and click **Confirm**.
+From the next sign-in the app's code replaces the emailed one. The same
+page has **Set up a new app** (for a new phone; the old app stops working
+once the new one is confirmed) and **Turn off**, which asks for a current
+code and returns the user to emailed codes.
+
+To make the app compulsory for the whole firm, open **Settings → Firm**
+and set **Require Authenticator App** to **Yes**. From then on:
+
+- A user who signs in without one is taken to **Settings → Security** and
+  can open nothing else (the menu still shows; every other page sends
+  them back) until they have set an app up. Sign out still works.
+- **Turn off** disappears from the Security page, and the server refuses
+  the request behind it.
+- Users who already had an app notice nothing.
+
+Setting it back to **No** lets each user choose again. Nobody's app is
+removed.
+
+The **App** column of **Settings → Users** shows a check for each user
+with an app set up.
+
+### Reset a user's authenticator app
+
+When a user loses the phone, an administrator opens **Settings → Users**,
+clicks the username and chooses **Reset Authenticator**. The entry is only
+offered for a user who has an app. The user gets an emailed code at their
+next sign-in and, if the firm requires the app, is taken to the Security
+page to set a new one up.
+
+If the person locked out is the only administrator, reset it from the
+checkout instead:
+
+```bash
+.venv/bin/python manage.py reset_authenticator <email>
+```
+
+The stored secrets are encrypted with a key derived from `SECRET_KEY`.
+If you change `SECRET_KEY`, every user's app stops being recognised:
+they get the emailed code at their next sign-in (or the Security page,
+if the app is required) and set the app up again.
 
 ## Add a user
 
@@ -78,23 +146,23 @@ You need the Admin role.
 
 1. Open **Settings → Users** (`/settings/users/`).
 2. Click the **+** button beside the title.
-3. Fill in the **Create User** form: username, password, first name, last
-   name, email and role. Click **Submit**.
+3. Fill in the **Create User** form: username (a short display name),
+   password, first name, last name, email and role. Click **Submit**. The
+   email address is what the user signs in with, so it is required and
+   no two users may share one.
 4. Click the new username in the list and choose **Edit** to set the rest:
    **Attorney**, **Title**, **Initials** and **Hourly Rate**.
 5. Open **Settings → Permissions** and switch off anything this person
    should not have. See [Permissions](#permissions).
-6. Give the user their username and password by some route other than the
-   email address on the account.
+6. Give the user their password by some route other than the email
+   address on the account.
 
 Things the form does not do for you:
 
-- It accepts a blank email address. Always enter one. Without it the user
-  cannot receive a sign-in code.
 - It does not test the password against the password rules. Neither does
   the user's own **Settings → Profile** password change. Only the
-  **Forgot Password?** flow, `createsuperuser` and the Django admin apply
-  them. Choose a strong password yourself.
+  **Forgot Password?** flow and `createsuperuser` apply them. Choose a
+  strong password yourself.
 - **A new user starts with all five permissions switched on.** Do step 5
   before you hand over the password.
 
@@ -116,7 +184,7 @@ from the user's next request.
 | Add, edit or delete time-entry abbreviation codes | Yes | No |
 | Connect or disconnect the firm's Google Calendar, Contacts and Drive | Yes | No. Any user can connect their own Gmail mailbox |
 | Dashboard "Collections" section | Yes | No |
-| Django admin at `/admin/` | Only with Django's staff flag as well | No |
+| Reset another user's authenticator app | Yes | No |
 
 A few menu entries are hidden from some users without the server refusing
 the address behind them. The matrix lists each one under
@@ -209,7 +277,7 @@ Set these under **Settings → Users → Edit**, except where noted.
 
 | Setting | Effect beyond the user's own screen |
 |---|---|
-| **Email** | Receives sign-in codes, password resets and the daily digest. Mail forwarded to the [intake address](integrations/inbound-email.md) is accepted only when it comes from an active user's email address. |
+| **Email** | The address the user signs in with. Receives sign-in codes, password resets and the daily digest. Mail forwarded to the [intake address](integrations/inbound-email.md) is accepted only when it comes from an active user's email address. |
 | **Attorney** and **Title** | The title is printed beside the user on a matter's activity report and fee and expense report, and is given to the AI as part of the firm roster. With no title, the user is described as "Attorney" when **Attorney** is Yes and "Staff" when it is No. |
 | **Hourly Rate** | Whole dollars. Used as the rate on the user's time entries unless the matter has its own rate for that user. |
 | **Initials** | Shown wherever the user is abbreviated, for example on task filter chips. |
@@ -260,32 +328,17 @@ email. It has no usable password. Leave it inactive.
 
 To check it worked, try to sign in as the user.
 
-## The Django admin
+## Repairs from the command line
 
-`/admin/` is Django's built-in database administration screen. It gives
-direct access to the stored records (users, matters, contacts, time and
-expense entries, invoices, payments, trust transactions, documents, notes,
-intakes, inbound intake email) and to the change history of many of them.
-Use it for repairs that Settings has no screen for: setting another user's
-password, inspecting an inbound email that did not become an intake,
-correcting a record. It bypasses the application's own rules, so treat it
-as a maintenance tool.
-
-Who can reach it:
-
-- The account must be active and have Django's staff flag. Only accounts
-  made with `createsuperuser` have it. **Settings → Users** never sets it.
-- The account must also have the Admin role. A signed-in user without that
-  role gets HTTP 403 on every `/admin/` address.
-
-The admin has no sign-in form of its own. `/admin/login/` redirects to
-`/accounts/login/`, so a superuser signs in with the password and the
-emailed code like everyone else and is then sent on to the admin. Keep the
-number of superuser accounts small all the same: once inside, the admin
-can change any record.
-
-Another way to set a password without the admin, from the checkout:
+There is no Django admin site: it was removed so that every change to a
+record goes through the application's own screens, where its rules apply.
+Two repairs that Settings has no screen for are done from the checkout:
 
 ```bash
 .venv/bin/python manage.py changepassword <username>
+.venv/bin/python manage.py reset_authenticator <email>
 ```
+
+`changepassword` takes the username (the display name), not the email
+address. For anything else, `manage.py shell` reaches every record, with
+no rules applied: treat it as a last resort.

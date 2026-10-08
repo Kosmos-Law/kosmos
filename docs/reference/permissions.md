@@ -24,7 +24,7 @@ All are fields on `CustomUser`
 | Intakes | `perm_intakes` | on | |
 | Reports | `perm_reports` | off | The one switch that starts off: the reports show the whole firm's figures. An administrator turns it on for each user who needs it. |
 | Research | `perm_research` | on | |
-| (not in Settings) | `is_staff`, `is_superuser` | off (on from `createsuperuser`) | Django's own flags. Needed for `/admin/` in addition to the Admin role. |
+| (not in Settings) | `is_staff`, `is_superuser` | off (on from `createsuperuser`) | Django's own flags. Nothing in Kosmos reads them; there is no Django admin. |
 | Status | `is_active` | on | Off refuses sign-in, ends existing sessions and rejects the user's API token. |
 
 ## Path rules (`PermissionMiddleware`)
@@ -52,7 +52,6 @@ it.
 |---|---|---|---|
 | 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
 | 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
-| 1 | Prefix | `/admin/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/permissions/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/firm/` | Admin role only |
@@ -89,7 +88,6 @@ What sits under each path:
 
 | Path | Features |
 |---|---|
-| `/admin/` | The Django admin. Django itself also requires `is_active` and `is_staff`. `/admin/login/` is not a form: see [Routes that need no sign-in](#routes-that-need-no-sign-in). |
 | `/settings/users/` | User list, create, edit, change role, switch status, toggle a permission, matter assignments. |
 | `/settings/permissions/` | The permissions matrix page. |
 | `/settings/firm/` | Firm details and logo. |
@@ -231,7 +229,8 @@ Not checked against `perm_financial`:
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: `/admin/…` and the six `/settings/…` paths in `ADMIN_ONLY_PATHS` | `apps/accounts/middleware.py` | 403 |
+| Middleware: the six `/settings/…` paths in `ADMIN_ONLY_PATHS` | `apps/accounts/middleware.py` | 403 |
+| Reset another user's authenticator app | `apps/settings/users/views.py` | 403 |
 | Toggle a permission, open or change matter assignments, checked again in the view | `apps/settings/users/views.py` | 403 |
 | Delete a matter | `apps/matters/views.py` | 403 |
 | Delete a voided invoice | `apps/invoicing/invoices/views.py` | 403 |
@@ -287,12 +286,12 @@ nginx appends. The nginx limits in the
 
 | Route | Methods | Purpose | Protected by | App limit |
 |---|---|---|---|---|
-| `/accounts/login/` | GET, POST | Username and password step | Password | None |
-| `/accounts/login/verify/` | GET, POST | Emailed code step | Session from the password step, plus the code. Five wrong codes delete the code. | None |
+| `/accounts/login/` | GET, POST | Email and password step | Password. After five failures per email address, a cooldown of 30 seconds doubling to 15 minutes, during which the password is not checked. | The cooldown (in the database, shared by every worker) |
+| `/accounts/login/verify/` | GET, POST | Emailed code step, for a user without an authenticator app | Session from the password step, plus the code. Five wrong codes delete the code. | None |
+| `/accounts/login/authenticator/` | GET, POST | Authenticator app step, for a user with one | Session from the password step, plus the app's current code, accepted once. Wrong codes count toward the same cooldown as wrong passwords. | The cooldown |
 | `/accounts/logout/` | GET, POST | Sign out | Nothing | None |
 | `/accounts/password_reset/`, `/accounts/password_reset/done/` | GET, POST | Request a password-reset email | Nothing | None |
 | `/accounts/reset/<uidb64>/<token>/`, `/accounts/reset/done/` | GET, POST | Set a new password | Django's signed reset token (three days) | None |
-| `/admin/login/` | Any | Redirects to `/accounts/login/`. A `next` value is kept only when it stays on the same host; otherwise the admin index is used. | Nothing. It has no form and signs nobody in. | None |
 | `/health/live/` | GET, HEAD | Returns `{"status": "ok"}` | Nothing | None |
 | `/health/ready/` | GET, HEAD | Runs `SELECT 1`; 200 or 503 | Nothing | None |
 | `/health/worker/` | GET, HEAD | 200 when no repeating schedule is more than five minutes overdue; 503 when one is, when no schedules are installed, or when the database cannot be read | Nothing | None |

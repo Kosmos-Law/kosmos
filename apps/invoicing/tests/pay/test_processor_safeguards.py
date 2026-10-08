@@ -205,7 +205,7 @@ def test_staff_cannot_send_a_trust_request_the_processor_cannot_route(
 ):
     _use_stripe(settings)
     client = Client()
-    client.login(username="Ollie", password="clawboy")
+    client.force_login(user)
     client.get("/dash/")  # Set daily dash session to avoid redirect
     url = reverse("invoicing:requests-new-trust")
 

@@ -1,0 +1,87 @@
+<div id="authenticator-panel" class="authenticator-panel">
+  <h2 class="settings-section">Authenticator App</h2>
+  <hr />
+  {% if setup %}
+    <ol class="authenticator-steps">
+      <li>Open your authenticator app and choose to add an account.</li>
+      <li>
+        Scan this code, or type the key into the app by hand.
+        <div class="authenticator-qr">{{ qr_svg|safe }}</div>
+        <div class="authenticator-key">
+          {% for group in secret_groups %}<span>{{ group }}</span>{% endfor %}
+        </div>
+      </li>
+      <li>Enter the six-digit code the app shows, to check it is set up right.</li>
+    </ol>
+    {% if error %}<div class="auth-error">{{ error }}</div>{% endif %}
+    <form class="authenticator-form"
+          hx-post="{% url 'settings:authenticator-confirm' %}"
+          hx-target="#authenticator-panel"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      {{ form.code }}
+      <button type="submit" class="btn btn-success">Confirm</button>
+      <button type="button"
+              class="btn btn-secondary"
+              hx-get="{% url 'settings:authenticator-panel' %}"
+              hx-target="#authenticator-panel"
+              hx-swap="outerHTML">Cancel</button>
+    </form>
+  {% elif disabling %}
+    <p class="detail-text">
+      Enter the current code from your app to turn it off. You will get a
+      code by email at each sign-in instead.
+    </p>
+    {% if error %}<div class="auth-error">{{ error }}</div>{% endif %}
+    <form class="authenticator-form"
+          hx-post="{% url 'settings:authenticator-disable' %}"
+          hx-target="#authenticator-panel"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      {{ form.code }}
+      <button type="submit" class="btn btn-danger">Turn off</button>
+      <button type="button"
+              class="btn btn-secondary"
+              hx-get="{% url 'settings:authenticator-panel' %}"
+              hx-target="#authenticator-panel"
+              hx-swap="outerHTML">Cancel</button>
+    </form>
+  {% elif enrolled %}
+    <p class="detail-text">
+      <i class="icon-circle-check true-bool"></i>
+      An authenticator app is set up. Its code is your second sign-in step.
+    </p>
+    <div class="authenticator-actions">
+      <form hx-post="{% url 'settings:authenticator-setup' %}"
+            hx-target="#authenticator-panel"
+            hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary">Set up a new app</button>
+      </form>
+      {% if not required %}
+        <button type="button"
+                class="btn btn-danger"
+                hx-get="{% url 'settings:authenticator-panel' %}?mode=disable"
+                hx-target="#authenticator-panel"
+                hx-swap="outerHTML">Turn off</button>
+      {% endif %}
+    </div>
+    {% if required %}
+      <p class="detail-text">
+        Your firm requires the app, so it cannot be turned off here. If you
+        lose your phone, an administrator can reset it from Settings &rarr; Users.
+      </p>
+    {% endif %}
+  {% else %}
+    <p class="detail-text">
+      No authenticator app is set up. A code is sent to {{ user.email }} at
+      each sign-in.
+    </p>
+    <form hx-post="{% url 'settings:authenticator-setup' %}"
+          hx-target="#authenticator-panel"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success">Set up an authenticator app</button>
+    </form>
+  {% endif %}
+</div>

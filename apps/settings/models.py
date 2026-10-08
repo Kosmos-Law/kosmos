@@ -47,6 +47,10 @@ class Firm(AuditMixin):
     # (apps/settings/ai.py). A key in config/.env takes precedence.
     gemini_api_key = models.TextField(blank=True, default="")
     anthropic_api_key = models.TextField(blank=True, default="")
+    # Every user must sign in with an authenticator app. A user without one
+    # is taken to Settings > Security after signing in and can go nowhere
+    # else until it is set up (apps/accounts/middleware.py).
+    require_authenticator = models.BooleanField(default=False)
 
     class Meta:
         verbose_name_plural = "firms"

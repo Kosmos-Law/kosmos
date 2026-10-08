@@ -186,6 +186,7 @@ nav = [
       { "2026-08-06: Drafts are companion-first over a Drive .odt" = "decisions/2026-08-06-drafts-are-companion-first.md" },
       { "2026-08-11: Notes are app-owned and carry no AI knobs" = "decisions/2026-08-11-notes-are-app-owned-with-no-ai-knobs.md" },
       { "2026-10-02: The case-law viewer renders CourtListener's HTML unsanitised" = "decisions/2026-10-02-opinion-html-rendered-as-is.md" },
+      { "2026-10-08: Sign in by email, an authenticator app, a cooldown, no Django admin" = "decisions/2026-10-08-email-sign-in-authenticator-app-and-no-admin.md" },
     ] },
   ] },
 ]

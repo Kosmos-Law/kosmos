@@ -9,6 +9,12 @@ see its arguments.
 Which of these an operator needs, and when, is covered in
 [Background worker](../admin/worker.md#management-commands-an-operator-uses).
 
+## accounts
+
+| Command | What it does |
+|---|---|
+| `reset_authenticator` | Remove a user's authenticator app, by email address, for when the phone is lost and no administrator can reset it from Settings > Users. The user gets the emailed code at their next sign-in. |
+
 ## calendar
 
 | Command | What it does |

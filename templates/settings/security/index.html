@@ -1,0 +1,19 @@
+{% extends "settings/main.html" %}
+{% block subcontent %}
+  <div class="settings">
+    <div class="toolbar">
+      <h1>Security</h1>
+    </div>
+    <p class="detail-text">
+      You sign in with your email address and password, then a second
+      step: a code from an authenticator app on your phone, or, until you
+      set one up, a code sent to your email. The app is the stronger of the
+      two. Any app that shows time-based codes works, such as Google
+      Authenticator, Microsoft Authenticator, Authy or 1Password.
+    </p>
+    {% if required and not enrolled %}
+      <div class="auth-error">Your firm requires an authenticator app. Set one up below to continue.</div>
+    {% endif %}
+    {% include "settings/security/authenticator.html" %}
+  </div>
+{% endblock subcontent %}

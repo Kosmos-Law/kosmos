@@ -1,11 +1,12 @@
 from django import forms
 
+from apps.accounts.forms import UniqueEmailMixin
 from apps.accounts.models import CustomUser
 from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 
-class UserForm(forms.ModelForm):
+class UserForm(UniqueEmailMixin, forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = [
@@ -42,7 +43,7 @@ class UserForm(forms.ModelForm):
         self.renderer = CustomFormRendererCompact()
 
 
-class CreateUserForm(forms.ModelForm):
+class CreateUserForm(UniqueEmailMixin, forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = [
@@ -56,6 +57,10 @@ class CreateUserForm(forms.ModelForm):
         widgets = {
             "username": forms.TextInput(attrs={"class": ""}),
             "password": forms.PasswordInput(attrs={"class": ""}),
+        }
+        help_texts = {
+            "email": "The address the user signs in with.",
+            "username": "A short display name, shown on tasks and entries.",
         }
 
     def __init__(self, *args, **kwargs):

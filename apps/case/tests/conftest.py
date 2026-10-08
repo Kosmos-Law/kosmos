@@ -24,7 +24,7 @@ def user():
 @pytest.fixture
 def client(user):
     client = Client()
-    client.login(username="testuser", password="testpass123")
+    client.force_login(user)
     client.get("/dash/")  # Set daily dash session to avoid redirect
     return client
 

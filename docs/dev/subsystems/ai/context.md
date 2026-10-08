@@ -224,8 +224,7 @@ with a logged warning, and the provider counts as unconfigured. The
 admin-only form is `ai_key_save` in `apps/settings/integrations/views.py`
 (`templates/settings/integrations/ai.html`): `verify_ai_key()` lists the
 provider's models with the candidate key before saving it, and an empty
-value removes it. `FirmAdmin` in `apps/settings/admin.py` excludes both
-fields from the Django admin. There is no cache: each check reads the
+value removes it. There is no cache: each check reads the
 `Firm` row (at most once per call), so a saved key takes effect in every
 process at once.
 

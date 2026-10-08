@@ -228,8 +228,8 @@ The worker runs as the account that owns the checkout and talks to the
 database as the application does; tasks have no request and no user, so
 anything they save through `AuditMixin` records no `created_by`. The
 health URLs are unauthenticated by design (a monitor cannot sign in).
-The Django-Q admin pages are behind the Django admin, which
-`PermissionMiddleware` restricts to users with `is_admin`; see
+There is no Django admin; the task records are reached with the task
+library's commands and the shell, see
 [Monitoring](../../admin/monitoring.md#failed-and-queued-background-tasks).
 
 ## Things that bite

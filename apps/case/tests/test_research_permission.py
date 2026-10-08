@@ -31,7 +31,7 @@ def no_research_client(user):
     user.perm_research = False
     user.save()
     client = Client()
-    client.login(username="testuser", password="testpass123")
+    client.force_login(user)
     client.get("/dash/")
     return client
 
@@ -90,7 +90,7 @@ def test_an_admin_is_never_refused(user, matter, case_law):
     user.role = "ADMIN"
     user.save()
     client = Client()
-    client.login(username="testuser", password="testpass123")
+    client.force_login(user)
     client.get("/dash/")
 
     assert client.get(f"/case/{matter.id}/caselaws/list/").status_code == 200

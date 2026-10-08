@@ -1,17 +1,17 @@
 import hmac
+import math
 
 from django.conf import settings
-from django.contrib.auth import login
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth import authenticate, login
 from django.db.models import F
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 
-from .forms import VerificationCodeForm
-from .models import CustomUser, EmailVerificationCode
+from . import totp
+from .forms import CodeForm, EmailLoginForm
+from .models import CustomUser, EmailVerificationCode, SignInThrottle
 from .utils import generate_verification_code, send_verification_email
 
 # Wrong codes allowed before the emailed code is thrown away and the user
@@ -32,17 +32,20 @@ def _safe_next_url(request, url):
     return ""
 
 
-def admin_login(request):
-    """Replace Django admin's own sign-in form, which takes a password alone,
-    with the emailed-code sign-in every other page uses."""
-    next_url = _safe_next_url(request, request.GET.get("next", ""))
-    return redirect_to_login(
-        next_url or reverse("admin:index"), login_url=reverse("accounts:login")
-    )
+def cooldown_message(until):
+    """What to tell a user whose address is in a cooldown."""
+    seconds = max(1, math.ceil((until - timezone.now()).total_seconds()))
+    if seconds < 60:
+        wait = f"{seconds} second{'s' if seconds != 1 else ''}"
+    else:
+        minutes = math.ceil(seconds / 60)
+        wait = f"{minutes} minute{'s' if minutes != 1 else ''}"
+    return f"Too many failed sign-ins. Try again in {wait}."
 
 
 class LoginView(View):
-    """Step 1: Validate username/password, then send verification code."""
+    """Step 1: email and password. A user with an authenticator app goes on
+    to its code; anyone else is sent a code by email."""
 
     template_name = "registration/login.html"
 
@@ -50,7 +53,7 @@ class LoginView(View):
         # If user is already authenticated, redirect
         if request.user.is_authenticated:
             return redirect(settings.LOGIN_REDIRECT_URL)
-        form = AuthenticationForm()
+        form = EmailLoginForm()
         return render(
             request,
             self.template_name,
@@ -58,32 +61,65 @@ class LoginView(View):
         )
 
     def post(self, request):
-        form = AuthenticationForm(request, data=request.POST)
+        form = EmailLoginForm(request.POST)
+        context = {"form": form, "next": request.POST.get("next", "")}
 
-        if form.is_valid():
-            user = form.get_user()
-            EmailVerificationCode.objects.filter(user=user).delete()
-            code = generate_verification_code()
-            EmailVerificationCode.objects.create(user=user, code=code)
-            send_verification_email(user, code)
-            request.session["pending_user_id"] = user.id
-            next_url = _safe_next_url(
-                request, request.POST.get("next") or request.GET.get("next", "")
-            )
-            if next_url:
-                request.session["login_next_url"] = next_url
-            return redirect("accounts:login-verify")
+        if not form.is_valid():
+            return render(request, self.template_name, context)
 
-        # Invalid credentials - show form with errors
-        return render(
-            request,
-            self.template_name,
-            {"form": form, "next": request.POST.get("next", "")},
+        email = form.cleaned_data["email"]
+        until = SignInThrottle.locked_until(email)
+        if until:
+            # Not even checked: a cooldown that still ran the password would
+            # be no cooldown at all.
+            context["error"] = cooldown_message(until)
+            return render(request, self.template_name, context)
+
+        user = authenticate(
+            request, email=email, password=form.cleaned_data["password"]
         )
+        if user is None:
+            SignInThrottle.record_failure(email)
+            context["error"] = "The email address or password is not right."
+            return render(request, self.template_name, context)
+
+        # The cooldown is cleared only when the second step passes: the
+        # authenticator code gets the same budget of guesses.
+        request.session["pending_user_id"] = user.id
+        request.session["pending_email"] = email
+        next_url = _safe_next_url(
+            request, request.POST.get("next") or request.GET.get("next", "")
+        )
+        if next_url:
+            request.session["login_next_url"] = next_url
+
+        if totp.usable_authenticator(user):
+            return redirect("accounts:login-authenticator")
+
+        EmailVerificationCode.objects.filter(user=user).delete()
+        code = generate_verification_code()
+        EmailVerificationCode.objects.create(user=user, code=code)
+        send_verification_email(user, code)
+        return redirect("accounts:login-verify")
+
+
+def _finish_login(request, user):
+    """The second step passed: sign the user in and forget the pending
+    state, the failure count included."""
+    SignInThrottle.clear(request.session.pop("pending_email", user.email))
+    request.session.pop("pending_user_id", None)
+    next_url = request.session.pop("login_next_url", None)
+    login(request, user)
+    return redirect(next_url or settings.LOGIN_REDIRECT_URL)
+
+
+def _abandon_login(request):
+    for key in ("pending_user_id", "pending_email", "login_next_url"):
+        request.session.pop(key, None)
 
 
 class VerifyCodeView(View):
-    """Step 2: Verify the emailed code and complete login."""
+    """Step 2 (no authenticator): the emailed code."""
 
     template_name = "registration/verify_code.html"
 
@@ -92,7 +128,7 @@ class VerifyCodeView(View):
         if "pending_user_id" not in request.session:
             return redirect("accounts:login")
 
-        form = VerificationCodeForm()
+        form = CodeForm()
         return render(request, self.template_name, {"form": form})
 
     def post(self, request):
@@ -101,7 +137,7 @@ class VerifyCodeView(View):
         if not pending_user_id:
             return redirect("accounts:login")
 
-        form = VerificationCodeForm(request.POST)
+        form = CodeForm(request.POST)
 
         if form.is_valid():
             code = form.cleaned_data["code"]
@@ -112,7 +148,7 @@ class VerifyCodeView(View):
 
             if user is None or verification is None:
                 # The code was used, or discarded after too many wrong tries.
-                del request.session["pending_user_id"]
+                _abandon_login(request)
                 return self._error(request, form, "Please log in again.")
 
             if verification.is_expired():
@@ -131,7 +167,7 @@ class VerifyCodeView(View):
                 verification.refresh_from_db()
                 if verification.attempts >= MAX_CODE_ATTEMPTS:
                     verification.delete()
-                    del request.session["pending_user_id"]
+                    _abandon_login(request)
                     return self._error(
                         request, form, "Too many incorrect codes. Please log in again."
                     )
@@ -139,12 +175,54 @@ class VerifyCodeView(View):
 
             # Success - clean up and log in
             verification.delete()
-            del request.session["pending_user_id"]
-            next_url = request.session.pop("login_next_url", None)
-            login(request, user)
-            return redirect(next_url or settings.LOGIN_REDIRECT_URL)
+            return _finish_login(request, user)
 
         return render(request, self.template_name, {"form": form})
+
+    def _error(self, request, form, message):
+        return render(request, self.template_name, {"form": form, "error": message})
+
+
+class AuthenticatorCodeView(View):
+    """Step 2 (authenticator app): the code the app shows. Wrong codes count
+    toward the same cooldown as wrong passwords, and the step refuses while
+    the address is in one; there is no fallback to the emailed code, which
+    would make the app no stronger than the inbox."""
+
+    template_name = "registration/verify_authenticator.html"
+
+    def get(self, request):
+        if "pending_user_id" not in request.session:
+            return redirect("accounts:login")
+        return render(request, self.template_name, {"form": CodeForm()})
+
+    def post(self, request):
+        pending_user_id = request.session.get("pending_user_id")
+        if not pending_user_id:
+            return redirect("accounts:login")
+
+        form = CodeForm(request.POST)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form})
+
+        user = CustomUser.objects.filter(id=pending_user_id).first()
+        authenticator = totp.usable_authenticator(user) if user else None
+        if authenticator is None:
+            _abandon_login(request)
+            return redirect("accounts:login")
+
+        email = request.session.get("pending_email", user.email)
+        until = SignInThrottle.locked_until(email)
+        if until:
+            return self._error(request, form, cooldown_message(until))
+
+        if not totp.verify(authenticator, form.cleaned_data["code"]):
+            SignInThrottle.record_failure(email)
+            until = SignInThrottle.locked_until(email)
+            message = cooldown_message(until) if until else "That code is not right."
+            return self._error(request, form, message)
+
+        return _finish_login(request, user)
 
     def _error(self, request, form, message):
         return render(request, self.template_name, {"form": form, "error": message})

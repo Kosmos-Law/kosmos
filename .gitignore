@@ -1,6 +1,5 @@
 *.pyc
 static/bootstrap*
-static/admin
 tags*
 .coverage
 .env

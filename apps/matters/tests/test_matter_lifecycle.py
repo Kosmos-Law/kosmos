@@ -25,7 +25,7 @@ def admin_client(user):
     user.role = "ADMIN"
     user.save()
     client = Client()
-    client.login(username="Ollie", password="clawboy")
+    client.force_login(user)
     client.get("/dash/")
     return client
 
@@ -191,7 +191,7 @@ def test_a_restricted_user_can_open_the_matter_they_add(practice_area):
     user.set_password("clawboy")
     user.save()
     client = Client()
-    client.login(username="Rae", password="clawboy")
+    client.force_login(user)
     client.get("/dash/")
 
     response = client.post(
@@ -314,7 +314,7 @@ def test_moving_and_comping_on_a_matter_need_the_financial_permission(user, matt
     user.perm_financial = False
     user.save()
     client = Client()
-    client.login(username="Ollie", password="clawboy")
+    client.force_login(user)
     client.get("/dash/")
     entry = TimeEntry.objects.create(
         user=user, matter=matter, date="2020-01-07", actions="Call", hours=1, rate=100

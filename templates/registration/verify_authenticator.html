@@ -1,0 +1,22 @@
+{% extends "registration/base.html" %}
+{% load firm_tags %}
+{% block title %}
+  Authenticator Code
+{% endblock title %}
+{% block content %}
+  <div class="auth-container">
+    <div class="auth-card">
+      {% auth_brand %}
+      <p class="auth-info">Enter the code shown in your authenticator app.</p>
+      {% if error %}<div class="auth-error">{{ error }}</div>{% endif %}
+      <form id="verify-form" class="account-form" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="auth-buttons justify-between">
+          <a href="{% url 'accounts:login' %}">Back to Login</a>
+          <button type="submit" class="btn btn-success">Verify</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

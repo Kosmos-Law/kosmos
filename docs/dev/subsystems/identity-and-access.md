@@ -13,20 +13,23 @@ the machinery behind it and does not repeat the gates.
 
 | Module | Holds |
 |---|---|
-| `apps/accounts/models.py` | `CustomUser`, `EmailVerificationCode` |
-| `apps/accounts/views.py` | The two-step sign-in (`LoginView`, `VerifyCodeView`), `admin_login` |
+| `apps/accounts/models.py` | `CustomUser`, `EmailVerificationCode`, `Authenticator`, `SignInThrottle` |
+| `apps/accounts/backends.py` | `EmailBackend`: sign-in by email address |
+| `apps/accounts/views.py` | The two-step sign-in (`LoginView`, then `VerifyCodeView` or `AuthenticatorCodeView`) |
+| `apps/accounts/totp.py` | Authenticator secrets: encryption, QR code, code checks |
 | `apps/accounts/utils.py` | Code generation and the email that carries it |
-| `apps/accounts/middleware.py` | `HtmxLoginRedirectMiddleware`, `PermissionMiddleware` |
+| `apps/accounts/middleware.py` | `HtmxLoginRedirectMiddleware`, `PermissionMiddleware`, `AuthenticatorRequiredMiddleware` |
 | `apps/accounts/access.py` | `matter_access_required`, `filter_matters_for_user`, `MATTER_LOOKUPS`, `user_may_use_route` |
 | `apps/accounts/managers.py` | `CustomUserManager`: `createsuperuser` makes an `ADMIN` |
 | `apps/dash/middleware.py` | `DailyDashCheckMiddleware`, the once-a-day Dash redirect |
 | `apps/<app>/access.py` | Per-application queryset narrowing and direct-hit refusals (list below) |
-| `apps/settings/users/` | The Users page: create, edit, role, status, flags, matter assignments |
+| `apps/settings/users/` | The Users page: create, edit, role, status, flags, matter assignments, authenticator reset |
+| `apps/settings/security/` | Settings > Security: the user's own authenticator app |
 | `apps/settings/permissions/` | The read-only permissions matrix page |
 | `apps/settings/claude/views.py` | Issue, rotate and revoke the API token |
 | `apps/drafts/models.py` | `CompanionToken` |
 | `apps/drafts/api_auth.py`, `apps/drafts/companion.py` | `kosmos_api_auth` and `companion_auth`, the token decorators |
-| `templates/registration/` | `login.html`, `verify_code.html` |
+| `templates/registration/` | `login.html`, `verify_code.html`, `verify_authenticator.html` |
 
 ## Data model
 
@@ -34,9 +37,14 @@ the machinery behind it and does not repeat the gates.
 `AUTH_USER_MODEL`. Beyond Django's own fields it carries:
 
 - `role`: `ADMIN` or `USER` (`ROLE_OPTIONS`). `is_admin` is a property on
-  the role. Django's `is_staff` and `is_superuser` are separate: the
-  application never consults them, but the Django admin at `/admin/` needs
-  `is_staff` on top of the Admin role. `createsuperuser` sets all three.
+  the role. Django's `is_staff` and `is_superuser` are separate and
+  nothing consults them (there is no Django admin). `createsuperuser`
+  sets all three.
+- `email` is the sign-in name. A `UniqueConstraint` on `Lower("email")`,
+  conditioned on the address not being blank, keeps each address to one
+  user; `UniqueEmailMixin` (`apps/accounts/forms.py`) gives every form
+  that edits it the same rule with a readable message. `username` is a
+  display name.
 - The five permission flags, listed in `CustomUser.PERM_FIELDS`:
   `perm_all_matters`, `perm_financial`, `perm_intakes`, `perm_reports`,
   `perm_research`. All default to on except `perm_reports`. The Users page
@@ -66,6 +74,23 @@ opening more browser sessions does not multiply the guesses. `is_expired()`
 measures five minutes with `total_seconds()`; the comment there records
 why `.seconds` was wrong (it wraps every 24 hours).
 
+**`Authenticator`** is one row per user with an authenticator app:
+`user` (one-to-one), the TOTP `secret` encrypted with a Fernet key
+derived from `SECRET_KEY` (`apps/accounts/totp.py`, the same scheme as
+the AI keys), and `last_counter`, the 30-second step of the last code
+accepted, so a code is good once. A row whose secret no longer decrypts
+(rotated `SECRET_KEY`) is treated as no authenticator by
+`usable_authenticator()`.
+
+**`SignInThrottle`** is one row per email address that has failed a
+sign-in, as typed and lowercased, whether or not it belongs to a user:
+`failures` and `last_failure_at`. `cooldown_for(failures)` is zero below
+`FREE_FAILURES` (5), then `COOLDOWN_BASE` (30 s) doubling to
+`COOLDOWN_CAP` (15 min). `record_failure()` forgets failures older than
+`FAILURE_MEMORY` (an hour) before counting, and drops rows untouched for
+a day. It is a table, not a cache entry, so the count is the same in
+every worker process.
+
 **`CompanionToken`** is a `OneToOneField` to the user with a `key` from
 `secrets.token_urlsafe(32)` (`unique=True`, no expiry). `for_user()` is a
 `get_or_create`, so a user has at most one token and the LibreOffice
@@ -84,25 +109,62 @@ middleware. The sign-in itself is two steps in `apps/accounts/views.py`,
 mounted at `accounts/login/` and `accounts/login/verify/` ahead of
 `django.contrib.auth.urls`:
 
-1. `LoginView` validates username and password with Django's
-   `AuthenticationForm`. On success it deletes any earlier code for the
-   user, creates a new `EmailVerificationCode`, sends it with
-   `send_verification_email()` (through `send_mail`, so the operator's
-   email settings decide whether it arrives), stores `pending_user_id` in
-   the session and redirects to the verify page. The `next` parameter is
-   kept only when `_safe_next_url()` accepts it as same-host.
+1. `LoginView` takes `EmailLoginForm` (email and password). Before the
+   password is looked at, `SignInThrottle.locked_until(email)` is
+   checked: in a cooldown, the page answers with the wait and nothing
+   else runs. Otherwise `authenticate()` goes through `EmailBackend`, the
+   only backend in `AUTHENTICATION_BACKENDS`: it finds the user by
+   `email__iexact`, and when there is none still runs a hash so the
+   timing is the same. A failure calls `record_failure()`. On success the
+   view stores `pending_user_id` and `pending_email` in the session (the
+   `next` parameter too, when `_safe_next_url()` accepts it as same-host)
+   and then branches: a user with a `usable_authenticator()` is sent to
+   the authenticator page; anyone else gets a fresh `EmailVerificationCode`
+   (any earlier one deleted), sent with `send_verification_email()`
+   through `send_mail`, and the verify page.
 2. `VerifyCodeView` needs `pending_user_id` in the session, otherwise it
    sends the user back to step 1. It compares the submitted code with
    `hmac.compare_digest()`. A wrong code increments `attempts` with an
    `F()` expression; at `MAX_CODE_ATTEMPTS` (5) the code is deleted and
    the session cleared, so the user must pass the password step again. An
-   expired code is deleted the same way. On success the code is deleted,
-   `login()` runs, and the user lands on `login_next_url` or
-   `LOGIN_REDIRECT_URL` (`tasks:index`).
+   expired code is deleted the same way. On success the code is deleted
+   and `_finish_login()` runs.
+3. `AuthenticatorCodeView` is the alternative second step. It refuses
+   during a cooldown, and a wrong code is a `record_failure()` like a
+   wrong password, so the app gets the same budget of guesses. The code
+   is checked by `totp.verify()`: the step that matches, within one step
+   of drift either side, must be later than the row's `last_counter`,
+   which it then becomes. There is no route from here to the emailed
+   code; an enrolled user who reaches `VerifyCodeView` finds no code row
+   and is sent back to step 1.
 
-`admin_login` replaces the Django admin's own form: `/admin/login/` is
-`redirect_to_login` toward `accounts:login`, so the admin is reached only
-through the code.
+`_finish_login()` clears the throttle row for the address, forgets the
+pending keys, calls `login()` and sends the user to `login_next_url` or
+`LOGIN_REDIRECT_URL` (`tasks:index`). The throttle is cleared only here,
+not after the password step, so a known password does not buy unlimited
+code guesses.
+
+`AuthenticatorRequiredMiddleware` enforces `Firm.require_authenticator`:
+a signed-in user without an `Authenticator` row may reach only
+`/settings/security/`, `/accounts/` (sign-out), `/static/` and `/media/`;
+any other path is a redirect there (`HX-Redirect` for an HTMX request).
+It runs after `PermissionMiddleware` and costs one `Firm` read per
+request.
+
+Enrolment is in `apps/settings/security/views.py`: `authenticator_setup`
+makes a secret with `pyotp.random_base32()`, keeps it in the session
+under `authenticator_setup_secret` and renders the QR code (`segno`,
+inline SVG, black on white whatever the theme) and the key in groups of
+four; `authenticator_confirm` checks a code against that secret and only
+then writes the row through `totp.enrol()`, recording the confirming
+code's step as spent. `authenticator_disable` takes a current code and
+is a 403 while the firm requires the app. An administrator's
+`reset_authenticator` view on the Users page, and the
+`reset_authenticator` management command, delete the row.
+
+There is no Django admin: `django.contrib.admin` is not installed and no
+app has an `admin.py`. One consequence for the app registry is under
+Things that bite.
 
 Sessions are database-backed, last `SESSION_COOKIE_AGE` (56 days) and are
 renewed on every request (`SESSION_SAVE_EVERY_REQUEST`). On `ENV=dev` the
@@ -111,6 +173,9 @@ database reload would otherwise sign everyone out. Deactivating a user
 (`is_active` off) ends their sessions through Django's own
 `ModelBackend.user_can_authenticate()`; nothing in the application has to
 do it.
+
+Sessions, the throttle and the authenticator rows are the only sign-in
+state. Nothing is cached, so prod's several worker processes agree.
 
 `HtmxLoginRedirectMiddleware` turns the `302` a logged-out HTMX request
 would get into a `200` with an `HX-Redirect` header, so an expired session
@@ -133,7 +198,7 @@ provider is configured, or `CASELAW_PATTERN` while there is no
 CourtListener token, gets `404` (the feature does not exist on this
 server; see [AI is optional](ai/context.md#ai-is-optional)). The rest
 runs for signed-in non-admins only and answers `403` with an empty body.
-It checks, in order: `/admin/`; `ADMIN_ONLY_PATHS` (the settings pages that change the
+It checks, in order: `ADMIN_ONLY_PATHS` (the settings pages that change the
 firm); `PERMISSION_PATHS`, a list of `(prefix, flag)` pairs; then
 `PERMISSION_PATTERNS`, compiled regexes for pages whose path begins with a
 matter id (`/matters/<id>/rates`, `/matters/<id>/ledger`, and the Research
@@ -253,7 +318,7 @@ administrators alone, so a firm with none is locked out until someone uses
 the server's command line.
 
 Users are deactivated, never deleted, from the application; prefer
-`is_active` to deleting a user row in the Django admin.
+`is_active` to deleting a user row from a shell.
 
 ## Access
 
@@ -287,10 +352,22 @@ belong here because they are easy to get wrong when adding a feature:
 - **Three lists must agree.** `PERM_FIELDS`, `VALID_PERMS` and
   `PERM_COLUMNS` each name the flags. Miss one and the toggle returns
   `400` or the matrix page omits the flag.
-- **`is_staff` is not the Admin role.** A user made `ADMIN` in Settings
-  cannot open `/admin/` until `is_staff` is set in the Django admin; a
-  `createsuperuser` account has both. The application's checks read only
-  `role`.
+- **`is_staff` is not the Admin role.** The application's checks read
+  only `role`; `is_staff` and `is_superuser` are set by `createsuperuser`
+  and read by nothing.
+- **Sub-package models must be imported from the app's `models.py`.**
+  `apps/invoicing/models.py`, and the foot of `apps/activity/models.py`
+  and `apps/matters/models.py`, import the models that live in
+  sub-packages (`invoicing/payments/models.py`, `activity/time/models.py`,
+  `matters/rates/models.py` and the rest). Until the admin was removed,
+  the `admin.py` files imported them at start-up as a side effect; without
+  those imports the registry lacks them until a URL import happens to load
+  them, and anything earlier (a `shell` one-liner, the test database's
+  serialisation) fails with "Related model 'invoicing.payment' cannot be
+  resolved". A new sub-package model needs a line there.
+- **Tests sign in with `force_login`.** `client.login(username=...)`
+  reaches `EmailBackend`, which reads the value as an email address, so a
+  username there finds nobody.
 - **The code is stored in clear and counted on the row.** Tests that
   assert on guesses must count `EmailVerificationCode.attempts`, not
   session state; and a second `LoginView` POST deletes the first code, so

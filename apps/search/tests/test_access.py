@@ -17,7 +17,7 @@ def _client(**user_fields):
     user.set_password("clawboy")
     user.save()
     client = Client()
-    client.login(username="Rae", password="clawboy")
+    client.force_login(user)
     client.get("/dash/")
     return client, user
 

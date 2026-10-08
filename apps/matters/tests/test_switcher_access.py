@@ -27,7 +27,7 @@ def restricted_client(matter):
     user.save()
     matter.members.add(user)
     client = Client()
-    client.login(username="Rae", password="clawboy")
+    client.force_login(user)
     client.get("/dash/")
     return client
 

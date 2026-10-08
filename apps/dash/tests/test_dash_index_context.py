@@ -15,7 +15,7 @@ def test_no_open_intakes_in_the_context():
     user.set_password("clawboy")
     user.save()
     client = Client()
-    client.login(username="Ollie", password="clawboy")
+    client.force_login(user)
     response = client.get(reverse("dash:index"))
     assert response.status_code == 200
     assert "open_intakes" not in response.context

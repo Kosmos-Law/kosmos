@@ -181,7 +181,6 @@ order.
 | `createcachetable` | Creates the `ai_status_cache` table. Django's own command. |
 | `installwatson`, `buildwatson` | Add the full-text search column and build the search index. From the search library. |
 | `setup_schedules` | Creates or updates every recurring job. |
-| `collectstatic` | Production only. Copies Django's admin assets into `static/`. |
 | `createsuperuser` | Creates the first user. |
 | `seed_intake_forms` | Optional. Loads starter intake form templates. They were written for one firm's practice, so review them before use. `--list` shows them; existing forms are left alone unless you pass `--replace`. |
 | `link_drive_folders` | After connecting Google Drive. Interactive: matches Drive folders to matters. `--list` only reports. |

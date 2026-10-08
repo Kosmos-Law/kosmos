@@ -68,7 +68,7 @@ def test_delete_confirmation(matter, user):
     user.role = "ADMIN"
     user.save()
     admin_client = Client()
-    admin_client.login(username="Ollie", password="clawboy")
+    admin_client.force_login(user)
     admin_client.get("/dash/")
     response = admin_client.get(f"/matters/{matter.id}/delete")
     assert response.status_code == 200
@@ -88,7 +88,7 @@ def test_delete_confirm(matter, user):
     user.role = "ADMIN"
     user.save()
     admin_client = Client()
-    admin_client.login(username="Ollie", password="clawboy")
+    admin_client.force_login(user)
     admin_client.get("/dash/")
     response = admin_client.delete(f"/matters/{matter.id}/delete")
     assert response.status_code == 204
@@ -148,7 +148,7 @@ def test_delete_nonexistent(user):
     user.role = "ADMIN"
     user.save()
     admin_client = Client()
-    admin_client.login(username="Ollie", password="clawboy")
+    admin_client.force_login(user)
     admin_client.get("/dash/")
     response = admin_client.delete("/matters/99999/delete")
     assert response.status_code == 404
