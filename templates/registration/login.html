@@ -12,7 +12,24 @@
       <form id="login-form" class="account-form" method="post">
         {% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-        {{ form.as_p }}
+        <p>
+          {{ form.email.label_tag }}
+          {{ form.email }}
+          {{ form.email.errors }}
+        </p>
+        <p>
+          {{ form.password.label_tag }}
+          <span class="password-field">
+            {{ form.password }}
+            <button type="button"
+                    class="password-toggle"
+                    aria-label="Show password"
+                    aria-pressed="false">
+              <i class="icon-eye" aria-hidden="true"></i>
+            </button>
+          </span>
+          {{ form.password.errors }}
+        </p>
         <div class="auth-buttons justify-between">
           <a href="{% url 'accounts:password_reset' %}">Forgot Password?</a>
           <button type="submit" class="btn btn-success">Submit</button>
