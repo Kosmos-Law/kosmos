@@ -20,7 +20,7 @@
                 hx-post="{% url 'notes:bulk-delete' %}"
                 hx-confirm="Delete {{ selected_notes|length }} selected note(s)? This cannot be undone."
                 hx-swap="none">
-          <i class="icon-trash-2"></i>
+          <i class="icon-circle-x"></i>
         </button>
       </div>
     {% else %}

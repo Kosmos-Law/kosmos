@@ -22,7 +22,7 @@
           <span>Google Contacts</span>
           {% if contacts_token %}
             <button type="button"
-                    class="btn btn-danger confirm"
+                    class="btn btn-secondary confirm"
                     data-href="{% url 'settings:google-logout' 'contacts' %}"
                     data-method="post"
                     data-confirm-title="Disconnect Google Contacts"
@@ -37,7 +37,7 @@
           <span>Google Calendar</span>
           {% if calendar_token %}
             <button type="button"
-                    class="btn btn-danger confirm"
+                    class="btn btn-secondary confirm"
                     data-href="{% url 'settings:google-logout' 'calendar' %}"
                     data-method="post"
                     data-confirm-title="Disconnect Google Calendar"
@@ -53,7 +53,7 @@
             <span>Google Drive (Documents)</span>
             {% if drive_token %}
               <button type="button"
-                      class="btn btn-danger confirm"
+                      class="btn btn-secondary confirm"
                       data-href="{% url 'settings:google-logout' 'drive' %}"
                       data-method="post"
                       data-confirm-title="Disconnect Google Drive"
@@ -138,7 +138,7 @@
                    href="{% url 'settings:google-login' 'email' %}">Reconnect</a>
               {% endif %}
               <button type="button"
-                      class="btn btn-danger confirm"
+                      class="btn btn-secondary confirm"
                       data-href="{% url 'settings:google-logout' 'email' %}"
                       data-method="post"
                       data-confirm-title="Disconnect Mailbox"

@@ -1,6 +1,6 @@
 <div id="tasks-settings-fields" class="form-responsive form-spacious">
   {% for field in form %}
-    {{ field.label_tag }}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
     <div>
       {{ field }}
       {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}

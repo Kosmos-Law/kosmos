@@ -5,8 +5,7 @@
     Sign out on every other device and browser where you are signed in,
     such as a lost phone or a shared computer. You stay signed in here.
   </p>
-  <div class="notifications-item">
-    <span>Every other device and browser</span>
+  <div class="authenticator-actions">
     <button class="btn btn-secondary"
             hx-post="{% url 'settings:sign-out-everywhere' %}"
             hx-target="#sign-out-everywhere"

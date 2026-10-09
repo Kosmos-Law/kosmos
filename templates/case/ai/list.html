@@ -43,7 +43,7 @@
                 hx-post="{% url 'case:ai-bulk-delete' matter.id %}"
                 hx-confirm="Delete {{ selected_conversations|length }} selected conversation(s)? This cannot be undone."
                 hx-swap="none">
-          <i class="icon-trash-2"></i>
+          <i class="icon-circle-x"></i>
         </button>
       </div>
     {% else %}

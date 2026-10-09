@@ -52,7 +52,7 @@ Report section order). Included by matters/activity/list.html.
                   <li>
                     <a class="dropdown-item"
                        hx-post="{% url 'matters:categories-delete' row.category.id %}"
-                       hx-confirm="Delete &ldquo;{{ row.category.name }}&rdquo;? Entries coded to it become uncategorized."><i class="icon-trash-2"></i> Delete</a>
+                       hx-confirm="Delete &ldquo;{{ row.category.name }}&rdquo;? Entries coded to it become uncategorized."><i class="icon-circle-x"></i> Delete</a>
                   </li>
                 </ul>
               </div>

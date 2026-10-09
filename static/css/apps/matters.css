@@ -672,12 +672,6 @@ Matter Overview tab
   color: var(--color-muted-more);
 }
 
-/* icons.css paints .icon-trash-2 red globally; let it inherit the button's
-   muted grey so it matches the pencil. */
-.matter-group-delete .icon-trash-2 {
-  color: inherit;
-}
-
 /* Push the lone Done button to the right of the space-between footer. */
 .matter-group-done {
   margin-left: auto;

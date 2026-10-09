@@ -50,7 +50,7 @@
                 hx-post="{% url 'case:caselaws-bulk-delete' matter.id %}"
                 hx-confirm="Delete {{ selected_caselaws|length }} selected case(s)? This cannot be undone."
                 hx-swap="none">
-          <i class="icon-trash-2"></i>
+          <i class="icon-circle-x"></i>
         </button>
       </div>
     {% else %}

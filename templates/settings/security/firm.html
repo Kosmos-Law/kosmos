@@ -12,17 +12,18 @@
       this page at their next sign-in, to set it up before anything else.
     {% endif %}
   </p>
-  <div class="notifications-item">
-    <span>Require Authenticator App</span>
-    <button class="btn {% if required %}btn-danger{% else %}btn-success{% endif %}"
-            hx-post="{% url 'settings:authenticator-require' %}"
-            hx-target="#authenticator-require"
-            hx-swap="outerHTML">
-      {% if required %}
-        Stop Requiring
-      {% else %}
-        Require
-      {% endif %}
-    </button>
+  <div class="notifications-list">
+    <div class="notifications-item">
+      <span>Require an authenticator app</span>
+      <label class="toggle-switch">
+        <input type="checkbox"
+               {% if required %}checked{% endif %}
+               hx-post="{% url 'settings:authenticator-require' %}"
+               hx-trigger="change"
+               hx-target="#authenticator-require"
+               hx-swap="outerHTML">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
   </div>
 </div>

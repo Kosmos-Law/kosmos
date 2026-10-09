@@ -15,7 +15,7 @@
                 hx-post="{% url 'matters:contacts-bulk-remove' matter.id %}"
                 hx-confirm="Remove {{ selected_ids|length }} selected part{{ selected_ids|length|pluralize:'y,ies' }} from this matter?"
                 hx-swap="none">
-          <i class="icon-trash-2 with-text"></i> Remove
+          <i class="icon-circle-x with-text"></i> Remove
         </button>
       </div>
     {% else %}

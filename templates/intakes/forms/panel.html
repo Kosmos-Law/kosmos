@@ -69,7 +69,7 @@
                     <a class="dropdown-item"
                        href="#"
                        hx-post="{% url 'intakes:form-submission-delete' sub_id=submission.id %}"
-                       {% if submission.answered_count %} hx-confirm="Delete {{ submission.template_name }}? The client has answered {{ submission.answered_count }} of {{ submission.question_count }} questions, and those answers will be deleted with it. This cannot be undone." {% else %} hx-confirm="Delete {{ submission.template_name }}? This cannot be undone." {% endif %}><i class="icon-trash-2"></i> Delete</a>
+                       {% if submission.answered_count %} hx-confirm="Delete {{ submission.template_name }}? The client has answered {{ submission.answered_count }} of {{ submission.question_count }} questions, and those answers will be deleted with it. This cannot be undone." {% else %} hx-confirm="Delete {{ submission.template_name }}? This cannot be undone." {% endif %}><i class="icon-circle-x"></i> Delete</a>
                   </li>
                 </ul>
               </div>

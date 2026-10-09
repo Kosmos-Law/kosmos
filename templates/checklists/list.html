@@ -19,7 +19,7 @@
                 hx-post="{% url 'checklists:bulk-delete' %}"
                 hx-confirm="Delete {{ selected_checklists|length }} selected checklist(s)? This cannot be undone."
                 hx-swap="none">
-          <i class="icon-trash-2"></i>
+          <i class="icon-circle-x"></i>
         </button>
       </div>
     {% else %}

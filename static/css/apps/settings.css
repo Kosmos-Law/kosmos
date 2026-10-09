@@ -471,8 +471,40 @@ h2.settings-section {
   margin-top: 2rem;
 }
 
-h2.settings-section:first-child {
+/* Only the first section on the page starts flush: a section wrapped in
+   its own div (the security panels, the profile icon) is still a first
+   child of that div, and needs the gap */
+.settings-body > h2.settings-section:first-child,
+.settings-body > .settings > h2.settings-section:first-child,
+.settings-body > :first-child > h2.settings-section:first-child {
   margin-top: 0;
+}
+
+/* A field's help text on a settings page reads as text, not a footnote */
+.settings-body .help-text {
+  color: var(--color-primary);
+  font-size: 0.875rem;
+}
+
+/* The Claude Desktop and authenticator steps are numbered lists, with
+   the code in them run in with the text (code is a block elsewhere) */
+.companion-steps,
+.authenticator-steps {
+  list-style: decimal;
+  margin: 1rem 0 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.companion-steps li,
+.authenticator-steps li {
+  list-style: decimal;
+  margin-bottom: 0.5rem;
+}
+
+.companion-steps code {
+  display: inline;
+  margin: 0;
+  padding: 0 0.25em;
 }
 
 /* Claude Desktop page: the rendered claude_desktop_config.json block,
@@ -506,14 +538,6 @@ h2.settings-section:first-child {
 Security: the authenticator app
 ========================================================================== */
 
-.authenticator-steps {
-  margin: 1rem 0 1.5rem 1rem;
-  padding-left: 1rem;
-}
-
-.authenticator-steps li {
-  margin-bottom: 0.75rem;
-}
 
 /* The QR code sits on its own white tile whatever the theme: it is drawn
    black on white so a phone camera reads it on a dark page too. */

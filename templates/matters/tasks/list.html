@@ -20,7 +20,7 @@
                 hx-post="{% url 'matters:tasks-bulk-delete' matter.id %}"
                 hx-confirm="Delete {{ selected_tasks|length }} selected task(s)? This cannot be undone."
                 hx-swap="none">
-          <i class="icon-trash-2"></i>
+          <i class="icon-circle-x"></i>
         </button>
       </div>
     {% else %}
