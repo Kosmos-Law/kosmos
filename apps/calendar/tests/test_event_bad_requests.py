@@ -59,16 +59,16 @@ def test_readable_quick_update_still_moves_the_event(client, event):
     ],
 )
 def test_feed_with_an_unreadable_range_is_refused(client, matter, params):
-    assert client.get(reverse("calendar:api"), params).status_code == 400
-    matter_feed = reverse("calendar:api-matter", args=[matter.id])
+    assert client.get(reverse("calendar:feed"), params).status_code == 400
+    matter_feed = reverse("calendar:feed-matter", args=[matter.id])
     assert client.get(matter_feed, params).status_code == 400
 
 
 def test_feed_reads_the_ranges_the_calendar_sends(client):
     params = {"start": "2030-03-01T00:00:00-05:00", "end": "2030-04-01T00:00:00Z"}
 
-    assert client.get(reverse("calendar:api"), params).status_code == 200
-    assert client.get(reverse("calendar:api")).status_code == 200
+    assert client.get(reverse("calendar:feed"), params).status_code == 200
+    assert client.get(reverse("calendar:feed")).status_code == 200
 
 
 def test_add_from_a_matter_has_one_address(matter):

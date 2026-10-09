@@ -82,19 +82,19 @@ def test_applied_matter_and_assignee_filter_the_list(client, user, matter, statu
 
 
 def test_calendar_feed_defaults_to_pending(client, statuses):
-    feed = client.get(reverse("calendar:api"), MARCH).json()
+    feed = client.get(reverse("calendar:feed"), MARCH).json()
 
     assert [row["id"] for row in feed] == [str(statuses["Pending"].id)]
 
 
 def test_restore_defaults_means_pending_in_the_calendar_feed(client, statuses):
     client.post(reverse("calendar:filter-status-all"))
-    everything = client.get(reverse("calendar:api"), MARCH).json()
+    everything = client.get(reverse("calendar:feed"), MARCH).json()
     assert len(everything) == 3
 
     _restore_defaults(client)
 
-    feed = client.get(reverse("calendar:api"), MARCH).json()
+    feed = client.get(reverse("calendar:feed"), MARCH).json()
     assert [row["id"] for row in feed] == [str(statuses["Pending"].id)]
 
 
