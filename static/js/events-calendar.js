@@ -59,13 +59,13 @@ document.body.addEventListener("htmx:beforeRequest", (event) => {
 document.addEventListener("alpine:init", () => {
   // opts lets the matter detail Events tab reuse the component with its own
   // matter-scoped feed and matter-preselecting add/edit modals:
-  //   apiUrl     — event feed (default: the global /events/api/)
+  //   apiUrl     — event feed (default: the global /events/feed/)
   //   addUrl     — add-event modal endpoint (default: /events/add)
   //   editOrigin — origin suffix for the edit modal, so saves fire the right
   //                HX-Trigger (e.g. "matters" → matterEventChanged)
   Alpine.data("eventsCalendar", (opts = {}) => ({
     calendar: null,
-    apiUrl: opts.apiUrl || "/events/api/",
+    apiUrl: opts.apiUrl || "/events/feed/",
     addUrl: opts.addUrl || "/events/add",
     editOrigin: opts.editOrigin || "",
 

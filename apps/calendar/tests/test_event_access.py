@@ -81,7 +81,7 @@ def test_list_is_complete_for_an_unrestricted_user(client, events):
 
 def test_feed_holds_own_matters_and_firm_events_only(restricted_client, events):
     feed = restricted_client.get(
-        reverse("calendar:api"), {"start": "2030-03-01", "end": "2030-03-31"}
+        reverse("calendar:feed"), {"start": "2030-03-01", "end": "2030-03-31"}
     ).json()
 
     assert {row["id"] for row in feed} == {
@@ -91,8 +91,8 @@ def test_feed_holds_own_matters_and_firm_events_only(restricted_client, events):
 
 
 def test_matter_feed_needs_matter_access(restricted_client, events, matter):
-    own = reverse("calendar:api-matter", args=[matter.id])
-    other = reverse("calendar:api-matter", args=[events["theirs"].matter_id])
+    own = reverse("calendar:feed-matter", args=[matter.id])
+    other = reverse("calendar:feed-matter", args=[events["theirs"].matter_id])
 
     assert restricted_client.get(own).status_code == 200
     assert restricted_client.get(other).status_code == 403

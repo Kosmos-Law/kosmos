@@ -109,3 +109,15 @@ def test_a_deactivated_user_is_refused(user, api, events):
     user.save()
 
     assert api.get(reverse("calendar:api-events"), MARCH).status_code == 401
+
+
+def test_the_browser_feed_keeps_its_own_path(client, user, events):
+    """The calendar widget's feed is a different URL from the token API: when
+    the two shared events/api/, the API answered the browser's feed with 401
+    and the calendar showed no events (2026-10-09)."""
+    assert reverse("calendar:feed") != reverse("calendar:api-events")
+    response = client.get(reverse("calendar:feed"), MARCH)
+    assert response.status_code == 200
+    ids = {str(row["id"]) for row in response.json()}
+    assert str(events["timed"].id) in ids
+    assert str(events["outside"].id) not in ids

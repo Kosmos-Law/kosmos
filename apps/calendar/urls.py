@@ -27,11 +27,13 @@ app_name = "calendar"
 
 urlpatterns = [
     path("events/", events_index, name="index"),
-    path("events/api/", api_events, name="api-events"),
     path("events/list/", events_list, name="list"),
     path("events/calendar/", events_calendar, name="calendar"),
-    path("events/api/", events_api, name="api"),
-    path("events/api/matter/<int:matter_id>", events_api, name="api-matter"),
+    # The calendar widget's FullCalendar feed, for the signed-in browser
+    path("events/feed/", events_api, name="feed"),
+    path("events/feed/matter/<int:matter_id>", events_api, name="feed-matter"),
+    # The token-authenticated JSON API another app reads (Cloud Portal does)
+    path("events/api/", api_events, name="api-events"),
     path("events/<int:id>/quick-update", events_quick_update, name="quick-update"),
     path("events/view/<str:mode>", events_view_mode, name="view-mode"),
     path("events/add", events_add, name="add"),
