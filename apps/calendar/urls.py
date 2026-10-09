@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.calendar.api import api_events
 from apps.calendar.views import (
     events_add,
     events_api,
@@ -26,6 +27,7 @@ app_name = "calendar"
 
 urlpatterns = [
     path("events/", events_index, name="index"),
+    path("events/api/", api_events, name="api-events"),
     path("events/list/", events_list, name="list"),
     path("events/calendar/", events_calendar, name="calendar"),
     path("events/api/", events_api, name="api"),
