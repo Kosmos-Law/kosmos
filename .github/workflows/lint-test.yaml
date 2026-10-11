@@ -1,27 +1,39 @@
-name: Linting and Testing Pull Requests
+name: Lint and Test
 
 on:
   pull_request:
     branches: [ "dev" ]
+  # Test any pushed branch by hand (~/.bin/ci wraps this):
+  #   gh workflow run lint-test.yaml --ref <branch> [-f tests="apps/tasks"]
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: "Test paths or node ids (blank runs the whole suite)"
+        required: false
+        default: ""
 
+# A newer push to the same branch cancels the run it replaces.
+concurrency:
+  group: lint-test-${{ github.ref }}
+  cancel-in-progress: true
+
+# No secrets: the tests run against a throwaway Postgres container, and
+# conftest.py swaps in local file storage and fake integration keys, so
+# nothing here is a real credential.
 env:
-  SECRET_KEY: ${{ secrets.SECRET_KEY }}
-  DEBUG: ${{ vars.DEBUG }}
-  ENV: ${{ vars.ENV }}
-  ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-  DB_NAME: ${{ secrets.DB_NAME }}
-  DB_USER: ${{ secrets.DB_USER }}
-  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-  ADMINS: ${{ vars.ADMINS }}
-  EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
-  EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
-  EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
-  SERVER_EMAIL: ${{ secrets.SERVER_EMAIL }}
-  DIGITAL_OCEAN_REGION_NAME: ${{ secrets.DIGITAL_OCEAN_REGION_NAME }}
-  DIGITAL_OCEAN_ENDPOINT_URL: ${{ secrets.DIGITAL_OCEAN_ENDPOINT_URL }}
-  DIGITAL_OCEAN_BUCKET_NAME: ${{ secrets.DIGITAL_OCEAN_BUCKET_NAME }}
-  DIGITAL_OCEAN_ACCESS_KEY_ID: ${{ secrets.DIGITAL_OCEAN_ACCESS_KEY_ID }}
-  DIGITAL_OCEAN_SECRET_ACCESS_KEY: ${{ secrets.DIGITAL_OCEAN_SECRET_ACCESS_KEY }}
+  SECRET_KEY: ci-only-not-a-secret
+  DEBUG: "True"
+  ENV: dev
+  ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+  DB_NAME: kosmos
+  DB_USER: kosmos
+  DB_PASSWORD: kosmos
+  DB_HOST: localhost
+  EMAIL_BACKEND: locmem
+  STORAGE_BACKEND: local
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -62,9 +74,9 @@ jobs:
         # plain postgres images do not include it. pg16 matches dev and prod.
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
+          POSTGRES_USER: kosmos
+          POSTGRES_PASSWORD: kosmos
+          POSTGRES_DB: kosmos
         ports:
           - 5432:5432
         options: >-
@@ -85,8 +97,16 @@ jobs:
       - name: Install Python dependencies
         run: uv sync
 
-      - name: Run migrations
-        run: uv run python manage.py migrate
-
+      # Named tests run in group 1 alone; the other groups finish at once.
       - name: Run tests
-        run: uv run pytest --splits 4 --group ${{ matrix.group }} -n auto --dist=loadscope --tb=short -q
+        env:
+          TESTS: ${{ inputs.tests }}
+          GROUP: ${{ matrix.group }}
+        run: |
+          if [ -z "$TESTS" ]; then
+            uv run pytest --splits 4 --group "$GROUP" -n auto --dist=loadscope --tb=short -q
+          elif [ "$GROUP" = 1 ]; then
+            uv run pytest $TESTS -n auto --dist=loadscope --tb=short -q
+          else
+            echo "Named tests run in group 1."
+          fi

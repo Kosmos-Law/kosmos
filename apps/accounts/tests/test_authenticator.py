@@ -319,11 +319,11 @@ def test_an_administrator_switches_the_requirement_from_the_security_page(admin,
 
 def test_the_switch_is_shown_to_administrators_alone(user, admin, firm):
     assert (
-        b"Require Authenticator App"
+        b"Require an authenticator app"
         in _signed_in(admin).get("/settings/security/").content
     )
     assert (
-        b"Require Authenticator App"
+        b"Require an authenticator app"
         not in _signed_in(user).get("/settings/security/").content
     )
 
