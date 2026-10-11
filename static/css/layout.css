@@ -120,3 +120,34 @@ body {
 }
 
 .flex-column-reverse { flex-direction: column-reverse; }
+
+/* ==========================================================================
+The firm's logo
+========================================================================== */
+
+/* components/firm-logo.html. The ::after paints the logo's shape in
+   --firm-logo-ink (transparent until a page sets it), and
+   --firm-logo-art: 0 hides the art beneath. The dark themes set both, so
+   a one-colour logo on a transparent ground matches the text around it.
+   Here, not in interface.css, because the sign-in and error pages load
+   layout.css but not interface.css. */
+.firm-logo-ink {
+  display: block;
+  position: relative;
+  width: fit-content;
+}
+
+.firm-logo-ink > img {
+  display: block;
+  opacity: var(--firm-logo-art, 1);
+}
+
+.firm-logo-ink::after {
+  background: var(--firm-logo-ink, transparent);
+  content: "";
+  inset: 0;
+  mask: var(--firm-logo-src) center / contain no-repeat;
+  -webkit-mask: var(--firm-logo-src) center / contain no-repeat;
+  pointer-events: none;
+  position: absolute;
+}

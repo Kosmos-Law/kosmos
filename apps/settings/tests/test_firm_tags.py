@@ -36,7 +36,7 @@ def test_firm_logo_replaces_wordmark(settings, tmp_path):
     html = render_error_page()
     assert 'class="auth-title has-logo"' in html
     assert 'alt="Example Law, LLC"' in html
-    assert firm.logo.url in html
+    assert "/accounts/firm-logo/?v=" in html
 
 
 def test_no_logo_falls_back_to_wordmark():
@@ -54,22 +54,25 @@ def test_dead_database_falls_back_to_wordmark():
     assert "Kosmos" in html
 
 
-def test_dark_logo_rides_along_for_the_theme_to_pick(settings, tmp_path):
+def test_logo_comes_from_this_site_for_the_dark_themes_to_paint(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     firm = Firm.objects.create(name="Example Law, LLC")
     firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
-    firm.logo_dark.save("dark.gif", SimpleUploadedFile("dark.gif", TINY_GIF))
     html = render_error_page()
-    assert 'class="auth-logo firm-logo-light"' in html
-    assert 'class="auth-logo firm-logo-dark"' in html
-    assert firm.logo.url in html
-    assert firm.logo_dark.url in html
+    assert 'class="firm-logo-ink"' in html
+    assert "--firm-logo-src: url('/accounts/firm-logo/?v=" in html
+    assert 'class="auth-logo"' in html
 
 
-def test_dark_logo_alone_is_not_the_logo(settings, tmp_path):
+def test_logo_served_same_origin_without_sign_in(client, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     firm = Firm.objects.create(name="Example Law, LLC")
-    firm.logo_dark.save("dark.gif", SimpleUploadedFile("dark.gif", TINY_GIF))
-    html = render_error_page()
-    assert "has-logo" not in html
-    assert "Kosmos" in html
+    firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
+    response = client.get("/accounts/firm-logo/")
+    assert response.status_code == 200
+    assert b"".join(response.streaming_content) == TINY_GIF
+
+
+def test_no_logo_is_a_404(client):
+    Firm.objects.create(name="Example Law, LLC")
+    assert client.get("/accounts/firm-logo/").status_code == 404

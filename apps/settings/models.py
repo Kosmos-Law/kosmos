@@ -1,4 +1,7 @@
+from urllib.parse import quote
+
 from django.db import models
+from django.urls import reverse
 
 from utils.models import AuditMixin
 
@@ -31,13 +34,13 @@ class Firm(AuditMixin):
     # inbox, not the Mailgun intake pipeline address - the pipeline would
     # log our own outbound copies as duplicate notes.
     intake_email = models.EmailField(blank=True)
-    # Three logo slots, one per surface. The logo is the master: light
-    # themes, PDFs and the public intake pages. The other two stand in
-    # for it where it would wash out - a light-ink twin on the dark
-    # themes, and art on a solid ground in email, where the reader's
-    # theme is unknowable. Each falls back to the logo when blank.
+    # Two logo slots. The logo serves the themed pages (sign-in, pay,
+    # intake) and invoice PDFs; on a dark theme the page repaints its
+    # shape in the text colour (components/firm-logo.html), so it wants
+    # one colour on a transparent ground. Email can't be repainted and the
+    # reader's theme is unknowable, so the email logo is fixed-colour art
+    # on a light ground. It falls back to the logo when blank.
     logo = models.ImageField(upload_to="company/", blank=True, null=True)
-    logo_dark = models.ImageField(upload_to="company/", blank=True, null=True)
     logo_email = models.ImageField(upload_to="company/", blank=True, null=True)
     jurisdiction = models.CharField(max_length=100, blank=True)
     # Wording that depends on a firm's own fee agreement. Blank leaves the
@@ -73,11 +76,10 @@ class Firm(AuditMixin):
 
 def logo_urls(firm):
     """Context for components/firm-logo.html on a themed page: the logo's
-    URL and, when uploaded, its dark-theme twin's. Both blank without a
-    logo - the dark twin never stands alone."""
+    URL, blank without one. It points at this site (accounts:firm-logo),
+    not the media bucket, because the dark themes paint the logo as a CSS
+    mask and a mask image must be same-origin. The file name in the query
+    string busts the cache on a new upload."""
     if not firm or not firm.logo:
-        return {"logo_url": "", "logo_dark_url": ""}
-    return {
-        "logo_url": firm.logo.url,
-        "logo_dark_url": firm.logo_dark.url if firm.logo_dark else "",
-    }
+        return {"logo_url": ""}
+    return {"logo_url": reverse("accounts:firm-logo") + "?v=" + quote(firm.logo.name)}

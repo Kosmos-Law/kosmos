@@ -72,9 +72,9 @@ def public_branding_media_urlpatterns():
     """Keep media/company/ (the firm logo) routed in production.
 
     Unrouting MEDIA_ROOT protects confidential uploads, but the logo is
-    deliberately public branding: the settings page, the public intake
-    form pages, and invoice PDF generation all load it by URL. Only this
-    one subdirectory - Firm.logo's upload_to - is exposed."""
+    deliberately public branding: the settings page and invoice PDF
+    generation load it by URL (the public pages use accounts:firm-logo).
+    Only this one subdirectory - Firm.logo's upload_to - is exposed."""
     if settings.STORAGE_BACKEND == "local":
         media_prefix = settings.MEDIA_URL.lstrip("/")
         return [

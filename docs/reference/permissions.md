@@ -290,6 +290,7 @@ nginx appends. The nginx limits in the
 | `/accounts/login/verify/` | GET, POST | Emailed code step, for a user without an authenticator app | Session from the password step, plus the code. Five wrong codes delete the code. | None |
 | `/accounts/login/authenticator/` | GET, POST | Authenticator app step, for a user with one | Session from the password step, plus the app's current code, accepted once. Wrong codes count toward the same cooldown as wrong passwords. | The cooldown |
 | `/accounts/logout/` | GET, POST | Sign out | Nothing | None |
+| `/accounts/firm-logo/` | GET | The firm logo, for the sign-in, payment and intake pages | Nothing | None |
 | `/accounts/password_reset/`, `/accounts/password_reset/done/` | GET, POST | Request a password-reset email | Nothing | None |
 | `/accounts/reset/<uidb64>/<token>/`, `/accounts/reset/done/` | GET, POST | Set a new password | Django's signed reset token (three days) | None |
 | `/health/live/` | GET, HEAD | Returns `{"status": "ok"}` | Nothing | None |

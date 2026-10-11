@@ -99,22 +99,22 @@ body.minimal-layout {
 }
 
 .cf-logo {
-  display: block;
   height: auto;
-  margin-bottom: 1rem;
   max-width: 9.5rem;
 }
 
-/* In dark mode a raster logo designed for light backgrounds disappears into
-   the dark surface. A small rounded pad behind it — co-extensive with the
-   image, whatever its aspect ratio — carries the logo without asking anyone
-   to upload a dark variant. A firm that did upload one shows it instead
-   (components/firm-logo.html), and the twin takes no pad. */
+/* The logo's wrapper (components/firm-logo.html) takes the margin, so the
+   painted shape stays the image's size. */
+.cf-head .firm-logo-ink {
+  margin-bottom: 1rem;
+}
+
+/* In dark mode the logo's shape is painted in the heading colour, the
+   colour of the firm name it stands in for (layout.css). */
 @media (prefers-color-scheme: dark) {
-  .cf-logo:not(.firm-logo-dark) {
-    background: oklch(100% 0 0);
-    border-radius: 0.25rem;
-    padding: 0.5rem;
+  .cf-head {
+    --firm-logo-art: 0;
+    --firm-logo-ink: var(--cf-heading);
   }
 }
 

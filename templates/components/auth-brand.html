@@ -3,8 +3,7 @@
   Kosmos wordmark (drawn by the .auth-title::before mask in accounts.css,
   which the has-logo variant suppresses). The tag falls back to the
 wordmark when the database is unreachable, which matters on the 500 page.
-  A dark-theme logo, when uploaded, rides along and the theme picks one
-(components/firm-logo.html).{% endcomment %}
+On the dark themes the logo takes the text colour (accounts.css).{% endcomment %}
 {% if logo_url %}
   <div class="auth-title has-logo">{% include "components/firm-logo.html" with alt=firm_name class="auth-logo" %}</div>
 {% else %}

@@ -100,15 +100,20 @@ relays it.
 
 ### The one exception: the firm logos
 
-The logos (the logo, its dark-theme twin and the email logo under
-**Settings → Firm**) are public branding. They appear on the sign-in page,
-on the public intake form and payment pages, and in invoice PDFs.
+The logos (the logo and the email logo under **Settings → Firm**) are
+public branding. The logo appears on the sign-in page, on the public
+intake form and payment pages, and in invoice PDFs.
 
-- With `local` storage, Kosmos serves `media/company/` at
-  `/media/company/` without requiring a sign-in. Nothing else under
-  `media/` is routed.
-- With `s3` storage, pages link to the logo in the bucket with a signed
-  URL that expires after an hour. The bucket itself stays private.
+- Those pages load the logo from `/accounts/firm-logo/`, which reads it
+  from storage and needs no sign-in. It comes from Kosmos's own address,
+  whichever backend you use, because dark themes repaint the logo with a
+  CSS mask, and a browser only applies a mask image from the page's own
+  site.
+- With `local` storage, Kosmos also serves `media/company/` at
+  `/media/company/` without requiring a sign-in, for the invoice PDF
+  renderer. Nothing else under `media/` is routed.
+- With `s3` storage, the bucket stays private. Kosmos reads the logo
+  through the storage API.
 
 Emails embed the email logo (or the logo, when there is none) in the
 message instead of linking to it.

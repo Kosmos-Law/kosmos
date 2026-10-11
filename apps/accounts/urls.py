@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import AuthenticatorCodeView, LoginView, VerifyCodeView
+from .views import AuthenticatorCodeView, LoginView, VerifyCodeView, firm_logo
 
 app_name = "accounts"
 
@@ -13,6 +13,7 @@ urlpatterns = [
         AuthenticatorCodeView.as_view(),
         name="login-authenticator",
     ),
+    path("firm-logo/", firm_logo, name="firm-logo"),
     # Django's built-in auth views (logout, password reset, etc.)
     path("", include("django.contrib.auth.urls")),
 ]

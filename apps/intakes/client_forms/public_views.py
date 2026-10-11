@@ -101,7 +101,7 @@ def form_page(request, token):
             presentable(submission.schema_snapshot), submission.answers
         ),
         "firm_name": company.name if company else "",
-        # Signed media URL, minted per render — fine on a page, never in email.
+        # The logo through accounts:firm-logo: for a page, never email.
         **logo_urls(company),
         "firm_email": (company.email if company else "") or "",
         "default_caption": FormTemplate.DEFAULT_CAPTION,

@@ -9,7 +9,7 @@ register = template.Library()
 def auth_brand():
     """The auth-card title block (login, password reset, error pages): the
     firm's uploaded logo when one is set, the Kosmos wordmark otherwise.
-    With a dark-theme logo uploaded too, both ship and the theme shows one
+    On the dark themes the logo is painted in the text colour
     (components/firm-logo.html).
 
     Swallows every lookup failure because the 500 page renders through

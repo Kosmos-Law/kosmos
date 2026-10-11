@@ -14,22 +14,19 @@ ALLOWED_LOGO_TYPES = ["image/png", "image/jpeg"]
 
 # The logo slots on the firm page, in display order: the Firm field, its
 # label, and the help text under its file chooser. One upload form each
-# (firm_logo_form); the dark and email slots fall back to the logo.
+# (firm_logo_form); the email slot falls back to the logo.
 LOGO_SLOTS = {
     "logo": (
         "Logo",
-        "Shown on light themes, PDFs and the public intake pages. "
-        "PNG or JPG, max 2 MB.",
-    ),
-    "logo_dark": (
-        "Dark-theme logo",
-        "Stands in for the logo on dark themes: light ink on a transparent "
-        "ground. Without one, dark themes show the logo.",
+        "Shown on the sign-in, payment and intake pages and on invoice PDFs. "
+        "Dark themes repaint it in the text colour, so one colour on a "
+        "transparent background works best. PNG or JPG, max 2 MB.",
     ),
     "logo_email": (
         "Email logo",
         "Embedded in invoice and intake emails, where the reader's theme is "
-        "unknown: art on a solid white ground reads in either. Without one, "
+        "unknown. Your logo on a solid light background, or in one mid-tone "
+        "colour on a transparent background, reads in either. Without one, "
         "emails carry the logo.",
     ),
 }

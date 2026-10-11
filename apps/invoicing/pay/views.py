@@ -205,7 +205,7 @@ def pay_page(request, token):
         # internal matter number.
         "client_name": matter.client.name if matter and matter.client else "",
         "firm_name": company.name if company else "",
-        # Signed media URL, minted per render — fine for a page, never email.
+        # The logo through accounts:firm-logo: for a page, never email.
         **logo_urls(company),
         "amount_due": invoice.amount_remaining,
         "config": config,
@@ -511,7 +511,7 @@ def balance_pay_page(request, token):
         "summary_label": summary_label,
         "summary_value": summary_value,
         "firm_name": company.name if company else "",
-        # Signed media URL, minted per render — fine for a page, never email.
+        # The logo through accounts:firm-logo: for a page, never email.
         **logo_urls(company),
         "amount_due": Decimal(charge_cents) / 100,
         "config": config,
