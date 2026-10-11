@@ -1,10 +1,16 @@
-name: Linting and Testing Pull Requests
+name: Lint and Test
 
 on:
   pull_request:
     branches: [ "dev" ]
-  # Run any pushed branch by hand: gh workflow run lint-test.yaml --ref <branch>
+  # Test any pushed branch by hand (scripts/ci.sh wraps this):
+  #   gh workflow run lint-test.yaml --ref <branch> [-f tests="apps/tasks"]
   workflow_dispatch:
+    inputs:
+      tests:
+        description: "Test paths or node ids (blank runs the whole suite)"
+        required: false
+        default: ""
 
 # A newer push to the same branch cancels the run it replaces.
 concurrency:
@@ -91,5 +97,16 @@ jobs:
       - name: Install Python dependencies
         run: uv sync
 
+      # Named tests run in group 1 alone; the other groups finish at once.
       - name: Run tests
-        run: uv run pytest --splits 4 --group ${{ matrix.group }} -n auto --dist=loadscope --tb=short -q
+        env:
+          TESTS: ${{ inputs.tests }}
+          GROUP: ${{ matrix.group }}
+        run: |
+          if [ -z "$TESTS" ]; then
+            uv run pytest --splits 4 --group "$GROUP" -n auto --dist=loadscope --tb=short -q
+          elif [ "$GROUP" = 1 ]; then
+            uv run pytest $TESTS -n auto --dist=loadscope --tb=short -q
+          else
+            echo "Named tests run in group 1."
+          fi
