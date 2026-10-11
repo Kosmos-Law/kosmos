@@ -74,11 +74,23 @@ email logo looks in a light email program.
   unchanged, apart from the colour, and matches the page in every theme.
   A logo in several colours turns into one colour on a dark theme. On a
   light theme and in PDFs the logo shows in its own colours.
-- **Email logo: your logo in its fixed colours on a light background.**
-  An email can't be repainted, and an email program can be in dark mode
-  without Kosmos knowing. Artwork on a solid white or light background
-  reads either way. This is the logo clients see on invoices and payment
-  requests in their inbox.
+- **Email logo: artwork that reads on light and dark alike.** An email
+  can't be repainted, and an email program can be in dark mode without
+  Kosmos knowing. Email programs darken the background in dark mode but
+  leave images alone, so either of these works:
+  - **Your logo in its own colours on a solid white or light
+    background.** The background is part of the image, so it stays
+    light in any email program. In dark mode it shows as a light card
+    around the logo, so leave a little clear space inside it.
+  - **Your logo in one mid-tone colour on a transparent background.** A
+    colour midway between light and dark, such as a mid gray or a
+    softened brand colour, reads on a white email and a dark one. There
+    is no card, so the logo keeps the same shape and size as your
+    **Logo**. Check it against both white and near-black before you
+    upload it.
+
+  This is the logo clients see on invoices and payment requests in their
+  inbox.
 
 One logo is enough to start: upload the **Logo** alone and it also goes
 in emails. Add an email logo when the logo, on its transparent

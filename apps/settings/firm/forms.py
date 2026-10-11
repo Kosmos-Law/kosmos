@@ -25,8 +25,9 @@ LOGO_SLOTS = {
     "logo_email": (
         "Email logo",
         "Embedded in invoice and intake emails, where the reader's theme is "
-        "unknown. Fixed colours on a light background read in either. "
-        "Without one, emails carry the logo.",
+        "unknown. Your logo on a solid light background, or in one mid-tone "
+        "colour on a transparent background, reads in either. Without one, "
+        "emails carry the logo.",
     ),
 }
 
