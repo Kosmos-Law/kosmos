@@ -37,6 +37,13 @@ def _worker_running():
     cache.set(WORKER_STATUS_CACHE_KEY, True, 3600)
 
 
+@pytest.fixture(autouse=True)
+def _fast_password_hasher(settings):
+    """Django's real hasher is slow by design (about half a second per
+    password on dev), and fixtures set a password for most test users."""
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
 @pytest.fixture
 def ai_off(settings):
     """No AI provider configured (and none stored in Settings)."""

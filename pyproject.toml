@@ -69,6 +69,10 @@ dev = [
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
+# Keep the test database between runs: building it from every migration
+# takes minutes on dev, longer than most targeted runs. New migrations still
+# apply; pass --create-db after editing one that was already applied.
+addopts = "--reuse-db"
 
 [tool.ruff]
 line-length = 88
