@@ -120,3 +120,24 @@ body {
 }
 
 .flex-column-reverse { flex-direction: column-reverse; }
+
+/* ==========================================================================
+Dark mode — the firm's dark-theme logo
+========================================================================== */
+
+/* components/firm-logo.html: when the firm uploaded a dark-theme logo,
+   both ride on the page and the theme shows one — the light one by
+   default, the dark twin on the four dark themes. Here, not in
+   interface.css, because the sign-in and error pages load layout.css
+   but not interface.css. */
+.firm-logo-dark {
+  display: none;
+}
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .firm-logo-light {
+  display: none;
+}
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .firm-logo-dark {
+  display: block;
+}
