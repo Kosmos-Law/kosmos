@@ -37,30 +37,38 @@ def test_each_slot_uploads_and_removes_on_its_own(admin_client, settings, tmp_pa
     settings.MEDIA_ROOT = tmp_path
     Firm.objects.create(name="Example Law, LLC")
 
-    response = upload(admin_client, "logo_dark")
+    response = upload(admin_client, "logo_email")
 
     assert response.status_code == 200
     assert response.headers["HX-Toast"]
     firm = Firm.objects.get()
-    assert firm.logo_dark and not firm.logo and not firm.logo_email
-    assert reverse("settings:firm-remove-logo", args=["logo_dark"]) in (
+    assert firm.logo_email and not firm.logo
+    assert reverse("settings:firm-remove-logo", args=["logo_email"]) in (
         response.content.decode()
     )
 
-    admin_client.post(reverse("settings:firm-remove-logo", args=["logo_dark"]))
+    admin_client.post(reverse("settings:firm-remove-logo", args=["logo_email"]))
 
     firm.refresh_from_db()
-    assert not firm.logo_dark
+    assert not firm.logo_email
 
 
-def test_the_firm_page_offers_all_three_slots(admin_client):
+def test_the_firm_page_offers_both_slots(admin_client):
     Firm.objects.create(name="Example Law, LLC")
 
     html = admin_client.get(reverse("settings:firm-index")).content.decode()
 
-    for slot in ("logo", "logo_dark", "logo_email"):
+    for slot in ("logo", "logo_email"):
         assert f'id="firm-logo-{slot}"' in html
         assert reverse("settings:firm-upload-logo", args=[slot]) in html
+    # The dark-theme slot is gone: dark themes repaint the logo.
+    assert "firm-logo-logo_dark" not in html
+
+
+def test_the_old_dark_slot_is_not_found(admin_client, settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    Firm.objects.create(name="Example Law, LLC")
+    assert upload(admin_client, "logo_dark").status_code == 404
 
 
 def test_a_wrong_type_is_refused_in_place(admin_client, settings, tmp_path):

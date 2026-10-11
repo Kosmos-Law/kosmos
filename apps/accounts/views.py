@@ -231,16 +231,17 @@ class AuthenticatorCodeView(View):
 
 
 @require_GET
-def firm_logo_dark(request):
-    """The firm's dark-theme logo, served from this site rather than the
-    media bucket. The auth card paints it as a CSS mask in the page's text
-    colour (accounts.css), and a mask image must be same-origin; the bucket
-    sends no CORS headers. Public, like the sign-in page that shows it."""
+def firm_logo(request):
+    """The firm's logo, served from this site rather than the media bucket.
+    The dark themes paint it as a CSS mask in the page's text colour
+    (components/firm-logo.html), and a mask image must be same-origin; the
+    bucket sends no CORS headers. Public, like the sign-in, pay and intake
+    pages that show it."""
     from apps.settings.models import Firm
 
     firm = Firm.objects.first()
-    if not firm or not firm.logo or not firm.logo_dark:
+    if not firm or not firm.logo:
         raise Http404
-    response = FileResponse(firm.logo_dark.open("rb"))
+    response = FileResponse(firm.logo.open("rb"))
     response["Cache-Control"] = "public, max-age=3600"
     return response

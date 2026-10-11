@@ -157,22 +157,13 @@ Firm Form
   max-width: 12rem;
 }
 
-/* Each preview sits on the ground its slot is drawn for, whatever the
-   theme: transparent light-ink art would vanish on a dark page, and
-   light-ink art on a light one. Literal colours on purpose — these
-   grounds must not follow the theme. */
+/* Each preview sits on white, whatever the theme: the logo as it looks
+   on a light theme or in a PDF, the email logo as it looks in a light
+   mail reader. Literal colour on purpose — this ground must not follow
+   the theme. */
 .firm-logo-preview-logo,
 .firm-logo-preview-logo_email {
   background: oklch(100% 0 0);
-}
-
-.firm-logo-preview-logo_dark {
-  background: oklch(25% 0 0);
-}
-
-.firm-logo-preview-logo,
-.firm-logo-preview-logo_dark,
-.firm-logo-preview-logo_email {
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.75rem;
 }

@@ -248,15 +248,9 @@ input:focus {
 Dark mode — the firm's logo in the text colour
 ========================================================================== */
 
-/* components/auth-brand.html: the dark-theme logo is drawn as a mask over
-   the page's text colour, so it matches the words around it in every dark
-   theme. The img inside only gives the mask its size. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .auth-logo-ink {
-  background: var(--color-primary);
-  mask: var(--auth-logo-mask) center / contain no-repeat;
-  -webkit-mask: var(--auth-logo-mask) center / contain no-repeat;
-}
-
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .auth-logo-ink .firm-logo-dark {
-  opacity: 0;
+/* components/firm-logo.html: the logo's shape is painted in the page's
+   text colour, so it matches the words beneath it in every dark theme. */
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .auth-title {
+  --firm-logo-art: 0;
+  --firm-logo-ink: var(--color-primary);
 }

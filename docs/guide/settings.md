@@ -45,9 +45,8 @@ details updated" confirms the save.
 
 | Field | Where it shows up |
 |---|---|
-| **Logo** | On the sign-in page, in place of the Kosmos name. At the top of invoices and the other PDFs Kosmos produces (ledgers, statements, reports). On the page where a client pays online and on intake forms. The other two logos stand in for it on their own surfaces; wherever one of them is blank, this logo shows instead. |
-| **Dark-theme logo** | In place of the logo on the sign-in page, the payment page and intake forms whenever the viewer's theme is dark. Upload light-coloured artwork on a transparent background: the logo itself, if it is dark ink on a transparent background, disappears on a dark theme. |
-| **Email logo** | In invoice, payment request, reminder and intake form emails. An email program can be in dark mode too, and Kosmos cannot tell, so upload artwork on a solid white background, which reads in either. |
+| **Logo** | On the sign-in page, in place of the Kosmos name. At the top of invoices and the other PDFs Kosmos produces (ledgers, statements, reports). On the page where a client pays online and on intake forms. On a dark theme, Kosmos repaints it in the colour of the text around it (see [Choosing logo artwork](#choosing-logo-artwork)). |
+| **Email logo** | In invoice, payment request, reminder and intake form emails. When it is blank, emails carry the **Logo**. |
 | **Name** | At the top of the same PDFs, and as the sender's name on email to clients: "Example Law Billing" on invoices and payment requests, "Example Law" on intake email. An ending such as "LLC" is left off the sender's name. |
 | **Address line 1**, **Address line 2**, **City**, **State**, **Zip code** | Under the firm's name on PDFs, and at the foot of invoice, payment request and intake form emails. |
 | **Phone** | On PDFs and in intake form emails. Enter a ten-digit US number. |
@@ -62,12 +61,28 @@ details updated" confirms the save.
 To add a logo, click the file chooser beside its name and pick a PNG or
 JPG file of 2 MB or less. It uploads at once: there is nothing to save. To
 change it, click the remove button beside the logo, confirm, and choose
-the new file. Each preview sits on the background its logo is meant for,
-light or dark, whatever your own theme, so you can see how it will read.
+the new file. Each preview sits on a white background, whatever your own
+theme, which is how the logo looks on a light theme or a PDF and how the
+email logo looks in a light email program.
 
-One logo is enough to start: upload the **Logo** alone and it shows
-everywhere. Add the other two when the one logo does not suit a dark
-theme or a dark email program.
+### Choosing logo artwork
+
+- **Logo: one colour on a transparent background.** On a dark theme,
+  Kosmos keeps the logo's shape and paints it in the colour of the text
+  around it. The payment page and intake forms do the same when the
+  client's device is in dark mode. A one-colour logo comes through
+  unchanged, apart from the colour, and matches the page in every theme.
+  A logo in several colours turns into one colour on a dark theme. On a
+  light theme and in PDFs the logo shows in its own colours.
+- **Email logo: your logo in its fixed colours on a light background.**
+  An email can't be repainted, and an email program can be in dark mode
+  without Kosmos knowing. Artwork on a solid white or light background
+  reads either way. This is the logo clients see on invoices and payment
+  requests in their inbox.
+
+One logo is enough to start: upload the **Logo** alone and it also goes
+in emails. Add an email logo when the logo, on its transparent
+background, would not read in a dark email program.
 
 ## Security
 

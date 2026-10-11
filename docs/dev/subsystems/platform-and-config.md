@@ -87,8 +87,10 @@ handled by two functions at the bottom of the file:
 `development_media_urlpatterns()` routes `media/` only when `DEBUG` is on
 and the backend is local, and `public_branding_media_urlpatterns()`
 routes `media/company/` (the firm's logos, the `Firm.logo*` fields' `upload_to`) under
-local storage in every mode, because the public intake form and the
-invoice PDF renderer load it by URL. Everything else in storage is
+local storage in every mode, because the settings page and the invoice
+PDF renderer load it by URL. The sign-in, pay and intake pages load the
+logo from `accounts:firm-logo` instead, a same-origin view, because dark
+themes paint it as a CSS mask. Everything else in storage is
 reached through a view that checks access and streams the file.
 
 ## Middleware
