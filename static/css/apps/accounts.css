@@ -243,3 +243,20 @@ input:focus {
 .account-form .password-field button.password-toggle:focus-visible {
   color: var(--link);
 }
+
+/* ==========================================================================
+Dark mode — the firm's logo in the text colour
+========================================================================== */
+
+/* components/auth-brand.html: the dark-theme logo is drawn as a mask over
+   the page's text colour, so it matches the words around it in every dark
+   theme. The img inside only gives the mask its size. */
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .auth-logo-ink {
+  background: var(--color-primary);
+  mask: var(--auth-logo-mask) center / contain no-repeat;
+  -webkit-mask: var(--auth-logo-mask) center / contain no-repeat;
+}
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .auth-logo-ink .firm-logo-dark {
+  opacity: 0;
+}

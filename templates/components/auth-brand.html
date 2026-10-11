@@ -4,9 +4,20 @@
   which the has-logo variant suppresses). The tag falls back to the
 wordmark when the database is unreachable, which matters on the 500 page.
   A dark-theme logo, when uploaded, rides along and the theme picks one
-(components/firm-logo.html).{% endcomment %}
+  (components/firm-logo.html). The dark themes paint it in the text colour:
+  .auth-logo-ink masks its own background with the logo (accounts.css),
+and the hidden img only gives the mask its size.{% endcomment %}
 {% if logo_url %}
-  <div class="auth-title has-logo">{% include "components/firm-logo.html" with alt=firm_name class="auth-logo" %}</div>
+  <div class="auth-title has-logo">
+    {% if logo_dark_url %}
+      <span class="auth-logo-ink"
+            style="--auth-logo-mask: url('{{ logo_dark_url }}')">
+        {% include "components/firm-logo.html" with alt=firm_name class="auth-logo" %}
+      </span>
+    {% else %}
+      {% include "components/firm-logo.html" with alt=firm_name class="auth-logo" %}
+    {% endif %}
+  </div>
 {% else %}
   <div class="auth-title">
     <span class="visually-hidden">Kosmos</span>

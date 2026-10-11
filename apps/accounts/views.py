@@ -4,10 +4,12 @@ import math
 from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.db.models import F
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
+from django.views.decorators.http import require_GET
 
 from . import totp
 from .forms import CodeForm, EmailLoginForm
@@ -226,3 +228,19 @@ class AuthenticatorCodeView(View):
 
     def _error(self, request, form, message):
         return render(request, self.template_name, {"form": form, "error": message})
+
+
+@require_GET
+def firm_logo_dark(request):
+    """The firm's dark-theme logo, served from this site rather than the
+    media bucket. The auth card paints it as a CSS mask in the page's text
+    colour (accounts.css), and a mask image must be same-origin; the bucket
+    sends no CORS headers. Public, like the sign-in page that shows it."""
+    from apps.settings.models import Firm
+
+    firm = Firm.objects.first()
+    if not firm or not firm.logo or not firm.logo_dark:
+        raise Http404
+    response = FileResponse(firm.logo_dark.open("rb"))
+    response["Cache-Control"] = "public, max-age=3600"
+    return response

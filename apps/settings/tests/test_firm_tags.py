@@ -63,7 +63,9 @@ def test_dark_logo_rides_along_for_the_theme_to_pick(settings, tmp_path):
     assert 'class="auth-logo firm-logo-light"' in html
     assert 'class="auth-logo firm-logo-dark"' in html
     assert firm.logo.url in html
-    assert firm.logo_dark.url in html
+    # The dark one comes from this site, so the card can mask with it.
+    assert "/accounts/firm-logo-dark/?v=" in html
+    assert 'class="auth-logo-ink"' in html
 
 
 def test_dark_logo_alone_is_not_the_logo(settings, tmp_path):
@@ -73,3 +75,20 @@ def test_dark_logo_alone_is_not_the_logo(settings, tmp_path):
     html = render_error_page()
     assert "has-logo" not in html
     assert "Kosmos" in html
+
+
+def test_dark_logo_served_same_origin_without_sign_in(client, settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    firm = Firm.objects.create(name="Example Law, LLC")
+    firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
+    firm.logo_dark.save("dark.gif", SimpleUploadedFile("dark.gif", TINY_GIF))
+    response = client.get("/accounts/firm-logo-dark/")
+    assert response.status_code == 200
+    assert b"".join(response.streaming_content) == TINY_GIF
+
+
+def test_no_dark_logo_is_a_404(client, settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    firm = Firm.objects.create(name="Example Law, LLC")
+    firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
+    assert client.get("/accounts/firm-logo-dark/").status_code == 404
