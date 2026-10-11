@@ -3,7 +3,7 @@ name: Lint and Test
 on:
   pull_request:
     branches: [ "dev" ]
-  # Test any pushed branch by hand (scripts/ci.sh wraps this):
+  # Test any pushed branch by hand (~/.bin/ci wraps this):
   #   gh workflow run lint-test.yaml --ref <branch> [-f tests="apps/tasks"]
   workflow_dispatch:
     inputs:
