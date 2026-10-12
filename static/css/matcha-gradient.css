@@ -64,8 +64,8 @@
                                  carries the one surface)
      .fc .fc-scrollgrid          the calendar's grid
      .contacts-detail > .detail  the contact detail panel
-     .activity-chart-canvas-wrap the report charts, and the dash's donut
-     .wip-donut                  (bare on the page in Matcha, a card here)
+     .activity-chart-canvas-wrap the report charts (the dash's donut stays
+                                 bare on the page, as in plain Matcha)
    A card surface inside another is cleared to a section of it, or the two
    layers would stack into a near-solid panel.
    -------------------------------------------------------------------------- */
@@ -77,8 +77,7 @@
   .totals-table table,
   .fc .fc-scrollgrid,
   .contacts-detail > .detail,
-  .activity-chart-canvas-wrap,
-  .wip-donut
+  .activity-chart-canvas-wrap
 ) {
   background: var(--mist-card);
   box-shadow:
@@ -91,8 +90,8 @@
   box-shadow: none;
 }
 
-/* The charts take a card's frame to go with its fill */
-[data-theme="light"][data-wash] :is(.activity-chart-canvas-wrap, .wip-donut) {
+/* The report charts take a card's frame to go with its fill */
+[data-theme="light"][data-wash] .activity-chart-canvas-wrap {
   border: solid 1px var(--border-medium);
   border-radius: var(--radius-md);
   padding: 1rem;
