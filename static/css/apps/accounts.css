@@ -68,6 +68,12 @@ body {
   width: 12rem;
 }
 
+/* A one-colour logo is painted in the text colour, so it matches the
+   words beneath it in every theme (components/firm-logo.html). */
+.auth-title {
+  --firm-logo-ink: var(--color-primary);
+}
+
 /* The firm's uploaded logo (any aspect ratio), held to the wordmark's
    visual scale. */
 .auth-logo {
@@ -242,15 +248,4 @@ input:focus {
 .account-form .password-field button.password-toggle:hover,
 .account-form .password-field button.password-toggle:focus-visible {
   color: var(--link);
-}
-
-/* ==========================================================================
-Dark mode — the firm's logo in the text colour
-========================================================================== */
-
-/* components/firm-logo.html: the logo's shape is painted in the page's
-   text colour, so it matches the words beneath it in every dark theme. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .auth-title {
-  --firm-logo-art: 0;
-  --firm-logo-ink: var(--color-primary);
 }

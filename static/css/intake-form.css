@@ -109,13 +109,10 @@ body.minimal-layout {
   margin-bottom: 1rem;
 }
 
-/* In dark mode the logo's shape is painted in the heading colour, the
-   colour of the firm name it stands in for (layout.css). */
-@media (prefers-color-scheme: dark) {
-  .cf-head {
-    --firm-logo-art: 0;
-    --firm-logo-ink: var(--cf-heading);
-  }
+/* A one-colour logo is painted in the heading colour, the colour of the
+   firm name it stands in for, light or dark (layout.css). */
+.cf-head {
+  --firm-logo-ink: var(--cf-heading);
 }
 
 .cf-firm {

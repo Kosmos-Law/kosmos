@@ -13,7 +13,7 @@ email text and extracted document text, lives in the database.
 |---|---|
 | Matter documents (uploaded PDFs, PDFs mirrored from Google Drive, emails promoted to documents) | `documents/<matter id>/<document id>.<extension>` |
 | Invoice PDFs | `invoices/<matter id>/<invoice id>.pdf` |
-| The firm logos | `company/<file name>` |
+| The firm logos, and the print copy Kosmos makes of a one-colour logo | `company/<file name>` |
 
 The database records each file by that relative path. The same paths are
 used whichever backend is selected.
@@ -102,12 +102,13 @@ relays it.
 
 The logos (the logo and the email logo under **Settings → Firm**) are
 public branding. The logo appears on the sign-in page, on the public
-intake form and payment pages, and in invoice PDFs.
+intake form and payment pages, and in invoice PDFs. When the logo is one
+colour, Kosmos saves a near-black copy beside it for PDFs.
 
 - Those pages load the logo from `/accounts/firm-logo/`, which reads it
   from storage and needs no sign-in. It comes from Kosmos's own address,
-  whichever backend you use, because dark themes repaint the logo with a
-  CSS mask, and a browser only applies a mask image from the page's own
+  whichever backend you use, because the pages repaint a one-colour logo
+  with a CSS mask, and a browser only applies a mask image from the page's own
   site.
 - With `local` storage, Kosmos also serves `media/company/` at
   `/media/company/` without requiring a sign-in, for the invoice PDF

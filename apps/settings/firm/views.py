@@ -3,6 +3,7 @@ from django.http import Http404
 from django.shortcuts import render
 
 from apps.settings.firm.forms import LOGO_SLOTS, FirmForm, firm_logo_form
+from apps.settings.logo import refresh_logo_facts
 from apps.settings.models import Firm
 from utils.toasts import toast_success
 
@@ -15,6 +16,8 @@ def logo_slot(firm, slot, form=None):
         "label": LOGO_SLOTS[slot][0],
         "logo": getattr(firm, slot) if firm else None,
         "field": form[slot],
+        # What the upload check found, said under the logo's preview.
+        "one_colour": firm.logo_one_colour if firm and slot == "logo" else None,
     }
 
 
@@ -72,6 +75,8 @@ def firm_upload_logo(request, slot):
     form = firm_logo_form(slot, request.POST, request.FILES, instance=firm)
     if form.is_valid():
         firm = form.save()
+        if slot == "logo":
+            refresh_logo_facts(firm)
         response = _render_logo(request, firm, slot)
         toast_success(response, "Logo added")
         return response
@@ -88,6 +93,8 @@ def firm_remove_logo(request, slot):
         getattr(firm, slot).delete(save=False)
         setattr(firm, slot, None)
         firm.save()
+        if slot == "logo":
+            refresh_logo_facts(firm)
     response = _render_logo(request, firm, slot)
     toast_success(response, "Logo removed")
     return response

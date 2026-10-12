@@ -54,14 +54,23 @@ def test_dead_database_falls_back_to_wordmark():
     assert "Kosmos" in html
 
 
-def test_logo_comes_from_this_site_for_the_dark_themes_to_paint(settings, tmp_path):
+def test_a_one_colour_logo_is_painted_from_this_site(settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    firm = Firm.objects.create(name="Example Law, LLC", logo_one_colour=True)
+    firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
+    html = render_error_page()
+    assert 'class="firm-logo-ink is-one-colour"' in html
+    assert "--firm-logo-src: url('/accounts/firm-logo/?v=" in html
+    assert 'class="auth-logo"' in html
+
+
+def test_any_other_logo_is_shown_as_uploaded(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     firm = Firm.objects.create(name="Example Law, LLC")
     firm.logo.save("logo.gif", SimpleUploadedFile("logo.gif", TINY_GIF))
     html = render_error_page()
     assert 'class="firm-logo-ink"' in html
-    assert "--firm-logo-src: url('/accounts/firm-logo/?v=" in html
-    assert 'class="auth-logo"' in html
+    assert "--firm-logo-src" not in html
 
 
 def test_logo_served_same_origin_without_sign_in(client, settings, tmp_path):

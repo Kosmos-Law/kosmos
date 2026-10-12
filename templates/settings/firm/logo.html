@@ -14,6 +14,15 @@
       <i class="icon-circle-x"></i>
     </button>
   </div>
+  {% if slot.one_colour %}
+    <div class="help-text">
+      One colour: each theme repaints it in its text colour, invoices print it in near-black, and emails show it as uploaded.
+    </div>
+  {% elif slot.one_colour is False %}
+    <div class="help-text">
+      More than one colour, or a solid background: shown as uploaded everywhere. Add an email logo if it doesn't read on a dark background.
+    </div>
+  {% endif %}
 {% else %}
   {{ slot.field }}
   {% if slot.field.help_text %}<div class="help-text">{{ slot.field.help_text }}</div>{% endif %}

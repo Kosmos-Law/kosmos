@@ -125,12 +125,12 @@ body {
 The firm's logo
 ========================================================================== */
 
-/* components/firm-logo.html. The ::after paints the logo's shape in
-   --firm-logo-ink (transparent until a page sets it), and
-   --firm-logo-art: 0 hides the art beneath. The dark themes set both, so
-   a one-colour logo on a transparent ground matches the text around it.
-   Here, not in interface.css, because the sign-in and error pages load
-   layout.css but not interface.css. */
+/* components/firm-logo.html. A one-colour logo (is-one-colour, found at
+   upload) is a shape: the ::after paints it in --firm-logo-ink, which
+   each page points at its text colour, and the art beneath is hidden.
+   The ink is a token, so the logo follows every theme. Any other logo is
+   shown as uploaded. Here, not in interface.css, because the sign-in and
+   error pages load layout.css but not interface.css. */
 .firm-logo-ink {
   display: block;
   position: relative;
@@ -139,11 +139,14 @@ The firm's logo
 
 .firm-logo-ink > img {
   display: block;
-  opacity: var(--firm-logo-art, 1);
 }
 
-.firm-logo-ink::after {
-  background: var(--firm-logo-ink, transparent);
+.firm-logo-ink.is-one-colour > img {
+  opacity: 0;
+}
+
+.firm-logo-ink.is-one-colour::after {
+  background: var(--firm-logo-ink, currentColor);
   content: "";
   inset: 0;
   mask: var(--firm-logo-src) center / contain no-repeat;

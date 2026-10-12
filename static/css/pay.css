@@ -97,14 +97,11 @@ body.minimal-layout {
   width: auto;
 }
 
-/* In dark mode the logo's shape is painted in the heading colour, the
-   colour of the firm name it stands in for (components/firm-logo.html,
+/* A one-colour logo is painted in the heading colour, the colour of the
+   firm name it stands in for, light or dark (components/firm-logo.html,
    layout.css). */
-@media (prefers-color-scheme: dark) {
-  .pay-head {
-    --firm-logo-art: 0;
-    --firm-logo-ink: var(--pay-heading);
-  }
+.pay-head {
+  --firm-logo-ink: var(--pay-heading);
 }
 
 .pay-head p {
