@@ -157,9 +157,9 @@ Firm Form
   max-width: 12rem;
 }
 
-/* Each preview sits on white, whatever the theme: the logo as it looks
-   on a light theme or in a PDF, the email logo as it looks in a light
-   mail reader. Literal colour on purpose — this ground must not follow
+/* Each preview sits on white, whatever the theme: the file as uploaded,
+   as it looks in a light mail reader. A one-colour logo is repainted
+   everywhere else, so its preview is the email view. Literal colour on purpose — this ground must not follow
    the theme. */
 .firm-logo-preview-logo,
 .firm-logo-preview-logo_email {

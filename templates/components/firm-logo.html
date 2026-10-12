@@ -1,10 +1,10 @@
 {% comment %}The firm's logo on a themed page (sign-in, pay, intake). Include
   with the logo_urls() context, alt, class, and width for the sized
-  placements. The wrapper carries the logo as --firm-logo-src so a page can
-  paint its shape in one colour: a page sets --firm-logo-ink to the colour
-  and --firm-logo-art to 0 to hide the art beneath (layout.css; the dark
-themes do, so a one-colour logo always matches the text).{% endcomment %}
-<span class="firm-logo-ink" style="--firm-logo-src: url('{{ logo_url }}')">
+  placements. A one-colour logo is repainted: the wrapper carries it as
+  --firm-logo-src and paints its shape in the page's --firm-logo-ink, in
+every theme (layout.css). Any other logo is shown as uploaded.{% endcomment %}
+<span class="firm-logo-ink{% if logo_one_colour %} is-one-colour{% endif %}"
+      {% if logo_one_colour %}style="--firm-logo-src: url('{{ logo_url }}')"{% endif %}>
   {# djlint:off H006 #}
   <img class="{{ class }}"
        src="{{ logo_url }}"

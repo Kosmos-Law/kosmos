@@ -34,13 +34,19 @@ class Firm(AuditMixin):
     # inbox, not the Mailgun intake pipeline address - the pipeline would
     # log our own outbound copies as duplicate notes.
     intake_email = models.EmailField(blank=True)
-    # Two logo slots. The logo serves the themed pages (sign-in, pay,
-    # intake) and invoice PDFs; on a dark theme the page repaints its
-    # shape in the text colour (components/firm-logo.html), so it wants
-    # one colour on a transparent ground. Email can't be repainted and the
-    # reader's theme is unknowable, so the email logo is fixed-colour art
-    # on a light ground. It falls back to the logo when blank.
+    # One logo, ideally one mid-tone colour on a transparent ground. Such a
+    # logo is a shape: the themed pages (sign-in, pay, intake) repaint it
+    # in their text colour (components/firm-logo.html), the invoice PDF
+    # takes a near-black copy, and email, which can't be repainted, shows
+    # the mid-tone as uploaded. Both facts are worked out at upload
+    # (apps/settings/logo.py). The email logo is an optional override for
+    # logos that can't be repainted, such as several colours on a light
+    # ground. Email falls back to the logo when it is blank.
     logo = models.ImageField(upload_to="company/", blank=True, null=True)
+    logo_one_colour = models.BooleanField(default=False, editable=False)
+    logo_print = models.ImageField(
+        upload_to="company/", blank=True, null=True, editable=False
+    )
     logo_email = models.ImageField(upload_to="company/", blank=True, null=True)
     jurisdiction = models.CharField(max_length=100, blank=True)
     # Wording that depends on a firm's own fee agreement. Blank leaves the
@@ -73,13 +79,24 @@ class Firm(AuditMixin):
         """The logo to embed in outgoing email: the email slot, else the logo."""
         return self.logo_email or self.logo
 
+    @property
+    def pdf_logo(self):
+        """The logo for invoice PDFs: the near-black copy of a one-colour
+        logo, else the logo as uploaded."""
+        if self.logo_one_colour and self.logo_print:
+            return self.logo_print
+        return self.logo
+
 
 def logo_urls(firm):
     """Context for components/firm-logo.html on a themed page: the logo's
-    URL, blank without one. It points at this site (accounts:firm-logo),
-    not the media bucket, because the dark themes paint the logo as a CSS
-    mask and a mask image must be same-origin. The file name in the query
+    URL, blank without one, and whether the page repaints it. It points at
+    this site (accounts:firm-logo), not the media bucket, because the
+    repaint is a CSS mask and a mask image must be same-origin. The file name in the query
     string busts the cache on a new upload."""
     if not firm or not firm.logo:
-        return {"logo_url": ""}
-    return {"logo_url": reverse("accounts:firm-logo") + "?v=" + quote(firm.logo.name)}
+        return {"logo_url": "", "logo_one_colour": False}
+    return {
+        "logo_url": reverse("accounts:firm-logo") + "?v=" + quote(firm.logo.name),
+        "logo_one_colour": firm.logo_one_colour,
+    }

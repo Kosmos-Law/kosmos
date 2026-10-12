@@ -89,8 +89,12 @@ and the backend is local, and `public_branding_media_urlpatterns()`
 routes `media/company/` (the firm's logos, the `Firm.logo*` fields' `upload_to`) under
 local storage in every mode, because the settings page and the invoice
 PDF renderer load it by URL. The sign-in, pay and intake pages load the
-logo from `accounts:firm-logo` instead, a same-origin view, because dark
-themes paint it as a CSS mask. Everything else in storage is
+logo from `accounts:firm-logo` instead, a same-origin view, because they
+paint a one-colour logo as a CSS mask in every theme. Whether the logo is
+one colour (`Firm.logo_one_colour`) and its near-black PDF copy
+(`Firm.logo_print`, served through `Firm.pdf_logo`) are worked out once
+at upload by `apps/settings/logo.py`, so no page, PDF or email does
+image work. Everything else in storage is
 reached through a view that checks access and streams the file.
 
 ## Middleware
