@@ -1,0 +1,242 @@
+"""Firm due dates: a task handed to someone else keeps the date its
+assignor set, until the assignor (or an admin) moves it."""
+
+import pytest
+from django.test import Client
+from django.urls import reverse
+
+from apps.accounts.models import CustomUser
+from apps.tasks.forms import TaskForm
+from apps.tasks.models import Task
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def colleague():
+    return CustomUser.objects.create(
+        username="Bob", email="bob@example.com", user_rate=100
+    )
+
+
+@pytest.fixture
+def colleague_client(colleague):
+    client = Client()
+    client.force_login(colleague)
+    client.get("/dash/")
+    return client
+
+
+@pytest.fixture
+def admin_client():
+    admin = CustomUser.objects.create(
+        username="Ada", email="ada@example.com", user_rate=100, role="ADMIN"
+    )
+    client = Client()
+    client.force_login(admin)
+    client.get("/dash/")
+    return client
+
+
+@pytest.fixture
+def handed_off(task, user, colleague):
+    """``task``, given to Bob by Ollie, due 2024-12-07."""
+    task.user = colleague
+    task.assigned_by = user
+    task.save()
+    return task
+
+
+def _data(assignee, **changes):
+    return {
+        "description": "Draft the motion",
+        "user": assignee.id,
+        "matter": "",
+        "importance": "4",
+        "status": "Pending",
+        "date_due": "2026-11-02",
+    } | changes
+
+
+def _toast(response):
+    return response.headers.get("HX-Toast", "")
+
+
+# -----------------------------------------------------
+# who the assignor is
+# -----------------------------------------------------
+def test_a_task_for_someone_else_records_who_gave_it(client, user, colleague):
+    client.post(reverse("tasks:add"), _data(colleague))
+    assert Task.objects.get().assigned_by == user
+
+
+def test_a_task_for_yourself_has_no_assignor(client, user):
+    client.post(reverse("tasks:add"), _data(user))
+    assert Task.objects.get().assigned_by is None
+
+
+def test_reassigning_restamps_the_assignor(colleague_client, handed_off, colleague):
+    third = CustomUser.objects.create(
+        username="Cy", email="cy@example.com", user_rate=100
+    )
+    colleague_client.post(reverse("tasks:task-user", args=[handed_off.id, third.id]))
+    handed_off.refresh_from_db()
+    assert handed_off.assigned_by == colleague
+
+
+def test_taking_a_task_on_yourself_clears_the_assignor(
+    colleague_client, task, user, colleague
+):
+    task.assigned_by = user
+    task.save()
+    colleague_client.post(reverse("tasks:task-user", args=[task.id, colleague.id]))
+    task.refresh_from_db()
+    assert task.assigned_by is None
+
+
+def test_an_edit_that_keeps_the_user_keeps_the_assignor(
+    colleague_client, handed_off, user, colleague
+):
+    colleague_client.post(
+        reverse("tasks:edit", args=[handed_off.id]),
+        _data(colleague, description="Read about Gandhi again"),
+    )
+    handed_off.refresh_from_db()
+    assert handed_off.assigned_by == user
+
+
+# -----------------------------------------------------
+# the inline date picker
+# -----------------------------------------------------
+def test_the_assignee_cannot_move_the_date(colleague_client, handed_off):
+    response = colleague_client.post(
+        reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
+    )
+    assert response.status_code == 204
+    assert "Only Ollie can change this due date" in _toast(response)
+    handed_off.refresh_from_db()
+    assert str(handed_off.date_due) == "2024-12-07"
+
+
+def test_the_assignor_can(client, handed_off):
+    client.post(reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"})
+    handed_off.refresh_from_db()
+    assert str(handed_off.date_due) == "2025-01-31"
+
+
+def test_an_admin_can(admin_client, handed_off):
+    admin_client.post(
+        reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
+    )
+    handed_off.refresh_from_db()
+    assert str(handed_off.date_due) == "2025-01-31"
+
+
+def test_a_task_nobody_handed_over_is_anyones_to_move(colleague_client, task):
+    colleague_client.post(
+        reverse("tasks:date", args=[task.id]), {"date_due": "2025-01-31"}
+    )
+    task.refresh_from_db()
+    assert str(task.date_due) == "2025-01-31"
+
+
+def test_the_matter_tab_refuses_too(colleague_client, handed_off, matter):
+    response = colleague_client.post(
+        reverse("matters:tasks-date", args=[matter.id, handed_off.id]),
+        {"date_due": "2025-01-31"},
+    )
+    assert "Only Ollie" in _toast(response)
+    handed_off.refresh_from_db()
+    assert str(handed_off.date_due) == "2024-12-07"
+
+
+# -----------------------------------------------------
+# Edit Task
+# -----------------------------------------------------
+def test_the_form_shows_the_assignee_a_disabled_date(handed_off, colleague, user):
+    form = TaskForm(instance=handed_off, user=colleague)
+    assert form.fields["date_due"].disabled
+    assert "Set by Ollie" in form.fields["date_due"].widget.attrs["title"]
+    assert not TaskForm(instance=handed_off, user=user).fields["date_due"].disabled
+
+
+def test_a_posted_date_from_the_assignee_is_ignored(
+    colleague_client, handed_off, colleague
+):
+    response = colleague_client.post(
+        reverse("tasks:edit", args=[handed_off.id]),
+        _data(colleague, description="Read about Gandhi again", date_due="2025-01-31"),
+    )
+    assert response.status_code == 204
+    handed_off.refresh_from_db()
+    assert handed_off.description == "Read about Gandhi again"
+    assert str(handed_off.date_due) == "2024-12-07"
+
+
+# -----------------------------------------------------
+# bulk changes
+# -----------------------------------------------------
+def _select(client, *tasks):
+    for t in tasks:
+        client.post(reverse("tasks:toggle-select", args=[t.id]))
+
+
+def test_bulk_set_date_skips_handed_over_tasks(colleague_client, handed_off, colleague):
+    own = Task.objects.create(
+        user=colleague, description="Bob's own task", status="Pending"
+    )
+    _select(colleague_client, handed_off, own)
+    response = colleague_client.post(
+        reverse("tasks:bulk-set-due-date"), {"date_due": "2025-01-31"}
+    )
+    assert "1 task(s) skipped" in _toast(response)
+    own.refresh_from_db()
+    handed_off.refresh_from_db()
+    assert str(own.date_due) == "2025-01-31"
+    assert str(handed_off.date_due) == "2024-12-07"
+
+
+def test_bulk_clear_date_skips_them_too(colleague_client, handed_off):
+    _select(colleague_client, handed_off)
+    response = colleague_client.post(reverse("tasks:bulk-clear-due-date"))
+    assert "1 task(s) skipped" in _toast(response)
+    handed_off.refresh_from_db()
+    assert str(handed_off.date_due) == "2024-12-07"
+
+
+def test_bulk_update_applies_the_rest_but_not_the_date(colleague_client, handed_off):
+    _select(colleague_client, handed_off)
+    response = colleague_client.post(
+        reverse("tasks:bulk-update"),
+        {"status": "In progress", "importance": "", "date_due": "2025-01-31"},
+    )
+    assert "1 task(s) skipped" in _toast(response)
+    handed_off.refresh_from_db()
+    assert handed_off.status == "In progress"
+    assert str(handed_off.date_due) == "2024-12-07"
+
+
+# -----------------------------------------------------
+# what each person sees
+# -----------------------------------------------------
+def test_the_assignee_sees_a_lock_and_the_assignor_a_picker(
+    client, colleague_client, handed_off
+):
+    for c in (client, colleague_client):
+        c.post(reverse("tasks:filter-quick", args=["all"]))
+        c.post(reverse("tasks:filter-user", args=[0]))
+    theirs = colleague_client.get(reverse("tasks:list")).content.decode()
+    assert "Due date set by Ollie" in theirs
+    assert "2024-12-07" in theirs
+    assert "task-date-link" not in theirs
+
+    mine = client.get(reverse("tasks:list")).content.decode()
+    assert "Due date set by" not in mine
+    assert "task-date-link" in mine
+
+
+def test_the_detail_dialog_names_the_assignor(colleague_client, handed_off):
+    html = colleague_client.get(
+        reverse("tasks:detail", args=[handed_off.id])
+    ).content.decode()
+    assert "Handed over by Ollie" in html

@@ -354,6 +354,26 @@ tr > td.importance.complete .button-link {
   width: 7rem;
 }
 
+/* A firm due date: set by whoever handed the task over, shown to the
+   assignee as text with a lock in place of the picker link. */
+.task-date-locked {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.task-date-locked .icon-lock {
+  color: var(--color-muted-more);
+  margin-left: 0.25rem;
+}
+
+.task-detail-assigned-by {
+  color: var(--color-muted);
+}
+
+.task-detail-assigned-by .icon-lock {
+  margin-right: 0.5rem;
+}
+
 /* Multi-select status checkboxes in the Filter modal */
 .filter #id_status {
   display: flex;
@@ -385,7 +405,8 @@ tr > td.importance.complete .button-link {
 .tasks-table .date {
   overflow: visible;
   white-space: nowrap;
-  width: 7rem;
+  /* Room for the date and the lock of a firm due date. */
+  width: 8.5rem;
 }
 
 .tasks-table .date .dropdown-menu {

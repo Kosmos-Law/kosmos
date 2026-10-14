@@ -1,13 +1,25 @@
-{% if task.date_due %}
-  <a href="#"
-     class="task-date-link"
-     x-data
-     @click.prevent=" const input = document.createElement('input'); input.style.cssText = 'position:absolute;visibility:hidden;height:0;width:0;padding:0;'; $el.parentElement.appendChild(input); flatpickr(input, { dateFormat: 'Y-m-d', defaultDate: '{{ task.date_due|date:"Y-m-d" }}', allowInput: true, onReady: (_, __, fp) => { const btn = document.createElement('button'); btn.textContent = 'Clear'; btn.className = 'flatpickr-clear'; btn.type = 'button'; btn.addEventListener('click', () => { htmx.ajax('POST', '/tasks/{{ task.id }}/task-date', { target: '#tasks', values: { date_due: '' } }); fp.close(); }); fp.calendarContainer.appendChild(btn); fp.open(); }, onChange: (_, dateStr) => { htmx.ajax('POST', '/tasks/{{ task.id }}/task-date', { target: '#tasks', values: { date_due: dateStr } }); }, onClose: () => { input.remove(); } }); ">{{ task.date_due|date:'Y-m-d' }}</a>
+{% comment %} A due date set by someone else is firm: the assignee sees
+it, with the lock and the assignor's name, but gets no picker. The
+assignor and admins get the picker as before (task.date_locked is
+computed per viewer by the list builder). {% endcomment %}
+{% if task.date_locked %}
+  <span class="task-date-locked"
+        title="Due date set by {{ task.assigned_by.username|title }}. Only they can change it.">
+    {% if task.date_due %}{{ task.date_due|date:'Y-m-d' }}{% endif %}
+    <i class="icon-lock"></i>
+  </span>
 {% else %}
-  <a href="#"
-     class="empty-date-icon"
-     x-data
-     @click.prevent=" const input = document.createElement('input'); input.style.cssText = 'position:absolute;visibility:hidden;height:0;width:0;padding:0;'; $el.parentElement.appendChild(input); flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, onReady: (_, __, fp) => fp.open(), onChange: (_, dateStr) => { htmx.ajax('POST', '/tasks/{{ task.id }}/task-date', { target: '#tasks', values: { date_due: dateStr } }); }, onClose: () => { input.remove(); } }); ">
-    <i class="icon-calendar-plus"></i>
-  </a>
+  {% if task.date_due %}
+    <a href="#"
+       class="task-date-link"
+       x-data
+       @click.prevent=" const input = document.createElement('input'); input.style.cssText = 'position:absolute;visibility:hidden;height:0;width:0;padding:0;'; $el.parentElement.appendChild(input); flatpickr(input, { dateFormat: 'Y-m-d', defaultDate: '{{ task.date_due|date:"Y-m-d" }}', allowInput: true, onReady: (_, __, fp) => { const btn = document.createElement('button'); btn.textContent = 'Clear'; btn.className = 'flatpickr-clear'; btn.type = 'button'; btn.addEventListener('click', () => { htmx.ajax('POST', '/tasks/{{ task.id }}/task-date', { target: '#tasks', values: { date_due: '' } }); fp.close(); }); fp.calendarContainer.appendChild(btn); fp.open(); }, onChange: (_, dateStr) => { htmx.ajax('POST', '/tasks/{{ task.id }}/task-date', { target: '#tasks', values: { date_due: dateStr } }); }, onClose: () => { input.remove(); } }); ">{{ task.date_due|date:'Y-m-d' }}</a>
+  {% else %}
+    <a href="#"
+       class="empty-date-icon"
+       x-data
+       @click.prevent=" const input = document.createElement('input'); input.style.cssText = 'position:absolute;visibility:hidden;height:0;width:0;padding:0;'; $el.parentElement.appendChild(input); flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, onReady: (_, __, fp) => fp.open(), onChange: (_, dateStr) => { htmx.ajax('POST', '/tasks/{{ task.id }}/task-date', { target: '#tasks', values: { date_due: dateStr } }); }, onClose: () => { input.remove(); } }); ">
+      <i class="icon-calendar-plus"></i>
+    </a>
+  {% endif %}
 {% endif %}

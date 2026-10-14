@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 from apps.accounts.models import CustomUser
 from apps.matters.models import Matter
-from apps.tasks.access import matters_for_task_form
+from apps.tasks.access import can_change_due_date, matters_for_task_form
 from apps.tasks.constants import (
     BULK_STATUS_CHOICES,
     DESCRIPTION_MIN_LENGTH,
@@ -78,6 +78,15 @@ class TaskForm(forms.ModelForm):
             self.fields["matter"].queryset = matters_for_task_form(
                 user, include_id=include_matter or self.instance.matter_id
             )
+            # A due date someone else set is firm: shown, not editable. A
+            # disabled field keeps its initial value whatever is posted.
+            if self.instance.pk and not can_change_due_date(self.instance, user):
+                field = self.fields["date_due"]
+                field.disabled = True
+                field.widget.attrs["title"] = (
+                    f"Set by {self.instance.assigned_by.username.title()}. "
+                    "Only they can change it."
+                )
 
     def clean_description(self):
         # An empty description arrives as None (the column is nullable).

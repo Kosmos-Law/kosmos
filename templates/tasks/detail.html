@@ -50,6 +50,14 @@
             <span class="task-detail-date">{{ task.date_due|date:"M j, Y"|default:"" }}</span>
           </div>
         </div>
+        {% if task.assigned_by %}
+          <div class="task-detail-row">
+            <span class="task-detail-assigned-by">
+              <i class="icon-lock"></i>
+              Handed over by {{ task.assigned_by.username|title }}, who alone can change the due date.
+            </span>
+          </div>
+        {% endif %}
       </div>
       <div class="task-notes" id="task-notes">{% include "tasks/detail-notes.html" %}</div>
     </div>

@@ -12,6 +12,7 @@ from apps.management.selection import (
 )
 from apps.matters.models import Matter
 from apps.tasks.access import (
+    can_change_due_date,
     matters_for_task_form,
     sees_all_matters,
     tasks_for_user,
@@ -140,7 +141,7 @@ def resolve_task_filter(request):
         }
 
         filter = TasksFilter(filter_data, queryset=visible_tasks, request=request)
-        tasks = filter.qs.select_related("matter", "user")
+        tasks = filter.qs.select_related("matter", "user", "assigned_by")
 
         user_id = filter_data.get("user")
         user_id = int(user_id) if user_id not in (None, "") else None
@@ -168,7 +169,7 @@ def resolve_task_filter(request):
         request.session.modified = True
 
         filter = TasksFilter(default_filter, queryset=visible_tasks, request=request)
-        tasks = filter.qs.select_related("matter", "user")
+        tasks = filter.qs.select_related("matter", "user", "assigned_by")
 
         user_id = request.user.id
         matter_id = None
@@ -183,7 +184,8 @@ def enrich_tasks(request, task_list):
 
     Shared by the list and board views. Sets, per task: has_notes,
     has_new_notes, has_checklist, checklist_total, checklist_done,
-    checklist_complete, and has_unviewed_checklist.
+    checklist_complete, has_unviewed_checklist, and date_locked (the due
+    date is someone else's to move: see access.can_change_due_date).
     """
     task_ids = [t.id for t in task_list]
 
@@ -224,6 +226,7 @@ def enrich_tasks(request, task_list):
     for task in task_list:
         task.has_notes = task.id in tasks_with_notes
         task.has_new_notes = task.id in tasks_with_new_notes
+        task.date_locked = not can_change_due_date(task, request.user)
 
         cl = checklists_by_task.get(task.id)
         if cl:
@@ -264,7 +267,9 @@ def get_list_data(request):
     # Prepend new tasks to the top of the page
     if new_task_ids:
         new_tasks = list(
-            tasks_for_user(Task.objects.filter(id__in=new_task_ids), request.user)
+            tasks_for_user(
+                Task.objects.filter(id__in=new_task_ids), request.user
+            ).select_related("matter", "user", "assigned_by")
         )
         task_list = new_tasks + list(pagination.get_object_list())
     else:
@@ -361,7 +366,7 @@ def get_board_data(request):
             queryset=tasks_for_user(Task.objects.all(), request.user),
             request=request,
         )
-        .qs.select_related("matter", "user")
+        .qs.select_related("matter", "user", "assigned_by")
         .order_by(F("custom_order").asc(nulls_last=True), "date_due", "id")
     )
 

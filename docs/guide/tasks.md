@@ -126,7 +126,7 @@ The form closes and the new task is at the top of the list.
 | **User** | Yes | Any active user. Starts as the user whose chip is selected, otherwise you. |
 | **Importance** | Yes | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
 | **Status** | No | **Pending** (the default), **In progress**, **On hold** or **Complete**. |
-| **Date due** | No | Starts as today. Clear it for a task with no deadline. |
+| **Date due** | No | Starts as today. Clear it for a task with no deadline. Once the task is someone else's, the date is yours alone to change: see [Firm due dates](#firm-due-dates). |
 | **Date completed** | No | Leave it blank. Kosmos fills it in when the task becomes **Complete**. |
 
 Good to know:
@@ -155,6 +155,25 @@ Click **+ Note**, fill in **Date**, **Time** and **Details** (300
 characters at most) and click **Submit**. Click a note's date to edit or
 delete it. The icon is highlighted when a colleague has added a note
 since you last looked.
+
+## Firm due dates
+
+A task you give to someone else keeps the due date you set. Only you, or
+an administrator, can change it. The person you gave it to sees the date
+with a lock beside it, and the row goes past due on their list like any
+other until the task is done or you move the date. If they cannot meet
+it, they come to you. There is nothing to remind you to check on a task
+you handed off: it is on their list, and the daily digest shows every
+past-due task you can see, theirs included.
+
+The rule follows the hand-over, not the task. A task you add for
+yourself, or take on yourself, has no lock. Reassigning a task makes the
+person who reassigned it the one who can change its date. In **Edit
+Task**, a locked **Date due** cannot be changed; in the list, it has no
+date picker; and a bulk **Date** or **Update** change leaves locked tasks
+out and says how many it skipped. Everything else about the task, its
+status, importance, matter, notes and checklist, is open to its user as
+before.
 
 ## Find tasks
 

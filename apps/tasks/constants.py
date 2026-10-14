@@ -84,3 +84,19 @@ CHECKLIST_INCOMPLETE_MESSAGE = (
 def checklist_skip_message(skipped):
     """What a bulk change to Complete says about the tasks it left alone."""
     return f"{skipped} task(s) skipped. Complete their checklists first."
+
+
+def due_date_locked_message(task):
+    """Why a due date change was refused: the task was handed over."""
+    return (
+        f"Only {task.assigned_by.username.title()} can change this due date. "
+        "Ask them to move it."
+    )
+
+
+def due_date_skip_message(skipped):
+    """What a bulk date change says about the tasks it left alone."""
+    return (
+        f"{skipped} task(s) skipped. Their due dates were set by someone "
+        "else and are theirs to change."
+    )
