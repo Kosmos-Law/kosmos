@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from django.urls import reverse
 
 from apps.accounts.models import CustomUser
 from apps.checklists.models import Checklist, ChecklistItem
@@ -14,7 +15,7 @@ def test_board_view_renders(client, task):
     assert resp.headers.get("HX-Trigger") == "tasksListChanged"
 
     # Index now renders the board with the task's column
-    resp = client.get("/")
+    resp = client.get(reverse("tasks:index"))
     assert resp.status_code == 200
     body = resp.content.decode()
     assert 'id="tasks-board"' in body
@@ -34,14 +35,14 @@ def test_board_card_selection(client, task):
     # Unselected: card rendered with the shift-click affordance, not marked
     # selected. (Selection is shift-click since 47ce5dd0: the board JS posts
     # to toggle-select itself; there is no per-card button in the HTML.)
-    body = client.get("/").content.decode()
+    body = client.get(reverse("tasks:index")).content.decode()
     assert f'data-task-id="{task.id}"' in body
     assert "Shift-click to select" in body
     assert "importance-4 selected" not in body
 
     # Toggling (what the shift-click JS does) marks the card selected.
     assert client.post(f"/tasks/toggle-select/{task.id}/").status_code == 204
-    body = client.get("/").content.decode()
+    body = client.get(reverse("tasks:index")).content.decode()
     assert "importance-4 selected" in body
 
 
@@ -109,7 +110,7 @@ def test_cycle_user_skips_all_users(client, user):
 @pytest.mark.django_db
 def test_toolbar_has_user_filter(client, user):
     client.post("/tasks/view-mode/board/")
-    body = client.get("/").content.decode()
+    body = client.get(reverse("tasks:index")).content.decode()
     # User chips: an All chip plus one per user.
     assert "user-chips" in body
     assert "/tasks/filter/user/0/" in body
@@ -148,3 +149,9 @@ def test_board_move_to_complete_blocked_by_open_checklist(client, task):
     task.refresh_from_db()
     assert task.status == "Pending"
     assert task.date_completed is None
+
+
+def test_site_root_redirects_to_the_tasks_page(client):
+    resp = client.get("/")
+    assert resp.status_code == 302
+    assert resp.url == reverse("tasks:index") == "/tasks/"

@@ -18,7 +18,7 @@
   }
 
   function updateSidebarActive() {
-    const segment = window.location.pathname.split("/")[1] || "tasks";
+    const segment = window.location.pathname.split("/")[1];
 
     const app = APP_ALIASES[segment] || segment;
     sidebar.querySelectorAll(".sidebar-nav li").forEach(function (li) {

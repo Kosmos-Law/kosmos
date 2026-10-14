@@ -47,7 +47,7 @@ from apps.tasks.views import (
 app_name = "tasks"
 
 urlpatterns = [
-    path("", tasks_index, name="index"),
+    path("tasks/", tasks_index, name="index"),
     path("tasks/add", tasks_add, name="add"),
     path("tasks/add/quick", tasks_add_quick, name="add-quick"),
     path("tasks/<int:id>/edit", tasks_edit, name="edit"),

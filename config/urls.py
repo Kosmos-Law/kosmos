@@ -4,16 +4,18 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path, re_path
+from django.views.generic import RedirectView
 from django.views.static import serve
 
-from apps.tasks.views import tasks_index
 from config import health
 
 urlpatterns = [
     path("health/live/", health.live, name="health-live"),
     path("health/ready/", health.ready, name="health-ready"),
     path("health/worker/", health.worker, name="health-worker"),
-    path("", tasks_index, name="tasks-index"),
+    # The site root is a redirect to the home page (Tasks), so every page
+    # has one address of its own under its app's prefix.
+    path("", RedirectView.as_view(pattern_name="tasks:index"), name="home"),
     # Accounts App
     path("accounts/", include("apps.accounts.urls")),
     path("accounts/", include("django.contrib.auth.urls")),

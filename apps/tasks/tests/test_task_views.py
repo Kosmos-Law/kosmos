@@ -40,7 +40,7 @@ def _palette_add(client, task_data, current_url):
 
 def test_palette_add_toast_is_mobile_only_on_tasks_tab(client, folder, task_data):
     # The new row is the confirmation there, so desktop drops the toast.
-    toast = _palette_add(client, task_data, "https://testserver/?view=board")
+    toast = _palette_add(client, task_data, "https://testserver/tasks/?view=board")
     assert toast["mobile_only"] is True
 
 
