@@ -25,11 +25,13 @@ belong to a matter. The same event appears in several places:
 
 ## Look at the calendar
 
-Click **Calendar** in the sidebar. The two buttons beside the **+** button
-switch between **List View** and **Calendar View**. Kosmos opens in the
-calendar view and keeps your choice until you sign out. On a narrow
-screen, such as a phone, the calendar view is the **Agenda** (below), and
-the list is still a tap away on the toggle.
+Click **Calendar** in the sidebar. Kosmos opens in the calendar view and
+keeps your choice of view until you sign out. The sliders button at the
+right of the toolbar's menus opens the calendar's menu: **My tasks** and
+**Holidays** (below), **Filter**, and **List view**. In the list view,
+the two buttons beside the **+** button switch back to **Calendar View**.
+On a narrow screen, such as a phone, the calendar view is the **Agenda**
+(below), and the list is still a tap away in the menu.
 
 ### Calendar view
 
@@ -57,17 +59,18 @@ the list is still a tap away on the toggle.
 
 ### Tasks and holidays on the calendar
 
-Two buttons at the right of the toolbar's filters lay other things over
-the calendar view. Each stays on until you turn it off or sign out.
+The first two rows of the calendar's menu (the sliders button) lay other
+things over the calendar view. Each is a check box that stays on until
+you turn it off or sign out, and the menu stays open so you can set both.
 
-- The check-box button shows **your own open tasks** that have a due
-  date, each as a chip with an empty box before its title. Click the box
-  to mark the task done; it leaves the calendar at once. Click the rest
-  of the chip to open the task, or drag the chip to another day to move
-  its due date. Tasks assigned to other people do not show.
-- The party-popper button shows **US federal holidays** as blue chips.
-  They open nothing. When a holiday falls on a weekend, the observed day
-  is shown as well.
+- **My tasks** shows your own open tasks that have a due date, each as a
+  chip with an empty box before its title. Click the box to mark the task
+  done; it leaves the calendar at once. Click the rest of the chip to
+  open the task, or drag the chip to another day to move its due date.
+  Tasks assigned to other people do not show.
+- **Holidays** shows US federal holidays as blue chips. They open
+  nothing. When a holiday falls on a weekend, the observed day is shown
+  as well.
 
 Neither shows on a matter's **Events** tab.
 
@@ -147,9 +150,11 @@ for everyone and cannot be restored.
 
 ## Find events
 
-The Calendar opens on pending events, earliest first. The toolbar and the
-**Filter** button apply to both views, and Kosmos keeps your choices until
-you change them or sign out.
+The Calendar opens on pending events, earliest first. The toolbar menus
+and the **Filter** dialog apply to both views, and Kosmos keeps your
+choices until you change them or sign out. In the calendar view,
+**Filter** is in the sliders menu, and reads "on" beside it while a
+filter other than the default is set.
 
 - The status menu chooses **All Statuses**, **Pending**, **Complete** or
   **Missed**.
@@ -158,7 +163,8 @@ you change them or sign out.
   one user.
 - The matter menu chooses **All Matters**, **Unassigned** (events with no
   matter) or one pending or open matter.
-- Click **Filter** to open **Filter Events**. **Date** takes a first and
+- Click **Filter** (the toolbar button in the list view, the row in the
+  sliders menu in the calendar view) to open **Filter Events**. **Date** takes a first and
   last date. **Matter**, **Assigned to**, **Party** and **Status** are
   lists that narrow by those fields, and **Ordering** sets the sort. Click
   **Apply**. **Restore Defaults** returns to pending events sorted by

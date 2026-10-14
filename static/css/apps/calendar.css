@@ -178,10 +178,11 @@
     oklch(from var(--allday-background) l c 250)
   );
   --holiday-color: var(--calendar-holiday-color, var(--allday-color));
-  /* the dot on a timed entry: the accent, softened toward the card */
+  /* the dot on a timed entry: the accent icon hue, softened toward the
+     card */
   --event-dot: var(
     --calendar-dot,
-    color-mix(in oklab, var(--color-accent) 65%, var(--background-section))
+    color-mix(in oklab, var(--icon-violet) 65%, var(--background-section))
   );
   /* A task's chip: its own colour where the theme gives one */
   --task-background: var(--calendar-task, var(--event-background));
@@ -680,12 +681,51 @@
 }
 
 /* View toggle buttons */
-/* Wrappers that let the calendar view refresh its filter menus and its
-   overlay toggles in place; the buttons stay direct items of the
-   toolbar's flex row. */
-.events-filter-menus,
-.events-overlays {
+/* Wrapper that lets the calendar view refresh its filter menus in place;
+   the menus stay direct items of the toolbar's flex row. */
+.events-filter-menus {
   display: contents;
+}
+
+/* The calendar's menu, behind the sliders button: the overlays as check
+   rows, then Filter and the list view. Every row is an icon then its
+   label, laid out the same so the icons line up. */
+.calendar-menu .dropdown-menu {
+  min-width: 11rem;
+}
+
+.calendar-menu .dropdown-item {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.calendar-menu .dropdown-item i {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+/* A check row: the square icon of the lists' selection boxes, muted
+   until checked, when it takes the accent */
+.calendar-menu .calendar-menu-check {
+  cursor: pointer;
+}
+
+.calendar-menu .calendar-menu-check i {
+  color: var(--color-muted);
+}
+
+.calendar-menu .calendar-menu-check:hover i {
+  color: var(--color-primary);
+}
+
+.calendar-menu .calendar-menu-check i.icon-square-check {
+  color: var(--icon-violet);
+}
+
+.calendar-menu .calendar-menu-note {
+  color: var(--color-muted);
+  margin-left: -0.25rem;
 }
 
 .view-toggle {
@@ -737,9 +777,9 @@
 
   /* Pare the toolbar on mobile: the status/assigned/matter filter
      dropdowns and the Deadline Calculator are dropped to avoid crowding.
-     The view toggle stays, so the table list is a tap away from the
+     The calendar's menu stays, so the table list is a tap away from the
      phone's agenda. */
-  #events .toolbar .filter-tools .dropdown,
+  #events .toolbar .filter-tools .dropdown:not(.calendar-menu),
   #events .toolbar-right {
     display: none;
   }

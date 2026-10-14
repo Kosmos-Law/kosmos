@@ -1,14 +1,27 @@
-<button type="button"
-        class="{% if show_tasks %}toggle-active{% endif %}"
-        hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
-        hx-swap="none"
-        title="{% if show_tasks %}Hide my tasks{% else %}Show my tasks{% endif %}">
-  <i class="icon-square-check"></i>
-</button>
-<button type="button"
-        class="{% if show_holidays %}toggle-active{% endif %}"
-        hx-post="{% if show_holidays %}{% url 'calendar:show-holidays' 'off' %}{% else %}{% url 'calendar:show-holidays' 'on' %}{% endif %}"
-        hx-swap="none"
-        title="{% if show_holidays %}Hide holidays{% else %}Show holidays{% endif %}">
-  <i class="icon-party-popper"></i>
-</button>
+{% comment %}
+The calendar's menu, behind the sliders button on the grid's toolbar: the
+overlays (tasks, holidays) as check rows, then the Filter dialog and the
+list view. The rows re-render on eventsChanged (calendar/menu-items.html);
+the dropdown itself stays, so a check row keeps the menu open for the
+next, and the dropdown component closes it on a link.
+{% endcomment %}
+<div class="dropdown calendar-menu" x-data="dropdown()">
+  <button type="button"
+          class="select-btn filter-dropdown-button {% if show_tasks or show_holidays or filter_active %}toggle-active{% endif %}"
+          x-ref="button"
+          @click="toggle()"
+          :aria-expanded="open"
+          title="Show"
+          aria-label="Show">
+    <i class="icon-sliders-horizontal"></i>
+  </button>
+  <ul class="dropdown-menu"
+      x-ref="menu"
+      x-show="open"
+      hx-get="{% url 'calendar:overlays' %}"
+      hx-trigger="eventsChanged from:body"
+      hx-target="this"
+      hx-swap="innerHTML">
+    {% include "calendar/menu-items.html" %}
+  </ul>
+</div>

@@ -43,7 +43,7 @@ def tasks(user, other_user, matter):
     }
 
 
-def _toolbar(client):
+def _menu(client):
     return client.get(reverse("calendar:overlays")).content.decode()
 
 
@@ -64,7 +64,7 @@ def test_the_toggle(client, tasks):
     assert response.status_code == 204
     assert response["HX-Trigger"] == "eventsChanged"
     assert client.get(reverse("calendar:index")).context["show_tasks"] is True
-    assert reverse("calendar:show-tasks", args=["off"]) in _toolbar(client)
+    assert reverse("calendar:show-tasks", args=["off"]) in _menu(client)
 
     client.post(reverse("calendar:show-tasks", args=["off"]))
     assert client.get(reverse("calendar:index")).context["show_tasks"] is False
@@ -118,6 +118,6 @@ def test_an_unreadable_date_changes_nothing(client, tasks):
     assert tasks["open"].date_due == date(2030, 3, 4)
 
 
-def test_the_toolbar_offers_the_toggle(client):
-    assert reverse("calendar:show-tasks", args=["on"]) in _toolbar(client)
-    assert "Show my tasks" in _toolbar(client)
+def test_the_menu_offers_the_toggle(client):
+    assert reverse("calendar:show-tasks", args=["on"]) in _menu(client)
+    assert "My tasks" in _menu(client)

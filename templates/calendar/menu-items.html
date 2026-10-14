@@ -1,0 +1,35 @@
+{% comment %}
+The calendar menu's rows (calendar/overlays.html): the overlays as check
+rows drawn with the square icons the lists use for selection, then
+Filter and the list view, each behind its own icon. Each check row posts
+the state it would move to.
+{% endcomment %}
+<li>
+  <div class="dropdown-item calendar-menu-check"
+       hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
+       hx-swap="none">
+    <i class="{% if show_tasks %}icon-square-check{% else %}icon-square{% endif %}"></i>My tasks
+  </div>
+</li>
+<li>
+  <div class="dropdown-item calendar-menu-check"
+       hx-post="{% if show_holidays %}{% url 'calendar:show-holidays' 'off' %}{% else %}{% url 'calendar:show-holidays' 'on' %}{% endif %}"
+       hx-swap="none">
+    <i class="{% if show_holidays %}icon-square-check{% else %}icon-square{% endif %}"></i>Holidays
+  </div>
+</li>
+<li>
+  <a class="dropdown-item"
+     href="#"
+     hx-get="{% url 'calendar:filter' %}"
+     hx-target="#htmx-modal-container">
+    <i class="icon-list-filter"></i>Filter
+    {% if filter_active %}<span class="calendar-menu-note">on</span>{% endif %}
+  </a>
+</li>
+<li class="calendar-menu-list">
+  <a class="dropdown-item"
+     href="#"
+     hx-post="{% url 'calendar:view-mode' 'list' %}"
+     hx-swap="none"><i class="icon-list"></i>List view</a>
+</li>

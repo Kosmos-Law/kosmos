@@ -13,7 +13,7 @@ pytestmark = pytest.mark.django_db
 JULY = {"start": "2027-06-27", "end": "2027-08-07"}
 
 
-def _toolbar(client):
+def _menu(client):
     return client.get(reverse("calendar:overlays")).content.decode()
 
 
@@ -34,7 +34,7 @@ def test_the_toggle(client):
     assert response.status_code == 204
     assert response["HX-Trigger"] == "eventsChanged"
     assert client.get(reverse("calendar:index")).context["show_holidays"] is True
-    assert reverse("calendar:show-holidays", args=["off"]) in _toolbar(client)
+    assert reverse("calendar:show-holidays", args=["off"]) in _menu(client)
 
     client.post(reverse("calendar:show-holidays", args=["off"]))
     assert client.get(reverse("calendar:index")).context["show_holidays"] is False
@@ -76,9 +76,20 @@ def test_a_range_over_the_new_year_has_both_years():
     assert days == ["2026-12-25", "2027-01-01"]
 
 
-def test_the_toolbar_offers_the_toggle(client):
-    assert reverse("calendar:show-holidays", args=["on"]) in _toolbar(client)
-    assert "Show holidays" in _toolbar(client)
+def test_the_menu_offers_the_toggle(client):
+    assert reverse("calendar:show-holidays", args=["on"]) in _menu(client)
+    assert "Holidays" in _menu(client)
+
+
+def test_the_menu_offers_the_filter_and_the_list_view(client):
+    menu = _menu(client)
+
+    assert reverse("calendar:filter") in menu
+    assert reverse("calendar:view-mode", args=["list"]) in menu
+    # the Filter row says when a filter is on
+    assert "calendar-menu-note" not in menu
+    client.post(reverse("calendar:filter"), {"status": "Complete", "order_by": "date"})
+    assert "calendar-menu-note" in _menu(client)
 
 
 # --- court days ------------------------------------------------------------

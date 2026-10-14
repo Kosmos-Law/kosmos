@@ -40,6 +40,12 @@ def event_filter(request):
     return EventFilter(saved_filter(request), user=request.user)
 
 
+def filter_is_active(request):
+    """Whether the saved filter differs from the default, for the menu's
+    Filter row."""
+    return saved_filter(request) != DEFAULT_FILTER
+
+
 def show_tasks(request):
     """Whether the calendar shows the user's open tasks beside the events."""
     return bool(request.session.get(SHOW_TASKS_KEY, False))
@@ -69,6 +75,7 @@ def toolbar_context(request, filter=None):
         "users": filter.users,
         "show_tasks": show_tasks(request),
         "show_holidays": show_holidays(request),
+        "filter_active": filter_is_active(request),
     }
 
 

@@ -114,10 +114,10 @@ def events_filter_menus(request):
 
 @login_required
 def events_overlays(request):
-    """The toolbar's Tasks and Holidays toggles as the session now has
-    them, re-rendered after a change so each posts the state it would move
-    to."""
-    return render(request, "calendar/overlays.html", toolbar_context(request))
+    """The rows of the calendar's menu (the sliders button on the grid's
+    toolbar) as the session now has them, re-rendered after a change so
+    each check row posts the state it would move to."""
+    return render(request, "calendar/menu-items.html", toolbar_context(request))
 
 
 @login_required
