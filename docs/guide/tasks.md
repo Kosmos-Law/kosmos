@@ -176,6 +176,19 @@ holding a pinned task, **Date due** and **Pinned date** cannot be changed in
 Everything else about the task, its status, importance, matter, notes
 and checklist, is open to them as before.
 
+### Your watch-list
+
+A task you pinned for someone else can sit on your own list too. Click
+the pin button beside **Filter**, on the **Tasks** page or a matter's
+**Tasks** tab, and the tasks you pinned for other people appear
+alongside those of whichever user chip is selected, with their name in
+the **User** column. The date filter applies to them as to any task, so
+a pinned task that goes past due lights up on their list and on yours at
+the same time. The pin stays on until you click it again: **Restore
+Defaults** does not turn it off, and it is remembered between sign-ins.
+With **All** selected, the pin changes nothing, since everyone's tasks
+are already shown.
+
 ## Find tasks
 
 Tasks have no search box, and **Search** in the sidebar does not look at
@@ -201,7 +214,8 @@ the chip with three dots: click a name to filter by that user, or the pin
 beside it to keep that user as a chip. You can pin five, and the same
 chips appear on the **Activity** tabs.
 
-**Filter** opens **Filter Tasks** for everything else. Click **Apply**
+**The pin button** adds the tasks you pinned for other people (see
+[Your watch-list](#your-watch-list)). **Filter** opens **Filter Tasks** for everything else. Click **Apply**
 to use it. **Restore Defaults** returns to your own open tasks due today
 or earlier. (On a matter's **Tasks** tab, **Restore Defaults** returns
 that tab to everyone's tasks that are not **Complete**, with no date

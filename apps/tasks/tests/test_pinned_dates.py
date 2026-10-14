@@ -65,6 +65,10 @@ def _toast(response):
     return response.headers.get("HX-Toast", "")
 
 
+def _descriptions(response):
+    return [t.description for t in response.context["objects"]]
+
+
 # -----------------------------------------------------
 # who the assignor is
 # -----------------------------------------------------
@@ -282,3 +286,112 @@ def test_the_detail_dialog_names_the_assignor(colleague_client, handed_off):
         reverse("tasks:detail", args=[handed_off.id])
     ).content.decode()
     assert "Date pinned by Ollie" in html
+
+
+# -----------------------------------------------------
+# the toolbar pin: your watch-list beside your own tasks
+# -----------------------------------------------------
+def _own_chip(client, user):
+    client.post(reverse("tasks:filter-quick", args=["all"]))
+    client.post(reverse("tasks:filter-user", args=[user.id]))
+
+
+def test_the_pin_shows_the_tasks_you_pinned_for_others(
+    client, user, colleague, handed_off
+):
+    Task.objects.create(
+        user=colleague,
+        assigned_by=user,
+        description="Unpinned for Bob",
+        status="Pending",
+    )
+    Task.objects.create(user=user, description="Ollie's own task", status="Pending")
+    _own_chip(client, user)
+    assert _descriptions(client.get(reverse("tasks:list"))) == ["Ollie's own task"]
+
+    response = client.post(reverse("tasks:toggle-pinned"))
+    user.refresh_from_db()
+    assert user.show_pinned_tasks
+    assert set(_descriptions(response)) == {
+        "Ollie's own task",
+        "Read about Mohandas Gandhi",
+    }
+    # The chip still reads as Ollie's.
+    assert response.context["user_id"] == user.id
+
+    response = client.post(reverse("tasks:toggle-pinned"))
+    assert _descriptions(response) == ["Ollie's own task"]
+
+
+def test_the_date_window_still_applies_to_your_pins(
+    client, user, colleague, handed_off
+):
+    # Only the one field: a full save bumps the session check and signs
+    # the test client out.
+    user.show_pinned_tasks = True
+    user.save(update_fields=["show_pinned_tasks"])
+    client.post(reverse("tasks:filter-user", args=[user.id]))
+    # The default "Today" window: a 2024 pin is past due, so it shows.
+    client.post(reverse("tasks:filter-quick", args=["today"]))
+    assert "Read about Mohandas Gandhi" in _descriptions(
+        client.get(reverse("tasks:list"))
+    )
+    handed_off.date_due = "2099-01-01"
+    handed_off.save()
+    assert _descriptions(client.get(reverse("tasks:list"))) == []
+
+
+def test_all_users_is_unchanged_by_the_pin(client, user, colleague, handed_off):
+    # Only the one field: a full save bumps the session check and signs
+    # the test client out.
+    user.show_pinned_tasks = True
+    user.save(update_fields=["show_pinned_tasks"])
+    client.post(reverse("tasks:filter-quick", args=["all"]))
+    client.post(reverse("tasks:filter-user", args=[0]))
+    assert _descriptions(client.get(reverse("tasks:list"))) == [
+        "Read about Mohandas Gandhi"
+    ]
+
+
+def test_the_board_shows_your_pins_too(client, user, colleague, handed_off):
+    # Only the one field: a full save bumps the session check and signs
+    # the test client out.
+    user.show_pinned_tasks = True
+    user.save(update_fields=["show_pinned_tasks"])
+    _own_chip(client, user)
+    client.post(reverse("tasks:view-mode", args=["board"]))
+    response = client.get(reverse("tasks:list"))
+    cards = [t.description for c in response.context["columns"] for t in c["tasks"]]
+    assert "Read about Mohandas Gandhi" in cards
+
+
+def test_the_matter_tab_has_the_same_pin(client, user, colleague, handed_off, matter):
+    client.post(reverse("matters:tasks-filter-user", args=[matter.id, user.id]))
+    assert (
+        _descriptions(client.get(reverse("matters:tasks-list", args=[matter.id]))) == []
+    )
+    client.post(reverse("matters:tasks-toggle-pinned", args=[matter.id]))
+    assert _descriptions(
+        client.get(reverse("matters:tasks-list", args=[matter.id]))
+    ) == ["Read about Mohandas Gandhi"]
+
+
+def test_restore_defaults_keeps_the_pin(client, user, colleague, handed_off):
+    # Only the one field: a full save bumps the session check and signs
+    # the test client out.
+    user.show_pinned_tasks = True
+    user.save(update_fields=["show_pinned_tasks"])
+    client.get(reverse("tasks:filter-default"))
+    user.refresh_from_db()
+    assert user.show_pinned_tasks
+    assert "Read about Mohandas Gandhi" in _descriptions(
+        client.get(reverse("tasks:list"))
+    )
+
+
+def test_the_toolbar_button_reads_the_preference(client, user):
+    html = client.get(reverse("tasks:list")).content.decode()
+    assert "Show the tasks you pinned for others" in html
+    client.post(reverse("tasks:toggle-pinned"))
+    html = client.get(reverse("tasks:list")).content.decode()
+    assert "Hide the tasks you pinned for others" in html

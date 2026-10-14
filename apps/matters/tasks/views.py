@@ -47,7 +47,7 @@ from apps.tasks.services import (
     quick_date_filters,
     refresh_date_preset,
 )
-from apps.tasks.tasks import TASK_CHIPS_CAP, get_user_chips
+from apps.tasks.tasks import TASK_CHIPS_CAP, get_user_chips, widen_for_pins
 from utils.toasts import toast_warning
 
 TASKS_TRIGGER = "tasksListChanged"
@@ -94,7 +94,8 @@ def get_matter_tasks_data(request, matter_id):
             "order_by": filter_data.get("order_by", "date_due"),
             "matter": matter_id,
         }
-        filter = TasksFilter(filter_data, queryset=matter_queryset, request=request)
+        queryset, data = widen_for_pins(matter_queryset, filter_data, request.user)
+        filter = TasksFilter(data, queryset=queryset, request=request)
         tasks = filter.qs.select_related("user", "assigned_by")
         user_id = filter_data.get("user")
         user_id = int(user_id) if user_id not in (None, "") else None
@@ -107,6 +108,7 @@ def get_matter_tasks_data(request, matter_id):
             "order_by": "date_due",
             "user": None,  # All users
         }
+        # No user is chosen here, so the pin toggle has nothing to widen.
         filter = TasksFilter(default_filter, queryset=matter_queryset, request=request)
         tasks = filter.qs.select_related("user", "assigned_by")
         user_id = None
@@ -536,6 +538,17 @@ def tasks_filter_user(request, id, user_id):
 
     request.session[filter_key(id)] = filter_data
     return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
+
+
+@login_required
+@matter_access_required
+@require_POST
+def tasks_toggle_pinned(request, id):
+    """The tab's pin: the same standing preference as the Tasks page's."""
+    user = request.user
+    user.show_pinned_tasks = not user.show_pinned_tasks
+    user.save(update_fields=["show_pinned_tasks"])
+    return HttpResponse(status=204, headers={"HX-Trigger": TASKS_TRIGGER})
 
 
 @login_required

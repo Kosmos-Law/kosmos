@@ -39,6 +39,7 @@ from apps.tasks.views import (
     tasks_set_view_mode,
     tasks_status,
     tasks_toggle_chip,
+    tasks_toggle_pinned,
     tasks_toggle_select,
     tasks_toolbar,
     tasks_user,
@@ -123,6 +124,11 @@ urlpatterns = [
         "tasks/filter/importance/<int:importance_value>/",
         tasks_filter_importance,
         name="filter-importance",
+    ),
+    path(
+        "tasks/toggle-pinned/",
+        tasks_toggle_pinned,
+        name="toggle-pinned",
     ),
     path(
         "tasks/filter/default/",

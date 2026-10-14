@@ -736,6 +736,18 @@ def tasks_toggle_chip(request, user_id):
 
 @login_required
 @require_POST
+def tasks_toggle_pinned(request):
+    """The toolbar's pin: show or hide, beside the user's own tasks, the
+    tasks they pinned for other people. A standing preference on the
+    user (see tasks.widen_for_pins for what it shows)."""
+    user = request.user
+    user.show_pinned_tasks = not user.show_pinned_tasks
+    user.save(update_fields=["show_pinned_tasks"])
+    return _render_tasks(request)
+
+
+@login_required
+@require_POST
 def tasks_cycle_user(request, direction):
     """Cycle the task user filter (u / U keyboard shortcut)."""
     cycle_user_filter(request, "tasks_filter", direction)

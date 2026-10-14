@@ -371,6 +371,11 @@ urlpatterns = [
         name="tasks-toggle-chip",
     ),
     path(
+        "matters/<int:id>/tasks/toggle-pinned",
+        tasks.tasks_toggle_pinned,
+        name="tasks-toggle-pinned",
+    ),
+    path(
         "matters/<int:id>/tasks/filter-importance/<int:importance_value>",
         tasks.tasks_filter_importance,
         name="tasks-filter-importance",
