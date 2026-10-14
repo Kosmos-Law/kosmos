@@ -514,10 +514,24 @@
   background: transparent;
 }
 
-/* The app's table rules paint a th in the control gray; the weekday row
-   sits on the grid's own ground instead, ruled off below (above). */
+/* The app's table rules paint a th in the control gray, pad every cell
+   and clip a td to its box (tables.css); the grid draws its own cells,
+   and an event over several days is a bar that runs out of its first
+   day's cell across the rest, so the cells must not clip. The weekday
+   row sits on the grid's own ground, ruled off below (above). */
+.fc th,
+.fc td {
+  border-bottom: 0;
+  padding: 0;
+}
+
 .fc th {
   background: var(--background-td);
+}
+
+.fc td {
+  overflow: visible;
+  white-space: normal;
 }
 
 
