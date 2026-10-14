@@ -111,7 +111,7 @@ def _page_for(role):
     client = Client()
     client.force_login(user)
     client.get("/dash/")  # daily dash session, so later pages don't redirect
-    return client.get(reverse("tasks-index")).content.decode()
+    return client.get(reverse("tasks:index")).content.decode()
 
 
 @pytest.mark.django_db

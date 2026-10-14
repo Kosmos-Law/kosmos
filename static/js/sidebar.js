@@ -18,7 +18,7 @@
   }
 
   function updateSidebarActive() {
-    const segment = window.location.pathname.split("/")[1] || "tasks";
+    const segment = window.location.pathname.split("/")[1];
 
     const app = APP_ALIASES[segment] || segment;
     sidebar.querySelectorAll(".sidebar-nav li").forEach(function (li) {
@@ -70,12 +70,20 @@
     if (e.target.closest("a") && window.innerWidth <= 768) closeMobile();
   });
 
-  // Cancel HTMX request if navigating to the current page
+  // A nav click on the page already showing reloads it (people click the
+  // active item to get a fresh list) but does not stack a second history
+  // entry for the same URL. This used to cancel the request outright,
+  // which read as a dead click; Tasks, served at "/", took the blame most
+  // often, since that is where the day is spent.
   sidebar.addEventListener("htmx:beforeRequest", function (e) {
     var link = e.detail.elt.closest("a");
     if (link && link.getAttribute("href") === window.location.pathname) {
-      e.preventDefault();
+      link.setAttribute("hx-push-url", "false");
     }
+  });
+  sidebar.addEventListener("htmx:afterRequest", function (e) {
+    var link = e.detail.elt.closest("a");
+    if (link) link.removeAttribute("hx-push-url");
   });
 
   // Sync body class and sidebar active state after HTMX content swap
