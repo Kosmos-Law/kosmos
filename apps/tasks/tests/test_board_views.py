@@ -151,6 +151,7 @@ def test_board_move_to_complete_blocked_by_open_checklist(client, task):
     assert task.date_completed is None
 
 
+@pytest.mark.django_db
 def test_site_root_redirects_to_the_tasks_page(client):
     resp = client.get("/")
     assert resp.status_code == 302

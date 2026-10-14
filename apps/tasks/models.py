@@ -20,9 +20,24 @@ class Task(AuditMixin, models.Model):
     custom_order = models.DecimalField(
         max_digits=18, decimal_places=8, null=True, blank=True, default=None
     )
+    # Who handed the task to its user: stamped by save() whenever the task
+    # is given to someone other than the person saving it, cleared when a
+    # user takes it on themselves. With date_pinned, the due date is theirs
+    # alone to move (admins aside): see access.can_change_due_date. A due
+    # date is suggestive unless the assignor pins it.
+    assigned_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tasks_assigned",
+    )
+    date_pinned = models.BooleanField(default=False)
     history = HistoricalRecords(table_name="agenda_historicaltask")
 
     def save(self, *args, **kwargs):
+        from utils.middleware import get_current_user
+
         # Descriptions always read as sentences: first letter capitalized,
         # the rest untouched (unlike str.capitalize, which lowercases it).
         if self.description:
@@ -33,10 +48,24 @@ class Task(AuditMixin, models.Model):
             try:
                 old_task = Task.objects.get(pk=self.pk)
                 old_status = old_task.status
+                old_user_id = old_task.user_id
             except Task.DoesNotExist:
                 old_status = None
+                old_user_id = None
         else:
             old_status = None
+            old_user_id = None
+
+        # The assignor: whoever gives the task to someone else, re-stamped
+        # on every change of hands. Outside a request (the worker, a shell)
+        # there is no actor and the stamp is left as it is.
+        actor = get_current_user()
+        if (
+            actor is not None
+            and getattr(actor, "is_authenticated", False)
+            and (old_user_id is None or self.user_id != old_user_id)
+        ):
+            self.assigned_by = actor if self.user_id != actor.pk else None
 
         # Set date_completed when status becomes Complete. localdate, not
         # now().date(): the latter is the UTC date, which rolls over at 8pm

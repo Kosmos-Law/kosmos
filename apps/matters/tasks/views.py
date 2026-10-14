@@ -20,6 +20,7 @@ from apps.management.selection import (
     toggle_id,
 )
 from apps.matters.models import Matter
+from apps.tasks.access import can_change_due_date
 from apps.tasks.constants import (
     ACTIVE_STATUSES,
     CHECKLIST_INCOMPLETE_MESSAGE,
@@ -28,6 +29,8 @@ from apps.tasks.constants import (
     STATUS_PENDING,
     checklist_skip_message,
     coerce_status,
+    due_date_locked_message,
+    due_date_skip_message,
     status_is_custom,
 )
 from apps.tasks.filter import TasksFilter
@@ -44,7 +47,7 @@ from apps.tasks.services import (
     quick_date_filters,
     refresh_date_preset,
 )
-from apps.tasks.tasks import TASK_CHIPS_CAP, get_user_chips
+from apps.tasks.tasks import TASK_CHIPS_CAP, get_user_chips, widen_for_pins
 from utils.toasts import toast_warning
 
 TASKS_TRIGGER = "tasksListChanged"
@@ -91,8 +94,9 @@ def get_matter_tasks_data(request, matter_id):
             "order_by": filter_data.get("order_by", "date_due"),
             "matter": matter_id,
         }
-        filter = TasksFilter(filter_data, queryset=matter_queryset, request=request)
-        tasks = filter.qs
+        queryset, data = widen_for_pins(matter_queryset, filter_data, request.user)
+        filter = TasksFilter(data, queryset=queryset, request=request)
+        tasks = filter.qs.select_related("user", "assigned_by")
         user_id = filter_data.get("user")
         user_id = int(user_id) if user_id not in (None, "") else None
     else:
@@ -104,8 +108,9 @@ def get_matter_tasks_data(request, matter_id):
             "order_by": "date_due",
             "user": None,  # All users
         }
+        # No user is chosen here, so the pin toggle has nothing to widen.
         filter = TasksFilter(default_filter, queryset=matter_queryset, request=request)
-        tasks = filter.qs
+        tasks = filter.qs.select_related("user", "assigned_by")
         user_id = None
 
     # Force-show newly created tasks at the top regardless of filters
@@ -127,7 +132,11 @@ def get_matter_tasks_data(request, matter_id):
 
     # Prepend new tasks to the top of the page
     if new_task_ids:
-        new_tasks = list(Task.objects.filter(id__in=new_task_ids, matter=matter))
+        new_tasks = list(
+            Task.objects.filter(id__in=new_task_ids, matter=matter).select_related(
+                "user", "assigned_by"
+            )
+        )
         task_list = new_tasks + list(pagination.get_object_list())
     else:
         task_list = pagination.get_object_list()
@@ -146,6 +155,7 @@ def get_matter_tasks_data(request, matter_id):
     viewed_checklist_task_ids = set(checklist_views)
 
     for task in task_list:
+        task.date_locked = not can_change_due_date(task, request.user)
         task.has_notes = task.notes.exists()
         if task.has_notes:
             last_viewed = view_times.get(task.id)
@@ -533,6 +543,17 @@ def tasks_filter_user(request, id, user_id):
 @login_required
 @matter_access_required
 @require_POST
+def tasks_toggle_pinned(request, id):
+    """The tab's pin: the same standing preference as the Tasks page's."""
+    user = request.user
+    user.show_pinned_tasks = not user.show_pinned_tasks
+    user.save(update_fields=["show_pinned_tasks"])
+    return HttpResponse(status=204, headers={"HX-Trigger": TASKS_TRIGGER})
+
+
+@login_required
+@matter_access_required
+@require_POST
 def tasks_toggle_chip(request, id, user_id):
     """Pin or unpin a user on the toolbar's chip row.
 
@@ -638,6 +659,8 @@ def tasks_date(request, id, task_id):
     """Edit task date for a matter"""
     matter = get_object_or_404(Matter, pk=id)
     task = get_object_or_404(Task, pk=task_id, matter=matter)
+    if not can_change_due_date(task, request.user):
+        return toast_warning(HttpResponse(status=204), due_date_locked_message(task))
 
     if request.method == "POST":
         from datetime import datetime
@@ -763,6 +786,7 @@ def tasks_bulk_update(request, id):
             new_matter = form.cleaned_data.get("matter")
 
             skipped = 0
+            date_locked = 0
             for task in tasks:
                 # The same guard as editing one task: none of the update is
                 # applied to a task whose checklist is unfinished.
@@ -776,8 +800,13 @@ def tasks_bulk_update(request, id):
                 if importance:
                     task.importance = int(importance)
 
+                # The rest of the update still applies to a task whose
+                # due date is someone else's to move.
                 if date_due:
-                    task.date_due = date_due
+                    if can_change_due_date(task, request.user):
+                        task.date_due = date_due
+                    else:
+                        date_locked += 1
 
                 if user:
                     task.user = user
@@ -791,6 +820,8 @@ def tasks_bulk_update(request, id):
             response = selection_response(TASKS_TRIGGER)
             if skipped:
                 toast_warning(response, checklist_skip_message(skipped))
+            if date_locked:
+                toast_warning(response, due_date_skip_message(date_locked))
             return response
 
         return render(
@@ -820,12 +851,25 @@ def tasks_bulk_set_due_date(request, id):
 
     date_due = request.POST.get("date_due")
     if date_due:
-        Task.objects.filter(id__in=selected_tasks, matter_id=id).update(
-            date_due=date_due
-        )
+        response = _bulk_due_date(request, id, selected_tasks, date_due)
         clear_selected_ids(request, key)
+        return response
 
     return selection_response(TASKS_TRIGGER)
+
+
+def _bulk_due_date(request, matter_id, selected_tasks, date_due):
+    """Set (or clear, with None) the due date of the selected tasks the
+    user may reschedule; the ones handed over by someone else are left
+    alone and counted in a warning."""
+    tasks = Task.objects.filter(id__in=selected_tasks, matter_id=matter_id)
+    allowed = [t.id for t in tasks if can_change_due_date(t, request.user)]
+    skipped = tasks.count() - len(allowed)
+    Task.objects.filter(id__in=allowed).update(date_due=date_due)
+    response = selection_response(TASKS_TRIGGER)
+    if skipped:
+        toast_warning(response, due_date_skip_message(skipped))
+    return response
 
 
 @login_required
@@ -839,10 +883,9 @@ def tasks_bulk_clear_due_date(request, id):
     if not selected_tasks:
         return HttpResponse(status=400, content="No tasks selected.")
 
-    Task.objects.filter(id__in=selected_tasks, matter_id=id).update(date_due=None)
+    response = _bulk_due_date(request, id, selected_tasks, None)
     clear_selected_ids(request, key)
-
-    return selection_response(TASKS_TRIGGER)
+    return response
 
 
 @login_required

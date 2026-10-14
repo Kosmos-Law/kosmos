@@ -354,6 +354,28 @@ tr > td.importance.complete .button-link {
   width: 7rem;
 }
 
+/* A pinned date: set by whoever handed the task over, shown to the
+   assignee as text with a pin in place of the picker link, and to the
+   assignor as the picker link with the pin beside it. */
+.task-date-pinned {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.task-date-pinned .icon-pin,
+.task-date-pin {
+  color: var(--color-muted-more);
+  margin-left: 0.25rem;
+}
+
+.task-detail-assigned-by {
+  color: var(--color-muted);
+}
+
+.task-detail-assigned-by .icon-pin {
+  margin-right: 0.5rem;
+}
+
 /* Multi-select status checkboxes in the Filter modal */
 .filter #id_status {
   display: flex;
@@ -385,7 +407,8 @@ tr > td.importance.complete .button-link {
 .tasks-table .date {
   overflow: visible;
   white-space: nowrap;
-  width: 7rem;
+  /* Room for the date and the pin of a pinned date. */
+  width: 8.5rem;
 }
 
 .tasks-table .date .dropdown-menu {

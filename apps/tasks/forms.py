@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 from apps.accounts.models import CustomUser
 from apps.matters.models import Matter
-from apps.tasks.access import matters_for_task_form
+from apps.tasks.access import can_change_due_date, matters_for_task_form
 from apps.tasks.constants import (
     BULK_STATUS_CHOICES,
     DESCRIPTION_MIN_LENGTH,
@@ -11,6 +11,7 @@ from apps.tasks.constants import (
     NO_CHANGE,
 )
 from apps.tasks.models import Task, TaskNote
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 
@@ -25,6 +26,7 @@ class TaskForm(forms.ModelForm):
             "importance",
             "status",
             "date_due",
+            "date_pinned",
             "date_completed",
         )
 
@@ -32,6 +34,7 @@ class TaskForm(forms.ModelForm):
 
         labels = {
             "description": "Task",
+            "date_pinned": "Pinned date",
         }
 
         IMPORTANCE_CHOICES = (
@@ -60,6 +63,10 @@ class TaskForm(forms.ModelForm):
             "status": forms.Select(choices=STATUSES),
             "date_due": forms.DateInput(attrs={"type": "date", "class": ""}),
             "importance": forms.Select(choices=IMPORTANCE_CHOICES),
+            # Yes pins the date: the assignor's alone to move (see
+            # access.can_change_due_date). A Yes/No select, as every
+            # boolean input is.
+            "date_pinned": forms.Select(choices=YESNO_CHOICES),
             "date_completed": forms.DateInput(attrs={"type": "date", "class": ""}),
         }
 
@@ -78,6 +85,17 @@ class TaskForm(forms.ModelForm):
             self.fields["matter"].queryset = matters_for_task_form(
                 user, include_id=include_matter or self.instance.matter_id
             )
+            # A pinned date someone else set is shown, not editable, and so
+            # is its pin. A disabled field keeps its initial value
+            # whatever is posted.
+            if self.instance.pk and not can_change_due_date(self.instance, user):
+                title = (
+                    f"Pinned by {self.instance.assigned_by.username.title()}. "
+                    "Only they can move the date."
+                )
+                for name in ("date_due", "date_pinned"):
+                    self.fields[name].disabled = True
+                    self.fields[name].widget.attrs["title"] = title
 
     def clean_description(self):
         # An empty description arrives as None (the column is nullable).

@@ -25,6 +25,7 @@ from apps.management.selection import (
 from apps.management.user_filter import cycle_user_filter
 from apps.matters.models import Matter
 from apps.tasks.access import (
+    can_change_due_date,
     matter_for_user,
     task_for_user,
     task_note_for_user,
@@ -39,6 +40,8 @@ from apps.tasks.constants import (
     STATUS_PENDING,
     checklist_skip_message,
     coerce_status,
+    due_date_locked_message,
+    due_date_skip_message,
 )
 from apps.tasks.filter import TasksFilter
 from apps.tasks.forms import BulkTasksForm, TaskForm, TaskNoteForm
@@ -733,6 +736,18 @@ def tasks_toggle_chip(request, user_id):
 
 @login_required
 @require_POST
+def tasks_toggle_pinned(request):
+    """The toolbar's pin: show or hide, beside the user's own tasks, the
+    tasks they pinned for other people. A standing preference on the
+    user (see tasks.widen_for_pins for what it shows)."""
+    user = request.user
+    user.show_pinned_tasks = not user.show_pinned_tasks
+    user.save(update_fields=["show_pinned_tasks"])
+    return _render_tasks(request)
+
+
+@login_required
+@require_POST
 def tasks_cycle_user(request, direction):
     """Cycle the task user filter (u / U keyboard shortcut)."""
     cycle_user_filter(request, "tasks_filter", direction)
@@ -812,6 +827,8 @@ def tasks_importance(request, task_id, importance):
 @login_required
 def tasks_date(request, task_id):
     task = task_for_user(task_id, request.user)
+    if not can_change_due_date(task, request.user):
+        return toast_warning(HttpResponse(status=204), due_date_locked_message(task))
 
     if request.method == "POST":
         try:
@@ -859,7 +876,7 @@ def tasks_filter_sort(request, order):
     current_order = filter_data.get("order_by", "")
 
     # A second click on the same column reverses it, whichever direction the
-    # column's button starts from (the flag button starts at "-importance").
+    # column's button starts from (the pin button starts at "-importance").
     if current_order == order:
         new_order = order[1:] if order.startswith("-") else f"-{order}"
     else:
@@ -1070,6 +1087,7 @@ def tasks_bulk_update(request):
             matter = form.cleaned_data.get("matter")
 
             skipped = 0
+            date_locked = 0
             for task in tasks:
                 # The same guard as editing one task: none of the update is
                 # applied to a task whose checklist is unfinished.
@@ -1083,8 +1101,13 @@ def tasks_bulk_update(request):
                 if importance:
                     task.importance = int(importance)
 
+                # The rest of the update still applies to a task whose
+                # due date is someone else's to move.
                 if date_due:
-                    task.date_due = date_due
+                    if can_change_due_date(task, request.user):
+                        task.date_due = date_due
+                    else:
+                        date_locked += 1
 
                 if user:
                     task.user = user
@@ -1099,6 +1122,8 @@ def tasks_bulk_update(request):
             response = selection_response(TASKS_TRIGGER)
             if skipped:
                 toast_warning(response, checklist_skip_message(skipped))
+            if date_locked:
+                toast_warning(response, due_date_skip_message(date_locked))
             return response
 
         return render(request, "tasks/bulk-update-modal.html", {"form": form})
@@ -1120,10 +1145,25 @@ def tasks_bulk_set_due_date(request):
 
     date_due = request.POST.get("date_due")
     if date_due:
-        _selected_tasks(request, selected_tasks).update(date_due=date_due)
+        response = _bulk_due_date(request, key, selected_tasks, date_due)
         clear_selected_ids(request, key)
+        return response
 
     return selection_response(TASKS_TRIGGER)
+
+
+def _bulk_due_date(request, key, selected_tasks, date_due):
+    """Set (or clear, with None) the due date of the selected tasks the
+    user may reschedule; the ones handed over by someone else are left
+    alone and counted in a warning."""
+    tasks = _selected_tasks(request, selected_tasks)
+    allowed = [t.id for t in tasks if can_change_due_date(t, request.user)]
+    skipped = tasks.count() - len(allowed)
+    Task.objects.filter(id__in=allowed).update(date_due=date_due)
+    response = selection_response(TASKS_TRIGGER)
+    if skipped:
+        toast_warning(response, due_date_skip_message(skipped))
+    return response
 
 
 @login_required
@@ -1136,10 +1176,9 @@ def tasks_bulk_clear_due_date(request):
     if not selected_tasks:
         return HttpResponse(status=400, content="No tasks selected.")
 
-    _selected_tasks(request, selected_tasks).update(date_due=None)
+    response = _bulk_due_date(request, key, selected_tasks, None)
     clear_selected_ids(request, key)
-
-    return selection_response(TASKS_TRIGGER)
+    return response
 
 
 @login_required
