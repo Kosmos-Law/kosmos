@@ -1,4 +1,5 @@
 import django_filters
+from django import forms
 from django.db.models import Q
 
 from apps.accounts.models import CustomUser
@@ -19,28 +20,43 @@ STATUS_CHOICES = (
 )
 
 
-class AssignedToFilter(django_filters.ChoiceFilter):
-    """Assignee choice with the special 'unassigned' (Firm) and
-    'firm_and_user:<id>' options."""
+FIRM = "unassigned"
+
+
+def assignee_tokens(value):
+    """The saved Assigned-to choices as a list: the session holds one
+    choice as a string and several as a list, and an emptied one as ""."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [token for token in value if token]
+
+
+class AssigneesFilter(django_filters.MultipleChoiceFilter):
+    """The assignees to show, any number ticked: FIRM for the events on
+    nobody in particular (the firm's), and users by id. An event shows
+    when it is the firm's and Firm is ticked, or any of its assignees is.
+    Nothing ticked shows everything."""
 
     def filter(self, qs, value):
-        if not value:
+        tokens = assignee_tokens(value)
+        if not tokens:
             return qs
-        if value == "unassigned":
-            return qs.filter(assigned_to__isnull=True)
-        if value.startswith("firm_and_user:"):
+        wanted = Q()
+        if FIRM in tokens:
+            wanted |= Q(assignees=None)
+        ids = []
+        for token in tokens:
             try:
-                user_id = int(value.split(":")[1])
-                return qs.filter(
-                    Q(assigned_to__isnull=True) | Q(assigned_to_id=user_id)
-                )
-            except (ValueError, TypeError, IndexError):
-                return qs
-        try:
-            user_id = int(value)
-            return qs.filter(assigned_to_id=user_id)
-        except (ValueError, TypeError):
+                ids.append(int(token))
+            except (ValueError, TypeError):
+                continue
+        if ids:
+            wanted |= Q(assignees__in=ids)
+        if not wanted:
             return qs
+        return qs.filter(wanted).distinct()
 
 
 class MatterFilter(django_filters.ChoiceFilter):
@@ -88,7 +104,9 @@ class EventFilter(django_filters.FilterSet):
     party = django_filters.ChoiceFilter(
         field_name="party", choices=PARTY_CHOICES, empty_label="All Parties"
     )
-    assigned_to = AssignedToFilter(empty_label="All Assignees")
+    assigned_to = AssigneesFilter(
+        label="Assigned to", widget=forms.CheckboxSelectMultiple
+    )
     order_by = django_filters.OrderingFilter(
         fields=(
             ("date", "date"),
@@ -107,6 +125,11 @@ class EventFilter(django_filters.FilterSet):
     def __init__(self, data=None, *, user, **kwargs):
         kwargs.setdefault("queryset", Event.objects.all())
         kwargs["queryset"] = events_for_user(kwargs["queryset"], user)
+        # The saved filter holds one ticked assignee as a string and several
+        # as a list; the field takes a list
+        if data and "assigned_to" in data:
+            data = dict(data)
+            data["assigned_to"] = assignee_tokens(data["assigned_to"])
         super().__init__(data, **kwargs)
 
         # The matter already chosen stays in the list when it has since left
@@ -115,13 +138,11 @@ class EventFilter(django_filters.FilterSet):
         self.users = CustomUser.objects.filter(is_active=True).order_by(
             "first_name", "last_name"
         )
-        me = user.get_short_name() or user.username
         self.matter_choices = [("unassigned", "Unassigned")] + [
             (str(matter.id), matter.name) for matter in self.matters
         ]
-        self.assigned_choices = [
-            ("unassigned", "Firm"),
-            (f"firm_and_user:{user.id}", f"Firm + {me}"),
-        ] + [(str(u.id), u.get_short_name() or u.username) for u in self.users]
+        self.assigned_choices = [(FIRM, "Firm")] + [
+            (str(u.id), u.get_short_name() or u.username) for u in self.users
+        ]
         self.filters["matter"].extra["choices"] = self.matter_choices
         self.filters["assigned_to"].extra["choices"] = self.assigned_choices

@@ -25,6 +25,7 @@ events past their date get the past-due treatment.
     {% else %}
       All day
     {% endif %}
+    {% if event.end_date %}· to {{ event.end_date|date:"D, M j" }}{% endif %}
   </div>
   {% if show_matter and event.matter %}
     <a class="event-card-matter"

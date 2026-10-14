@@ -1,7 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.utils import timezone
 
+from apps.calendar.events import annotate_durations
 from apps.calendar.models import Event
 from apps.case.facts.sorting import sort_keys, stored_sort_key
 from apps.matters.proceedings.models import Proceeding
@@ -39,15 +40,7 @@ def get_event_data(request, matter):
 
     events = events.order_by(order_by)
 
-    # Calculate duration for events
-    for event in events:
-        if event.start_time and event.end_time:
-            start = datetime.combine(datetime.today(), event.start_time)
-            end = datetime.combine(datetime.today(), event.end_time)
-            duration_delta = end - start
-            event.duration = duration_delta.total_seconds() / 3600
-        else:
-            event.duration = None
+    events = annotate_durations(list(events))
 
     # Get current order without the "-" prefix for template comparison
     current_order = order_by.lstrip("-")

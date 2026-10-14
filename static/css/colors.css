@@ -249,6 +249,31 @@
   --hl-red: var(--red-100);
   --hl-yellow: var(--yellow-100);
 
+  /* Calendar entries (apps/calendar.css reads these; every theme may
+     repoint them). The event chip is stone halfway between the 200 and
+     300 steps, let through at 78% so the day cell shows. An all-day event
+     is the stone two steps off the cell with a breath of the links' lime
+     in it, a task one step off with the same breath, each ruled round in
+     the stone a step darker; the dot, for timed entries and the agenda,
+     is the chip's hue well darker, so it reads at its size. */
+  --calendar-chip: color-mix(
+    in oklch,
+    color-mix(in oklch, var(--stone-200), var(--stone-300)) 78%,
+    transparent
+  );
+  --calendar-allday: oklch(0.87 0.018 131);
+  --calendar-allday-color: var(--color-primary);
+  --calendar-task: oklch(0.92 0.016 131);
+  --calendar-task-color: var(--color-primary);
+  --calendar-task-icon: var(--color-primary);
+  --calendar-chip-border: var(--stone-350);
+  --calendar-dot: oklch(0.58 0.045 131);
+  --calendar-allday-dot: var(--calendar-dot);
+  /* a holiday: the all-day chip turned blue at the same lightness */
+  --calendar-holiday: oklch(from var(--calendar-allday) l c 250);
+  --calendar-holiday-color: var(--calendar-allday-color);
+  --calendar-today: var(--amber-100);
+
   /* Row washes — the same hues a step lighter, for tables that carry the colour
      across a whole row (the timeline). The --hl-* fills above are sized for
      small areas — text marks, chips, a button state — and over five columns
@@ -505,6 +530,15 @@
   --hl-red: var(--nord11-tint);
   --hl-yellow: var(--nord13-tint);
 
+  /* Calendar entries: the control grays, no lime; the dot is the link */
+  --calendar-chip: var(--background-control);
+  --calendar-allday: var(--background-control);
+  --calendar-task: var(--background-light);
+  --calendar-chip-border: var(--border-medium-dark);
+  --calendar-dot: var(--link);
+  --calendar-holiday: var(--hl-blue);
+  --calendar-today: var(--nord13-tint);
+
   /* Labels & badges — the same aurora tints (label-gray follows control) */
   --label-green: var(--nord14-tint);
   --label-orange: var(--nord12-tint);
@@ -643,6 +677,15 @@
   --hl-orange: oklch(0.931 0.043 65);
   --hl-red: oklch(0.92 0.036 22);
   --hl-yellow: oklch(0.943 0.054 92);
+
+  /* Calendar entries: the control grays, no lime; the dot is the link */
+  --calendar-chip: var(--background-control);
+  --calendar-allday: var(--background-control);
+  --calendar-task: var(--background-light);
+  --calendar-chip-border: var(--border-medium-dark);
+  --calendar-dot: var(--link);
+  --calendar-holiday: var(--hl-blue);
+  --calendar-today: #d9ebf8;
   --label-green: var(--status-green-bg);
   --label-orange: oklch(0.931 0.043 65);
   --label-red: oklch(0.92 0.036 22);
@@ -780,6 +823,15 @@
   --hl-violet: var(--lh-plum-tint);
   --hl-red: var(--lh-red-tint);
   --hl-yellow: var(--lh-amber-tint);
+
+  /* Calendar entries: the control grays, no lime; the dot is the fountain-pen blue */
+  --calendar-chip: var(--background-control);
+  --calendar-allday: var(--background-control);
+  --calendar-task: var(--background-light);
+  --calendar-chip-border: var(--border-medium-dark);
+  --calendar-dot: var(--lh-blue);
+  --calendar-holiday: var(--lh-blue-wash);
+  --calendar-today: var(--lh-blue-wash);
 }
 
 /* ==========================================================================
@@ -1006,6 +1058,23 @@
   --hl-violet: var(--violet-950);
   --hl-red: var(--red-950);
   --hl-yellow: oklch(0.31 0.075 92);  /* true-yellow hue so it reads mustard, not the red-brown of yellow-950 */
+
+  /* Calendar entries, in the gruvbox grays themselves (cosmic, kosmic and
+     everforest repoint the ramp). An all-day event is a step up from the
+     chip, a task the chip itself, each ruled in the gray above; the dot
+     is a mid gray; a holiday takes the all-day ground halfway to blue. */
+  --calendar-chip: var(--gb-dark2);
+  --calendar-allday: var(--gb-dark3);
+  --calendar-allday-color: var(--color-primary);
+  --calendar-task: var(--gb-dark2);
+  --calendar-task-color: var(--color-primary);
+  --calendar-task-icon: var(--color-primary);
+  --calendar-chip-border: var(--gb-dark4);
+  --calendar-dot: var(--gb-dark4);
+  --calendar-allday-dot: var(--gb-dark4);
+  --calendar-holiday: color-mix(in oklab, var(--gb-dark3) 55%, var(--blue-600));
+  --calendar-holiday-color: var(--color-primary);
+  --calendar-today: var(--hl-yellow);
 }
 
 /* ==========================================================================

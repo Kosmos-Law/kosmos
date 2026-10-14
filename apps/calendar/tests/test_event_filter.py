@@ -49,7 +49,8 @@ def test_matter_and_assignee_are_choices(client, user, matter):
 
     body = client.get(reverse("calendar:filter")).content.decode()
     assert '<select name="matter"' in body
-    assert '<select name="assigned_to"' in body
+    # the assignees are boxes to tick, any number of them
+    assert 'type="checkbox" name="assigned_to"' in body
 
 
 def test_matter_choices_leave_out_closed_matters(user, matter, practice_area):
@@ -65,12 +66,9 @@ def test_matter_choices_leave_out_closed_matters(user, matter, practice_area):
 
 def test_applied_matter_and_assignee_filter_the_list(client, user, matter, statuses):
     mine = Event.objects.create(
-        matter=None,
-        date="2030-03-04",
-        description="Assigned to me",
-        status="Pending",
-        assigned_to=user,
+        matter=None, date="2030-03-04", description="Assigned to me", status="Pending"
     )
+    mine.assignees.add(user)
 
     client.post(reverse("calendar:filter"), {"matter": matter.id, "status": ""})
     by_matter = client.get(reverse("calendar:index")).context["objects"]

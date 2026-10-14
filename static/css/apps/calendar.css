@@ -14,7 +14,7 @@
 }
 
 .events-table .date {
-  width: 12rem;
+  width: 13rem;
 }
 
 .events-table .matter {
@@ -41,6 +41,14 @@
   width: 8rem;
 }
 
+/* The date cell reads "first", then "to last" on a line of its own for
+   an event over several days, in the muted colour, so the cell's own
+   ellipsis never cuts the last day short */
+.events-table .event-end-date {
+  color: var(--color-muted);
+  display: block;
+}
+
 /* An event deleted on Google and kept here: said in words under the
    description, since the row has no other sign of it. */
 .events-table .event-detached {
@@ -52,6 +60,26 @@
 
 .events-form {
   margin-top: 1rem;
+}
+
+/* The assignees in the Filter Events dialog: a row of boxes to tick */
+.filter #id_assigned_to {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.filter #id_assigned_to label {
+  align-items: center;
+  display: inline-flex;
+  font-weight: normal;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.filter #id_assigned_to input[type="checkbox"] {
+  margin: 0;
+  width: auto;
 }
 
 /* The form's own top margin is the gap below the note. */
@@ -151,32 +179,37 @@
    FullCalendar Integration
    ========================================================================== */
 
-/* Ensure calendar borders are visible and rounded */
-.fc .fc-scrollgrid {
-  border-bottom-width: 1px !important;
-  border-radius: var(--radius-md);
-  border-right-width: 1px !important;
-  overflow: hidden;
-}
-
-.fc .fc-scrollgrid-section:first-child .fc-col-header-cell:first-child {
-  border-top-left-radius: var(--radius-md);
-}
-
-.fc .fc-scrollgrid-section:first-child .fc-col-header-cell:last-child {
-  border-top-right-radius: var(--radius-md);
-}
-
-.fc .fc-scrollgrid-section:last-child .fc-daygrid-day:first-child {
-  border-bottom-left-radius: var(--radius-md);
-}
-
-.fc .fc-scrollgrid-section:last-child .fc-daygrid-day:last-child {
-  border-bottom-right-radius: var(--radius-md);
-}
-
-/* Override FullCalendar default styling to match app design */
+/* Entries on the calendar are neutral: events and tasks alike are a chip
+   in the page's text colour (a task is told by its box). Every colour is
+   a theme token (colors.css, the --calendar-* set), with a fallback for a
+   theme that sets none; this file holds only the structure. */
 .fc {
+  --event-background: var(--calendar-chip, var(--background-control));
+  --event-border: transparent;
+  --event-color: var(--color-primary);
+  /* An all-day event's chip, and its dot in the agenda */
+  --allday-background: var(--calendar-allday, var(--event-background));
+  --allday-color: var(--calendar-allday-color, var(--event-color));
+  --allday-dot: var(--calendar-allday-dot, var(--color-primary));
+  /* a rule round the all-day and task chips, where the theme gives one */
+  --allday-border: var(--calendar-chip-border, var(--event-border));
+  /* a US federal holiday: the all-day chip turned blue */
+  --holiday-background: var(
+    --calendar-holiday,
+    oklch(from var(--allday-background) l c 250)
+  );
+  --holiday-color: var(--calendar-holiday-color, var(--allday-color));
+  /* the dot on a timed entry: the accent icon hue, softened toward the
+     card */
+  --event-dot: var(
+    --calendar-dot,
+    color-mix(in oklab, var(--icon-violet) 65%, var(--background-section))
+  );
+  /* A task's chip: its own colour where the theme gives one */
+  --task-background: var(--calendar-task, var(--event-background));
+  --task-border: var(--calendar-chip-border, transparent);
+  --task-color: var(--calendar-task-color, var(--color-primary));
+  --task-icon: var(--calendar-task-icon, var(--link));
   --fc-border-color: var(--border-medium);
   --fc-button-bg-color: var(--background-control);
   --fc-button-border-color: var(--border-medium);
@@ -185,38 +218,29 @@
   --fc-button-hover-border-color: var(--border-dark);
   --fc-button-active-bg-color: var(--selected-background);
   --fc-button-active-border-color: var(--selected-border);
-  --fc-today-bg-color: var(--amber-100);
-  --fc-event-bg-color: var(--lime-600);
-  --fc-event-border-color: var(--lime-700);
-  --fc-event-text-color: white;
+  --fc-today-bg-color: var(--calendar-today, var(--hl-yellow));
+  --fc-event-bg-color: var(--event-background);
+  --fc-event-border-color: var(--event-border);
+  --fc-event-text-color: var(--event-color);
   --fc-page-bg-color: var(--background-section);
   --fc-neutral-bg-color: var(--background-light);
 }
 
-/* Dark-mode overrides — direct selectors because the rules below use
-   !important on raw palette values, which beats any --fc-* token override. */
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .fc-event,
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .fc-event.fc-daygrid-block-event,
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .fc-event.fc-daygrid-dot-event {
-  background-color: var(--gb-dark2) !important;
-  border-color: var(--gb-dark3) !important;
+/* The grid is outlined in its own rule, square, and closes with a
+   bottom rule of its own; the weekday row is ruled off from the days. */
+.fc .fc-scrollgrid {
+  border-bottom-width: 1px !important;
+  border-radius: 0;
+  border-right-width: 1px !important;
 }
 
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .fc-event.fc-event-no-matter {
-  background-color: var(--gb-dark) !important;
-}
-
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .fc .fc-day-today .fc-daygrid-day-number {
-  background-color: var(--gb-bright-purple);
-  color: var(--gb-dark);
+.fc .fc-scrollgrid-section-header > * {
+  border-bottom: 1px solid var(--fc-border-color);
 }
 
 /* Button styling */
 .fc .fc-button {
   border-radius: var(--radius-sm);
-  /* font-size: 1rem; */
-  /* line-height: 1.5; */
-  /* padding: 0.5rem 0.75rem; */
   text-transform: capitalize;
 }
 
@@ -245,9 +269,9 @@
 }
 
 .fc .fc-button-primary:not(:disabled).fc-button-active {
-  background: var(--selected-background);
-  border-color: var(--selected-border);
-  color: var(--selected-color);
+  background: var(--selected-background) !important;
+  border-color: var(--selected-border) !important;
+  color: var(--selected-color) !important;
 }
 
 /* Header toolbar */
@@ -262,33 +286,52 @@
 .fc .fc-toolbar-title {
   color: var(--color-primary);
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: normal;
 }
 
-/* Event styling — theme tokens, not raw stone: the old stone-150 fill
-   matched Matcha's --background-section canvas exactly (border-only
-   visibility) and read pale yellow against Nord Light's cool snow.
-   The chip text is a deliberate exception to the 1rem floor: at 1rem the
-   chips crowd the month grid's day cells. */
-.fc-event,
+/* Event chips in the grids: a fill and no border (the tokens are on .fc,
+   above). The chip text is a deliberate exception to the 1rem floor: at
+   1rem the chips crowd the month grid's day cells. The agenda's rows are
+   not chips and keep 1rem (below). */
+.fc-event:not(.fc-list-event),
 .fc-event.fc-daygrid-block-event,
 .fc-event.fc-daygrid-dot-event {
-  background-color: var(--background-control) !important;
-  border: 1px solid var(--border-medium-dark) !important;
+  background-color: var(--event-background) !important;
+  border: 1px solid var(--event-border) !important;
   border-radius: var(--radius-sm);
-  color: var(--color-primary) !important;
+  color: var(--event-color) !important;
   cursor: pointer;
   font-size: 0.8125rem;
   padding: 0.125rem 0.25rem;
 }
 
-.fc-event-title,
-.fc-event-time,
-.fc-event .fc-event-main,
+.fc-event:not(.fc-list-event) .fc-event-title,
+.fc-event:not(.fc-list-event) .fc-event-time,
+.fc-event:not(.fc-list-event) .fc-event-main,
 .fc-daygrid-event .fc-event-title,
 .fc-timegrid-event .fc-event-main {
+  color: var(--event-color) !important;
+  font-weight: 500 !important;
+}
+
+/* The agenda's rows read in the page's text colour, with the entry's
+   colour on their dot */
+.fc .fc-list-event .fc-event-title {
   color: var(--color-primary) !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
+}
+
+/* An all-day event (a block chip that is not a task) takes the all-day
+   colour, ruled round where the theme gives a rule */
+.fc-event.fc-daygrid-block-event:not(.fc-event-task) {
+  background-color: var(--allday-background) !important;
+  border-color: var(--allday-border) !important;
+  color: var(--allday-color) !important;
+}
+
+.fc-event.fc-daygrid-block-event:not(.fc-event-task) .fc-event-title,
+.fc-event.fc-daygrid-block-event:not(.fc-event-task) .fc-event-main {
+  color: var(--allday-color) !important;
 }
 
 .fc-daygrid-event {
@@ -301,8 +344,36 @@
   margin-right: 0.25rem;
 }
 
+/* The dot on a timed event, in the dot token */
 .fc-daygrid-event .fc-daygrid-event-dot {
+  border-color: var(--event-dot);
   margin-top: 0.35rem;
+  /* an optical nudge onto the text's centre line */
+  position: relative;
+  top: 1px;
+}
+
+/* In the month grid a timed entry runs its time and title together as
+   one line of text, with the dot set in the left padding, so a long
+   title wraps under its time rather than under its own first word. (The
+   year view keeps the one-line chip, cut with an ellipsis.) The selector
+   matches the chip rules' weight, so its padding wins. */
+.fc-dayGridMonth-view .fc-event.fc-daygrid-dot-event {
+  display: block;
+  padding-left: 1.375rem;
+  position: relative;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-dot-event .fc-event-time,
+.fc-dayGridMonth-view .fc-daygrid-dot-event .fc-event-title {
+  display: inline;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-dot-event .fc-daygrid-event-dot {
+  left: 0.375rem;
+  margin: 0;
+  position: absolute;
+  top: 0.5rem;
 }
 
 .fc-daygrid-event .fc-event-title {
@@ -311,13 +382,108 @@
   white-space: normal;
 }
 
-/* No-matter events: a lighter chip than the matter-linked ones */
-.fc-event.fc-event-no-matter {
-  background-color: var(--background-light) !important;
+/* A task on the grid: the event's chip in the task colour, with an empty
+   box before its title and a lighter weight, so it reads as something to
+   do rather than somewhere to be */
+.fc-event.fc-event-task:not(.fc-list-event),
+.fc-event.fc-event-task.fc-daygrid-block-event {
+  background-color: var(--task-background) !important;
+  border: 1px solid var(--task-border) !important;
+  color: var(--task-color) !important;
 }
 
-/* Day cells */
-.fc .fc-daygrid-day-frame {
+.fc-event.fc-event-task:not(.fc-list-event) .fc-event-title,
+.fc-event.fc-event-task:not(.fc-list-event) .fc-event-main {
+  color: var(--task-color) !important;
+  font-weight: normal !important;
+}
+
+/* A US federal holiday: the all-day chip in blue, and no pointer, since
+   a click opens nothing */
+.fc-event.fc-event-holiday:not(.fc-list-event),
+.fc-event.fc-event-holiday.fc-daygrid-block-event {
+  background-color: var(--holiday-background) !important;
+  border: 1px solid var(--allday-border) !important;
+  color: var(--holiday-color) !important;
+  cursor: default;
+}
+
+.fc-event.fc-event-holiday .fc-event-title,
+.fc-event.fc-event-holiday .fc-event-main {
+  color: var(--holiday-color) !important;
+}
+
+.fc-list-event.fc-event-holiday {
+  cursor: default;
+}
+
+/* A task's box: an empty square that takes a click of its own and marks
+   the task done; hovered, it shows the check it would get */
+.fc-task-box {
+  color: var(--task-icon);
+  cursor: pointer;
+  display: inline-block;
+  margin-right: 0.25rem;
+  /* an optical nudge onto the title's centre line */
+  position: relative;
+  top: 2px;
+}
+
+.fc-task-box::before {
+  content: "\e167";
+  font-family: lucide;
+}
+
+.fc-task-box:hover::before {
+  content: "\e16a";
+}
+
+/* A long title wraps clear of the box: its later lines start under its
+   first word, not under the box. (In the agenda the box has a column.) */
+.fc-event-task:not(.fc-list-event) .fc-event-title {
+  --task-box-width: calc(1em + 0.25rem);
+  padding-left: var(--task-box-width);
+  text-indent: calc(-1 * var(--task-box-width));
+}
+
+.fc-event-task .fc-task-box {
+  text-indent: 0;
+}
+
+/* In the month grid a chip's title stops at two lines, with an ellipsis;
+   the chip's tooltip has the whole of it. A timed entry's time is inside
+   its title there (events-calendar.js), so the two are cut together. A
+   chip that runs over several days has their width for its two lines. */
+.fc-dayGridMonth-view .fc-daygrid-event .fc-event-title {
+  -webkit-box-orient: vertical;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Timed entries in the month grid, as Google draws them: no fill, a dot in
+   the entry's colour, and the title in the page's text colour. All-day
+   entries keep their filled block, so the two kinds are told apart at a
+   glance. (These follow the chip rules so they win.) */
+.fc-event.fc-daygrid-dot-event {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: var(--color-primary) !important;
+}
+
+.fc-daygrid-dot-event .fc-event-title,
+.fc-daygrid-dot-event .fc-event-time {
+  color: var(--color-primary) !important;
+}
+
+.fc-daygrid-dot-event:hover {
+  background-color: var(--background-control) !important;
+}
+
+/* Day cells. The height is the month view's: the year view's mini months
+   keep FullCalendar's own compact cells. */
+.fc-dayGridMonth-view .fc-daygrid-day-frame {
   min-height: 6rem;
 }
 
@@ -329,7 +495,7 @@
 
 .fc .fc-col-header-cell-cushion {
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: 500;
   padding: 0.5rem;
 }
 
@@ -338,17 +504,20 @@
   background-color: transparent !important;
 }
 
+/* The circle with its margin stands as tall as the other numbers with
+   their padding (2.5rem), so today's events start on the same line as
+   its neighbours' and a bar spanning the days keeps clear of them */
 .fc .fc-day-today .fc-daygrid-day-number {
-  /* The theme's selection accent (violet in Matcha, blue in Sky); dark and
-     cosmic override with their bright purple below. */
   background-color: var(--selected-background);
   border-radius: 50%;
-  font-weight: 600;
-  height: 1.75rem;
-  line-height: 1.75rem;
+  color: var(--selected-color);
+  font-weight: 500;
+  height: 2rem;
+  line-height: 2rem;
+  margin: 0.25rem;
   padding: 0;
   text-align: center;
-  width: 1.75rem;
+  width: 2rem;
 }
 
 /* Week/Day view time slots */
@@ -367,11 +536,181 @@
   background: transparent;
 }
 
+/* The app's table rules paint a th in the control gray, pad every cell
+   and clip a td to its box (tables.css); the grid draws its own cells,
+   and an event over several days is a bar that runs out of its first
+   day's cell across the rest, so the cells must not clip. The weekday
+   row sits on the grid's own ground, ruled off below (above). */
+.fc th,
+.fc td {
+  border-bottom: 0;
+  padding: 0;
+}
+
+.fc th {
+  background: var(--background-td);
+}
+
+.fc td {
+  overflow: visible;
+  white-space: normal;
+}
+
+
+/* Year view: the next twelve months as mini months. Everything is a step
+   smaller than the month view so a month fits in a third of the width,
+   and the chips are trimmed to a line of text. */
+.fc .fc-multimonth {
+  border-radius: 0;
+}
+
+/* Each mini month is closed top and bottom. The app's table rules strip
+   a header cell's top rule and a body cell's bottom rule (the month grid
+   draws those edges itself), so they are put back on the weekday header
+   and the last week of every month here. */
+.fc-multiMonthRolling-view .fc-multimonth-header-table th {
+  border-top: solid 1px var(--border-medium);
+}
+
+.fc-multiMonthRolling-view .fc-multimonth-daygrid-table tr:last-child td {
+  border-bottom: solid 1px var(--border-medium);
+}
+
+.fc .fc-multimonth-title {
+  color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.75rem 0 0.5rem;
+}
+
+.fc-multiMonthRolling-view .fc-daygrid-day-number {
+  font-size: 0.8125rem;
+  padding: 0.25rem;
+}
+
+.fc-multiMonthRolling-view .fc-col-header-cell-cushion {
+  font-size: 0.8125rem;
+  padding: 0.25rem;
+}
+
+.fc-multiMonthRolling-view .fc-day-today .fc-daygrid-day-number {
+  height: 1.5rem;
+  line-height: 1.5rem;
+  width: 1.5rem;
+}
+
+.fc-multiMonthRolling-view .fc-event,
+.fc-multiMonthRolling-view .fc-daygrid-event {
+  font-size: 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.fc-multiMonthRolling-view .fc-daygrid-event .fc-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fc-multiMonthRolling-view .fc-daygrid-more-link {
+  font-size: 0.75rem;
+}
+
+
+/* Agenda (list) view: the phone's view, and a choice on desktop. The
+   app's table rules zero the cell padding, so it is put back here. Rows
+   read at 1rem, and the time cell shrinks to its text so the title gets
+   the rest of the row. */
+.fc .fc-list-table td {
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.fc .fc-list-event {
+  font-size: 1rem;
+}
+
+.fc .fc-list-event-time,
+.fc .fc-list-event-graphic {
+  width: 1%;
+}
+
+/* A day heading is set off from the day before it by a top rule and a
+   wash a step darker than the rows; the app's table rules strip the
+   heading cell's own borders, so the rule is put back here. */
+.fc .fc-list-day th {
+  border-top: solid 1px var(--border-medium);
+}
+
+.fc .fc-list-day-cushion {
+  background: var(--background-subnav);
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.fc .fc-list-day-text,
+.fc .fc-list-day-side-text {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.fc .fc-list-event-time {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.fc .fc-list-event-title a {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.fc .fc-list-event-dot {
+  border-color: var(--event-dot);
+  /* an optical nudge into line with the task box */
+  left: 1px;
+  position: relative;
+}
+
+/* In the agenda the dot tells a timed row from an all-day one: the dot
+   colour for a timed event, the all-day dot for an all-day event and for
+   the in-between days of a timed event that runs over several days (they
+   read "all-day"; neither its start nor its end falls on them). A task
+   has its box in the dot's place, so every title starts in the same
+   column. */
+.fc .fc-list-event.fc-event-all-day .fc-list-event-dot,
+.fc .fc-list-event:not(.fc-event-start, .fc-event-end) .fc-list-event-dot {
+  border-color: var(--allday-dot);
+}
+
+.fc .fc-list-event.fc-event-task .fc-list-event-dot {
+  display: none;
+}
+
+.fc .fc-list-event.fc-event-task .fc-task-box {
+  /* an optical nudge onto the dots' centre line */
+  left: -2px;
+  margin-right: 0;
+  top: 0;
+}
+
+.fc .fc-list-event:hover td {
+  background: var(--background-subnav);
+}
+
+.fc .fc-list-empty {
+  background: var(--background-light);
+  color: var(--color-muted);
+}
+
 /* View toggle buttons */
 /* Wrapper that lets the calendar view refresh its filter menus in place;
    the menus stay direct items of the toolbar's flex row. */
 .events-filter-menus {
   display: contents;
+}
+
+.calendar-menu .calendar-menu-note {
+  color: var(--color-muted);
+  margin-left: -0.25rem;
 }
 
 .view-toggle {
@@ -398,26 +737,34 @@
 
 /* Mobile responsive */
 @media (width <= 768px) {
+  /* Navigation, the month and Today on one row: the buttons close up a
+     little to fit it */
   .fc .fc-toolbar {
-    flex-direction: column;
-    gap: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 
-  .fc .fc-toolbar-chunk {
-    display: flex;
-    justify-content: center;
+  .fc .fc-toolbar .fc-button {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
   }
 
   .fc .fc-toolbar-title {
     font-size: 1rem;
   }
 
-  /* Pare the toolbar to just Add + Filter on mobile. The grid is replaced by
-     the card list (events-calendar.js forces list view), so the List/Calendar
-     toggle has nothing to switch to; the status/assigned/matter filter
-     dropdowns and the Deadline Calculator are dropped to avoid crowding. */
-  .view-toggle,
-  #events .toolbar .filter-tools .dropdown,
+  /* The agenda's rows close up sideways but keep their height: each is
+     a tap target, and a thumb wants 44px or so */
+  .fc .fc-list-day-cushion,
+  .fc .fc-list-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Pare the toolbar on mobile: the status/assigned/matter filter
+     dropdowns and the Deadline Calculator are dropped to avoid crowding.
+     The calendar's menu stays, so the table list is a tap away from the
+     phone's agenda. */
+  #events .toolbar .filter-tools .dropdown:not(.calendar-menu),
   #events .toolbar-right {
     display: none;
   }
@@ -470,19 +817,4 @@
   background: var(--control-active-bg) !important;
   border-color: var(--control-active-line) !important;
   color: var(--control-active-color) !important;
-}
-
-/* Oxford — the calendar's "today" wash joins the azure family (the .fc
-   block's amber-100 default is Matcha's). */
-[data-theme="basic"] .fc {
-  --fc-today-bg-color: #d9ebf8;
-}
-
-/* Letterhead — today washes in pale fountain blue (the amber-100
-   default is louder than anything on this stone paper), and events
-   trade the base lime for the theme's own blue: clickable = blue. */
-[data-theme="letterhead"] .fc {
-  --fc-today-bg-color: var(--lh-blue-wash);
-  --fc-event-bg-color: var(--lh-blue);
-  --fc-event-border-color: oklch(0.4 0.09 252);
 }

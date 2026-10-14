@@ -3,6 +3,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from apps.accounts.access import matter_access_required
+from apps.calendar.events import MATTER_VIEW_MODE_KEY, matter_menu_context
 from apps.case.facts.sorting import stored_sort_key
 from apps.matters.events.get_event_data import (
     DEFAULT_SORT,
@@ -15,17 +16,16 @@ from apps.matters.models import Matter
 
 
 def _view_mode(request):
-    """List/calendar toggle for the matter Events tab, shared across matters
-    (mirrors the main calendar's events_view_mode session flag)."""
-    return request.session.get("matter_events_view_mode", "list")
+    """List/calendar choice for the matter Events tab, shared across matters
+    and opening on the calendar, as the main Calendar does."""
+    return request.session.get(MATTER_VIEW_MODE_KEY, "calendar")
 
 
 def _calendar_context(request, matter):
     """Context for the calendar partial: no table data, just the toolbar's
-    filter state."""
+    filter state and the sliders menu's."""
     status_session_key = f"matter_events_filter_{matter.id}"
-    return {
-        "matter": matter,
+    return matter_menu_context(request, matter) | {
         "view_mode": "calendar",
         "events_filter_status": request.session.get(status_session_key, "Pending"),
     }
@@ -40,7 +40,9 @@ def events_index(request, id):
     if view_mode == "calendar":
         event_data = _calendar_context(request, matter)
     else:
-        event_data = get_event_data(request, matter) | {"view_mode": view_mode}
+        event_data = get_event_data(request, matter) | matter_menu_context(
+            request, matter
+        )
 
     context = {
         "app": "matters",
@@ -67,12 +69,15 @@ def events_list(request, id):
             _calendar_context(request, matter),
         )
 
-    context = {
-        "app": "matters",
-        "subapp": "events",
-        "matter": matter,
-        "view_mode": view_mode,
-    } | get_event_data(request, matter)
+    context = (
+        {
+            "app": "matters",
+            "subapp": "events",
+            "matter": matter,
+        }
+        | get_event_data(request, matter)
+        | matter_menu_context(request, matter)
+    )
 
     return render(request, "matters/events/list.html", context)
 
@@ -82,7 +87,7 @@ def events_list(request, id):
 def events_view_mode(request, id, mode):
     """Toggle between list and calendar views; persist in session."""
     if mode in ("list", "calendar"):
-        request.session["matter_events_view_mode"] = mode
+        request.session[MATTER_VIEW_MODE_KEY] = mode
         request.session.modified = True
     return HttpResponse(status=204, headers={"HX-Trigger": "eventsViewChanged"})
 

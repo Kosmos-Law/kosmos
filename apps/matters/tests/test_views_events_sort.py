@@ -20,6 +20,8 @@ def events(user, matter):
 
 
 def _parties(client, matter):
+    # the tab opens on the calendar; the sort is the list's
+    client.post(reverse("matters:events-view-mode", args=[matter.id, "list"]))
     response = client.get(reverse("matters:events", args=[matter.id]))
     assert response.status_code == 200
     return [event.party for event in response.context["events"]]

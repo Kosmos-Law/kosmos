@@ -12,6 +12,36 @@ document.addEventListener('alpine:init', () => {
    *          <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
    * Note: We intentionally omit x-transition to avoid sub-pixel layout shifts
    */
+  /**
+   * Check Select: a set of choices behind a button, ticked in a dropdown
+   * of check rows (templates/components/check-select.html). The button
+   * reads what is ticked: the empty label with nothing, one choice by
+   * name, more by their number.
+   */
+  Alpine.data('checkSelect', (empty) => ({
+    label: empty,
+    root: null,
+
+    init() {
+      // $el is the element an expression runs on (a row's checkbox, on a
+      // change), so the select's own element is kept from here
+      this.root = this.$el;
+    },
+
+    refresh() {
+      const ticked = Array.from(
+        this.root.querySelectorAll('input[type="checkbox"]:checked')
+      ).map((input) => input.dataset.label);
+      if (ticked.length === 0) {
+        this.label = empty;
+      } else if (ticked.length === 1) {
+        this.label = ticked[0];
+      } else {
+        this.label = `${ticked.length} assigned`;
+      }
+    },
+  }));
+
   Alpine.data('dropdown', () => ({
     open: false,
 

@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from django.db import models
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from apps.matters.models import Matter
-from utils.models import AuditMixin
+from utils.models import AuditMixin, ReminderMixin
 
 
 class Event(AuditMixin, models.Model):
@@ -17,15 +19,17 @@ class Event(AuditMixin, models.Model):
     user = models.ForeignKey(
         "accounts.CustomUser", on_delete=models.SET_NULL, null=True, blank=True
     )
-    assigned_to = models.ForeignKey(
-        "accounts.CustomUser",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="assigned_events",
+    # Who the event is for. Nobody means the firm: everyone's. An event may
+    # be several people's (a hearing the attorney and the paralegal both
+    # attend), so this is a set rather than one user.
+    assignees = models.ManyToManyField(
+        "accounts.CustomUser", blank=True, related_name="assigned_events"
     )
     matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True)
     date = models.DateField(null=True)
+    # Set only for an event over several days: its last day, inclusive. An
+    # event on one day keeps this blank, so "is it multi-day" is one check.
+    end_date = models.DateField(blank=True, null=True)
     start_time = models.TimeField(blank=True, null=True)
     end_time = models.TimeField(blank=True, null=True)
     party = models.CharField(max_length=50, blank=True, null=True)
@@ -53,6 +57,54 @@ class Event(AuditMixin, models.Model):
         return f"{self.description} : {self.id}"
 
     @property
+    def ordered_assignees(self):
+        """The assignees by name. Sorted here rather than in the query, so
+        a feed that prefetched them makes no query per event."""
+        return sorted(
+            self.assignees.all(),
+            key=lambda user: (user.first_name.lower(), user.last_name.lower(), user.id),
+        )
+
+    @property
+    def assignee_initials(self):
+        """The assignees' initials, "AL, JC", for the calendar's titles;
+        empty for the firm's event."""
+        return ", ".join(
+            user.initials for user in self.ordered_assignees if user.initials
+        )
+
+    @property
+    def assignee_names(self):
+        """The assignees' short names, by name."""
+        return [
+            user.get_short_name() or user.username for user in self.ordered_assignees
+        ]
+
+    @property
+    def last_date(self):
+        """The day the event ends: its end date, or its only day."""
+        return self.end_date or self.date
+
+    @property
+    def start_at(self):
+        """The moment a timed event starts, in the firm's zone; None for
+        an all-day event or one with no date."""
+        if not self.start_time or not self.date:
+            return None
+        return datetime.combine(
+            self.date, self.start_time, tzinfo=timezone.get_default_timezone()
+        )
+
+    @property
+    def end_at(self):
+        """The moment a timed event ends; None without an end time."""
+        if not self.end_time or not self.date:
+            return None
+        return datetime.combine(
+            self.last_date, self.end_time, tzinfo=timezone.get_default_timezone()
+        )
+
+    @property
     def detached_from_google(self):
         """True for an event that was deleted on Google and kept in Kosmos.
 
@@ -68,6 +120,33 @@ class Event(AuditMixin, models.Model):
         indexes = [
             models.Index(fields=["matter"]),
         ]
+
+
+class EventReminder(ReminderMixin):
+    """A notification for an event (see ReminderMixin), to the user who
+    added it: a firm's event may be on several people's calendars, and
+    each sets their own."""
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reminders")
+
+    class Meta(ReminderMixin.Meta):
+        db_table = "app_event_reminder"
+
+    @property
+    def target(self):
+        return self.event
+
+    @property
+    def target_id(self):
+        return self.event_id
+
+    @property
+    def target_start_at(self):
+        return self.event.start_at
+
+    @property
+    def target_date(self):
+        return self.event.date
 
 
 class CalendarSyncState(models.Model):

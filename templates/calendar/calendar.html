@@ -5,27 +5,6 @@
         <button type="button" hx-get="/events/add" hx-target="#htmx-modal-container">
           <i class="icon-plus"></i>
         </button>
-        <div class="view-toggle">
-          <button type="button"
-                  class="{% if view_mode == 'list' %}toggle-active{% endif %}"
-                  hx-post="{% url 'calendar:view-mode' 'list' %}"
-                  hx-swap="none"
-                  title="List View">
-            <i class="icon-list"></i>
-          </button>
-          <button type="button"
-                  class="{% if view_mode == 'calendar' %}toggle-active{% endif %}"
-                  hx-post="{% url 'calendar:view-mode' 'calendar' %}"
-                  hx-swap="none"
-                  title="Calendar View">
-            <i class="icon-calendar"></i>
-          </button>
-        </div>
-        <button type="button"
-                hx-get="{% url 'calendar:filter' %}"
-                hx-target="#htmx-modal-container">
-          <i class="icon-list-filter with-text"></i>Filter
-        </button>
         {% comment %}
         In calendar view a change to the filter refetches the events and
         leaves this page in place (events-calendar.js), so the menus fetch
@@ -37,6 +16,12 @@
              hx-trigger="eventsChanged from:body"
              hx-target="this"
              hx-swap="innerHTML">{% include "calendar/filter-menus.html" %}</div>
+        {% comment %}
+        The calendar's menu: the overlays (the user's tasks, the federal
+        holidays), the Filter dialog and the list view, behind one
+        sliders button. The list view's toolbar keeps its own buttons.
+        {% endcomment %}
+        {% include "calendar/overlays.html" %}
       </div>
     </div>
     <div class="toolbar-right">
@@ -47,7 +32,7 @@
       </a>
     </div>
   </div>
-  <div id="fullcalendar-container"
+  <div class="fullcalendar-container"
        x-data="eventsCalendar()"
        x-init="initCalendar()"
        hx-disinherit="*"

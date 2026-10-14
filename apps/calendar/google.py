@@ -119,7 +119,7 @@ def add_event(event):
         if event.start_time and event.end_time:
             # Timed event - use dateTime format
             start_datetime = datetime.combine(event.date, event.start_time)
-            end_datetime = datetime.combine(event.date, event.end_time)
+            end_datetime = datetime.combine(event.last_date, event.end_time)
             new_event["start"] = {
                 "dateTime": start_datetime.isoformat(),
                 "timeZone": settings.TIME_ZONE,
@@ -135,7 +135,7 @@ def add_event(event):
                 "timeZone": settings.TIME_ZONE,
             }
             new_event["end"] = {
-                "date": str(event.date + timedelta(days=1)),
+                "date": str(event.last_date + timedelta(days=1)),
                 "timeZone": settings.TIME_ZONE,
             }
 
@@ -264,7 +264,7 @@ def edit_event(event):
         if event.start_time and event.end_time:
             # Timed event - use dateTime format
             start_datetime = datetime.combine(event.date, event.start_time)
-            end_datetime = datetime.combine(event.date, event.end_time)
+            end_datetime = datetime.combine(event.last_date, event.end_time)
             revised_event["start"] = {
                 "dateTime": start_datetime.isoformat(),
                 "timeZone": settings.TIME_ZONE,
@@ -279,7 +279,7 @@ def edit_event(event):
                 "date": str(event.date),
             }
             revised_event["end"] = {
-                "date": str(event.date + timedelta(days=1)),
+                "date": str(event.last_date + timedelta(days=1)),
             }
 
         # Map the free-text location to Google's location field; fall back to
@@ -602,7 +602,7 @@ def _read_title(google_event, local_event=None):
 def _parse_google_event(google_event):
     """
     Parse Google Calendar event into local Event model fields.
-    Extracts: date, start_time, end_time, event_type, location
+    Extracts: date, end_date, start_time, end_time, event_type, location
     Note: party, status, user_id cannot be determined from Google data. The
     matter and description come from the title: see _title_fields.
     """
@@ -619,6 +619,12 @@ def _parse_google_event(google_event):
         event_data["date"] = date_parser.parse(start["date"]).date()
         event_data["start_time"] = None
         event_data["end_time"] = None
+        # Google's end date is exclusive: the day after the last day
+        event_data["end_date"] = None
+        if "date" in end:
+            last = date_parser.parse(end["date"]).date() - timedelta(days=1)
+            if last > event_data["date"]:
+                event_data["end_date"] = last
     elif "dateTime" in start:
         # Timed event. Google returns RFC3339 datetimes (typically UTC);
         # convert to the app's zone before storing wall-clock values —
@@ -635,6 +641,9 @@ def _parse_google_event(google_event):
         event_data["date"] = start_dt.date()
         event_data["start_time"] = start_dt.time()
         event_data["end_time"] = end_dt.time()
+        event_data["end_date"] = (
+            end_dt.date() if end_dt.date() > start_dt.date() else None
+        )
 
     # Parse location: a bare meeting-type value maps to event_type (legacy
     # data), anything else is treated as a free-text location. Google's

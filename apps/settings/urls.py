@@ -167,6 +167,22 @@ urlpatterns = [
         notification_urls.send_test_digest,
         name="send-test-digest",
     ),
+    path(
+        "settings/notifications/notify-by/",
+        notification_urls.notify_by,
+        name="notify-by",
+    ),
+    path("settings/notifications/ntfy/", notification_urls.ntfy_settings, name="ntfy"),
+    path(
+        "settings/notifications/ntfy/new-topic/",
+        notification_urls.ntfy_new_topic,
+        name="ntfy-new-topic",
+    ),
+    path(
+        "settings/notifications/ntfy/test/",
+        notification_urls.ntfy_test,
+        name="ntfy-test",
+    ),
     # Profile
     path("settings/profile/", profile_urls.profile_index, name="profile-index"),
     path("settings/profile/icon/", profile_urls.nav_icon, name="nav-icon"),

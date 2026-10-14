@@ -48,6 +48,14 @@ variable belongs to stays off or falls back until it is set.
 | `BILLING_FROM_EMAIL` | the value of `DEFAULT_FROM_EMAIL` | From address for client-facing billing mail (invoices and payment requests). Defaults to DEFAULT_FROM_EMAIL. |
 | `ADMINS` | empty | People who receive error emails, as a Python list of (name, address) tuples. |
 
+## Event notifications
+
+| Variable | Default | Description |
+|---|---|---|
+| `NTFY_TOPIC_SUFFIX` | `'-dev' if NOT_PRODUCTION else ''` | Added to the end of every user's ntfy topic when pushing event notifications. Defaults to -dev on any machine whose ENV is not prod, so a copy of production's database pushes to a channel of its own; blank on production. |
+| `NOTIFY_TITLE_PREFIX` | `'[dev] ' if NOT_PRODUCTION else ''` | Put before the title of every pushed notification. Defaults to "[dev] " on any machine whose ENV is not prod; blank on production. |
+| `EMAIL_NOTIFICATIONS` | `not NOT_PRODUCTION` | Whether event notifications set to go by email are emailed at all. Off, they are counted as handled and not sent. Defaults to on only on production, so a copy of its database never doubles its email. (boolean) |
+
 ## File storage
 
 | Variable | Default | Description |

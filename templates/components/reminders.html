@@ -1,0 +1,49 @@
+{% comment %}
+The Notifications section of the Edit Event dialog: the user's own
+notifications on the event and the row that adds one. It stands outside
+the main form (a form cannot hold another), and every change re-renders
+it in place. Context from apps.calendar.reminder_views.reminders_context:
+reminders (each with a delete_url), reminder_form, reminder_add_url.
+{% endcomment %}
+<div id="reminders" class="reminders">
+  <h2 class="reminders-title">Notifications</h2>
+  <ul class="reminder-list">
+    {% for reminder in reminders %}
+      <li>
+        <span>{{ reminder.describe }}</span>
+        <span class="reminder-channel">{{ reminder.get_channel_display }}</span>
+        <button type="button"
+                class="btn-icon"
+                title="Remove"
+                hx-post="{{ reminder.delete_url }}"
+                hx-target="#reminders"
+                hx-swap="outerHTML">
+          <i class="icon-x"></i>
+        </button>
+      </li>
+    {% empty %}
+      <li class="reminder-none">No notifications.</li>
+    {% endfor %}
+  </ul>
+  <form class="reminder-add"
+        hx-post="{{ reminder_add_url }}"
+        hx-target="#reminders"
+        hx-swap="outerHTML">
+    {% csrf_token %}
+    {{ reminder_form.amount }}
+    {{ reminder_form.unit }}
+    <span>before</span>
+    {% if reminder_form.all_day %}
+      <span>at</span>
+      {{ reminder_form.time }}
+    {% endif %}
+    <span>by</span>
+    {{ reminder_form.channel }}
+    <button type="submit" class="btn btn-secondary">Add</button>
+  </form>
+  {{ reminder_form.non_field_errors }}
+  {{ reminder_form.amount.errors }}
+  {{ reminder_form.unit.errors }}
+  {{ reminder_form.time.errors }}
+  {{ reminder_form.channel.errors }}
+</div>

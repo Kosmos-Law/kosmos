@@ -1,9 +1,10 @@
 {% comment %}
 Shared toolbar for the matter Events tab's list and calendar views: the main
-calendar's toolbar minus the matter dropdown (the matter is implicit) and the
-Filter button. That button opens the firm Calendar's filter, which this tab
-does not read; the tab filters by status (the dropdown here) and sorts by its
-column headers, and has nothing else to offer a dialog.
+calendar's toolbar minus the matter and assignee menus (the matter is
+implicit) and the Filter row of the sliders menu. That dialog is the firm
+Calendar's, which this tab does not read; the tab filters by status (the
+dropdown here) and sorts by its column headers. The sliders menu holds the
+overlays and the list-or-calendar switch, as on the Calendar.
 {% endcomment %}
 <div class="toolbar mobile-min-toolbar">
   <div class="toolbar-left">
@@ -12,23 +13,8 @@ column headers, and has nothing else to offer a dialog.
               hx-target="#htmx-modal-container">
         <i class="icon-plus"></i>
       </button>
-      <div class="view-toggle">
-        <button type="button"
-                class="{% if view_mode == 'list' %}toggle-active{% endif %}"
-                hx-post="{% url 'matters:events-view-mode' id=matter.id mode='list' %}"
-                hx-swap="none"
-                title="List View">
-          <i class="icon-list"></i>
-        </button>
-        <button type="button"
-                class="{% if view_mode == 'calendar' %}toggle-active{% endif %}"
-                hx-post="{% url 'matters:events-view-mode' id=matter.id mode='calendar' %}"
-                hx-swap="none"
-                title="Calendar View">
-          <i class="icon-calendar"></i>
-        </button>
-      </div>
       {% include "matters/events/status-dropdown.html" %}
+      {% include "calendar/overlays.html" %}
     </div>
   </div>
   <div class="toolbar-right">

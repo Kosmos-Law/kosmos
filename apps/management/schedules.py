@@ -35,6 +35,15 @@ def schedule_specs():
             ),
         ),
         ScheduleSpec(
+            "event-reminders",
+            "apps.calendar.reminders.send_due",
+            "* * * * *",
+            description=(
+                "Sends the event notifications that have come due, by email "
+                "or pushed to the ntfy app, as each one says."
+            ),
+        ),
+        ScheduleSpec(
             "calendar-sync",
             "apps.calendar.sync.scheduled_sync",
             "*/2 * * * *",

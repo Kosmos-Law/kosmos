@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.calendar.api import api_events
+from apps.calendar.reminder_views import reminder_add, reminder_delete
 from apps.calendar.views import (
     events_add,
     events_api,
@@ -19,7 +20,12 @@ from apps.calendar.views import (
     events_filter_status,
     events_index,
     events_list,
+    events_overlays,
     events_quick_update,
+    events_show_holidays,
+    events_show_tasks,
+    events_task_date,
+    events_task_done,
     events_view_mode,
 )
 
@@ -36,6 +42,14 @@ urlpatterns = [
     path("events/api/", api_events, name="api-events"),
     path("events/<int:id>/quick-update", events_quick_update, name="quick-update"),
     path("events/view/<str:mode>", events_view_mode, name="view-mode"),
+    path("events/show-tasks/<str:state>", events_show_tasks, name="show-tasks"),
+    path(
+        "events/show-holidays/<str:state>",
+        events_show_holidays,
+        name="show-holidays",
+    ),
+    path("events/tasks/<int:task_id>/done", events_task_done, name="task-done"),
+    path("events/tasks/<int:task_id>/date", events_task_date, name="task-date"),
     path("events/add", events_add, name="add"),
     path("events/add/<str:origin>", events_add, name="add-origin"),
     path(
@@ -66,8 +80,20 @@ urlpatterns = [
         events_delete,
         name="delete-origin",
     ),
+    path("events/<int:id>/reminders/add", reminder_add, name="reminder-add"),
+    path(
+        "events/<int:id>/reminders/<int:reminder_id>/delete",
+        reminder_delete,
+        name="reminder-delete",
+    ),
     path("events/filter/", events_filter, name="filter"),
     path("events/filter/menus/", events_filter_menus, name="filter-menus"),
+    path("events/overlays/", events_overlays, name="overlays"),
+    path(
+        "events/overlays/matter/<int:matter_id>",
+        events_overlays,
+        name="overlays-matter",
+    ),
     path(
         "events/filter/quick/<str:quick_filter>",
         events_filter_quick,
