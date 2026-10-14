@@ -8,7 +8,7 @@ next, and the dropdown component closes it on a link.
 {% endcomment %}
 <div class="dropdown calendar-menu" x-data="dropdown()">
   <button type="button"
-          class="select-btn filter-dropdown-button {% if filter_active or view_mode == 'calendar' and show_tasks or view_mode == 'calendar' and show_holidays %}toggle-active{% endif %}"
+          class="select-btn filter-dropdown-button {% if menu_active %}toggle-active{% endif %}"
           x-ref="button"
           @click="toggle()"
           :aria-expanded="open"

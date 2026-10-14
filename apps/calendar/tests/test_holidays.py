@@ -23,21 +23,28 @@ def _feed(client, params):
     }
 
 
-def test_holidays_are_off_by_default(client):
-    assert not any(key.startswith("holiday-") for key in _feed(client, JULY))
-    assert client.get(reverse("calendar:index")).context["show_holidays"] is False
+def test_holidays_are_on_by_default(client):
+    assert any(key.startswith("holiday-") for key in _feed(client, JULY))
+    page = client.get(reverse("calendar:index"))
+    assert page.context["show_holidays"] is True
+    # nothing is off its default, so the menu's button does not read as set
+    assert page.context["menu_active"] is False
 
 
 def test_the_toggle(client):
-    response = client.post(reverse("calendar:show-holidays", args=["on"]))
+    response = client.post(reverse("calendar:show-holidays", args=["off"]))
 
     assert response.status_code == 204
     assert response["HX-Trigger"] == "eventsChanged"
-    assert client.get(reverse("calendar:index")).context["show_holidays"] is True
-    assert reverse("calendar:show-holidays", args=["off"]) in _menu(client)
+    page = client.get(reverse("calendar:index"))
+    assert page.context["show_holidays"] is False
+    assert page.context["menu_active"] is True
+    assert reverse("calendar:show-holidays", args=["on"]) in _menu(client)
 
-    client.post(reverse("calendar:show-holidays", args=["off"]))
-    assert client.get(reverse("calendar:index")).context["show_holidays"] is False
+    client.post(reverse("calendar:show-holidays", args=["on"]))
+    page = client.get(reverse("calendar:index"))
+    assert page.context["show_holidays"] is True
+    assert page.context["menu_active"] is False
     assert (
         client.post(reverse("calendar:show-holidays", args=["maybe"])).status_code
         == 400
@@ -45,8 +52,6 @@ def test_the_toggle(client):
 
 
 def test_the_holidays_in_the_range_show(client):
-    client.post(reverse("calendar:show-holidays", args=["on"]))
-
     feed = _feed(client, JULY)
     shown = {key for key in feed if key.startswith("holiday-")}
 
@@ -63,8 +68,6 @@ def test_the_holidays_in_the_range_show(client):
 
 
 def test_the_matter_tab_shows_no_overlays(client, matter):
-    client.post(reverse("calendar:show-holidays", args=["on"]))
-
     feed = client.get(reverse("calendar:feed-matter", args=[matter.id]), JULY).json()
 
     assert not any(row["id"].startswith("holiday-") for row in feed)
@@ -77,7 +80,7 @@ def test_a_range_over_the_new_year_has_both_years():
 
 
 def test_the_menu_offers_the_toggle(client):
-    assert reverse("calendar:show-holidays", args=["on"]) in _menu(client)
+    assert reverse("calendar:show-holidays", args=["off"]) in _menu(client)
     assert "Holidays" in _menu(client)
 
 
@@ -145,6 +148,6 @@ def test_the_list_views_menu_offers_the_filter_and_the_calendar(client):
 
     assert reverse("calendar:view-mode", args=["calendar"]) in menu
     assert reverse("calendar:filter") in menu
-    assert reverse("calendar:show-holidays", args=["on"]) not in menu
+    assert reverse("calendar:show-holidays", args=["off"]) not in menu
     page = client.get(reverse("calendar:index")).content.decode()
     assert "calendar-menu" in page

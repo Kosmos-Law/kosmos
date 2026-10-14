@@ -65,9 +65,12 @@ def test_the_toggle(client, tasks):
     assert response["HX-Trigger"] == "eventsChanged"
     assert client.get(reverse("calendar:index")).context["show_tasks"] is True
     assert reverse("calendar:show-tasks", args=["off"]) in _menu(client)
+    assert client.get(reverse("calendar:index")).context["menu_active"] is True
 
     client.post(reverse("calendar:show-tasks", args=["off"]))
-    assert client.get(reverse("calendar:index")).context["show_tasks"] is False
+    page = client.get(reverse("calendar:index"))
+    assert page.context["show_tasks"] is False
+    assert page.context["menu_active"] is False
     assert client.post(reverse("calendar:show-tasks", args=["no"])).status_code == 400
 
 

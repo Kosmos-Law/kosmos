@@ -60,8 +60,10 @@ narrow screen, such as a phone, the calendar view is the **Agenda**
 ### Tasks and holidays on the calendar
 
 The first two rows of the calendar's menu (the sliders button) lay other
-things over the calendar view. Each is a check box that stays on until
-you turn it off or sign out, and the menu stays open so you can set both.
+things over the calendar view. Each is a check box, and the menu stays
+open so you can set both. **Holidays** starts on and **My tasks** off;
+the sliders button is highlighted while either is set the other way, or
+a filter is on, and your choices last until you sign out.
 
 - **My tasks** shows your own open tasks that have a due date, each as a
   chip with an empty box before its title. Click the box to mark the task

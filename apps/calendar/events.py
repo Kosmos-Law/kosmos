@@ -46,14 +46,30 @@ def filter_is_active(request):
     return saved_filter(request) != DEFAULT_FILTER
 
 
+# The overlays as the calendar starts: holidays on, tasks off. The menu's
+# button reads as selected only while the user has moved off these.
+DEFAULT_SHOW_TASKS = False
+DEFAULT_SHOW_HOLIDAYS = True
+
+
 def show_tasks(request):
     """Whether the calendar shows the user's open tasks beside the events."""
-    return bool(request.session.get(SHOW_TASKS_KEY, False))
+    return bool(request.session.get(SHOW_TASKS_KEY, DEFAULT_SHOW_TASKS))
 
 
 def show_holidays(request):
     """Whether the calendar shows US federal holidays beside the events."""
-    return bool(request.session.get(SHOW_HOLIDAYS_KEY, False))
+    return bool(request.session.get(SHOW_HOLIDAYS_KEY, DEFAULT_SHOW_HOLIDAYS))
+
+
+def menu_is_active(request):
+    """Whether the calendar's menu holds anything off its defaults: a
+    filter set, or an overlay switched from how it starts."""
+    return (
+        filter_is_active(request)
+        or show_tasks(request) != DEFAULT_SHOW_TASKS
+        or show_holidays(request) != DEFAULT_SHOW_HOLIDAYS
+    )
 
 
 def toolbar_context(request, filter=None):
@@ -76,6 +92,7 @@ def toolbar_context(request, filter=None):
         "show_tasks": show_tasks(request),
         "show_holidays": show_holidays(request),
         "filter_active": filter_is_active(request),
+        "menu_active": menu_is_active(request),
         "view_mode": request.session.get("events_view_mode", "calendar"),
     }
 
