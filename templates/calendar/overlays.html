@@ -6,7 +6,7 @@ Filter dialog and the other view. The rows re-render on eventsChanged
 the dropdown itself stays, so a check row keeps the menu open for the
 next, and the dropdown component closes it on a link.
 {% endcomment %}
-<div class="dropdown calendar-menu" x-data="dropdown()">
+<div class="dropdown calendar-menu check-menu" x-data="dropdown()">
   <button type="button"
           class="select-btn filter-dropdown-button {% if menu_active %}toggle-active{% endif %}"
           x-ref="button"

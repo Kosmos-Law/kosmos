@@ -15,7 +15,7 @@ import apps.calendar.sync as sync
 from apps.accounts.access import matter_access_required
 from apps.calendar import holidays
 from apps.calendar.access import event_for_user, matters_for_events
-from apps.calendar.filter import EventFilter
+from apps.calendar.filter import EventFilter, assignee_tokens
 from apps.calendar.forms import EventForm
 from apps.calendar.models import Event
 from apps.calendar.reminder_views import reminders_context
@@ -150,15 +150,30 @@ def events_filter_status(request, status):
 
 
 @login_required
+@require_POST
 def events_filter_assigned(request, assigned):
-    """Filter events by assigned_to value."""
-    _save_filter_value(request, "assigned_to", assigned)
+    """Tick or untick one assignee in the saved filter (Firm, or a user
+    by id); with none named, untick them all. The menus re-render on
+    eventsChanged; assigneesToggled has the page reopen this one, so a
+    second tick follows the first."""
+    events_filter = saved_filter(request)
+    ticked = assignee_tokens(events_filter.get("assigned_to"))
+    if not assigned:
+        ticked = []
+    elif assigned in ticked:
+        ticked.remove(assigned)
+    else:
+        ticked.append(assigned)
+    events_filter["assigned_to"] = ticked
+    request.session[SESSION_KEY] = events_filter
+    request.session.modified = True
 
-    response = render(
-        request, "calendar/assigned-dropdown.html", toolbar_context(request)
+    return HttpResponse(
+        status=204,
+        headers={
+            "HX-Trigger": json.dumps({"eventsChanged": None, "assigneesToggled": None})
+        },
     )
-    response["HX-Trigger"] = "eventsChanged"
-    return response
 
 
 @login_required
@@ -249,6 +264,8 @@ def events_add(request, matter_id=None, origin="events"):
                 event.end_time = default_end_time(event.start_time)
 
             event.save()
+            # The assignees are a many-to-many, saved after the row
+            form.save_m2m()
 
             # Mirror to Google (Pending events only); records google_synced_at,
             # or leaves it for reconcile() to retry if the push fails.
@@ -325,6 +342,7 @@ def events_edit(request, id, origin="events"):
                 event.end_time = default_end_time(event.start_time)
 
             event.save()
+            form.save_m2m()
 
             sync_failed = sync.push_event(event) == "failed"
 
@@ -513,8 +531,11 @@ def events_api(request, matter_id=None):
         events = event_filter(request).qs
     # An event over several days counts from its first day to its last, so
     # one that began before the range still shows in it
-    events = events.filter(date__lte=end_date).filter(
-        Q(end_date__gte=start_date) | Q(end_date=None, date__gte=start_date)
+    events = (
+        events.filter(date__lte=end_date)
+        .filter(Q(end_date__gte=start_date) | Q(end_date=None, date__gte=start_date))
+        .select_related("matter")
+        .prefetch_related("assignees")
     )
 
     # Convert to FullCalendar format
@@ -523,13 +544,14 @@ def events_api(request, matter_id=None):
         matter_name = event.matter.name if event.matter else ""
         description = event.description or "Untitled"
 
-        # Build title: {Matter} - {Description} - {User Initials}
+        # Build title: {Matter} - {Description} - {Assignees' initials}
         title_parts = []
         if matter_name:
             title_parts.append(matter_name)
         title_parts.append(description)
-        if event.assigned_to and event.assigned_to.initials:
-            title_parts.append(event.assigned_to.initials)
+        initials = event.assignee_initials
+        if initials:
+            title_parts.append(initials)
         title = " - ".join(title_parts)
 
         fc_event = {
@@ -538,6 +560,7 @@ def events_api(request, matter_id=None):
             "extendedProps": {
                 "matter": event.matter.name if event.matter else "",
                 "matter_id": event.matter.id if event.matter else None,
+                "assignees": event.assignee_names,
                 "event_type": event.event_type or "",
                 "location": event.location or "",
                 "party": event.party or "",

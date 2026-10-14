@@ -10,8 +10,8 @@ connected a Google Calendar. If you are new to Kosmos, read
 
 An event is one dated item: a hearing, a deadline, a call, a meeting. It
 has a date, a description and a status, and it can have a start and end
-time, a last day when it runs over several days, a matter and a person it
-is assigned to. An event does not have to
+time, a last day when it runs over several days, a matter and the people
+it is assigned to. An event does not have to
 belong to a matter. The same event appears in several places:
 
 - **Calendar** in the sidebar: every event at the firm.
@@ -41,7 +41,7 @@ narrow screen, such as a phone, the calendar view is the **Agenda**
   view, so it opens on today. The arrows at the top left move back and
   forward, and **Today** returns to the current date. Your browser
   remembers the span.
-- Each event reads matter, description, then the initials of the person
+- Each event reads matter, description, then the initials of the people
   it is assigned to. In **Month**, an event with a start time is a dot
   and its time before the title, and an all-day event is a filled chip.
   A title longer than two lines is cut short; rest the pointer on it to
@@ -112,7 +112,7 @@ choose **Event**.
 | **Start time** | No | Leave both times blank for an all-day event. |
 | **End time** | No | Must be after the start time on a one-day event. If you give a start time only, Kosmos sets the end one hour later, and no later than 11:59 PM. |
 | **Through** | No | The last day of an event that runs over several days, such as a trial. Leave it blank for an event on one day. With times, the event starts at the start time on its date and ends at the end time on its last day. |
-| **Assigned to** | No | **Firm** (the default) or one active user. It sets the initials shown on the calendar and what the assignee menu finds. |
+| **Assigned to** | No | Tick any of the active users, or nobody for an event that is the firm's. Their initials follow the title on the calendar, and the assignee menu finds the event under each of them. |
 | **Matter** | No | Lists the matters that are **Pending** or **Open**. A matter in another status is listed when you open the form from it. |
 | **Description** | Yes | What the event is. |
 | **Status** | Yes | **Pending** (the default), **Complete** or **Missed**. |
@@ -160,9 +160,11 @@ the default is set.
 
 - The status menu chooses **All Statuses**, **Pending**, **Complete** or
   **Missed**.
-- The assignee menu chooses **All Assignees**, **Firm** (events assigned
-  to nobody in particular), **Firm +** your name (those plus your own), or
-  one user.
+- The assignee menu is a list of boxes: **Firm** (events assigned to
+  nobody in particular) and each user. Tick any number; the menu stays
+  open as you do, and the calendar shows the events on any of them. The
+  button names one or two choices, or counts more. **All assignees** at
+  the bottom clears them.
 - The matter menu chooses **All Matters**, **Unassigned** (events with no
   matter) or one pending or open matter.
 - Click **Filter** in the sliders menu to open **Filter Events**. **Date** takes a first and

@@ -62,6 +62,54 @@
   margin-top: 1rem;
 }
 
+/* The assignees: the active users as a row of boxes to tick, across the
+   whole form, none ticked meaning the firm */
+.events-form .form-group:has(#id_assignees) {
+  /* the compact form centres a lone checkbox in its slot; a row of them
+     reads from the left like every other field */
+  align-items: stretch;
+  grid-column: 1 / -1;
+}
+
+#id_assignees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+#id_assignees label {
+  align-items: center;
+  display: inline-flex;
+  font-weight: normal;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+#id_assignees input[type="checkbox"] {
+  margin: 0;
+  width: auto;
+}
+
+/* The same row in the Filter Events dialog */
+.filter #id_assigned_to {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.filter #id_assigned_to label {
+  align-items: center;
+  display: inline-flex;
+  font-weight: normal;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.filter #id_assigned_to input[type="checkbox"] {
+  margin: 0;
+  width: auto;
+}
+
 /* The form's own top margin is the gap below the note. */
 .event-detached-note {
   color: var(--color-muted);
@@ -688,39 +736,40 @@
   display: contents;
 }
 
-/* The calendar's menu, behind the sliders button: the overlays as check
-   rows, then Filter and the list view. Every row is an icon then its
-   label, laid out the same so the icons line up. */
-.calendar-menu .dropdown-menu {
+/* A check menu: the calendar's menu behind the sliders button (the
+   overlays as check rows, then Filter and the list view) and the
+   Assigned-to menu (Firm and each user as check rows). Every row is an
+   icon then its label, laid out the same so the icons line up. */
+.check-menu .dropdown-menu {
   min-width: 11rem;
 }
 
-.calendar-menu .dropdown-item {
+.check-menu .dropdown-item {
   align-items: center;
   display: flex;
   gap: 0.5rem;
 }
 
-.calendar-menu .dropdown-item i {
+.check-menu .dropdown-item i {
   font-size: 1.15rem;
   margin: 0;
 }
 
 /* A check row: the square icon of the lists' selection boxes, muted
    until checked, when it takes the accent */
-.calendar-menu .calendar-menu-check {
+.check-menu .check-menu-check {
   cursor: pointer;
 }
 
-.calendar-menu .calendar-menu-check i {
+.check-menu .check-menu-check i {
   color: var(--color-muted);
 }
 
-.calendar-menu .calendar-menu-check:hover i {
+.check-menu .check-menu-check:hover i {
   color: var(--color-primary);
 }
 
-.calendar-menu .calendar-menu-check i.icon-square-check {
+.check-menu .check-menu-check i.icon-square-check {
   color: var(--icon-violet);
 }
 

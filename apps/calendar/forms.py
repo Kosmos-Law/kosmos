@@ -21,13 +21,14 @@ class EventForm(forms.ModelForm):
             "end_date",
             "status",
             "party",
-            "assigned_to",
             "matter",
+            "assignees",
             "description",
             "event_type",
             "location",
         )
         labels = {
+            "assignees": "Assigned to (nobody means the firm)",
             "end_date": "Through",
             "event_type": "Type",
             "location": "Location",
@@ -55,6 +56,8 @@ class EventForm(forms.ModelForm):
                 }
             ),
             "party": forms.Select(choices=PARTIES),
+            # The assignees as a row of boxes to tick, not a multi-select
+            "assignees": forms.CheckboxSelectMultiple,
             "status": forms.Select(choices=STATUSES),
             "location": forms.TextInput(
                 attrs={
@@ -68,8 +71,8 @@ class EventForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
 
-        # Matter spans the first two of the three columns
-        self.fields["matter"].widget.attrs["class"] = "span2"
+        # Matter spans the full row
+        self.fields["matter"].widget.attrs["class"] = "span3"
 
         # The view passes the matters this user may put an event on. They
         # are set here, before validation, so a posted matter outside the
@@ -81,12 +84,11 @@ class EventForm(forms.ModelForm):
             f"Description is limited to {DESCRIPTION_MAX_LENGTH} characters."
         )
 
-        # Filter assigned_to to active users, alphabetical, title case
-        self.fields["assigned_to"].queryset = CustomUser.objects.filter(
+        # The assignees offered: the active users, alphabetical, by full name
+        self.fields["assignees"].queryset = CustomUser.objects.filter(
             is_active=True
         ).order_by("first_name", "last_name")
-        self.fields["assigned_to"].label_from_instance = lambda u: u.full_name
-        self.fields["assigned_to"].empty_label = "Firm"
+        self.fields["assignees"].label_from_instance = lambda u: u.full_name
 
     def clean_description(self):
         # A blank description arrives as None (the column is nullable).

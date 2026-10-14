@@ -9,8 +9,9 @@ days, inclusive, as a list of objects:
     id, title (matter - description - initials, as the calendar shows it),
     date, end_date (the last day of an event over several days, else
     null), start_time and end_time ("HH:MM:SS" or null),
-    all_day, matter, location, status, event_type, url (the event in
-    Kosmos), and the firm's time_zone, which the times are in.
+    all_day, matter, assignees (the short names of who it is assigned to;
+    empty for the firm's event), location, status, event_type, url (the
+    event in Kosmos), and the firm's time_zone, which the times are in.
 """
 
 from datetime import datetime, timedelta
@@ -39,8 +40,9 @@ def event_title(event):
     if event.matter:
         parts.append(event.matter.name)
     parts.append(event.description or "Untitled")
-    if event.assigned_to and event.assigned_to.initials:
-        parts.append(event.assigned_to.initials)
+    initials = event.assignee_initials
+    if initials:
+        parts.append(initials)
     return " - ".join(parts)
 
 
@@ -54,6 +56,7 @@ def event_row(event, request):
         "end_time": event.end_time.isoformat() if event.end_time else None,
         "all_day": not event.start_time,
         "matter": event.matter.name if event.matter else "",
+        "assignees": event.assignee_names,
         "location": event.location or "",
         "status": event.status or "",
         "event_type": event.event_type or "",
@@ -82,7 +85,8 @@ def api_events(request):
         events_for_user(Event.objects.all(), request.api_user)
         .filter(date__lte=end)
         .filter(Q(end_date__gte=start) | Q(end_date=None, date__gte=start))
-        .select_related("matter", "assigned_to")
+        .select_related("matter")
+        .prefetch_related("assignees")
         .order_by("date", "start_time", "id")
     )
     return JsonResponse(

@@ -7,14 +7,14 @@ the grid. Each check row posts the state it would move to.
 {% endcomment %}
 {% if view_mode == "calendar" %}
   <li>
-    <div class="dropdown-item calendar-menu-check"
+    <div class="dropdown-item check-menu-check"
          hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
          hx-swap="none">
       <i class="{% if show_tasks %}icon-square-check{% else %}icon-square{% endif %}"></i>My tasks
     </div>
   </li>
   <li>
-    <div class="dropdown-item calendar-menu-check"
+    <div class="dropdown-item check-menu-check"
          hx-post="{% if show_holidays %}{% url 'calendar:show-holidays' 'off' %}{% else %}{% url 'calendar:show-holidays' 'on' %}{% endif %}"
          hx-swap="none">
       <i class="{% if show_holidays %}icon-square-check{% else %}icon-square{% endif %}"></i>Holidays

@@ -21,6 +21,31 @@ function onPhone() {
   return window.innerWidth <= PHONE_WIDTH;
 }
 
+// The Assigned-to menu is check rows: a tick posts, the toolbar re-renders
+// on eventsChanged, and the menu is reopened here so the next tick follows
+// the first, as the sliders menu's rows do.
+let reopenAssignees = false;
+
+document.body.addEventListener("assigneesToggled", () => {
+  reopenAssignees = true;
+});
+
+document.body.addEventListener("htmx:afterSettle", (event) => {
+  if (!reopenAssignees || !window.Alpine) {
+    return;
+  }
+  const target = event.detail.target;
+  const menu =
+    target.id === "events-assigned-dropdown"
+      ? target
+      : target.querySelector?.("#events-assigned-dropdown");
+  if (!menu) {
+    return;
+  }
+  reopenAssignees = false;
+  Alpine.$data(menu)?.openDropdown();
+});
+
 // Track when we're intentionally switching views
 let viewSwitchPending = false;
 

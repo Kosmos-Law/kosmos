@@ -1,4 +1,13 @@
-<div class="dropdown" id="events-assigned-dropdown" x-data="dropdown()">
+{% comment %}
+The Assigned-to menu: Firm (the events on nobody in particular) and each
+active user as check rows, any number ticked; a tick posts the toggle,
+the menus re-render on eventsChanged, and the page reopens this one
+(events-calendar.js) so the next tick follows. Nothing ticked shows
+everything. The last row clears the lot.
+{% endcomment %}
+<div class="dropdown check-menu"
+     id="events-assigned-dropdown"
+     x-data="dropdown()">
   <button type="button"
           id="events-assigned-filter"
           class="select-btn filter-dropdown-button {% if events_filter_assigned %}toggle-active{% endif %}"
@@ -10,32 +19,30 @@
       <i class="icon-chevron-down"></i>
     </small>
   </button>
-  <ul class="dropdown-menu"
-      x-ref="menu"
-      x-show="open"
-      hx-target="#events-assigned-dropdown"
-      hx-swap="outerHTML">
+  <ul class="dropdown-menu" x-ref="menu" x-show="open">
     <li>
-      <a class="dropdown-item {% if not events_filter_assigned_value %}active{% endif %}"
-         href="#"
-         hx-post="{% url 'calendar:filter-assigned-all' %}">All Assignees</a>
-    </li>
-    <li>
-      <a class="dropdown-item {% if events_filter_assigned_value == 'unassigned' %}active{% endif %}"
-         href="#"
-         hx-post="{% url 'calendar:filter-assigned' 'unassigned' %}">Firm</a>
-    </li>
-    <li>
-      <a class="dropdown-item {% if events_filter_assigned_value|slice:':14' == 'firm_and_user:' %}active{% endif %}"
-         href="#"
-         hx-post="/events/filter/assigned/firm_and_user:{{ request.user.id }}">Firm + {{ request.user.get_short_name|default:request.user.username }}</a>
+      <div class="dropdown-item check-menu-check"
+           hx-post="{% url 'calendar:filter-assigned' 'unassigned' %}"
+           hx-swap="none">
+        <i class="{% if 'unassigned' in events_filter_assigned_values %}icon-square-check{% else %}icon-square{% endif %}"></i>Firm
+      </div>
     </li>
     {% for user in users %}
       <li>
-        <a class="dropdown-item {% if events_filter_assigned_value == user.id|stringformat:'d' %}active{% endif %}"
-           href="#"
-           hx-post="{% url 'calendar:filter-assigned' user.id %}">{{ user.get_short_name|default:user.username }}</a>
+        <div class="dropdown-item check-menu-check"
+             hx-post="{% url 'calendar:filter-assigned' user.id %}"
+             hx-swap="none">
+          <i class="{% if user.id|stringformat:'d' in events_filter_assigned_values %}icon-square-check{% else %}icon-square{% endif %}"></i>{{ user.get_short_name|default:user.username }}
+        </div>
       </li>
     {% endfor %}
+    {% if events_filter_assigned_values %}
+      <li>
+        <a class="dropdown-item"
+           href="#"
+           hx-post="{% url 'calendar:filter-assigned-all' %}"
+           hx-swap="none"><i class="icon-x"></i>All assignees</a>
+      </li>
+    {% endif %}
   </ul>
 </div>

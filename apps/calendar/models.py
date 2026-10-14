@@ -19,12 +19,11 @@ class Event(AuditMixin, models.Model):
     user = models.ForeignKey(
         "accounts.CustomUser", on_delete=models.SET_NULL, null=True, blank=True
     )
-    assigned_to = models.ForeignKey(
-        "accounts.CustomUser",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="assigned_events",
+    # Who the event is for. Nobody means the firm: everyone's. An event may
+    # be several people's (a hearing the attorney and the paralegal both
+    # attend), so this is a set rather than one user.
+    assignees = models.ManyToManyField(
+        "accounts.CustomUser", blank=True, related_name="assigned_events"
     )
     matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True)
     date = models.DateField(null=True)
@@ -56,6 +55,19 @@ class Event(AuditMixin, models.Model):
 
     def __str__(self):
         return f"{self.description} : {self.id}"
+
+    @property
+    def assignee_initials(self):
+        """The assignees' initials, "AL, JC", for the calendar's titles;
+        empty for the firm's event."""
+        return ", ".join(
+            user.initials for user in self.assignees.all() if user.initials
+        )
+
+    @property
+    def assignee_names(self):
+        """The assignees' short names, in the order they are listed."""
+        return [user.get_short_name() or user.username for user in self.assignees.all()]
 
     @property
     def last_date(self):

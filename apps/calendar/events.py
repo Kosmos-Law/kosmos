@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 from logging import getLogger
 
-from apps.calendar.filter import EventFilter
+from apps.calendar.filter import EventFilter, assignee_tokens
 from apps.management.pagination import CustomPaginator
 
 logger = getLogger(__name__)
@@ -72,19 +72,35 @@ def menu_is_active(request):
     )
 
 
+def assignees_label(names):
+    """The Assigned-to button's text: nothing ticked reads as all, one or
+    two by name, more by their number."""
+    if not names:
+        return ""
+    if len(names) <= 2:
+        return ", ".join(names)
+    return f"{len(names)} assignees"
+
+
 def toolbar_context(request, filter=None):
     """What the toolbar's status, assignee and matter menus show. A saved
     value the user has no choice for (a matter that is not theirs) shows as
     no selection, which is also how the filter treats it."""
     filter = filter or event_filter(request)
-    assigned_value = filter.data.get("assigned_to") or ""
     matter_value = filter.data.get("matter") or ""
-    assigned_label = dict(filter.assigned_choices).get(assigned_value, "")
     matter_label = dict(filter.matter_choices).get(matter_value, "")
+    # The assignees ticked, in the menu's order, less any that is no
+    # longer a choice (a user since deactivated)
+    choices = dict(filter.assigned_choices)
+    ticked = [
+        token
+        for token in assignee_tokens(filter.data.get("assigned_to"))
+        if token in choices
+    ]
     return {
         "events_filter_status": filter.data.get("status") or "",
-        "events_filter_assigned": assigned_label,
-        "events_filter_assigned_value": assigned_value if assigned_label else "",
+        "events_filter_assigned": assignees_label([choices[t] for t in ticked]),
+        "events_filter_assigned_values": ticked,
         "events_filter_matter": matter_label,
         "events_filter_matter_value": matter_value if matter_label else "",
         "matters": filter.matters,

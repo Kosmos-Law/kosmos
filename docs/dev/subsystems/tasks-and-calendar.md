@@ -60,7 +60,8 @@ checklists intact.
 (255 characters), `location` (150, a short pointer such as a meeting link
 or a courtroom, on purpose not a notes field), `event_type`, `party`,
 `status` (Pending, Complete or Missed, free text), `user` (who saved it),
-`assigned_to`, and `matter` (`CASCADE`). `google_id` and `google_synced_at`
+`assignees` (a many-to-many to users; none means the firm's event), and
+`matter` (`CASCADE`). `google_id` and `google_synced_at`
 carry the Google link; the model's comment states the rule: the event
 needs pushing whenever `google_synced_at` is null or older than
 `updated_at`. `Event.detached_from_google` is the one more state, no
