@@ -34,16 +34,19 @@ def tasks_for_user(queryset, user):
 
 
 def can_change_due_date(task, user):
-    """Whether ``user`` may move ``task``'s due date.
+    """Whether ``user`` may move ``task``'s due date, or its firmness.
 
-    A due date is firm: once a task has been handed to someone else, only
-    the person who handed it over (or an admin) can change the date. The
-    assignee who cannot meet it goes to the assignor, and the task stays
-    lit on their list until that happens. A task nobody handed over is
-    everyone's to reschedule.
+    A due date is suggestive unless its assignor made it firm. A firm date
+    on a task handed to someone else is the assignor's alone to move
+    (admins aside): the assignee who cannot meet it goes to the assignor,
+    and the task stays lit on their list until that happens. A date nobody
+    made firm, or on a task nobody handed over, is anyone's to reschedule.
     """
     return (
-        task.assigned_by_id is None or task.assigned_by_id == user.pk or user.is_admin
+        not task.date_firm
+        or task.assigned_by_id is None
+        or task.assigned_by_id == user.pk
+        or user.is_admin
     )
 
 

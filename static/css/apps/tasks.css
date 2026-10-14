@@ -355,13 +355,15 @@ tr > td.importance.complete .button-link {
 }
 
 /* A firm due date: set by whoever handed the task over, shown to the
-   assignee as text with a lock in place of the picker link. */
+   assignee as text with a lock in place of the picker link, and to the
+   assignor as the picker link with the lock beside it. */
 .task-date-locked {
   color: var(--color-muted);
   white-space: nowrap;
 }
 
-.task-date-locked .icon-lock {
+.task-date-locked .icon-lock,
+.task-date-firm {
   color: var(--color-muted-more);
   margin-left: 0.25rem;
 }

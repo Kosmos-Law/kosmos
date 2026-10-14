@@ -1,5 +1,6 @@
-"""Firm due dates: a task handed to someone else keeps the date its
-assignor set, until the assignor (or an admin) moves it."""
+"""Firm due dates: a due date is suggestive unless the assignor makes it
+firm; a firm date on a task handed to someone else is the assignor's (or
+an admin's) alone to move."""
 
 import pytest
 from django.test import Client
@@ -40,9 +41,10 @@ def admin_client():
 
 @pytest.fixture
 def handed_off(task, user, colleague):
-    """``task``, given to Bob by Ollie, due 2024-12-07."""
+    """``task``, given to Bob by Ollie with a firm date, due 2024-12-07."""
     task.user = colleague
     task.assigned_by = user
+    task.date_firm = True
     task.save()
     return task
 
@@ -55,6 +57,7 @@ def _data(assignee, **changes):
         "importance": "4",
         "status": "Pending",
         "date_due": "2026-11-02",
+        "date_firm": "False",
     } | changes
 
 
@@ -68,6 +71,14 @@ def _toast(response):
 def test_a_task_for_someone_else_records_who_gave_it(client, user, colleague):
     client.post(reverse("tasks:add"), _data(colleague))
     assert Task.objects.get().assigned_by == user
+
+
+def test_a_date_is_suggestive_unless_made_firm(client, user, colleague):
+    client.post(reverse("tasks:add"), _data(colleague))
+    assert not Task.objects.get().date_firm
+    Task.objects.all().delete()
+    client.post(reverse("tasks:add"), _data(colleague, date_firm="True"))
+    assert Task.objects.get().date_firm
 
 
 def test_a_task_for_yourself_has_no_assignor(client, user):
@@ -113,7 +124,7 @@ def test_the_assignee_cannot_move_the_date(colleague_client, handed_off):
         reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
     )
     assert response.status_code == 204
-    assert "Only Ollie can change this due date" in _toast(response)
+    assert "firm. Only Ollie can change it" in _toast(response)
     handed_off.refresh_from_db()
     assert str(handed_off.date_due) == "2024-12-07"
 
@@ -126,6 +137,16 @@ def test_the_assignor_can(client, handed_off):
 
 def test_an_admin_can(admin_client, handed_off):
     admin_client.post(
+        reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
+    )
+    handed_off.refresh_from_db()
+    assert str(handed_off.date_due) == "2025-01-31"
+
+
+def test_a_suggestive_date_is_the_assignees_to_move(colleague_client, handed_off):
+    handed_off.date_firm = False
+    handed_off.save()
+    colleague_client.post(
         reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
     )
     handed_off.refresh_from_db()
@@ -156,8 +177,29 @@ def test_the_matter_tab_refuses_too(colleague_client, handed_off, matter):
 def test_the_form_shows_the_assignee_a_disabled_date(handed_off, colleague, user):
     form = TaskForm(instance=handed_off, user=colleague)
     assert form.fields["date_due"].disabled
-    assert "Set by Ollie" in form.fields["date_due"].widget.attrs["title"]
+    assert form.fields["date_firm"].disabled
+    assert "set by Ollie" in form.fields["date_due"].widget.attrs["title"]
     assert not TaskForm(instance=handed_off, user=user).fields["date_due"].disabled
+
+
+def test_the_assignee_cannot_make_a_firm_date_suggestive(
+    colleague_client, handed_off, colleague
+):
+    colleague_client.post(
+        reverse("tasks:edit", args=[handed_off.id]),
+        _data(colleague, date_firm="False", date_due="2025-01-31"),
+    )
+    handed_off.refresh_from_db()
+    assert handed_off.date_firm
+    assert str(handed_off.date_due) == "2024-12-07"
+
+
+def test_the_assignor_can_make_it_suggestive_again(client, handed_off, colleague):
+    client.post(
+        reverse("tasks:edit", args=[handed_off.id]), _data(colleague, date_firm="False")
+    )
+    handed_off.refresh_from_db()
+    assert not handed_off.date_firm
 
 
 def test_a_posted_date_from_the_assignee_is_ignored(
@@ -226,17 +268,18 @@ def test_the_assignee_sees_a_lock_and_the_assignor_a_picker(
         c.post(reverse("tasks:filter-quick", args=["all"]))
         c.post(reverse("tasks:filter-user", args=[0]))
     theirs = colleague_client.get(reverse("tasks:list")).content.decode()
-    assert "Due date set by Ollie" in theirs
+    assert "Firm date, set by Ollie" in theirs
     assert "2024-12-07" in theirs
     assert "task-date-link" not in theirs
 
     mine = client.get(reverse("tasks:list")).content.decode()
-    assert "Due date set by" not in mine
+    assert "set by Ollie" not in mine
     assert "task-date-link" in mine
+    assert "task-date-firm" in mine
 
 
 def test_the_detail_dialog_names_the_assignor(colleague_client, handed_off):
     html = colleague_client.get(
         reverse("tasks:detail", args=[handed_off.id])
     ).content.decode()
-    assert "Handed over by Ollie" in html
+    assert "Firm date, set by Ollie" in html

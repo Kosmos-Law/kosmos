@@ -11,6 +11,7 @@ from apps.tasks.constants import (
     NO_CHANGE,
 )
 from apps.tasks.models import Task, TaskNote
+from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
 
@@ -25,6 +26,7 @@ class TaskForm(forms.ModelForm):
             "importance",
             "status",
             "date_due",
+            "date_firm",
             "date_completed",
         )
 
@@ -32,6 +34,7 @@ class TaskForm(forms.ModelForm):
 
         labels = {
             "description": "Task",
+            "date_firm": "Firm date",
         }
 
         IMPORTANCE_CHOICES = (
@@ -60,6 +63,10 @@ class TaskForm(forms.ModelForm):
             "status": forms.Select(choices=STATUSES),
             "date_due": forms.DateInput(attrs={"type": "date", "class": ""}),
             "importance": forms.Select(choices=IMPORTANCE_CHOICES),
+            # Yes makes the date the assignor's alone to move (see
+            # access.can_change_due_date). A Yes/No select, as every
+            # boolean input is.
+            "date_firm": forms.Select(choices=YESNO_CHOICES),
             "date_completed": forms.DateInput(attrs={"type": "date", "class": ""}),
         }
 
@@ -78,15 +85,17 @@ class TaskForm(forms.ModelForm):
             self.fields["matter"].queryset = matters_for_task_form(
                 user, include_id=include_matter or self.instance.matter_id
             )
-            # A due date someone else set is firm: shown, not editable. A
-            # disabled field keeps its initial value whatever is posted.
+            # A firm date someone else set is shown, not editable, and so
+            # is its firmness. A disabled field keeps its initial value
+            # whatever is posted.
             if self.instance.pk and not can_change_due_date(self.instance, user):
-                field = self.fields["date_due"]
-                field.disabled = True
-                field.widget.attrs["title"] = (
-                    f"Set by {self.instance.assigned_by.username.title()}. "
+                title = (
+                    f"Firm date, set by {self.instance.assigned_by.username.title()}. "
                     "Only they can change it."
                 )
+                for name in ("date_due", "date_firm"):
+                    self.fields[name].disabled = True
+                    self.fields[name].widget.attrs["title"] = title
 
     def clean_description(self):
         # An empty description arrives as None (the column is nullable).
