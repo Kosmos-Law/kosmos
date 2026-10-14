@@ -136,3 +136,15 @@ def test_a_deadline_on_a_court_day_stands(client):
     )
 
     assert response.context["results"]["next_workday"] is None
+
+
+def test_the_list_views_menu_offers_the_filter_and_the_calendar(client):
+    client.post(reverse("calendar:view-mode", args=["list"]))
+
+    menu = _menu(client)
+
+    assert reverse("calendar:view-mode", args=["calendar"]) in menu
+    assert reverse("calendar:filter") in menu
+    assert reverse("calendar:show-holidays", args=["on"]) not in menu
+    page = client.get(reverse("calendar:index")).content.decode()
+    assert "calendar-menu" in page

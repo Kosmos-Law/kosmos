@@ -76,6 +76,7 @@ def toolbar_context(request, filter=None):
         "show_tasks": show_tasks(request),
         "show_holidays": show_holidays(request),
         "filter_active": filter_is_active(request),
+        "view_mode": request.session.get("events_view_mode", "calendar"),
     }
 
 

@@ -1,23 +1,26 @@
 {% comment %}
-The calendar menu's rows (calendar/overlays.html): the overlays as check
-rows drawn with the square icons the lists use for selection, then
-Filter and the list view, each behind its own icon. Each check row posts
-the state it would move to.
+The calendar menu's rows (calendar/overlays.html). On the grid: the
+overlays as check rows drawn with the square icons the lists use for
+selection, then Filter and the list view, each behind its own icon. On
+the list: Filter and the calendar view, since the overlays draw only on
+the grid. Each check row posts the state it would move to.
 {% endcomment %}
-<li>
-  <div class="dropdown-item calendar-menu-check"
-       hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
-       hx-swap="none">
-    <i class="{% if show_tasks %}icon-square-check{% else %}icon-square{% endif %}"></i>My tasks
-  </div>
-</li>
-<li>
-  <div class="dropdown-item calendar-menu-check"
-       hx-post="{% if show_holidays %}{% url 'calendar:show-holidays' 'off' %}{% else %}{% url 'calendar:show-holidays' 'on' %}{% endif %}"
-       hx-swap="none">
-    <i class="{% if show_holidays %}icon-square-check{% else %}icon-square{% endif %}"></i>Holidays
-  </div>
-</li>
+{% if view_mode == "calendar" %}
+  <li>
+    <div class="dropdown-item calendar-menu-check"
+         hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
+         hx-swap="none">
+      <i class="{% if show_tasks %}icon-square-check{% else %}icon-square{% endif %}"></i>My tasks
+    </div>
+  </li>
+  <li>
+    <div class="dropdown-item calendar-menu-check"
+         hx-post="{% if show_holidays %}{% url 'calendar:show-holidays' 'off' %}{% else %}{% url 'calendar:show-holidays' 'on' %}{% endif %}"
+         hx-swap="none">
+      <i class="{% if show_holidays %}icon-square-check{% else %}icon-square{% endif %}"></i>Holidays
+    </div>
+  </li>
+{% endif %}
 <li>
   <a class="dropdown-item"
      href="#"
@@ -27,9 +30,18 @@ the state it would move to.
     {% if filter_active %}<span class="calendar-menu-note">on</span>{% endif %}
   </a>
 </li>
-<li class="calendar-menu-list">
-  <a class="dropdown-item"
-     href="#"
-     hx-post="{% url 'calendar:view-mode' 'list' %}"
-     hx-swap="none"><i class="icon-list"></i>List view</a>
-</li>
+{% if view_mode == "calendar" %}
+  <li class="calendar-menu-list">
+    <a class="dropdown-item"
+       href="#"
+       hx-post="{% url 'calendar:view-mode' 'list' %}"
+       hx-swap="none"><i class="icon-list"></i>List view</a>
+  </li>
+{% else %}
+  <li class="calendar-menu-list">
+    <a class="dropdown-item"
+       href="#"
+       hx-post="{% url 'calendar:view-mode' 'calendar' %}"
+       hx-swap="none"><i class="icon-calendar"></i>Calendar view</a>
+  </li>
+{% endif %}

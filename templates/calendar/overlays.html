@@ -1,13 +1,14 @@
 {% comment %}
-The calendar's menu, behind the sliders button on the grid's toolbar: the
-overlays (tasks, holidays) as check rows, then the Filter dialog and the
-list view. The rows re-render on eventsChanged (calendar/menu-items.html);
+The calendar's menu, behind the sliders button on the toolbar of both
+views: on the grid the overlays (tasks, holidays) as check rows, then the
+Filter dialog and the other view. The rows re-render on eventsChanged
+(calendar/menu-items.html);
 the dropdown itself stays, so a check row keeps the menu open for the
 next, and the dropdown component closes it on a link.
 {% endcomment %}
 <div class="dropdown calendar-menu" x-data="dropdown()">
   <button type="button"
-          class="select-btn filter-dropdown-button {% if show_tasks or show_holidays or filter_active %}toggle-active{% endif %}"
+          class="select-btn filter-dropdown-button {% if filter_active or view_mode == 'calendar' and show_tasks or view_mode == 'calendar' and show_holidays %}toggle-active{% endif %}"
           x-ref="button"
           @click="toggle()"
           :aria-expanded="open"

@@ -27,10 +27,10 @@ belong to a matter. The same event appears in several places:
 
 Click **Calendar** in the sidebar. Kosmos opens in the calendar view and
 keeps your choice of view until you sign out. The sliders button at the
-right of the toolbar's menus opens the calendar's menu: **My tasks** and
-**Holidays** (below), **Filter**, and **List view**. In the list view,
-the two buttons beside the **+** button switch back to **Calendar View**.
-On a narrow screen, such as a phone, the calendar view is the **Agenda**
+right of the toolbar's menus opens the calendar's menu. In the calendar
+view it offers **My tasks** and **Holidays** (below), **Filter**, and
+**List view**; in the list view, **Filter** and **Calendar view**. On a
+narrow screen, such as a phone, the calendar view is the **Agenda**
 (below), and the list is still a tap away in the menu.
 
 ### Calendar view
@@ -152,9 +152,9 @@ for everyone and cannot be restored.
 
 The Calendar opens on pending events, earliest first. The toolbar menus
 and the **Filter** dialog apply to both views, and Kosmos keeps your
-choices until you change them or sign out. In the calendar view,
-**Filter** is in the sliders menu, and reads "on" beside it while a
-filter other than the default is set.
+choices until you change them or sign out. **Filter** is in the sliders
+menu in both views, and reads "on" beside it while a filter other than
+the default is set.
 
 - The status menu chooses **All Statuses**, **Pending**, **Complete** or
   **Missed**.
@@ -163,8 +163,7 @@ filter other than the default is set.
   one user.
 - The matter menu chooses **All Matters**, **Unassigned** (events with no
   matter) or one pending or open matter.
-- Click **Filter** (the toolbar button in the list view, the row in the
-  sliders menu in the calendar view) to open **Filter Events**. **Date** takes a first and
+- Click **Filter** in the sliders menu to open **Filter Events**. **Date** takes a first and
   last date. **Matter**, **Assigned to**, **Party** and **Status** are
   lists that narrow by those fields, and **Ordering** sets the sort. Click
   **Apply**. **Restore Defaults** returns to pending events sorted by
