@@ -14,7 +14,7 @@
 }
 
 .events-table .date {
-  width: 12rem;
+  width: 13rem;
 }
 
 .events-table .matter {
@@ -41,11 +41,12 @@
   width: 8rem;
 }
 
-/* The date cell reads "first to last  9:00 AM": the end of an event over
-   several days, in the muted colour */
+/* The date cell reads "first", then "to last" on a line of its own for
+   an event over several days, in the muted colour, so the cell's own
+   ellipsis never cuts the last day short */
 .events-table .event-end-date {
   color: var(--color-muted);
-  margin-right: 0.25rem;
+  display: block;
 }
 
 /* An event deleted on Google and kept here: said in words under the
