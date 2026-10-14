@@ -87,16 +87,16 @@ def checklist_skip_message(skipped):
 
 
 def due_date_locked_message(task):
-    """Why a due date change was refused: the task was handed over."""
+    """Why a due date change was refused: a goal date someone else set."""
     return (
-        f"This due date is firm. Only {task.assigned_by.username.title()} "
-        "can change it; ask them to move it."
+        f"This is a goal date. Only {task.assigned_by.username.title()} "
+        "can move it; ask them."
     )
 
 
 def due_date_skip_message(skipped):
     """What a bulk date change says about the tasks it left alone."""
     return (
-        f"{skipped} task(s) skipped. Their due dates are firm and someone "
-        "else's to change."
+        f"{skipped} task(s) skipped. Their goal dates were set by someone "
+        "else and are theirs to move."
     )

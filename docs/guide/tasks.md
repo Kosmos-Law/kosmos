@@ -127,7 +127,7 @@ The form closes and the new task is at the top of the list.
 | **Importance** | Yes | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
 | **Status** | No | **Pending** (the default), **In progress**, **On hold** or **Complete**. |
 | **Date due** | No | Starts as today. Clear it for a task with no deadline. |
-| **Firm date** | No | **No** (the default) leaves the date open to whoever has the task. **Yes** makes it yours alone to change once the task is someone else's: see [Firm due dates](#firm-due-dates). |
+| **Goal date** | No | **No** (the default) leaves the date open to whoever has the task. **Yes** makes it a goal, yours alone to move once the task is someone else's: see [Goal dates](#goal-dates). |
 | **Date completed** | No | Leave it blank. Kosmos fills it in when the task becomes **Complete**. |
 
 Good to know:
@@ -157,23 +157,22 @@ characters at most) and click **Submit**. Click a note's date to edit or
 delete it. The icon is highlighted when a colleague has added a note
 since you last looked.
 
-## Firm due dates
+## Goal dates
 
-A due date is a suggestion unless you make it firm. On a task you give
-to someone else, set **Firm date** to **Yes** in **Add Task** or **Edit
-Task**, and only you, or an administrator, can change the date from then
-on. The person you gave it to sees the date with a lock beside it, and
-the row goes past due on their list like any other until the task is done
-or you move the date. If they cannot meet it, they come to you. You see
-the lock too, beside the date picker, on every task whose date you made
-firm.
+A due date is a suggestion unless you make it a goal. On a task you give
+to someone else, set **Goal date** to **Yes** in **Add Task** or **Edit
+Task**, and only you, or an administrator, can move the date from then
+on. The person you gave it to sees the date with a goal flag beside it,
+and the row goes past due on their list like any other until the task is
+done or you move the date. If they cannot meet it, they come to you. You
+see the flag too, beside the date picker, on every date you made a goal.
 
-The rule follows the hand-over. A firm date on a task you add for
-yourself, or take on yourself, locks nobody. Reassigning a task makes the
-person who reassigned it the one who can change its date. For the person
-holding a firm task, **Date due** and **Firm date** cannot be changed in
+The rule follows the hand-over. A goal date on a task you add for
+yourself, or take on yourself, holds nobody. Reassigning a task makes the
+person who reassigned it the one who can move its date. For the person
+holding a goal, **Date due** and **Goal date** cannot be changed in
 **Edit Task**; the date in the list has no picker; and a bulk **Date** or
-**Update** change leaves firm tasks out and says how many it skipped.
+**Update** change leaves goal dates out and says how many it skipped.
 Everything else about the task, its status, importance, matter, notes
 and checklist, is open to them as before.
 

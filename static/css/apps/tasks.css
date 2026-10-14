@@ -354,16 +354,16 @@ tr > td.importance.complete .button-link {
   width: 7rem;
 }
 
-/* A firm due date: set by whoever handed the task over, shown to the
-   assignee as text with a lock in place of the picker link, and to the
-   assignor as the picker link with the lock beside it. */
-.task-date-locked {
+/* A goal date: set by whoever handed the task over, shown to the
+   assignee as text with a goal flag in place of the picker link, and to the
+   assignor as the picker link with the goal flag beside it. */
+.task-date-goal {
   color: var(--color-muted);
   white-space: nowrap;
 }
 
-.task-date-locked .icon-lock,
-.task-date-firm {
+.task-date-goal .icon-goal,
+.task-date-goal-mark {
   color: var(--color-muted-more);
   margin-left: 0.25rem;
 }
@@ -372,7 +372,7 @@ tr > td.importance.complete .button-link {
   color: var(--color-muted);
 }
 
-.task-detail-assigned-by .icon-lock {
+.task-detail-assigned-by .icon-goal {
   margin-right: 0.5rem;
 }
 
@@ -407,7 +407,7 @@ tr > td.importance.complete .button-link {
 .tasks-table .date {
   overflow: visible;
   white-space: nowrap;
-  /* Room for the date and the lock of a firm due date. */
+  /* Room for the date and the goal flag of a goal date. */
   width: 8.5rem;
 }
 

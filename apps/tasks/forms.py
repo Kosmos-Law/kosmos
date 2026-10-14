@@ -26,7 +26,7 @@ class TaskForm(forms.ModelForm):
             "importance",
             "status",
             "date_due",
-            "date_firm",
+            "date_goal",
             "date_completed",
         )
 
@@ -34,7 +34,7 @@ class TaskForm(forms.ModelForm):
 
         labels = {
             "description": "Task",
-            "date_firm": "Firm date",
+            "date_goal": "Goal date",
         }
 
         IMPORTANCE_CHOICES = (
@@ -63,10 +63,10 @@ class TaskForm(forms.ModelForm):
             "status": forms.Select(choices=STATUSES),
             "date_due": forms.DateInput(attrs={"type": "date", "class": ""}),
             "importance": forms.Select(choices=IMPORTANCE_CHOICES),
-            # Yes makes the date the assignor's alone to move (see
+            # Yes makes the date a goal: the assignor's alone to move (see
             # access.can_change_due_date). A Yes/No select, as every
             # boolean input is.
-            "date_firm": forms.Select(choices=YESNO_CHOICES),
+            "date_goal": forms.Select(choices=YESNO_CHOICES),
             "date_completed": forms.DateInput(attrs={"type": "date", "class": ""}),
         }
 
@@ -85,15 +85,15 @@ class TaskForm(forms.ModelForm):
             self.fields["matter"].queryset = matters_for_task_form(
                 user, include_id=include_matter or self.instance.matter_id
             )
-            # A firm date someone else set is shown, not editable, and so
-            # is its firmness. A disabled field keeps its initial value
+            # A goal date someone else set is shown, not editable, and so
+            # is its being a goal. A disabled field keeps its initial value
             # whatever is posted.
             if self.instance.pk and not can_change_due_date(self.instance, user):
                 title = (
-                    f"Firm date, set by {self.instance.assigned_by.username.title()}. "
+                    f"Goal date, set by {self.instance.assigned_by.username.title()}. "
                     "Only they can change it."
                 )
-                for name in ("date_due", "date_firm"):
+                for name in ("date_due", "date_goal"):
                     self.fields[name].disabled = True
                     self.fields[name].widget.attrs["title"] = title
 
