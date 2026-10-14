@@ -235,7 +235,7 @@ Matter Switcher
    filter dropdowns and toolbar-right links (reports, deadline calc, view-all)
    — is hidden. */
 @media (width <= 768px) {
-  .mobile-min-toolbar .dropdown,
+  .mobile-min-toolbar .dropdown:not(.calendar-menu),
   .mobile-min-toolbar .toolbar-right {
     display: none;
   }

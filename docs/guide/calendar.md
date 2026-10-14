@@ -187,12 +187,14 @@ Good to know:
 
 ## A matter's Events tab
 
-Open a matter and click **Events**. The tab has the same list and calendar
-views for that matter alone, and opens as a list with every event on one
-page. The status menu starts on **Pending** and is kept for each matter
-separately. The list has no **Matter** column, and the tab has no
-**Filter** button: use the status menu and the sort buttons. See
-[Matters](matters.md).
+Open a matter and click **Events**. The tab has the same calendar views
+(**Year** to **Agenda**) and the same list for that matter alone, and
+opens on the calendar, as the Calendar does; its list shows every event
+on one page. The status menu starts on **Pending** and is kept for each
+matter separately. The sliders menu holds **My tasks** (your open tasks
+on that matter), **Holidays** and the list-or-calendar switch, but no
+**Filter**: use the status menu and the sort buttons. The list has no
+**Matter** column. See [Matters](matters.md).
 
 ## Work out a deadline
 

@@ -5,7 +5,7 @@ from dateutil import parser
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
@@ -20,6 +20,7 @@ from apps.calendar.forms import EventForm
 from apps.calendar.models import Event
 from apps.calendar.reminder_views import reminders_context
 from apps.management.filter_manager import FilterManager
+from apps.matters.models import Matter
 from utils.toasts import toast_warning
 
 from .events import (
@@ -29,6 +30,7 @@ from .events import (
     default_end_time,
     event_filter,
     get_table_data,
+    matter_menu_context,
     saved_filter,
     show_holidays,
     show_tasks,
@@ -113,11 +115,18 @@ def events_filter_menus(request):
 
 
 @login_required
-def events_overlays(request):
-    """The rows of the calendar's menu (the sliders button on the grid's
-    toolbar) as the session now has them, re-rendered after a change so
-    each check row posts the state it would move to."""
-    return render(request, "calendar/menu-items.html", toolbar_context(request))
+@matter_access_required
+def events_overlays(request, matter_id=None):
+    """The rows of the calendar's menu (the sliders button on the toolbar)
+    as the session now has them, re-rendered after a change so each check
+    row posts the state it would move to. With a matter, the rows are a
+    matter's Events tab's: the overlays and the tab's own view switch."""
+    if matter_id:
+        matter = get_object_or_404(Matter, pk=matter_id)
+        context = matter_menu_context(request, matter)
+    else:
+        context = toolbar_context(request)
+    return render(request, "calendar/menu-items.html", context)
 
 
 @login_required
@@ -600,21 +609,22 @@ def events_api(request, matter_id=None):
 
         calendar_events.append(fc_event)
 
-    # The overlays are the main calendar's; the matter tab shows its events
-    if not matter_id:
-        if show_tasks(request):
-            calendar_events.extend(_task_feed(request.user, start_date, end_date))
-        if show_holidays(request):
-            calendar_events.extend(holidays.feed(start_date, end_date))
+    # The overlays: on a matter's tab, the user's tasks on that matter
+    if show_tasks(request):
+        calendar_events.extend(
+            _task_feed(request.user, start_date, end_date, matter_id=matter_id)
+        )
+    if show_holidays(request):
+        calendar_events.extend(holidays.feed(start_date, end_date))
 
     return JsonResponse(calendar_events, safe=False)
 
 
-def _task_feed(user, first, last):
-    """The user's open tasks due in the range, as FullCalendar events: an
-    all-day entry (a task has a day, not a time) told from an event by its
-    id prefix and its kind, which may be dragged to another day but not
-    stretched."""
+def _task_feed(user, first, last, matter_id=None):
+    """The user's open tasks due in the range (on one matter, when given),
+    as FullCalendar events: an all-day entry (a task has a day, not a
+    time) told from an event by its id prefix and its kind, which may be
+    dragged to another day but not stretched."""
     from apps.tasks.constants import STATUS_COMPLETE
     from apps.tasks.models import Task
 
@@ -623,6 +633,8 @@ def _task_feed(user, first, last):
         .exclude(status=STATUS_COMPLETE)
         .select_related("matter")
     )
+    if matter_id:
+        tasks = tasks.filter(matter_id=matter_id)
     feed = []
     for task in tasks:
         title = task.description or "Untitled"

@@ -90,6 +90,11 @@ urlpatterns = [
     path("events/filter/menus/", events_filter_menus, name="filter-menus"),
     path("events/overlays/", events_overlays, name="overlays"),
     path(
+        "events/overlays/matter/<int:matter_id>",
+        events_overlays,
+        name="overlays-matter",
+    ),
+    path(
         "events/filter/quick/<str:quick_filter>",
         events_filter_quick,
         name="filter-quick",

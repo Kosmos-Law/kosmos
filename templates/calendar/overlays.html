@@ -1,7 +1,8 @@
 {% comment %}
 The calendar's menu, behind the sliders button on the toolbar of both
-views: on the grid the overlays (tasks, holidays) as check rows, then the
-Filter dialog and the other view. The rows re-render on eventsChanged
+views, on the main calendar and on a matter's Events tab (context:
+matter): on the grid the overlays (tasks, holidays) as check rows, then
+the Filter dialog (the main calendar's) and the other view. The rows re-render on eventsChanged
 (calendar/menu-items.html);
 the dropdown itself stays, so a check row keeps the menu open for the
 next, and the dropdown component closes it on a link.
@@ -19,7 +20,7 @@ next, and the dropdown component closes it on a link.
   <ul class="dropdown-menu"
       x-ref="menu"
       x-show="open"
-      hx-get="{% url 'calendar:overlays' %}"
+      hx-get="{% if matter %}{% url 'calendar:overlays-matter' matter.id %}{% else %}{% url 'calendar:overlays' %}{% endif %}"
       hx-trigger="eventsChanged from:body"
       hx-target="this"
       hx-swap="innerHTML">

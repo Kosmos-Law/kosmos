@@ -90,6 +90,15 @@ def test_only_the_users_open_dated_tasks_show(client, tasks):
     assert row["extendedProps"] == {"kind": "task", "task_id": tasks["on_matter"].id}
 
 
+def test_the_matter_tab_shows_the_users_tasks_on_that_matter(client, tasks, matter):
+    client.post(reverse("calendar:show-tasks", args=["on"]))
+
+    feed = client.get(reverse("calendar:feed-matter", args=[matter.id]), MARCH).json()
+    shown = {row["id"] for row in feed if row["id"].startswith("task-")}
+
+    assert shown == {f"task-{tasks['on_matter'].id}"}
+
+
 def test_the_box_marks_the_task_done(client, tasks):
     response = client.post(reverse("calendar:task-done", args=[tasks["open"].id]))
 

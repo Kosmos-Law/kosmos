@@ -82,6 +82,26 @@ def assignees_label(names):
     return f"{len(names)} assignees"
 
 
+MATTER_VIEW_MODE_KEY = "matter_events_view_mode"
+
+
+def matter_menu_context(request, matter):
+    """The calendar menu's state on a matter's Events tab: the overlays
+    (shared with the main calendar) and the tab's own list-or-calendar
+    choice, kept across matters. The tab has no filter, so the menu's
+    button reads as set only when an overlay is off its default."""
+    return {
+        "matter": matter,
+        "show_tasks": show_tasks(request),
+        "show_holidays": show_holidays(request),
+        "menu_active": (
+            show_tasks(request) != DEFAULT_SHOW_TASKS
+            or show_holidays(request) != DEFAULT_SHOW_HOLIDAYS
+        ),
+        "view_mode": request.session.get(MATTER_VIEW_MODE_KEY, "calendar"),
+    }
+
+
 def toolbar_context(request, filter=None):
     """What the toolbar's status, assignee and matter menus show. A saved
     value the user has no choice for (a matter that is not theirs) shows as

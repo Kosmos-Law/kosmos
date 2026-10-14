@@ -67,10 +67,32 @@ def test_the_holidays_in_the_range_show(client):
     assert feed["holiday-2027-07-05"]["title"] == "Independence Day (observed)"
 
 
-def test_the_matter_tab_shows_no_overlays(client, matter):
+def test_the_matter_tab_shows_the_holidays_too(client, matter):
     feed = client.get(reverse("calendar:feed-matter", args=[matter.id]), JULY).json()
 
+    assert any(row["id"].startswith("holiday-") for row in feed)
+
+    client.post(reverse("calendar:show-holidays", args=["off"]))
+    feed = client.get(reverse("calendar:feed-matter", args=[matter.id]), JULY).json()
     assert not any(row["id"].startswith("holiday-") for row in feed)
+
+
+def test_the_matter_tabs_menu_has_the_overlays_and_its_own_view_switch(client, matter):
+    menu = client.get(
+        reverse("calendar:overlays-matter", args=[matter.id])
+    ).content.decode()
+
+    assert "Holidays" in menu and "My tasks" in menu
+    assert reverse("calendar:filter") not in menu
+    # the tab opens on the calendar, so the switch offers the list
+    assert (
+        reverse("matters:events-view-mode", kwargs={"id": matter.id, "mode": "list"})
+        in menu
+    )
+    page = client.get(
+        reverse("matters:events-index", kwargs={"id": matter.id})
+    ).content.decode()
+    assert "calendar-menu" in page and "fullcalendar-container" in page
 
 
 def test_a_range_over_the_new_year_has_both_years():
