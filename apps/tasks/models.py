@@ -22,9 +22,9 @@ class Task(AuditMixin, models.Model):
     )
     # Who handed the task to its user: stamped by save() whenever the task
     # is given to someone other than the person saving it, cleared when a
-    # user takes it on themselves. With date_goal, the due date is theirs
+    # user takes it on themselves. With date_pinned, the due date is theirs
     # alone to move (admins aside): see access.can_change_due_date. A due
-    # date is suggestive unless the assignor makes it a goal.
+    # date is suggestive unless the assignor pins it.
     assigned_by = models.ForeignKey(
         CustomUser,
         on_delete=models.SET_NULL,
@@ -32,7 +32,7 @@ class Task(AuditMixin, models.Model):
         blank=True,
         related_name="tasks_assigned",
     )
-    date_goal = models.BooleanField(default=False)
+    date_pinned = models.BooleanField(default=False)
     history = HistoricalRecords(table_name="agenda_historicaltask")
 
     def save(self, *args, **kwargs):

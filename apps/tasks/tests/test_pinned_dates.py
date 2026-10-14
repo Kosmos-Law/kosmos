@@ -1,5 +1,5 @@
-"""Goal dates: a due date is suggestive unless the assignor makes it
-a goal; a goal date on a task handed to someone else is the assignor's (or
+"""Pinned dates: a due date is suggestive unless the assignor makes it
+pinned; a pinned date on a task handed to someone else is the assignor's (or
 an admin's) alone to move."""
 
 import pytest
@@ -41,10 +41,10 @@ def admin_client():
 
 @pytest.fixture
 def handed_off(task, user, colleague):
-    """``task``, given to Bob by Ollie with a goal date, due 2024-12-07."""
+    """``task``, given to Bob by Ollie with a pinned date, due 2024-12-07."""
     task.user = colleague
     task.assigned_by = user
-    task.date_goal = True
+    task.date_pinned = True
     task.save()
     return task
 
@@ -57,7 +57,7 @@ def _data(assignee, **changes):
         "importance": "4",
         "status": "Pending",
         "date_due": "2026-11-02",
-        "date_goal": "False",
+        "date_pinned": "False",
     } | changes
 
 
@@ -73,12 +73,12 @@ def test_a_task_for_someone_else_records_who_gave_it(client, user, colleague):
     assert Task.objects.get().assigned_by == user
 
 
-def test_a_date_is_suggestive_unless_made_a_goal(client, user, colleague):
+def test_a_date_is_suggestive_unless_pinned(client, user, colleague):
     client.post(reverse("tasks:add"), _data(colleague))
-    assert not Task.objects.get().date_goal
+    assert not Task.objects.get().date_pinned
     Task.objects.all().delete()
-    client.post(reverse("tasks:add"), _data(colleague, date_goal="True"))
-    assert Task.objects.get().date_goal
+    client.post(reverse("tasks:add"), _data(colleague, date_pinned="True"))
+    assert Task.objects.get().date_pinned
 
 
 def test_a_task_for_yourself_has_no_assignor(client, user):
@@ -124,7 +124,7 @@ def test_the_assignee_cannot_move_the_date(colleague_client, handed_off):
         reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
     )
     assert response.status_code == 204
-    assert "goal date. Only Ollie can move it" in _toast(response)
+    assert "pinned. Only Ollie can move it" in _toast(response)
     handed_off.refresh_from_db()
     assert str(handed_off.date_due) == "2024-12-07"
 
@@ -144,7 +144,7 @@ def test_an_admin_can(admin_client, handed_off):
 
 
 def test_a_suggestive_date_is_the_assignees_to_move(colleague_client, handed_off):
-    handed_off.date_goal = False
+    handed_off.date_pinned = False
     handed_off.save()
     colleague_client.post(
         reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
@@ -177,29 +177,28 @@ def test_the_matter_tab_refuses_too(colleague_client, handed_off, matter):
 def test_the_form_shows_the_assignee_a_disabled_date(handed_off, colleague, user):
     form = TaskForm(instance=handed_off, user=colleague)
     assert form.fields["date_due"].disabled
-    assert form.fields["date_goal"].disabled
-    assert "set by Ollie" in form.fields["date_due"].widget.attrs["title"]
+    assert form.fields["date_pinned"].disabled
+    assert "Pinned by Ollie" in form.fields["date_due"].widget.attrs["title"]
     assert not TaskForm(instance=handed_off, user=user).fields["date_due"].disabled
 
 
-def test_the_assignee_cannot_make_a_goal_date_suggestive(
-    colleague_client, handed_off, colleague
-):
+def test_the_assignee_cannot_unpin_a_date(colleague_client, handed_off, colleague):
     colleague_client.post(
         reverse("tasks:edit", args=[handed_off.id]),
-        _data(colleague, date_goal="False", date_due="2025-01-31"),
+        _data(colleague, date_pinned="False", date_due="2025-01-31"),
     )
     handed_off.refresh_from_db()
-    assert handed_off.date_goal
+    assert handed_off.date_pinned
     assert str(handed_off.date_due) == "2024-12-07"
 
 
-def test_the_assignor_can_make_it_suggestive_again(client, handed_off, colleague):
+def test_the_assignor_can_unpin_it(client, handed_off, colleague):
     client.post(
-        reverse("tasks:edit", args=[handed_off.id]), _data(colleague, date_goal="False")
+        reverse("tasks:edit", args=[handed_off.id]),
+        _data(colleague, date_pinned="False"),
     )
     handed_off.refresh_from_db()
-    assert not handed_off.date_goal
+    assert not handed_off.date_pinned
 
 
 def test_a_posted_date_from_the_assignee_is_ignored(
@@ -268,18 +267,18 @@ def test_the_assignee_sees_a_lock_and_the_assignor_a_picker(
         c.post(reverse("tasks:filter-quick", args=["all"]))
         c.post(reverse("tasks:filter-user", args=[0]))
     theirs = colleague_client.get(reverse("tasks:list")).content.decode()
-    assert "Goal date, set by Ollie" in theirs
+    assert "Pinned by Ollie" in theirs
     assert "2024-12-07" in theirs
     assert "task-date-link" not in theirs
 
     mine = client.get(reverse("tasks:list")).content.decode()
-    assert "set by Ollie" not in mine
+    assert "Pinned by Ollie" not in mine
     assert "task-date-link" in mine
-    assert "task-date-goal-mark" in mine
+    assert "task-date-pin" in mine
 
 
 def test_the_detail_dialog_names_the_assignor(colleague_client, handed_off):
     html = colleague_client.get(
         reverse("tasks:detail", args=[handed_off.id])
     ).content.decode()
-    assert "Goal date, set by Ollie" in html
+    assert "Date pinned by Ollie" in html

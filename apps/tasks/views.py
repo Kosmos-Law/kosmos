@@ -864,7 +864,7 @@ def tasks_filter_sort(request, order):
     current_order = filter_data.get("order_by", "")
 
     # A second click on the same column reverses it, whichever direction the
-    # column's button starts from (the flag button starts at "-importance").
+    # column's button starts from (the pin button starts at "-importance").
     if current_order == order:
         new_order = order[1:] if order.startswith("-") else f"-{order}"
     else:

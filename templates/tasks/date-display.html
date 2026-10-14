@@ -1,13 +1,13 @@
-{% comment %} A goal date someone else set: the assignee sees it,
-with the goal flag and the assignor's name, but gets no picker. The assignor
-and admins keep the picker, with the goal flag beside it as the sign the date
-is a goal (task.date_locked is computed per viewer by the list builder).
+{% comment %} A pinned date someone else set: the assignee sees it,
+with the pin and the assignor's name, but gets no picker. The assignor
+and admins keep the picker, with the pin beside it as the sign the date
+is pinned (task.date_locked is computed per viewer by the list builder).
 A suggestive date is the plain picker link. {% endcomment %}
 {% if task.date_locked %}
-  <span class="task-date-goal"
-        title="Goal date, set by {{ task.assigned_by.username|title }}. Only they can move it.">
+  <span class="task-date-pinned"
+        title="Pinned by {{ task.assigned_by.username|title }}. Only they can move the date.">
     {% if task.date_due %}{{ task.date_due|date:'Y-m-d' }}{% endif %}
-    <i class="icon-goal"></i>
+    <i class="icon-pin"></i>
   </span>
 {% else %}
   {% if task.date_due %}
@@ -23,8 +23,8 @@ A suggestive date is the plain picker link. {% endcomment %}
       <i class="icon-calendar-plus"></i>
     </a>
   {% endif %}
-  {% if task.date_goal %}
-    <i class="icon-goal task-date-goal-mark"
-       title="Goal date. Only you can change it."></i>
+  {% if task.date_pinned %}
+    <i class="icon-pin task-date-pin"
+       title="Pinned date. Only you can move it."></i>
   {% endif %}
 {% endif %}

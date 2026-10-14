@@ -26,7 +26,7 @@ class TaskForm(forms.ModelForm):
             "importance",
             "status",
             "date_due",
-            "date_goal",
+            "date_pinned",
             "date_completed",
         )
 
@@ -34,7 +34,7 @@ class TaskForm(forms.ModelForm):
 
         labels = {
             "description": "Task",
-            "date_goal": "Goal date",
+            "date_pinned": "Pinned date",
         }
 
         IMPORTANCE_CHOICES = (
@@ -63,10 +63,10 @@ class TaskForm(forms.ModelForm):
             "status": forms.Select(choices=STATUSES),
             "date_due": forms.DateInput(attrs={"type": "date", "class": ""}),
             "importance": forms.Select(choices=IMPORTANCE_CHOICES),
-            # Yes makes the date a goal: the assignor's alone to move (see
+            # Yes pins the date: the assignor's alone to move (see
             # access.can_change_due_date). A Yes/No select, as every
             # boolean input is.
-            "date_goal": forms.Select(choices=YESNO_CHOICES),
+            "date_pinned": forms.Select(choices=YESNO_CHOICES),
             "date_completed": forms.DateInput(attrs={"type": "date", "class": ""}),
         }
 
@@ -85,15 +85,15 @@ class TaskForm(forms.ModelForm):
             self.fields["matter"].queryset = matters_for_task_form(
                 user, include_id=include_matter or self.instance.matter_id
             )
-            # A goal date someone else set is shown, not editable, and so
-            # is its being a goal. A disabled field keeps its initial value
+            # A pinned date someone else set is shown, not editable, and so
+            # is its pin. A disabled field keeps its initial value
             # whatever is posted.
             if self.instance.pk and not can_change_due_date(self.instance, user):
                 title = (
-                    f"Goal date, set by {self.instance.assigned_by.username.title()}. "
-                    "Only they can change it."
+                    f"Pinned by {self.instance.assigned_by.username.title()}. "
+                    "Only they can move the date."
                 )
-                for name in ("date_due", "date_goal"):
+                for name in ("date_due", "date_pinned"):
                     self.fields[name].disabled = True
                     self.fields[name].widget.attrs["title"] = title
 

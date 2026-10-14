@@ -34,16 +34,16 @@ def tasks_for_user(queryset, user):
 
 
 def can_change_due_date(task, user):
-    """Whether ``user`` may move ``task``'s due date, or unmake it a goal.
+    """Whether ``user`` may move ``task``'s due date, or unpin it.
 
-    A due date is suggestive unless its assignor made it a goal. A goal
+    A due date is suggestive unless its assignor pinned it. A pinned
     date on a task handed to someone else is the assignor's alone to move
     (admins aside): the assignee who cannot meet it goes to the assignor,
     and the task stays lit on their list until that happens. A date nobody
-    made a goal, or on a task nobody handed over, is anyone's to reschedule.
+    pinned, or on a task nobody handed over, is anyone's to reschedule.
     """
     return (
-        not task.date_goal
+        not task.date_pinned
         or task.assigned_by_id is None
         or task.assigned_by_id == user.pk
         or user.is_admin
