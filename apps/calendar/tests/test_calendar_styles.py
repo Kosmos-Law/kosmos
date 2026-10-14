@@ -21,7 +21,7 @@ def test_month_events_keep_their_exception_to_the_floor():
     """The chips crowd the month grid at 1rem, so they stay smaller."""
     assert (
         _font_size(
-            ".fc-event,\n.fc-event.fc-daygrid-block-event,\n.fc-event.fc-daygrid-dot-event"
+            ".fc-event:not(.fc-list-event),\n.fc-event.fc-daygrid-block-event,\n.fc-event.fc-daygrid-dot-event"
         )
         == "0.8125"
     )

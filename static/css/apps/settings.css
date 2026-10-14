@@ -321,6 +321,94 @@ Settings Contacts - Column Layout
   padding: 0.5rem 1.25rem;
 }
 
+/* ==========================================================================
+Event notifications and push (templates/settings/notifications/push.html)
+========================================================================== */
+
+/* The default channel: Email and Push side by side, the chosen one filled */
+.notify-by {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+}
+
+/* A note under a paragraph, in the muted colour */
+.setting-note {
+  color: var(--color-muted);
+}
+
+.setup-steps {
+  list-style: decimal;
+  margin: 1rem 0 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.setup-steps li {
+  list-style: decimal;
+  margin-bottom: 0.5rem;
+}
+
+/* The ntfy server, topic and token with the topic's QR code at their
+   right; on a phone the code drops under them */
+.push-setup {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-bottom: 1rem;
+}
+
+.push-fields {
+  display: flex;
+  flex: 1 1 24rem;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.push-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.push-field input {
+  width: 100%;
+}
+
+/* The topic, in a code face, with its copy button after it */
+.push-topic {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.push-topic code {
+  font-family: monospace;
+  overflow-wrap: anywhere;
+}
+
+.push-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* The code with its caption under it */
+.qr-figure {
+  margin: 0;
+  text-align: center;
+}
+
+.qr-figure .authenticator-qr {
+  margin: 0;
+}
+
+.qr-figure figcaption {
+  color: var(--color-muted);
+  margin-top: 0.25rem;
+}
+
 /* Users Table */
 .users-table {
   /* At least the sum of the column widths below - anything less compresses

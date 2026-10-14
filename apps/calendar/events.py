@@ -7,6 +7,8 @@ from apps.management.pagination import CustomPaginator
 logger = getLogger(__name__)
 
 SESSION_KEY = "events_filter"
+SHOW_TASKS_KEY = "events_show_tasks"
+SHOW_HOLIDAYS_KEY = "events_show_holidays"
 
 DEFAULT_FILTER = {
     "status": "Pending",
@@ -38,6 +40,16 @@ def event_filter(request):
     return EventFilter(saved_filter(request), user=request.user)
 
 
+def show_tasks(request):
+    """Whether the calendar shows the user's open tasks beside the events."""
+    return bool(request.session.get(SHOW_TASKS_KEY, False))
+
+
+def show_holidays(request):
+    """Whether the calendar shows US federal holidays beside the events."""
+    return bool(request.session.get(SHOW_HOLIDAYS_KEY, False))
+
+
 def toolbar_context(request, filter=None):
     """What the toolbar's status, assignee and matter menus show. A saved
     value the user has no choice for (a matter that is not theirs) shows as
@@ -55,7 +67,27 @@ def toolbar_context(request, filter=None):
         "events_filter_matter_value": matter_value if matter_label else "",
         "matters": filter.matters,
         "users": filter.users,
+        "show_tasks": show_tasks(request),
+        "show_holidays": show_holidays(request),
     }
+
+
+def annotate_durations(events):
+    """Set each event's duration for a list's Duration column: ``duration_days``
+    for an event over several days, ``duration`` in hours for a timed event
+    on one day, neither for an all-day event."""
+    for event in events:
+        event.duration = None
+        event.duration_days = None
+        if event.end_date:
+            event.duration_days = (event.end_date - event.date).days + 1
+        elif event.start_time and event.end_time:
+            # Combine times with a date to do time arithmetic
+            start = datetime.combine(datetime.min, event.start_time)
+            end = datetime.combine(datetime.min, event.end_time)
+            # Convert to hours (as a float for fractional hours)
+            event.duration = (end - start).total_seconds() / 3600
+    return events
 
 
 def default_end_time(start_time):
@@ -81,18 +113,8 @@ def get_table_data(request):
         events, per_page=10, request=request, session_key="events_pagination"
     )
 
-    # Calculate duration for each event
     event_list = pagination.get_object_list()
-    for event in event_list:
-        if event.start_time and event.end_time:
-            # Combine times with a date to do time arithmetic
-            start = datetime.combine(datetime.today(), event.start_time)
-            end = datetime.combine(datetime.today(), event.end_time)
-            duration_delta = end - start
-            # Convert to hours (as a float for fractional hours)
-            event.duration = duration_delta.total_seconds() / 3600
-        else:
-            event.duration = None
+    annotate_durations(event_list)
 
     current_order = filter.data.get("order_by", "date")
     if isinstance(current_order, list):

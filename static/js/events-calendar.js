@@ -7,18 +7,19 @@
 // detail Events tab.
 const CALENDAR_CONTAINER_IDS = ["events", "matterEvents"];
 
-// Reinitialize Alpine on HTMX swaps for the events containers
-document.body.addEventListener("htmx:afterSwap", (event) => {
-  if (
-    CALENDAR_CONTAINER_IDS.includes(event.detail.target.id) &&
-    typeof Alpine !== "undefined"
-  ) {
-    // Small delay to ensure DOM is ready
-    setTimeout(() => {
-      Alpine.initTree(event.detail.target);
-    }, 10);
-  }
-});
+// Alpine initializes content htmx swaps in on its own (it watches the
+// DOM), so the calendar's x-init runs once for each new container. No
+// manual Alpine.initTree here: that ran x-init a second time and built a
+// second grid inside the first.
+
+// Phones get the grid's agenda view (listRolling) in place of the month
+// grid, which is unusable at that width. The table list stays a choice
+// behind the view toggle.
+const PHONE_WIDTH = 768;
+
+function onPhone() {
+  return window.innerWidth <= PHONE_WIDTH;
+}
 
 // Track when we're intentionally switching views
 let viewSwitchPending = false;
@@ -27,13 +28,14 @@ document.body.addEventListener("eventsViewChanged", () => {
   viewSwitchPending = true;
 });
 
-// In calendar mode, intercept auto-refresh triggers and refetch instead of reloading
-// Allow requests from buttons/links (status changes, etc.) through
+// In calendar mode, intercept auto-refresh triggers and refetch instead of
+// reloading. Requests from buttons/links targeting the container are allowed
+// through.
 document.body.addEventListener("htmx:beforeRequest", (event) => {
   const target = event.detail.target;
   if (target && CALENDAR_CONTAINER_IDS.includes(target.id)) {
-    const calendarContainer = document.getElementById("fullcalendar-container");
-    if (calendarContainer && calendarContainer._x_dataStack) {
+    const calendarContainer = target.querySelector(".fullcalendar-container");
+    if (calendarContainer && window.Alpine) {
       const elt = event.detail.elt;
 
       // If the request originates from the container div itself (auto-refresh),
@@ -45,16 +47,75 @@ document.body.addEventListener("htmx:beforeRequest", (event) => {
         }
 
         // Block auto-refresh and refetch calendar instead
-        const alpineData = calendarContainer._x_dataStack[0];
+        const alpineData = Alpine.$data(calendarContainer);
         if (alpineData && alpineData.calendar) {
           event.preventDefault();
           alpineData.calendar.refetchEvents();
         }
       }
-      // Requests from other elements (buttons, links) targeting #events are allowed
+      // Requests from other elements (buttons, links) targeting the
+      // container are allowed
     }
   }
 });
+
+// A task's box is an element of its own, so a click on it can be told
+// from a click on the rest of the chip: the box marks the task done, the
+// chip opens it. It goes where the dot would be in the agenda, and before
+// the title everywhere else.
+function addTaskBox(info) {
+  if ((info.event.extendedProps || {}).kind !== "task") {
+    return;
+  }
+  const host =
+    info.el.querySelector(".fc-list-event-graphic") ||
+    info.el.querySelector(".fc-event-title");
+  if (!host || host.querySelector(".fc-task-box")) {
+    return;
+  }
+  const box = document.createElement("span");
+  box.className = "fc-task-box";
+  box.setAttribute("role", "button");
+  box.setAttribute("aria-label", `Mark "${info.event.title}" done`);
+  box.title = "Mark done";
+  host.prepend(box);
+}
+
+// In the month grid a chip's title stops at two lines (apps/calendar.css).
+// A timed entry's time goes inside its title, after a task's box, so the
+// two are cut together as one run of text, and a title cut short is read
+// whole on hover.
+function fitMonthChip(info) {
+  if (info.view.type !== "dayGridMonth") {
+    return;
+  }
+  if (!info.el.title) {
+    info.el.title = info.event.title;
+  }
+  const time = info.el.querySelector(".fc-event-time");
+  const title = info.el.querySelector(".fc-event-title");
+  if (!time || !title || !info.el.classList.contains("fc-daygrid-dot-event")) {
+    return;
+  }
+  const box = title.querySelector(".fc-task-box");
+  if (box) {
+    box.after(time);
+  } else {
+    title.prepend(time);
+  }
+}
+
+function onEventMount(info) {
+  addTaskBox(info);
+  fitMonthChip(info);
+}
+
+const SHORT_TIME = {
+  hour: "numeric",
+  minute: "2-digit",
+  omitZeroMinute: true,
+  meridiem: "short",
+};
 
 document.addEventListener("alpine:init", () => {
   // opts lets the matter detail Events tab reuse the component with its own
@@ -70,35 +131,85 @@ document.addEventListener("alpine:init", () => {
     editOrigin: opts.editOrigin || "",
 
     initCalendar() {
-      // On mobile the FullCalendar grid is unusable, so render the card list
-      // instead. Switch the saved view to "list" with htmx.ajax (the 204
-      // response's HX-Trigger: eventsViewChanged makes #events re-fetch
-      // list.html; the session then persists 'list', so later loads render it
-      // directly). We issue the request ourselves rather than clicking the
-      // hidden toggle button — that relied on htmx having already wired the
-      // button up, which races with this x-init and left the panel blank. If
-      // the toggle can't be found we fall through and build the grid, so events
-      // are never missing.
-      if (window.innerWidth <= 768) {
-        const listUrl = document
-          .querySelector('.view-toggle button[title="List View"]')
-          ?.getAttribute("hx-post");
-        if (listUrl) {
-          window.htmx.ajax("POST", listUrl, { swap: "none" });
-          return;
-        }
-      }
-
       const calendarEl = this.$el;
+      // Never build twice into one element (FullCalendar marks it "fc")
+      if (calendarEl.classList.contains("fc")) {
+        return;
+      }
+      const phone = onPhone();
 
       this.calendar = new FullCalendar.Calendar(calendarEl, {
-        // Core settings
-        initialView: this.savedView(),
-        headerToolbar: {
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
+        // Core settings. A phone opens the month's agenda with a toolbar
+        // pared to navigation; wider screens get the full set of views,
+        // the agenda among them.
+        initialView: phone ? "listRolling" : this.savedView(),
+        headerToolbar: phone
+          ? { left: "prev,next", center: "title", right: "today" }
+          : {
+              left: "prev,next today",
+              center: "title",
+              right:
+                "multiMonthRolling,dayGridMonth,timeGridWeek,timeGridDay,listRolling",
+            },
+        noEventsContent: "No events",
+
+        // The year view: the next twelve months as mini months, three
+        // across, from the month in view rather than from January, so in
+        // October it looks a year ahead rather than mostly back. Its cells
+        // are small, so fewer events show before a day collapses to "+N
+        // more".
+        views: {
+          multiMonthRolling: {
+            type: "multiMonth",
+            duration: { months: 12 },
+            dateAlignment: "month",
+            buttonText: "Year",
+            dayMaxEvents: 2,
+          },
+          // Month scrolls with the page, where FullCalendar would pin its
+          // weekday row to the window's top with nothing behind it
+          dayGridMonth: {
+            stickyHeaderDates: false,
+          },
+          // The agenda (the phone's view, a choice on wider screens): the
+          // month ahead from the day in view, so it opens on today and
+          // runs forward rather than opening on the calendar month's first
+          // event; prev and next step a month. A compact day heading, and
+          // start times only, abbreviated where they can be ("7am",
+          // "7:30am"), so the title keeps most of the row
+          listRolling: {
+            type: "list",
+            duration: { months: 1 },
+            // a month's duration aligns to the month unless told otherwise
+            dateAlignment: "day",
+            buttonText: "Agenda",
+            // the span's title ("October – November 2026") is cut to fit
+            // a phone's toolbar
+            ...(phone ? { titleFormat: { month: "short", year: "numeric" } } : {}),
+            listDayFormat: { weekday: "short", month: "short", day: "numeric" },
+            listDaySideFormat: false,
+            displayEventEnd: false,
+            eventTimeFormat: SHORT_TIME,
+            // The last day of a timed event that runs over several days
+            // would read "12am" (that day's share starts at midnight); it
+            // reads "until 3pm" instead
+            eventDidMount: (info) => {
+              onEventMount(info);
+              if (info.isStart || !info.isEnd || info.event.allDay) {
+                return;
+              }
+              const cell = info.el.querySelector(".fc-list-event-time");
+              if (cell && info.event.end) {
+                const end = info.view.calendar.formatDate(info.event.end, SHORT_TIME);
+                cell.textContent = `until ${end}`;
+              }
+            },
+          },
         },
+
+        // Every other view: a task's box and the month chip's fit (the
+        // agenda sets its own, above)
+        eventDidMount: onEventMount,
 
         // Event source - JSON API
         events: {
@@ -120,6 +231,10 @@ document.addEventListener("alpine:init", () => {
         eventResize: (info) => this.handleEventResize(info),
         dateClick: (info) => this.handleDateClick(info),
 
+        // All-day entries carry a class of their own, so the agenda can
+        // leave their dot off (a dot marks a timed entry, as on the grid)
+        eventClassNames: (arg) => (arg.event.allDay ? ["fc-event-all-day"] : []),
+
         // Display settings
         nowIndicator: true,
         dayMaxEvents: true,
@@ -134,7 +249,10 @@ document.addEventListener("alpine:init", () => {
         // every view switch, so it doubles as the persistence hook.
         datesSet: (info) => {
           this.applyViewHeight(info.view.type);
-          localStorage.setItem("calendar-view", info.view.type);
+          // The agenda is the phone's view, not a choice to carry over
+          if (!phone) {
+            localStorage.setItem("calendar-view", info.view.type);
+          }
         },
         windowResize: () => this.applyViewHeight(this.calendar.view.type),
 
@@ -151,14 +269,25 @@ document.addEventListener("alpine:init", () => {
       document.body.addEventListener("matterEventChanged", () => {
         this.calendar.refetchEvents();
       });
+      // A task edited or completed elsewhere re-draws the tasks on it
+      document.body.addEventListener("tasksListChanged", () => {
+        this.calendar.refetchEvents();
+      });
     },
 
     savedView() {
-      // Reopen in the last-used view (month/week/day), shared by the Events
-      // tab and matter Events calendars. Validate against the real view
-      // names so a stale or hand-edited value can't break the render.
+      // Reopen in the last-used view (year/month/week/day/agenda), shared
+      // by the Events tab and matter Events calendars. Validate against the
+      // real view names so a stale or hand-edited value can't break the
+      // render.
       const saved = localStorage.getItem("calendar-view");
-      const valid = ["dayGridMonth", "timeGridWeek", "timeGridDay"];
+      const valid = [
+        "multiMonthRolling",
+        "dayGridMonth",
+        "timeGridWeek",
+        "timeGridDay",
+        "listRolling",
+      ];
       return valid.includes(saved) ? saved : "dayGridMonth";
     },
 
@@ -182,48 +311,94 @@ document.addEventListener("alpine:init", () => {
       info.jsEvent.preventDefault();
       info.jsEvent.stopPropagation();
 
-      // Open the edit modal using HTMX
+      // Open the edit modal using HTMX; alpine-components.js opens the
+      // modal when the content lands in the container.
+      const props = info.event.extendedProps || {};
+      // A holiday is a date, not a record: nothing to open
+      if (props.kind === "holiday") {
+        return;
+      }
+      // A task's box marks it done; it leaves the grid, which shows only
+      // open tasks, at once, and comes back if the server says no. The
+      // rest of the chip opens the task form.
+      if (props.kind === "task") {
+        if (info.jsEvent.target.closest(".fc-task-box")) {
+          this.completeTask(info.event);
+          return;
+        }
+        htmx.ajax("GET", `/tasks/${props.task_id}/edit`, {
+          target: "#htmx-modal-container",
+          swap: "innerHTML",
+        });
+        return;
+      }
       const eventId = info.event.id;
       const editUrl =
         `/events/${eventId}/edit` + (this.editOrigin ? `/${this.editOrigin}` : "");
       htmx.ajax("GET", editUrl, {
         target: "#htmx-modal-container",
         swap: "innerHTML",
-      }).then(() => {
-        window.dispatchEvent(new CustomEvent("open-modal"));
       });
+    },
+
+    completeTask(event) {
+      const taskId = event.extendedProps.task_id;
+      event.remove();
+      fetch(`/events/tasks/${taskId}/done`, {
+        method: "POST",
+        headers: { "X-CSRFToken": this.getCsrfToken() },
+      })
+        .then((response) => {
+          if (response.ok) {
+            // the task list, where it is on the page, redraws too
+            htmx.trigger(document.body, "tasksListChanged");
+          } else {
+            this.calendar.refetchEvents();
+          }
+        })
+        .catch(() => this.calendar.refetchEvents());
     },
 
     handleEventDrop(info) {
       // Reschedule event via quick-update endpoint
-      const event = info.event;
-      const updateData = {
-        date: this.formatDate(event.start),
-      };
-
-      if (!event.allDay && event.start) {
-        updateData.start_time = this.formatTime(event.start);
-        if (event.end) {
-          updateData.end_time = this.formatTime(event.end);
-        }
-      } else {
-        updateData.start_time = null;
-        updateData.end_time = null;
-      }
-
-      this.quickUpdate(event.id, updateData, info);
+      this.quickUpdate(info.event.id, this.datesAndTimes(info.event), info);
     },
 
     handleEventResize(info) {
       // Update duration via quick-update endpoint
-      const event = info.event;
-      const updateData = {
-        date: this.formatDate(event.start),
-        start_time: this.formatTime(event.start),
-        end_time: this.formatTime(event.end),
-      };
+      this.quickUpdate(info.event.id, this.datesAndTimes(info.event), info);
+    },
 
-      this.quickUpdate(event.id, updateData, info);
+    datesAndTimes(event) {
+      // The date, end date and times an event now has, as the server takes
+      // them. FullCalendar's end is exclusive, so an all-day event's end
+      // date is the day before its end; a one-day event has no end date.
+      const date = this.formatDate(event.start);
+      const updateData = { date, end_date: null };
+
+      if (event.allDay) {
+        updateData.start_time = null;
+        updateData.end_time = null;
+        if (event.end) {
+          const last = new Date(event.end);
+          last.setDate(last.getDate() - 1);
+          const lastDate = this.formatDate(last);
+          if (lastDate > date) {
+            updateData.end_date = lastDate;
+          }
+        }
+      } else {
+        updateData.start_time = this.formatTime(event.start);
+        if (event.end) {
+          updateData.end_time = this.formatTime(event.end);
+          const endDate = this.formatDate(event.end);
+          if (endDate > date) {
+            updateData.end_date = endDate;
+          }
+        }
+      }
+
+      return updateData;
     },
 
     handleDateClick(info) {
@@ -237,8 +412,6 @@ document.addEventListener("alpine:init", () => {
       htmx.ajax("GET", `${this.addUrl}?${query}`, {
         target: "#htmx-modal-container",
         swap: "innerHTML",
-      }).then(() => {
-        window.dispatchEvent(new CustomEvent("open-modal"));
       });
     },
 
@@ -261,6 +434,25 @@ document.addEventListener("alpine:init", () => {
     quickUpdate(eventId, data, info) {
       // Get CSRF token from body attribute
       const csrfToken = this.getCsrfToken();
+
+      // A task dragged to another day keeps only its new date
+      const props = info.event.extendedProps || {};
+      if (props.kind === "task") {
+        const form = new FormData();
+        form.append("date_due", data.date);
+        fetch(`/events/tasks/${props.task_id}/date`, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken },
+          body: form,
+        })
+          .then((response) => {
+            if (!response.ok) {
+              info.revert();
+            }
+          })
+          .catch(() => info.revert());
+        return;
+      }
 
       fetch(`/events/${eventId}/quick-update`, {
         method: "POST",

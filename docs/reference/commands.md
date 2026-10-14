@@ -19,6 +19,7 @@ Which of these an operator needs, and when, is covered in
 
 | Command | What it does |
 |---|---|
+| `send_event_reminders` | Sends the event notifications that have come due, by email or ntfy. |
 | `sync_calendar` | Sync events with Google Calendar (two-way sync) |
 
 ## case

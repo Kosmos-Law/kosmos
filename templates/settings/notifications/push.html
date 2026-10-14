@@ -1,0 +1,109 @@
+{% comment %}
+Event notifications: the channel offered first when the user adds one to
+an event, and the phone for push. Context from
+apps.settings.notifications.views._notifications_context.
+{% endcomment %}
+<h2 class="settings-section">Event Notifications</h2>
+<hr />
+<p class="detail-text">
+  A notification is added to an event on its own form, and each one says how it reaches you: by email, or by push to the ntfy app on your phone. The choice here is the one offered first when you add one.
+</p>
+{% if not_production %}
+  <p class="detail-text setting-note">
+    This is not the production server, so its notifications keep to themselves: they push to your topic with "{{ ntfy_suffix }}" on the end, marked in the title,
+    {% if email_notifications %}
+      and email as usual.
+    {% else %}
+      and none are emailed.
+    {% endif %}
+  </p>
+{% endif %}
+<form method="post"
+      action="{% url 'settings:notify-by' %}"
+      class="notify-by">
+  {% csrf_token %}
+  <button class="btn {% if user.notify_by == 'email' %}btn-success{% else %}btn-secondary{% endif %}"
+          name="notify_by"
+          value="email">Email</button>
+  <button class="btn {% if user.notify_by == 'ntfy' %}btn-success{% else %}btn-secondary{% endif %}"
+          name="notify_by"
+          value="ntfy">Push</button>
+</form>
+<h2 class="settings-section">Push: ntfy</h2>
+<hr />
+<p class="detail-text">
+  A notification arrives on the phone in seconds, with a button that opens the calendar. If ntfy cannot be reached it goes by email instead.
+</p>
+{% if not user.ntfy_topic %}
+  <p class="detail-text">Push is offered on a notification once your phone is set up here.</p>
+  <form method="post" action="{% url 'settings:ntfy-new-topic' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">Set Up Push</button>
+  </form>
+{% else %}
+  <ol class="setup-steps">
+    <li>
+      Install <a href="https://ntfy.sh/">ntfy</a> on your phone.
+    </li>
+    <li>
+      Subscribe to your topic: scan the code below with the phone's camera, or open <a href="{{ ntfy_subscribe_link }}">this link</a> on the phone, or add the server and topic in the app by hand.
+    </li>
+    <li>Send a test, and the notification should arrive.</li>
+  </ol>
+  {% if test_result == "sent" %}
+    <p class="detail-text success-msg">Test sent.</p>
+  {% elif test_result == "failed" %}
+    <p class="detail-text error-msg">The test could not be sent: {{ test_error }}</p>
+  {% endif %}
+  <form method="post" action="{% url 'settings:ntfy' %}" class="push-setup">
+    {% csrf_token %}
+    <div class="push-fields">
+      <div class="push-field">
+        <label for="id_ntfy_server">Server</label>
+        <input type="url"
+               id="id_ntfy_server"
+               name="ntfy_server"
+               value="{{ user.ntfy_server }}">
+      </div>
+      <div class="push-field">
+        <label for="ntfy-topic">Topic</label>
+        <div class="push-topic">
+          <code id="ntfy-topic">{{ ntfy_topic_here }}</code>
+          <button class="btn btn-sm action-btn copy-btn"
+                  type="button"
+                  data-copy-target="#ntfy-topic"
+                  title="Copy">
+            <i class="icon-copy"></i>
+          </button>
+        </div>
+      </div>
+      <div class="push-field">
+        <label for="id_ntfy_token">Access token</label>
+        <input type="password"
+               id="id_ntfy_token"
+               name="ntfy_token"
+               value="{{ user.ntfy_token }}"
+               placeholder="Only for a server that asks for one"
+               autocomplete="off">
+      </div>
+      {% if ntfy_error %}<p class="error-msg">{{ ntfy_error }}</p>{% endif %}
+      <div class="push-actions">
+        <button type="submit" class="btn btn-success">Save</button>
+        <button type="submit"
+                class="btn btn-secondary"
+                formaction="{% url 'settings:ntfy-test' %}">Send a Test</button>
+        <button type="submit"
+                class="btn btn-secondary"
+                formaction="{% url 'settings:ntfy-new-topic' %}"
+                formnovalidate>New Topic</button>
+      </div>
+    </div>
+    <figure class="qr-figure">
+      <div class="authenticator-qr">{{ ntfy_qr }}</div>
+      <figcaption>Scan to subscribe</figcaption>
+    </figure>
+  </form>
+  <p class="detail-text setting-note">
+    Anyone who knows the topic can read what is sent to it, so it is long and random; keep it to yourself. A new topic stops the old one, and the phone needs subscribing again.
+  </p>
+{% endif %}

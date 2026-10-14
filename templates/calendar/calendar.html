@@ -37,6 +37,16 @@
              hx-trigger="eventsChanged from:body"
              hx-target="this"
              hx-swap="innerHTML">{% include "calendar/filter-menus.html" %}</div>
+        {% comment %}
+        The overlays: the user's open tasks and the federal holidays, each
+        behind a toggle that posts the state it would move to. They are
+        the grid's own, so they re-render with the menus.
+        {% endcomment %}
+        <div class="events-overlays"
+             hx-get="{% url 'calendar:overlays' %}"
+             hx-trigger="eventsChanged from:body"
+             hx-target="this"
+             hx-swap="innerHTML">{% include "calendar/overlays.html" %}</div>
       </div>
     </div>
     <div class="toolbar-right">
@@ -47,7 +57,7 @@
       </a>
     </div>
   </div>
-  <div id="fullcalendar-container"
+  <div class="fullcalendar-container"
        x-data="eventsCalendar()"
        x-init="initCalendar()"
        hx-disinherit="*"

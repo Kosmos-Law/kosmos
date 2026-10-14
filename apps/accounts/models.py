@@ -83,6 +83,15 @@ class CustomUser(AbstractUser):
     # Email this user when someone else adds an intake (Settings >
     # Notifications). Only reaches users who may see intakes.
     notify_new_intakes = models.BooleanField(default=False)
+    # Event notifications (utils.notify): the channel offered first when
+    # the user adds one, and the ntfy topic their phone is subscribed to.
+    # The topic is made when they first set up push in Settings; the
+    # token is only for a server that asks for one.
+    NOTIFY_CHOICES = (("email", "Email"), ("ntfy", "Push"))
+    notify_by = models.CharField(max_length=10, choices=NOTIFY_CHOICES, default="email")
+    ntfy_server = models.URLField(default="https://ntfy.sh")
+    ntfy_topic = models.CharField(max_length=64, blank=True, default="")
+    ntfy_token = models.CharField(max_length=128, blank=True, default="")
     perm_all_matters = models.BooleanField(default=True)
     perm_financial = models.BooleanField(default=True)
     perm_intakes = models.BooleanField(default=True)

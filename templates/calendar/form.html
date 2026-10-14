@@ -31,6 +31,9 @@
         {% csrf_token %}
         {{ form }}
       </form>
+      {% if edit %}
+        {% include "components/reminders.html" %}
+      {% endif %}
     </div>
     <div class="modal-footer">
       {% if edit %}

@@ -1,6 +1,6 @@
 {% block subcontent %}
   {% include "matters/events/toolbar.html" %}
-  <div id="fullcalendar-container"
+  <div class="fullcalendar-container"
        x-data="eventsCalendar({apiUrl: '{% url 'calendar:feed-matter' matter.id %}', addUrl: '{% url 'calendar:add-matter-origin' matter.id 'matters' %}', editOrigin: 'matters'})"
        x-init="initCalendar()"
        hx-disinherit="*"

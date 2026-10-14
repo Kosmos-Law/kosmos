@@ -12,9 +12,15 @@
       <th>Weekday</th>
       <td>{{ results.deadline_weekday }}</td>
     </tr>
+    {% if results.holiday %}
+      <tr>
+        <th>Holiday</th>
+        <td>{{ results.holiday }}</td>
+      </tr>
+    {% endif %}
     {% if results.next_workday %}
       <tr>
-        <th>Next Business Day</th>
+        <th>Next Court Day</th>
         <td class="strong">{{ results.next_workday|date:"Y-m-d" }}</td>
       </tr>
     {% endif %}

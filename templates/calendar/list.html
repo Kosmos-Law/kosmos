@@ -97,6 +97,7 @@
           <tr class="{% if event.date < third_day and event.status == 'Pending' %}hl-yellow{% endif %}">
             <td class="date">
               {{ event.date|date:"Y-m-d" }}
+              {% if event.end_date %}<span class="event-end-date">to {{ event.end_date|date:"Y-m-d" }}</span>{% endif %}
               {% if event.start_time %}{{ event.start_time|time:"g:i A" }}{% endif %}
             </td>
             <td class="matter card-title">
@@ -114,7 +115,11 @@
               {% if event.detached_from_google %}<span class="event-detached">Not on Google Calendar</span>{% endif %}
             </td>
             <td class="duration">
-              {% if event.duration %}{{ event.duration }} hr{{ event.duration|pluralize }}{% endif %}
+              {% if event.duration_days %}
+                {{ event.duration_days }} days
+              {% elif event.duration %}
+                {{ event.duration }} hr{{ event.duration|pluralize }}
+              {% endif %}
             </td>
             <td class="location">{{ event.event_type|default:"" }}</td>
             <td class="party">{{ event.party|default:"" }}</td>

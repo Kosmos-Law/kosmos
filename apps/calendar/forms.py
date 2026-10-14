@@ -18,15 +18,17 @@ class EventForm(forms.ModelForm):
             "date",
             "start_time",
             "end_time",
+            "end_date",
+            "status",
+            "party",
             "assigned_to",
             "matter",
             "description",
-            "status",
-            "party",
             "event_type",
             "location",
         )
         labels = {
+            "end_date": "Through",
             "event_type": "Type",
             "location": "Location",
         }
@@ -43,6 +45,7 @@ class EventForm(forms.ModelForm):
         )
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
+            "end_date": forms.DateInput(attrs={"type": "date"}),
             "start_time": forms.TimeInput(attrs={"type": "time"}),
             "end_time": forms.TimeInput(attrs={"type": "time"}),
             "description": forms.TextInput(
@@ -55,7 +58,7 @@ class EventForm(forms.ModelForm):
             "status": forms.Select(choices=STATUSES),
             "location": forms.TextInput(
                 attrs={
-                    "class": "span3",
+                    "class": "span2",
                     "placeholder": "Zoom link & passcode, or courthouse address & courtroom",
                 }
             ),
@@ -96,6 +99,18 @@ class EventForm(forms.ModelForm):
         cleaned_data = super().clean()
         start_time = cleaned_data.get("start_time")
         end_time = cleaned_data.get("end_time")
-        if start_time and end_time and start_time >= end_time:
+        date = cleaned_data.get("date")
+        end_date = cleaned_data.get("end_date")
+        # An event over several days ends on a later day; one that ends the
+        # day it starts has no end date, so "is it multi-day" is one check.
+        # A timed event over several days ends at its end time on its last
+        # day, so the times may stand in any order then.
+        if date and end_date:
+            if end_date < date:
+                self.add_error("end_date", "The last day must be on or after the date.")
+            elif end_date == date:
+                cleaned_data["end_date"] = None
+                end_date = None
+        if start_time and end_time and start_time >= end_time and not end_date:
             self.add_error("end_time", "End time must be after start time.")
         return cleaned_data

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from dateutil import parser
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
@@ -12,19 +13,25 @@ from django.views.decorators.http import require_http_methods, require_POST
 import apps.calendar.google as google
 import apps.calendar.sync as sync
 from apps.accounts.access import matter_access_required
+from apps.calendar import holidays
 from apps.calendar.access import event_for_user, matters_for_events
 from apps.calendar.filter import EventFilter
 from apps.calendar.forms import EventForm
 from apps.calendar.models import Event
+from apps.calendar.reminder_views import reminders_context
 from apps.management.filter_manager import FilterManager
 from utils.toasts import toast_warning
 
 from .events import (
     SESSION_KEY,
+    SHOW_HOLIDAYS_KEY,
+    SHOW_TASKS_KEY,
     default_end_time,
     event_filter,
     get_table_data,
     saved_filter,
+    show_holidays,
+    show_tasks,
     toolbar_context,
 )
 
@@ -103,6 +110,14 @@ def events_filter_menus(request):
     now stands. The calendar view asks for these after a filter change,
     because it refetches its events without re-rendering the toolbar."""
     return render(request, "calendar/filter-menus.html", toolbar_context(request))
+
+
+@login_required
+def events_overlays(request):
+    """The toolbar's Tasks and Holidays toggles as the session now has
+    them, re-rendered after a change so each posts the state it would move
+    to."""
+    return render(request, "calendar/overlays.html", toolbar_context(request))
 
 
 @login_required
@@ -337,7 +352,7 @@ def events_edit(request, id, origin="events"):
         "google_problem": google_problem,
         "form": form,
         "origin": origin,
-    }
+    } | reminders_context(event, request.user)
 
     return render(request, "calendar/form.html", context)
 
@@ -398,22 +413,23 @@ def events_deadline_results(request, matter_id=None):
             request, "calendar/deadline-calculator-results.html", {"error": error}
         )
 
-    # determine whether deadline falls on a weekday
-    # if so, provide the date of the next Monday
+    # A deadline that falls on a weekend or a federal holiday runs to the
+    # next court day, as the rules of procedure have it
+    deadline_day = deadline.date()
     deadline_weekday = deadline.strftime("%A")
+    holiday = holidays.name_of(deadline_day)
     next_workday = None
-    if deadline_weekday == "Saturday":
-        next_workday = deadline + timedelta(days=2)
-    if deadline_weekday == "Sunday":
-        next_workday = deadline + timedelta(days=1)
+    if not holidays.is_court_day(deadline_day):
+        next_workday = holidays.next_court_day(deadline_day)
 
-    # store the ddeadline results in the calc dictionary
-    results = {}
-    results["initial_date"] = initial_date
-    results["days"] = days
-    results["deadline"] = deadline
-    results["deadline_weekday"] = deadline_weekday
-    results["next_workday"] = next_workday
+    results = {
+        "initial_date": initial_date,
+        "days": days,
+        "deadline": deadline,
+        "deadline_weekday": deadline_weekday,
+        "holiday": holiday,
+        "next_workday": next_workday,
+    }
 
     context = {
         "results": results,
@@ -495,7 +511,11 @@ def events_api(request, matter_id=None):
         # The saved filter (the default when none is saved), over the events
         # this user may see
         events = event_filter(request).qs
-    events = events.filter(date__gte=start_date, date__lte=end_date)
+    # An event over several days counts from its first day to its last, so
+    # one that began before the range still shows in it
+    events = events.filter(date__lte=end_date).filter(
+        Q(end_date__gte=start_date) | Q(end_date=None, date__gte=start_date)
+    )
 
     # Convert to FullCalendar format
     calendar_events = []
@@ -525,16 +545,21 @@ def events_api(request, matter_id=None):
             },
         }
 
-        # Handle timed vs all-day events
+        # Handle timed vs all-day events. A timed event over several days
+        # ends at its end time on its last day. FullCalendar's end is
+        # exclusive, so an all-day event over several days ends the day
+        # after its last.
         if event.start_time and event.end_time:
             fc_event["start"] = f"{event.date}T{event.start_time}"
-            fc_event["end"] = f"{event.date}T{event.end_time}"
+            fc_event["end"] = f"{event.last_date}T{event.end_time}"
             fc_event["allDay"] = False
         elif event.start_time:
             fc_event["start"] = f"{event.date}T{event.start_time}"
             fc_event["allDay"] = False
         else:
             fc_event["start"] = str(event.date)
+            if event.end_date:
+                fc_event["end"] = str(event.end_date + timedelta(days=1))
             fc_event["allDay"] = True
 
         # Add status-based styling
@@ -552,7 +577,106 @@ def events_api(request, matter_id=None):
 
         calendar_events.append(fc_event)
 
+    # The overlays are the main calendar's; the matter tab shows its events
+    if not matter_id:
+        if show_tasks(request):
+            calendar_events.extend(_task_feed(request.user, start_date, end_date))
+        if show_holidays(request):
+            calendar_events.extend(holidays.feed(start_date, end_date))
+
     return JsonResponse(calendar_events, safe=False)
+
+
+def _task_feed(user, first, last):
+    """The user's open tasks due in the range, as FullCalendar events: an
+    all-day entry (a task has a day, not a time) told from an event by its
+    id prefix and its kind, which may be dragged to another day but not
+    stretched."""
+    from apps.tasks.constants import STATUS_COMPLETE
+    from apps.tasks.models import Task
+
+    tasks = (
+        Task.objects.filter(user=user, date_due__gte=first, date_due__lte=last)
+        .exclude(status=STATUS_COMPLETE)
+        .select_related("matter")
+    )
+    feed = []
+    for task in tasks:
+        title = task.description or "Untitled"
+        if task.matter_id:
+            title = f"{task.matter.name} - {title}"
+        feed.append(
+            {
+                "id": f"task-{task.id}",
+                "title": title,
+                "start": str(task.date_due),
+                "allDay": True,
+                "className": "fc-event-task",
+                "durationEditable": False,
+                "extendedProps": {"kind": "task", "task_id": task.id},
+            }
+        )
+    return feed
+
+
+@login_required
+@require_POST
+def events_show_tasks(request, state):
+    """Show the user's open tasks on the calendar beside the events, or
+    hide them. The grid refetches its events; the toolbar re-renders."""
+    if state not in ("on", "off"):
+        return HttpResponseBadRequest("Unknown state.")
+    request.session[SHOW_TASKS_KEY] = state == "on"
+    request.session.modified = True
+    return HttpResponse(status=204, headers={"HX-Trigger": "eventsChanged"})
+
+
+@login_required
+@require_POST
+def events_show_holidays(request, state):
+    """Show US federal holidays on the calendar beside the events, or
+    hide them."""
+    if state not in ("on", "off"):
+        return HttpResponseBadRequest("Unknown state.")
+    request.session[SHOW_HOLIDAYS_KEY] = state == "on"
+    request.session.modified = True
+    return HttpResponse(status=204, headers={"HX-Trigger": "eventsChanged"})
+
+
+@login_required
+@require_POST
+def events_task_done(request, task_id):
+    """A task's box on the calendar: mark it done. A task whose checklist
+    is not finished stays open, and the calendar is told why."""
+    from apps.checklists.models import can_complete_task
+    from apps.tasks.access import task_for_user
+    from apps.tasks.constants import CHECKLIST_INCOMPLETE_MESSAGE, STATUS_COMPLETE
+
+    task = task_for_user(task_id, request.user)
+    if task.status != STATUS_COMPLETE:
+        if not can_complete_task(task):
+            return toast_warning(HttpResponse(status=409), CHECKLIST_INCOMPLETE_MESSAGE)
+        task.status = STATUS_COMPLETE
+        task.save()
+    return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
+
+
+@login_required
+@require_POST
+def events_task_date(request, task_id):
+    """A task dragged to another day on the calendar keeps only its new
+    due date."""
+    from apps.tasks.access import task_for_user
+
+    task = task_for_user(task_id, request.user)
+    try:
+        task.date_due = datetime.strptime(
+            request.POST.get("date_due", ""), "%Y-%m-%d"
+        ).date()
+    except ValueError:
+        return HttpResponseBadRequest("Unreadable date.")
+    task.save()
+    return HttpResponse(status=204, headers={"HX-Trigger": "tasksListChanged"})
 
 
 def _quick_update_changes(body):
@@ -569,6 +693,12 @@ def _quick_update_changes(body):
     try:
         if "date" in data:
             changes["date"] = datetime.strptime(data["date"], "%Y-%m-%d").date()
+        if "end_date" in data:
+            changes["end_date"] = (
+                datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+                if data["end_date"]
+                else None
+            )
         for field in ("start_time", "end_time"):
             if field in data:
                 changes[field] = (
@@ -598,6 +728,12 @@ def events_quick_update(request, id):
 
     for field, value in changes.items():
         setattr(event, field, value)
+
+    # An end date that adds no days is none; one before the date is refused.
+    if event.end_date and event.end_date <= event.date:
+        if event.end_date < event.date:
+            return HttpResponseBadRequest("The last day must be after the date.")
+        event.end_date = None
 
     event.save()
 

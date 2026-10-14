@@ -9,8 +9,9 @@ connected a Google Calendar. If you are new to Kosmos, read
 ## What an event is
 
 An event is one dated item: a hearing, a deadline, a call, a meeting. It
-has one date, a description and a status, and it can have a start and end
-time, a matter and a person it is assigned to. An event does not have to
+has a date, a description and a status, and it can have a start and end
+time, a last day when it runs over several days, a matter and a person it
+is assigned to. An event does not have to
 belong to a matter. The same event appears in several places:
 
 - **Calendar** in the sidebar: every event at the firm.
@@ -27,23 +28,48 @@ belong to a matter. The same event appears in several places:
 Click **Calendar** in the sidebar. The two buttons beside the **+** button
 switch between **List View** and **Calendar View**. Kosmos opens in the
 calendar view and keeps your choice until you sign out. On a narrow
-screen, such as a phone, it always shows the list.
+screen, such as a phone, the calendar view is the **Agenda** (below), and
+the list is still a tap away on the toggle.
 
 ### Calendar view
 
-- Click **Month**, **Week** or **Day** at the top right to change the
-  span. The arrows at the top left move back and forward, and **Today**
-  returns to the current date. Your browser remembers the span.
+- Click **Year**, **Month**, **Week**, **Day** or **Agenda** at the top
+  right to change the span. **Year** shows the next twelve months from
+  the month in view. **Agenda** lists the month ahead from the day in
+  view, so it opens on today. The arrows at the top left move back and
+  forward, and **Today** returns to the current date. Your browser
+  remembers the span.
 - Each event reads matter, description, then the initials of the person
-  it is assigned to. An event with no start time sits in the all-day row
-  of **Week** and **Day**. An event with no matter is drawn lighter.
+  it is assigned to. In **Month**, an event with a start time is a dot
+  and its time before the title, and an all-day event is a filled chip.
+  A title longer than two lines is cut short; rest the pointer on it to
+  read the whole. An event with no start time sits in the all-day row of
+  **Week** and **Day**. An event over several days runs across them.
 - Click an event to open **Edit Event**. Click an empty day in **Month**
   to open **Add Event** with that date. In **Week** or **Day**, click a
   time slot to open **Add Event** with that date and start time. Click a
   date's number to open that day in **Day**.
 - Drag an event to another day to change its date. In **Week** or
   **Day**, drag it up or down to change its time, or drag its lower edge
-  to change when it ends. The change is saved as soon as you let go.
+  to change when it ends. In **Month**, drag the right edge of an all-day
+  event to make it run over more days. The change is saved as soon as
+  you let go.
+
+### Tasks and holidays on the calendar
+
+Two buttons at the right of the toolbar's filters lay other things over
+the calendar view. Each stays on until you turn it off or sign out.
+
+- The check-box button shows **your own open tasks** that have a due
+  date, each as a chip with an empty box before its title. Click the box
+  to mark the task done; it leaves the calendar at once. Click the rest
+  of the chip to open the task, or drag the chip to another day to move
+  its due date. Tasks assigned to other people do not show.
+- The party-popper button shows **US federal holidays** as blue chips.
+  They open nothing. When a holiday falls on a weekend, the observed day
+  is shown as well.
+
+Neither shows on a matter's **Events** tab.
 
 ### List view
 
@@ -52,10 +78,10 @@ three days from now, including one already past, is highlighted.
 
 | Column | What it shows |
 |---|---|
-| **Date** | The date, and the start time if the event has one. |
+| **Date** | The date, the last day of an event over several days, and the start time if the event has one. |
 | **Matter** | The matter name. Click it to open that matter's **Events** tab. |
 | **Description** | Click it to open **Edit Event**. |
-| **Duration** | The length in hours, when the event has a start and end time. |
+| **Duration** | The length in hours, when the event has a start and end time, or in days for an event over several days. |
 | **Type** | **Zoom**, **Virtual**, **Phone** or **In-person**, if one was chosen. |
 | **Party** | **Client**, **Opposing**, **All** or **Other**. |
 | **Status** | **Pending**, **Complete** or **Missed**. |
@@ -77,9 +103,10 @@ choose **Event**.
 
 | Field | Required | Notes |
 |---|---|---|
-| **Date** | Yes | An event has one date. It cannot span several days. |
+| **Date** | Yes | The day of the event, or its first day. |
 | **Start time** | No | Leave both times blank for an all-day event. |
-| **End time** | No | Must be after the start time. If you give a start time only, Kosmos sets the end one hour later, and no later than 11:59 PM. |
+| **End time** | No | Must be after the start time on a one-day event. If you give a start time only, Kosmos sets the end one hour later, and no later than 11:59 PM. |
+| **Through** | No | The last day of an event that runs over several days, such as a trial. Leave it blank for an event on one day. With times, the event starts at the start time on its date and ends at the end time on its last day. |
 | **Assigned to** | No | **Firm** (the default) or one active user. It sets the initials shown on the calendar and what the assignee menu finds. |
 | **Matter** | No | Lists the matters that are **Pending** or **Open**. A matter in another status is listed when you open the form from it. |
 | **Description** | Yes | What the event is. |
@@ -163,25 +190,47 @@ separately. The list has no **Matter** column, and the tab has no
 Click **Deadline Calculator** at the right of the toolbar. Enter the
 **Start** date and the number of **Days**, then click **Calculate**.
 Kosmos shows the **Deadline**, its **Weekday** and, when the deadline
-falls on a Saturday or Sunday, the **Next Business Day** (the Monday after
-it). If **Days** is blank or not a whole number, Kosmos says "Days must
-be a whole number." The same link is at the top of **Add Event** and
+falls on a Saturday, a Sunday or a US federal holiday, the **Holiday** it
+falls on and the **Next Court Day** (the first weekday after it that is
+not a holiday). If **Days** is blank or not a whole number, Kosmos says
+"Days must be a whole number." The same link is at the top of **Add Event** and
 **Edit Event**: there the calculator opens inside the form, with its own
 **Calculate** button and a **Hide** button to put it away.
 
 Good to know:
 
-- The calculator counts calendar days and knows weekends only. It does
-  not know court holidays or any court's counting rules.
+- The calculator counts calendar days and knows weekends and US federal
+  holidays. It does not know state court holidays or any court's
+  counting rules.
 - It does not add an event. Add the deadline yourself.
 
 ## Get reminded of events
 
-Kosmos has no reminders on individual events. Two things bring pending
-events to you: **Upcoming Events** on the Dash, and the daily digest
-email, which lists pending events under **Overdue**, **Today** and **Next
-3 Days**. Both show every event you can see, not only those assigned to
-you.
+Three things bring events to you. **Upcoming Events** on the Dash and the
+daily digest email show every pending event you can see, not only those
+assigned to you. A notification on an event is yours alone: it goes to
+you, at a time you choose, by email or as a push to your phone.
+
+To add one, open the event and look under **Notifications**, below the
+form. Choose how far ahead it goes (**30 minutes before**, **2 days
+before**) and how it reaches you, then click **Add**. An event with a
+start time counts back from that moment. An all-day event counts back in
+days or weeks and goes out at the time of day you set, 9:00 AM unless you
+change it. Add as many as you like; the **x** beside one removes it. The
+section is on the Edit Event dialog only, so save a new event first.
+
+Good to know:
+
+- Each user's notifications are their own. Two people can set different
+  ones on the same hearing, and neither sees the other's.
+- If the event moves, the notification moves with it and goes out again
+  at the new time.
+- A notification whose time passed more than two hours ago (one added
+  late, or an event moved into the past) is let go rather than sent
+  stale.
+- **Push** is offered once your phone is set up under **Settings →
+  Notifications**. See [Settings](settings.md#notifications). A push that
+  cannot be delivered goes by email instead.
 
 ## Google Calendar
 
@@ -200,10 +249,10 @@ Once it is connected, events travel both ways:
 
 | What you do | What happens |
 |---|---|
-| Add or change a **Pending** event in Kosmos | Google is updated at once. The title is the matter name, " - ", then the description, or the description alone when the event has no matter. The date, the times and the **Location** go too, or the **Type** when there is no location. |
+| Add or change a **Pending** event in Kosmos | Google is updated at once. The title is the matter name, " - ", then the description, or the description alone when the event has no matter. The date, the last day, the times and the **Location** go too, or the **Type** when there is no location. |
 | Mark an event **Complete** or **Missed** | It stays on Google as last sent. Later changes in Kosmos are not sent, and changes on Google are not brought in. |
 | Delete an event in Kosmos | It is removed from Google. |
-| Add an event on Google | It arrives in Kosmos within about two minutes as a **Pending** event assigned to **Firm**, with no **Party** set. If its title is a matter's full name, " - ", then a description, it joins that matter. Otherwise it has no matter and the whole title is its description. |
+| Add an event on Google | It arrives in Kosmos within about two minutes as a **Pending** event assigned to **Firm**, with no **Party** set. An event over several days keeps its span. If its title is a matter's full name, " - ", then a description, it joins that matter. Otherwise it has no matter and the whole title is its description. |
 | Change a synced event on Google | Kosmos takes the new title, date, times and location within about two minutes. A location removed on Google is removed in Kosmos. The event keeps its matter unless the new title starts with another matter's full name and " - ". |
 | Delete a synced event on Google | A **Pending** event is deleted from Kosmos. A **Complete** or **Missed** event stays in Kosmos, and so does a **Pending** event whose latest changes had not reached Google. |
 
@@ -218,8 +267,7 @@ Good to know:
   sent to Google again, even if you edit it or set it back to
   **Pending**. The list shows "Not on Google Calendar" under its
   description, and **Edit Event** says the same above the form.
-- A repeating event on Google arrives as separate events, and an event
-  that spans several days arrives on its first day only.
+- A repeating event on Google arrives as separate events.
 
 ## Who sees which events
 

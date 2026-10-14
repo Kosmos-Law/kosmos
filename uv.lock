@@ -794,6 +794,18 @@ wheels = [
 ]
 
 [[package]]
+name = "holidays"
+version = "0.86"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4d/9f/f1d09d41497315baa7adf0a43f1990def8c8267cb24da2fc8aa49b2ed731/holidays-0.86.tar.gz", hash = "sha256:a566041e9ff81554661a7be282d6ec37d0d328a0e01a2e3da587421aaf630a07", size = 811000, upload-time = "2025-12-01T21:28:28.495Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bc/7a/249c08ca6b7d5aa6b6ade324115ffe96d33ace0964a544f4307a421ce9f8/holidays-0.86-py3-none-any.whl", hash = "sha256:c6bc9476da5eb93ba6d7b498b9824e42cdd9a32e14002dd2bbd4cb5256c9ddcf", size = 1326429, upload-time = "2025-12-01T21:28:26.525Z" },
+]
+
+[[package]]
 name = "httpcore"
 version = "1.0.9"
 source = { registry = "https://pypi.org/simple" }
@@ -1005,6 +1017,7 @@ dependencies = [
     { name = "google-auth-oauthlib" },
     { name = "google-genai" },
     { name = "gunicorn" },
+    { name = "holidays" },
     { name = "markdown" },
     { name = "ocrmypdf" },
     { name = "odfpy" },
@@ -1055,6 +1068,7 @@ requires-dist = [
     { name = "google-auth-oauthlib", specifier = "==0.4.6" },
     { name = "google-genai", specifier = "==1.54.0" },
     { name = "gunicorn", specifier = ">=25.1.0" },
+    { name = "holidays", specifier = ">=0.86" },
     { name = "markdown", specifier = "==3.8.1" },
     { name = "ocrmypdf", specifier = "==16.12.0" },
     { name = "odfpy", specifier = "==1.4.1" },

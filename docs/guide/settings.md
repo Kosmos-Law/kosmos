@@ -19,7 +19,7 @@ permissions.
 | **Security** | Everyone | Your authenticator app, and signing out everywhere else. Administrators also see the firm-wide switch that requires the app. |
 | **Appearance** | Everyone | Your theme and navigation layout. |
 | **Firm** | Administrators | The firm's name, address, email addresses, logos and its own wording for invoices and reminders. |
-| **Notifications** | Everyone | Your daily digest email. |
+| **Notifications** | Everyone | Your daily digest email, and how event notifications reach you. |
 | **Users** | Administrators | Accounts, roles and hourly rates. |
 | **Permissions** | Administrators | What each user can open. |
 | **Contacts** | Administrators | The groups, roles and relationship types offered for contacts. |
@@ -126,6 +126,34 @@ account is signed out at once (a lost phone, a shared computer); you stay
 signed in where you clicked it. **Log out** in the account menu, by
 contrast, signs out the browser you are using and no other. A browser you
 do not sign out of stays signed in for eight weeks after you last use it.
+
+## Notifications
+
+**Settings → Notifications** is each user's own. The switches at the top
+are the daily digest email and, for a user who may see intakes, the
+new-intake emails; see
+[Make it yours](getting-started.md#make-it-yours).
+
+Below them, **Event Notifications** is about the notifications you add to
+individual events (see [Get reminded of
+events](calendar.md#get-reminded-of-events)). Each notification says how
+it reaches you, and the choice here, **Email** or **Push**, is the one
+offered first when you add one.
+
+**Push: ntfy** sets up your phone. Push goes through ntfy, a free app
+that delivers notifications to a topic your phone subscribes to. Click
+**Set Up Push** and Kosmos makes you a topic: a long random name, since
+anyone who knows it can read what is sent to it. Then, as the steps on
+the page say, install ntfy on your phone, subscribe it to your topic by
+scanning the QR code or opening the link on the phone, and click **Send a
+Test**; the notification should arrive within seconds. **Server** is
+ntfy's public server unless your firm runs its own, and **Access token**
+is only for a server that asks for one. **New Topic** replaces your topic
+(the old one stops, and the phone needs subscribing again) if it has got
+out.
+
+A notification sent by push that cannot be delivered goes by email
+instead, so none is lost to an outage.
 
 ## Users
 

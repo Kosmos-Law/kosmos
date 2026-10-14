@@ -7,7 +7,8 @@ GET events/api/?start=YYYY-MM-DD&end=YYYY-MM-DD returns the events on those
 days, inclusive, as a list of objects:
 
     id, title (matter - description - initials, as the calendar shows it),
-    date, end_date (null), start_time and end_time ("HH:MM:SS" or null),
+    date, end_date (the last day of an event over several days, else
+    null), start_time and end_time ("HH:MM:SS" or null),
     all_day, matter, location, status, event_type, url (the event in
     Kosmos), and the firm's time_zone, which the times are in.
 """
@@ -15,6 +16,7 @@ days, inclusive, as a list of objects:
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
@@ -47,7 +49,7 @@ def event_row(event, request):
         "id": event.id,
         "title": event_title(event),
         "date": event.date.isoformat() if event.date else None,
-        "end_date": None,
+        "end_date": event.end_date.isoformat() if event.end_date else None,
         "start_time": event.start_time.isoformat() if event.start_time else None,
         "end_time": event.end_time.isoformat() if event.end_time else None,
         "all_day": not event.start_time,
@@ -78,7 +80,8 @@ def api_events(request):
 
     events = (
         events_for_user(Event.objects.all(), request.api_user)
-        .filter(date__gte=start, date__lte=end)
+        .filter(date__lte=end)
+        .filter(Q(end_date__gte=start) | Q(end_date=None, date__gte=start))
         .select_related("matter", "assigned_to")
         .order_by("date", "start_time", "id")
     )

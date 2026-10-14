@@ -38,6 +38,18 @@ if DEBUG:
 # check dev v. production environment
 ENV = env("ENV")
 
+# A machine that is not production (the dev server runs on a nightly copy
+# of production's database) must not double production's notifications:
+# by default it pushes to each user's ntfy topic with a suffix (a channel
+# of its own), marks its titles, and emails no event notification. Each
+# can be set in .env.
+NOT_PRODUCTION = ENV != "prod"
+NTFY_TOPIC_SUFFIX = env("NTFY_TOPIC_SUFFIX", default="-dev" if NOT_PRODUCTION else "")
+NOTIFY_TITLE_PREFIX = env(
+    "NOTIFY_TITLE_PREFIX", default="[dev] " if NOT_PRODUCTION else ""
+)
+EMAIL_NOTIFICATIONS = env.bool("EMAIL_NOTIFICATIONS", default=not NOT_PRODUCTION)
+
 # urls to which the application will respond
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 

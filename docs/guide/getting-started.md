@@ -215,6 +215,9 @@ Everything here is under **Settings** in the sidebar.
   Email** to get one email a day listing overdue items, today's schedule,
   and events and tasks due in the next three days. **Send Test** sends one
   now. If the email cannot be sent, the reason appears below the button.
+  Further down, **Event Notifications** and **Push: ntfy** choose how the
+  notifications you add to individual events reach you, by email or as a
+  push to your phone. See [Settings](settings.md#notifications).
 
 Good to know:
 

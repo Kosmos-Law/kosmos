@@ -13,6 +13,7 @@ Times are in the firm's time zone, the `TIME_ZONE` variable in
 | Job | When | What it does |
 |---|---|---|
 | `daily-digest` | Daily at 07:00 (`0 7 * * *`) | Emails each active user who has the digest switched on a summary of overdue, today's and upcoming items. |
+| `event-reminders` | Every minute (`* * * * *`) | Sends the event notifications that have come due, by email or pushed to the ntfy app, as each one says. |
 | `calendar-sync` | Every 2 minutes (`*/2 * * * *`) | Two-way Google Calendar sync: pushes pending local changes and deletions, then pulls changes from Google. Does nothing until Google Calendar is connected. |
 | `drive-sync` | Every minute (`* * * * *`) | Incremental Google Drive sync of linked matter folders through the Drive Changes API. Does nothing until Google Drive is connected. |
 | `drive-sync-nightly-full` | Daily at 03:30 (`30 3 * * *`) | Full re-crawl of every linked Drive folder, to catch anything the incremental sync missed. |
@@ -26,6 +27,7 @@ Times are in the firm's time zone, the `TIME_ZONE` variable in
 | Job | Function |
 |---|---|
 | `daily-digest` | `apps.tasks.digest.send_daily_digest` |
+| `event-reminders` | `apps.calendar.reminders.send_due` |
 | `calendar-sync` | `apps.calendar.sync.scheduled_sync` |
 | `drive-sync` | `apps.drive.google.scheduled_sync` |
 | `drive-sync-nightly-full` | `apps.drive.google.scheduled_sync_full` |

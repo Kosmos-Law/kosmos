@@ -1,0 +1,73 @@
+/* ==========================================================================
+   Notifications (templates/components/reminders.html)
+
+   The section under the event form in the Edit Event dialog: the user's
+   notifications on the event as a list, each with its channel and a
+   remove button, and one row of controls that adds another.
+   ========================================================================== */
+
+.reminders {
+  border-top: solid 1px var(--border-medium);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+
+.reminders-title {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem;
+}
+
+.reminder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reminder-list li {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+/* How it goes, after the words: muted, so the timing reads first */
+.reminder-channel {
+  color: var(--color-muted);
+}
+
+.reminder-list .btn-icon {
+  color: var(--color-muted);
+}
+
+.reminder-list .btn-icon:hover {
+  color: var(--urgent);
+}
+
+.reminder-none {
+  color: var(--color-muted);
+}
+
+.reminder-add {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.reminder-add input[type="number"] {
+  width: 5rem;
+}
+
+.reminder-add select,
+.reminder-add input {
+  width: auto;
+}
+
+.reminders .errorlist {
+  color: var(--urgent);
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
