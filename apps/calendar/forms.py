@@ -5,6 +5,7 @@ from apps.accounts.models import CustomUser
 from config.settings import CustomFormRendererCompact
 
 from .models import Event
+from .widgets import CheckSelect
 
 # The longest description the column holds. The field refuses anything
 # longer before clean_description runs, so the limit is stated once.
@@ -28,7 +29,7 @@ class EventForm(forms.ModelForm):
             "location",
         )
         labels = {
-            "assignees": "Assigned to (nobody means the firm)",
+            "assignees": "Assigned to",
             "end_date": "Through",
             "event_type": "Type",
             "location": "Location",
@@ -56,8 +57,9 @@ class EventForm(forms.ModelForm):
                 }
             ),
             "party": forms.Select(choices=PARTIES),
-            # The assignees as a row of boxes to tick, not a multi-select
-            "assignees": forms.CheckboxSelectMultiple,
+            # The assignees ticked in a dropdown of check rows; nobody
+            # ticked reads as the firm's
+            "assignees": CheckSelect(empty_label="Firm"),
             "status": forms.Select(choices=STATUSES),
             "location": forms.TextInput(
                 attrs={
@@ -71,8 +73,9 @@ class EventForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.renderer = CustomFormRendererCompact()
 
-        # Matter spans the full row
-        self.fields["matter"].widget.attrs["class"] = "span3"
+        # Matter spans the first two of the three columns; Assigned to
+        # takes the third
+        self.fields["matter"].widget.attrs["class"] = "span2"
 
         # The view passes the matters this user may put an event on. They
         # are set here, before validation, so a posted matter outside the

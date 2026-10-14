@@ -100,12 +100,13 @@ def test_nobody_ticked_is_the_firms(client):
     assert event.assignee_initials == ""
 
 
-def test_the_form_offers_boxes_for_the_active_users(client, ada):
+def test_the_form_offers_the_active_users_in_a_check_select(client, ada):
     body = client.get(reverse("calendar:add")).content.decode()
 
-    assert 'type="checkbox" name="assignees"' in body
+    assert 'type="checkbox"' in body and 'name="assignees"' in body
     assert "Ada Lovelace" in body
-    assert "nobody means the firm" in body
+    # nothing ticked reads as the firm's
+    assert "checkSelect('Firm')" in body
 
 
 # --- the titles ------------------------------------------------------------

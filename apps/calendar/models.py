@@ -57,17 +57,28 @@ class Event(AuditMixin, models.Model):
         return f"{self.description} : {self.id}"
 
     @property
+    def ordered_assignees(self):
+        """The assignees by name. Sorted here rather than in the query, so
+        a feed that prefetched them makes no query per event."""
+        return sorted(
+            self.assignees.all(),
+            key=lambda user: (user.first_name.lower(), user.last_name.lower(), user.id),
+        )
+
+    @property
     def assignee_initials(self):
         """The assignees' initials, "AL, JC", for the calendar's titles;
         empty for the firm's event."""
         return ", ".join(
-            user.initials for user in self.assignees.all() if user.initials
+            user.initials for user in self.ordered_assignees if user.initials
         )
 
     @property
     def assignee_names(self):
-        """The assignees' short names, in the order they are listed."""
-        return [user.get_short_name() or user.username for user in self.assignees.all()]
+        """The assignees' short names, by name."""
+        return [
+            user.get_short_name() or user.username for user in self.ordered_assignees
+        ]
 
     @property
     def last_date(self):

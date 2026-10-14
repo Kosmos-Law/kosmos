@@ -112,7 +112,7 @@ choose **Event**.
 | **Start time** | No | Leave both times blank for an all-day event. |
 | **End time** | No | Must be after the start time on a one-day event. If you give a start time only, Kosmos sets the end one hour later, and no later than 11:59 PM. |
 | **Through** | No | The last day of an event that runs over several days, such as a trial. Leave it blank for an event on one day. With times, the event starts at the start time on its date and ends at the end time on its last day. |
-| **Assigned to** | No | Tick any of the active users, or nobody for an event that is the firm's. Their initials follow the title on the calendar, and the assignee menu finds the event under each of them. |
+| **Assigned to** | No | A menu of the active users: tick any number, or nobody for an event that is the firm's, which the button reads as **Firm**. Their initials follow the title on the calendar, and the assignee menu finds the event under each of them. |
 | **Matter** | No | Lists the matters that are **Pending** or **Open**. A matter in another status is listed when you open the form from it. |
 | **Description** | Yes | What the event is. |
 | **Status** | Yes | **Pending** (the default), **Complete** or **Missed**. |

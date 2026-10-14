@@ -1,0 +1,40 @@
+{% comment %}
+A set of choices ticked in a dropdown of check rows (apps.calendar.widgets
+.CheckSelect): the button reads what is ticked (the checkSelect Alpine
+component, static/js/alpine-components.js), the rows are labels round
+real checkboxes, so a click toggles one and the menu stays open, and the
+dropdown component positions and closes the menu.
+{% endcomment %}
+<div class="check-select"
+     x-data="checkSelect('{{ widget.empty_label }}')"
+     x-init="refresh()">
+  <div class="dropdown check-menu" x-data="dropdown()">
+    <button type="button"
+            class="check-select-button"
+            id="{{ widget.attrs.id }}"
+            x-ref="button"
+            @click="toggle()"
+            :aria-expanded="open">
+      <span x-text="label">{{ widget.empty_label }}</span>
+      <small><i class="icon-chevron-down"></i></small>
+    </button>
+    <ul class="dropdown-menu" x-ref="menu" x-show="open">
+      {% for group, options, index in widget.optgroups %}
+        {% for option in options %}
+          <li>
+            <label class="dropdown-item check-menu-check" for="{{ option.attrs.id }}">
+              <input type="checkbox"
+                     name="{{ widget.name }}"
+                     value="{{ option.value|stringformat:'s' }}"
+                     id="{{ option.attrs.id }}"
+                     data-label="{{ option.label }}"
+                     {% if option.attrs.checked %}checked{% endif %}
+                     @change="refresh()">
+              <i class="icon-square"></i>{{ option.label }}
+            </label>
+          </li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+</div>
