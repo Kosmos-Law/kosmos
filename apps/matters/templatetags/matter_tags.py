@@ -19,8 +19,8 @@ def get_open_matters(context):
 def get_adjacent_open_matters(context, matter):
     """The neighbours of ``matter`` on the open-matters list (the same
     name-ordered, per-user list the switcher dropdown shows), wrapping at the
-    ends. Both None when the matter isn't on the list (closed, or filtered
-    away for this user) — the detail toolbar hides its steppers then."""
+    ends, for the [ and ] keys. Both None when the matter isn't on the list
+    (closed, or filtered away for this user) — the keys do nothing then."""
     matters = list(get_open_matters(context))
     ids = [m.id for m in matters]
     if matter.id not in ids or len(matters) < 2:

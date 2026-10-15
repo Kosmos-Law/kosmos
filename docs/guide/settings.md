@@ -301,7 +301,9 @@ Each list shows active entries until you click **Inactive** or **All**.
 - **Delete**: click the entry, choose **Delete** and confirm.
 
 The group and the role Kosmos uses for a matter's client show
-**Protected** in place of **Edit** and **Delete**.
+**Protected** in place of **Edit** and **Delete**. They are part of
+Kosmos, created with every installation, and nobody can delete them, an
+administrator included.
 
 Good to know:
 

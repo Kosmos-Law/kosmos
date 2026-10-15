@@ -57,6 +57,7 @@ its status.
 | Field | Required | Notes |
 |---|---|---|
 | **Client** | No | Any contact. Leave it blank for an internal matter with no client. |
+| **Additional Billing Contacts** | No | The people copied on the matter's billing email. When you send an invoice, a payment reminder or a payment request, **Cc** starts with their addresses (the client stays in **To**). Tick them in the dropdown. It offers the people in the matter's **Client** group who have an email address, other than the client, so add a person under **Contacts** in the **Client** group first. The field appears only on **Edit Matter**, and only once there is someone to choose. Taking a contact off the matter drops them. |
 | **Status** | Yes | **Pending**, **Open**, **Complete** or **Closed**. |
 | **Open Date** | Yes | The date the matter was opened. |
 | **Matter Name** | Yes | The name shown everywhere in Kosmos. |
@@ -95,16 +96,17 @@ Good to know:
 Click a matter's name in the list. The matter opens on its **Contacts**
 tab. Across the top are the matter name (click it to switch to another
 open matter), **Detail** and **Case**, and two buttons to add time and add
-an expense (see [Time and expenses](time-and-expenses.md)). The arrows at
-the far right step to the previous and next open matter. This page covers
-the **Detail** side. **Case** holds the case file: documents, the
+an expense (see [Time and expenses](time-and-expenses.md)). The pencil
+button after them opens **Edit Matter**. This page covers the
+**Detail** side. **Case** holds the case file: documents, the
 timeline, witnesses, notes, emails, AI chat and research.
 
 ### Overview
 
 **Overview** is the summary of the matter. **Matter Detail** lists its
-status, client, practice area, open date, jurisdiction and billing, and
-the date it was closed once it has been. Beside
+status, client, additional billing contacts (when it has any), practice area, open
+date, jurisdiction and billing, and the date it was closed once it has
+been. Beside
 it are **Events** (upcoming events), **Tasks** (open tasks) and **Recent
 Actions** (the five latest time entries). Each has a **+** button to add
 one, and you can click a row to edit it. **Financials** shows **Balance
@@ -204,10 +206,9 @@ the matters that are **Pending** or **Open**.
 
 ## Edit a matter and change its status
 
-1. Open the matter and click **Overview**.
-2. Click the pencil button beside **Matter Detail**. **Edit Matter** opens
-   with the same fields as **Add Matter**.
-3. Make your changes and click **Submit**.
+1. Open the matter and click the pencil button in the title bar, after
+   the add-time and add-expense buttons. **Edit Matter** opens with the same fields as **Add Matter**.
+2. Make your changes and click **Submit**.
 
 The **Overview** shows the new details. You can also click the **Status**,
 **Work Status**, **Practice Area** or **Description** value on the
@@ -253,7 +254,7 @@ Good to know:
 
 Only an administrator can delete a matter. Deleting is permanent.
 
-1. Open **Edit Matter** from the matter's **Overview** and click
+1. Open **Edit Matter** from the matter's title bar and click
    **Delete**. The dialog counts the time entries, expense entries, tasks,
    documents, notes, events and invoices on the matter.
 2. Type DELETE in the box and click **Delete Matter**.

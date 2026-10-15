@@ -19,7 +19,7 @@ are in [Architecture](../architecture.md).
 | `apps/matters/filter.py` | `MatterFilter` (django-filter) for the list |
 | `apps/matters/get_matter_list.py` | Session filter, pagination and the quick-status buttons |
 | `apps/matters/client_wizard.py` | Create a contact or convert an intake from inside the matter form |
-| `apps/matters/templatetags/matter_tags.py` | `get_open_matters`, `get_adjacent_open_matters` (the switcher and steppers) |
+| `apps/matters/templatetags/matter_tags.py` | `get_open_matters`, `get_adjacent_open_matters` (the switcher and the `[` / `]` keys) |
 | `apps/matters/contacts/` | The matter's Contacts tab: party rows, assign, groups |
 | `apps/matters/proceedings/`, `settlement/`, `rates/` | One model, form and views each |
 | `apps/matters/ledger/` | The Ledger tab: `get_ledger_data.py`, `generate_ledger.py` (PDF) |
@@ -61,6 +61,13 @@ are in [Architecture](../architecture.md).
   matter leaves active work (below).
 - `date_start` and `date_end`: the opening date comes from the form; the
   closing date is written by `save()`.
+- `billing_contacts` (many-to-many to `Contact`) are the people copied on
+  the matter's billing email: `Matter.billing_cc` is their addresses,
+  comma-joined (or `""`), and the send invoice, payment reminder and
+  payment request modals pre-fill their Cc with it. `MatterForm` offers
+  only the matter's Client-group contacts with an email, other than the
+  client, in a `CheckSelect` dropdown, and a `post_delete` receiver on
+  `Relationship` drops a contact who leaves the matter.
 - `billable`, `billing_type` (`HOURLY` or `FLAT_FEE`), `flat_fee_amount`,
   `deferred_fees` and the `report_*` flags belong to billing and are
   explained in [Time and billing](time-and-billing.md).
@@ -104,8 +111,13 @@ rows that used it). A group is firm-wide when `matter` is null, or a
 matter's own; `Group.MATTER_GROUP_ORDER_BASE` (1000) keeps matter groups
 ordered after the firm's, and `GroupQuerySet.for_matter()` returns the
 active ones for a matter in that order. The firm-wide `Client` group and
-the `Client` role carry `is_system=True` (seeded as such by migration
-`0042`), and Settings refuses to rename or delete them. Co-clients also
+the `Client` role carry `is_system=True`: `apps/matters/system_rows.py`
+seeds them after every `migrate` (a `post_migrate` handler connected in
+`apps.py`; migration `0042` first marked them), so every installation
+has them from its first run, `GroupQuerySet.client_group()` and
+`RoleQuerySet.client_role()` find them by the flag alone (a rename cannot
+lose them), a `pre_delete` receiver raises `ProtectedError` for them on
+any road, and Settings refuses to rename or delete them. Co-clients also
 take the Client role, on a different contact, and are ordinary rows.
 
 **`PracticeArea`** is a name and `is_active`. Migration `0023` created the
@@ -171,13 +183,16 @@ paths by regex; this covers the tab-switch route). `VALID_DETAIL_TABS`
 lists the nine tabs.
 
 The header's matter switcher (`templates/matters/includes/switcher.html`)
-and the prev/next steppers come from `get_open_matters` and
+and the previous/next matter come from `get_open_matters` and
 `get_adjacent_open_matters` in `matter_tags.py`: the open matters the user
-may see, by name, wrapping at the ends. The steppers are hidden when the
-current matter is not on that list (closed, or not the user's). In
-`static/js/main.js`, `[` and `]` click those steppers on a matter page,
-unless the page declares a user cycle (`data-cycle-*-url`: the Tasks,
-Time, Expenses and Flat Fees lists), which the brackets walk instead.
+may see, by name, wrapping at the ends. The title bar
+(`templates/matters/includes/header.html`) carries the neighbours as
+`data-matter-prev-url` / `data-matter-next-url`, left off when the
+current matter is not on that list (closed, or not the user's); there are
+no visible steppers. In `static/js/main.js`, `[` and `]` open those on a
+matter page, unless the page declares a user cycle (`data-cycle-*-url`:
+the Tasks, Time, Expenses and Flat Fees lists), which the brackets walk
+instead. The Edit Matter button follows the add-time and add-expense buttons.
 Space then `m` opens `matterSwitcher`, which fetches `/matters/api/open/`
 (`open_matters_json`, the same filtered list).
 

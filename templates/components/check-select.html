@@ -6,7 +6,7 @@ real checkboxes, so a click toggles one and the menu stays open, and the
 dropdown component positions and closes the menu.
 {% endcomment %}
 <div class="check-select"
-     x-data="checkSelect('{{ widget.empty_label }}')"
+     x-data="checkSelect('{{ widget.empty_label }}', '{{ widget.many_label }}')"
      x-init="refresh()">
   <div class="dropdown check-menu" x-data="dropdown()">
     <button type="button"

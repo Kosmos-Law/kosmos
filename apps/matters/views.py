@@ -227,6 +227,7 @@ def _matter_overview_context(request, matter):
         "show_financial": show_financial,
         # Options for the inline practice-area dropdown.
         "practice_areas": _practice_area_choices(matter),
+        "billing_contacts": matter.billing_contacts.order_by("name"),
         "events": events,
         "tasks": tasks,
         "recent_actions": (
@@ -523,6 +524,7 @@ def edit(request, id):
             matter = form.save(commit=False)
             matter.user_id = request.user.id
             matter.save()
+            form.save_m2m()  # the billing contacts
             # Clean 204 closes the modal (and clears its backdrop) via the
             # standard path. mattersChanged refreshes the matters list and the
             # self-refreshing matter switcher in the detail header (so the name

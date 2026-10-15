@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models import ProtectedError
+from django.db.models.signals import post_delete, pre_delete
+from django.dispatch import receiver
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
@@ -46,6 +49,14 @@ class Matter(AuditMixin, models.Model):
     contacts = models.ManyToManyField(Contact, through="Relationship")
     client = models.ForeignKey(
         Contact, related_name="client_matters", on_delete=models.SET_NULL, null=True
+    )
+    # The people copied on the matter's billing email: every invoice,
+    # payment reminder and payment request pre-fills its Cc with their
+    # addresses (the client stays the To). Ticked from the matter's Client
+    # group in the Edit Matter form; unlinking a contact from the matter
+    # drops them.
+    billing_contacts = models.ManyToManyField(
+        Contact, related_name="billing_matters", blank=True
     )
     jurisdiction = models.CharField(max_length=100, blank=True)
     billable = models.BooleanField(default=True)
@@ -197,6 +208,20 @@ class Matter(AuditMixin, models.Model):
                 group=client_group,
                 role=client_role,
             )
+
+    @property
+    def billing_cc(self):
+        """The addresses the matter's billing email is copied to: the billing
+        contacts' emails, comma-joined in name order, skipping anyone without
+        one ('' when there is nobody). The invoice, reminder and payment
+        request modals pre-fill their Cc with it; the sender can still change
+        it."""
+        emails = [
+            contact.email.strip()
+            for contact in self.billing_contacts.order_by("name")
+            if contact.email and contact.email.strip()
+        ]
+        return ", ".join(emails)
 
     @property
     def gmail_label_short(self):
@@ -476,7 +501,7 @@ class GroupQuerySet(models.QuerySet):
         """The protected firm-wide system Client group. A matter's client is
         mirrored into a Relationship in this group; it's the one stable reference
         (see is_system) that replaces name-string lookups."""
-        return self.filter(is_system=True, name="Client", matter__isnull=True).first()
+        return self.filter(is_system=True, matter__isnull=True).order_by("id").first()
 
 
 class Group(AuditMixin, models.Model):
@@ -514,7 +539,7 @@ class Group(AuditMixin, models.Model):
 class RoleQuerySet(models.QuerySet):
     def client_role(self):
         """The protected system Client role used for the matter-client mirror."""
-        return self.filter(is_system=True, name="Client").first()
+        return self.filter(is_system=True).order_by("id").first()
 
 
 class Role(AuditMixin, models.Model):
@@ -550,9 +575,30 @@ class Relationship(AuditMixin, models.Model):
         return f"matter: {self.matter.id}, contact: {self.contact.id}, role: {self.role.id}"
 
 
-# Models in the sub-packages, imported here so they register with the app
-# registry as the app loads (they import Matter from this module, hence
-# last). Nothing else imports them at start-up since the admin was removed.
-import apps.matters.proceedings.models  # noqa: E402, F401
-import apps.matters.rates.models  # noqa: E402, F401
-import apps.matters.settlement.models  # noqa: E402, F401
+@receiver(pre_delete, sender=Group)
+@receiver(pre_delete, sender=Role)
+def protect_system_rows(sender, instance, **kwargs):
+    """The system Client group and role can never be deleted, by anyone or
+    any road (Settings refuses first; this stops a shell, a queryset delete
+    or a future view). The matter-client mirror, the Contacts tab and the
+    billing contacts all depend on them; a deletion would also cascade
+    through every client's party row. They are seeded on every migrate
+    (apps.matters.system_rows), so an installation always has them."""
+    if instance.is_system:
+        raise ProtectedError(
+            f"The {instance.name} {sender.__name__.lower()} is protected and "
+            "cannot be deleted.",
+            {instance},
+        )
+
+
+@receiver(post_delete, sender=Relationship)
+def drop_billing_contact_on_unlink(sender, instance, **kwargs):
+    """A contact taken off a matter stops being one of its billing contacts,
+    so no invoice is copied to someone no longer on the case. One place for
+    every road that drops a relationship (the matter's Contacts tab, the
+    contact's Matters tab, bulk removal, deleting the contact)."""
+    if instance.matter_id and instance.contact_id:
+        Matter.billing_contacts.through.objects.filter(
+            matter_id=instance.matter_id, contact_id=instance.contact_id
+        ).delete()

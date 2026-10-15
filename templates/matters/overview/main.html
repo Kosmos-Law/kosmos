@@ -4,17 +4,7 @@
     <div class="overview-main-col">
       <table class="overview-table overview-main">
         <tr>
-          <th class="overview-table-head" colspan="2">
-            Matter Detail
-            <button type="button"
-                    class="btn-icon overview-edit"
-                    aria-label="Edit matter details"
-                    title="Edit matter details"
-                    hx-get="{% url 'matters:edit' id=matter.id %}"
-                    hx-target="#htmx-modal-container">
-              <i class="icon-square-pen"></i>
-            </button>
-          </th>
+          <th class="overview-table-head" colspan="2">Matter Detail</th>
         </tr>
         <tr>
           <th>Status</th>
@@ -34,6 +24,16 @@
             {% endif %}
           </td>
         </tr>
+        {% if billing_contacts %}
+          <tr>
+            <th>Additional Billing Contacts</th>
+            <td>
+              {# djlint:off #}
+              {% for contact in billing_contacts %}{% if not forloop.first %}, {% endif %}<a href="{% url 'contacts:select' contact_id=contact.id %}">{{ contact.name }}</a>{% endfor %}
+              {# djlint:on #}
+            </td>
+          </tr>
+        {% endif %}
         <tr>
           <th>Practice Area</th>
           <td id="overview-practice-area">{% include "matters/overview/practice-area.html" %}</td>
