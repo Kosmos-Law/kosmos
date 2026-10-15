@@ -1,4 +1,5 @@
 from datetime import date, time
+from types import SimpleNamespace
 
 import pytest
 from django.test import Client
@@ -122,7 +123,12 @@ def _entries(day):
     return [(e.kind, e.id) for e in day.entries]
 
 
-def test_tasks_stay_off_until_the_toggle_is_on(user):
+def test_the_toggle_starts_on(user):
+    assert week.show_tasks(SimpleNamespace(session={}))
+    assert not week.show_tasks(SimpleNamespace(session={week.SHOW_TASKS_KEY: False}))
+
+
+def test_tasks_stay_off_the_week_with_the_toggle_off(user):
     _task(user, date_due=TODAY)
     assert _days(user)[4].entries == []
 
@@ -182,3 +188,15 @@ def test_the_toggle_remembers_and_redraws_the_week_in_view(user):
         reverse("dash:week-tasks", args=["maybe"]), HTTP_HX_REQUEST="true"
     )
     assert response.status_code == 400
+
+
+def test_past_three_tasks_the_rest_fold_into_more_tasks(user):
+    event = _event(date=TODAY, start_time=time(15))
+    for n in range(5):
+        _task(user, date_due=TODAY, description=f"Task {n}")
+
+    today = week.week_context(user, today=TODAY, tasks=True)["week"][4]
+    assert [e.kind for e in today.entries] == ["task"] * 3 + ["event"]
+    assert today.entries[-1].id == event.id
+    assert today.more_tasks == 2
+    assert today.more == 0

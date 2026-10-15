@@ -36,15 +36,15 @@
         <i class="icon-chevron-right"></i>
       </button>
     </div>
-    <div class="week-title-end">
+    <div class="week-title-end toolbar">
       <button type="button"
-              class="week-tasks-toggle"
+              {% if week_tasks %}class="toggle-active"{% endif %}
               aria-pressed="{% if week_tasks %}true{% else %}false{% endif %}"
               hx-post="{% if week_tasks %}{% url 'dash:week-tasks' 'off' %}{% else %}{% url 'dash:week-tasks' 'on' %}{% endif %}"
               hx-vals='{"start": "{{ week_first|date:'Y-m-d' }}"}'
               hx-target="#dash-events"
               hx-swap="outerHTML">
-        <i class="{% if week_tasks %}icon-square-check{% else %}icon-square{% endif %}"></i>Tasks
+        <i class="icon-square-check-big"></i>Tasks
       </button>
     </div>
   </div>
@@ -55,10 +55,11 @@
   opens the calendar on that day. Under it the day's pending events, drawn
   as the month view draws them: an all-day event a filled chip, a timed one
   a dot, its time and its title; a click opens the event. With the Tasks
-  toggle on, the user's open tasks are on their days as the month view has
+  toggle on (as it starts), the user's open tasks are on their days as the month view has
   them, a box before the title: the box marks the task done and the rest of
   the chip opens it. On this week, tasks overdue from before it are
-  gathered at the top of today, dated and in the urgent colour. A day with nothing
+  gathered at the top of today, dated and in the urgent colour. Past
+  three tasks, a day's others fold into "N more tasks", to the task list. A day with nothing
   on it keeps its column, blank; on a phone the strip stacks and empty days
   drop out. The chevrons swap in the week before or after
   (apps/dash/week.py), and the card redraws itself when an event changes.
@@ -109,6 +110,11 @@
               </li>
             {% endif %}
           {% endfor %}
+          {% if day.more_tasks %}
+            <li class="week-more">
+              <a href="{% url 'tasks:index' %}">{{ day.more_tasks }} more task{{ day.more_tasks|pluralize }}</a>
+            </li>
+          {% endif %}
           {% if day.more %}
             <li class="week-more">
               <a href="{% url 'calendar:index' %}?date={{ day.date|date:'Y-m-d' }}">{{ day.more }} more</a>

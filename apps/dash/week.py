@@ -3,7 +3,7 @@ Saturday, as a strip of columns (after Cloud Portal's home page card).
 
 It shows the pending events the user may see, as the calendar shows them
 by default; an event over several days appears on each day it covers.
-With the card's Tasks toggle on, the user's open tasks are on their due
+With the card's Tasks toggle on (as it starts), the user's open tasks are on their due
 days too, and on this week any overdue from before it are gathered on
 today.
 """
@@ -26,7 +26,10 @@ WEEK_DAYS = 7
 # How many entries a day shows before the rest fold into a link
 DAY_LIMIT = 5
 
-# The session key for the card's Tasks toggle (off until switched on)
+# How many tasks a day shows before the rest fold into "N more tasks"
+TASK_LIMIT = 3
+
+# The session key for the card's Tasks toggle (on until switched off)
 SHOW_TASKS_KEY = "dash_week_tasks"
 
 
@@ -94,7 +97,8 @@ def _entry_key(entry):
 def week_days(user, first, today, show_tasks=False):
     """The seven days from first, each with the entries the strip shows on
     it: its date, its label (the weekday, short), whether it is today, the
-    entries that fit, and how many more there are."""
+    entries that fit, and how many more there are. Past its first three
+    tasks, a day's tasks fold into a count of their own."""
     last = first + timedelta(days=WEEK_DAYS - 1)
     events = (
         events_for_user(Event.objects.all(), user)
@@ -121,13 +125,17 @@ def week_days(user, first, today, show_tasks=False):
     for offset in range(WEEK_DAYS):
         day = first + timedelta(days=offset)
         on_day = [e for e in entries if e.first_day <= day <= e.last_day]
+        tasks = [e for e in on_day if e.kind == "task"]
+        folded = {id(e) for e in tasks[TASK_LIMIT:]}
+        shown = [e for e in on_day if id(e) not in folded]
         days.append(
             SimpleNamespace(
                 date=day,
                 label=day.strftime("%a"),
                 is_today=day == today,
-                entries=on_day[:DAY_LIMIT],
-                more=max(len(on_day) - DAY_LIMIT, 0),
+                entries=shown[:DAY_LIMIT],
+                more=max(len(shown) - DAY_LIMIT, 0),
+                more_tasks=len(folded),
                 count=len(on_day),
             )
         )
@@ -147,7 +155,7 @@ def week_range(first, today):
 
 def show_tasks(request):
     """Whether the card's Tasks toggle is on."""
-    return bool(request.session.get(SHOW_TASKS_KEY, False))
+    return bool(request.session.get(SHOW_TASKS_KEY, True))
 
 
 def week_context(user, week_of=None, today=None, tasks=False):

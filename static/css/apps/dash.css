@@ -77,32 +77,16 @@
   position: relative;
 }
 
+/* The Tasks toggle is a toolbar button, selected (toggle-active) when the
+   tasks are shown; the toolbar here is only its holder, without the
+   toolbar's own bottom padding */
 .week-title-end {
   display: flex;
   justify-content: flex-end;
 }
 
-/* The Tasks toggle: a check row as the calendar's menu draws its "My
-   tasks", the square icon ticked when the tasks are shown */
-.week-tasks-toggle {
-  align-items: center;
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--color-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  gap: 0.5rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.week-tasks-toggle:hover {
-  background: var(--background-control);
-  color: var(--color-primary);
-}
-
-.week-tasks-toggle[aria-pressed="true"] {
-  color: var(--color-primary);
+.week-title-end.toolbar {
+  padding: 0;
 }
 
 .week-nav-arrow {
