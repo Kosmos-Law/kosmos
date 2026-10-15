@@ -280,8 +280,16 @@
   font-weight: normal;
 }
 
+/* The box sits as far from the chip's left edge as from the text after
+   it: the chip's left padding and the gap after the box are one step */
+.week-task.week-entry-all-day {
+  padding-left: 0.25rem;
+}
+
+/* the box's width, then the step; less a pixel for the room the box
+   glyph leaves on its own right, so the two gaps read equal */
 .week-task .week-entry-title {
-  padding-left: calc(1em + 0.25rem);
+  padding-left: calc(1em + 0.25rem - 1px);
   position: relative;
 }
 
@@ -291,7 +299,7 @@
   left: 0;
   position: absolute;
   /* an optical nudge onto the title's centre line */
-  top: 2px;
+  top: 1px;
 }
 
 .week-task-box::before {
@@ -313,6 +321,16 @@
 .week-more {
   font-size: 0.8125rem;
   padding: 0 0.5rem;
+}
+
+/* The tasks' fold reads quieter than the day's own entries, centred
+   under the chips */
+.week-more-tasks {
+  text-align: center;
+}
+
+.week-more-tasks a {
+  color: var(--color-muted);
 }
 
 /* A week with nothing on it says so on a phone, where its empty days

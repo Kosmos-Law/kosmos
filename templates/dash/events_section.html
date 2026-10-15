@@ -111,7 +111,7 @@
             {% endif %}
           {% endfor %}
           {% if day.more_tasks %}
-            <li class="week-more">
+            <li class="week-more week-more-tasks">
               <a href="{% url 'tasks:index' %}">{{ day.more_tasks }} more task{{ day.more_tasks|pluralize }}</a>
             </li>
           {% endif %}
