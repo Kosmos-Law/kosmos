@@ -171,11 +171,6 @@ Matter Switcher
   justify-content: flex-start;
 }
 
-/* Edit Matter: the toolbar's last child, pushed to the far right. */
-.matter-toolbar > .matter-edit {
-  margin-left: auto;
-}
-
 /* Mobile: pare the matter title to the name + the +Time action. Hides the
    Detail/Case mode pills (so Case is unreachable on phones — accepted for now),
    the +Expense action, and the edit/print tools; +Time stays, pushed to the far

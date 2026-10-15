@@ -97,7 +97,7 @@ Click a matter's name in the list. The matter opens on its **Contacts**
 tab. Across the top are the matter name (click it to switch to another
 open matter), **Detail** and **Case**, and two buttons to add time and add
 an expense (see [Time and expenses](time-and-expenses.md)). The pencil
-button at the far right opens **Edit Matter**. This page covers the
+button after them opens **Edit Matter**. This page covers the
 **Detail** side. **Case** holds the case file: documents, the
 timeline, witnesses, notes, emails, AI chat and research.
 
@@ -206,8 +206,8 @@ the matters that are **Pending** or **Open**.
 
 ## Edit a matter and change its status
 
-1. Open the matter and click the pencil button at the far right of the
-   title bar. **Edit Matter** opens with the same fields as **Add Matter**.
+1. Open the matter and click the pencil button in the title bar, after
+   the add-time and add-expense buttons. **Edit Matter** opens with the same fields as **Add Matter**.
 2. Make your changes and click **Submit**.
 
 The **Overview** shows the new details. You can also click the **Status**,

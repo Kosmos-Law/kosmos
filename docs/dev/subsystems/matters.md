@@ -192,7 +192,7 @@ current matter is not on that list (closed, or not the user's); there are
 no visible steppers. In `static/js/main.js`, `[` and `]` open those on a
 matter page, unless the page declares a user cycle (`data-cycle-*-url`:
 the Tasks, Time, Expenses and Flat Fees lists), which the brackets walk
-instead. The bar's far right is the Edit Matter button.
+instead. The Edit Matter button follows the add-time and add-expense buttons.
 Space then `m` opens `matterSwitcher`, which fetches `/matters/api/open/`
 (`open_matters_json`, the same filtered list).
 
