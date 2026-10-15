@@ -34,19 +34,15 @@ def tasks_for_user(queryset, user):
 
 
 def can_change_due_date(task, user):
-    """Whether ``user`` may move ``task``'s due date.
+    """Whether ``user`` may set or move ``task``'s due date.
 
-    A date set by someone other than the task's user is pinned (see
-    Task.save), and the assignor's alone to move (admins aside): the
-    assignee who cannot meet it goes to the assignor, and the task stays
-    lit on their list until that happens. A date the user set themselves,
-    an undated task, or a task nobody handed over, is theirs to reschedule.
+    The date of a task someone else assigned is the assignor's alone
+    (admins aside): the assignee who cannot meet it goes to the assignor,
+    and the task stays lit on their list until that happens. A task nobody
+    handed over is its user's to schedule.
     """
     return (
-        not task.date_pinned
-        or task.assigned_by_id is None
-        or task.assigned_by_id == user.pk
-        or user.is_admin
+        task.assigned_by_id is None or task.assigned_by_id == user.pk or user.is_admin
     )
 
 

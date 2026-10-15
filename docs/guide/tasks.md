@@ -126,7 +126,7 @@ The form closes and the new task is at the top of the list.
 | **User** | Yes | Any active user. Starts as the user whose chip is selected, otherwise you. |
 | **Importance** | Yes | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
 | **Status** | No | **Pending** (the default), **In progress**, **On hold** or **Complete**. |
-| **Date due** | No | Starts as today. Clear it for a task with no deadline. On a task for someone else, the date is yours alone to move: see [Pinned dates](#pinned-dates). |
+| **Date due** | No | Starts as today. Clear it for a task with no deadline. On a task for someone else, the date is yours alone to set or move: see [Dates on assigned tasks](#dates-on-assigned-tasks). |
 | **Date completed** | No | Leave it blank. Kosmos fills it in when the task becomes **Complete**. |
 
 Good to know:
@@ -156,42 +156,40 @@ characters at most) and click **Submit**. Click a note's date to edit or
 delete it. The icon is highlighted when a colleague has added a note
 since you last looked.
 
-## Pinned dates
+## Dates on assigned tasks
 
-A due date you set on a task for someone else is pinned: only you, or an
-administrator, can move it from then on. The person you gave it to sees
-the date with a pin beside it, and the row goes past due on their list
-like any other until the task is done or you move the date. If they
-cannot meet it, they come to you. You see the pin too, beside the date
-picker, on every date you hold for someone else. There is nothing to
-switch on. A date you set for yourself is your own, and the only loose
-way to hand a task over is to leave its date blank: the person holding
-it can then set a date of their own and move it as they like, until you
-set or move it yourself.
+The due date of a task you give to someone else is yours: only you, or an
+administrator, can set it, move it or clear it. The person you gave the
+task to sees the date as plain text, with your name when they hover, and
+the row goes past due on their list like any other until the task is done
+or you move the date. If they cannot meet it, they come to you. There is
+nothing to switch on, and no loose kind of date: a task you want to hand
+over without a deadline is one you leave undated.
 
-The pin follows the task. If the person holding it passes it on, or
-passes it on and takes it back, the date and the person who set it stay
-as they are: only that person, or an administrator, can move the date,
-clear it, or hand the task over with a new date of their own. Taking a
-task back yourself makes its date yours again, and clearing a date frees
-it. For the person holding a pinned task, **Date due** cannot be changed in **Edit
-Task**; the date in the list has no picker; and a bulk **Date** or
-**Update** change leaves pinned dates out and says how many it skipped.
-Everything else about the task, its status, importance, matter, notes
-and checklist, is open to them as before.
+The rule follows the task, not the row it sits on. If the person you gave
+it to passes it on, or passes it on and takes it back, you are still the
+one who assigned it and the date is still yours. You stop being the
+assignor only by taking the task back yourself, and an administrator who
+reassigns the task takes your place. For the person holding an assigned
+task, **Date due** cannot be changed in **Edit Task**; the date in the
+list has no picker; and a bulk **Date** or **Update** change leaves those
+dates out and says how many it skipped. Everything else about the task,
+its status, importance, matter, notes and checklist, is open to them as
+before. A task you add for yourself has no assignor, and its date is yours
+to move at will.
 
 ### Your watch-list
 
-A dated task you gave someone else can sit on your own list too. Click
-the pin button beside **Filter**, on the **Tasks** page or a matter's
-**Tasks** tab, and the tasks whose dates you hold for other people appear
+A task you assigned to someone else can sit on your own list too. Click
+the paper-plane button beside **Filter**, on the **Tasks** page or a
+matter's **Tasks** tab, and the tasks you assigned to other people appear
 alongside those of whichever user chip is selected, with their name in
 the **User** column. The date filter applies to them as to any task, so
-a pinned task that goes past due lights up on their list and on yours at
-the same time. The pin stays on until you click it again: **Restore
+an assigned task that goes past due lights up on their list and on yours
+at the same time. The button stays on until you click it again: **Restore
 Defaults** does not turn it off, and it is remembered between sign-ins.
-With **All** selected, the pin changes nothing, since everyone's tasks
-are already shown.
+With **All** selected, it changes nothing, since everyone's tasks are
+already shown.
 
 ## Find tasks
 
@@ -218,7 +216,7 @@ the chip with three dots: click a name to filter by that user, or the pin
 beside it to keep that user as a chip. You can pin five, and the same
 chips appear on the **Activity** tabs.
 
-**The pin button** adds the dated tasks you gave other people (see
+**The paper-plane button** adds the tasks you assigned to other people (see
 [Your watch-list](#your-watch-list)). **Filter** opens **Filter Tasks** for everything else. Click **Apply**
 to use it. **Restore Defaults** returns to your own open tasks due today
 or earlier. (On a matter's **Tasks** tab, **Restore Defaults** returns

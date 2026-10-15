@@ -21,11 +21,10 @@ class Task(AuditMixin, models.Model):
         max_digits=18, decimal_places=8, null=True, blank=True, default=None
     )
     # Who handed the task to its user: stamped by save() whenever the task
-    # is given to someone other than the person saving it, cleared when a
-    # user takes it on themselves. A due date set or moved by someone other
-    # than the task's user is pinned: theirs alone to move (admins aside),
-    # see access.can_change_due_date. A date the user sets for themselves
-    # is their own. Both stamps are save()'s work, never a form field.
+    # is given to someone other than the person saving it, cleared when the
+    # assignor takes it back. The due date of an assigned task is the
+    # assignor's alone to move (admins aside): see access.can_change_due_date.
+    # The stamp is save()'s work, never a form field.
     assigned_by = models.ForeignKey(
         CustomUser,
         on_delete=models.SET_NULL,
@@ -33,7 +32,6 @@ class Task(AuditMixin, models.Model):
         blank=True,
         related_name="tasks_assigned",
     )
-    date_pinned = models.BooleanField(default=False)
     history = HistoricalRecords(table_name="agenda_historicaltask")
 
     def save(self, *args, **kwargs):
@@ -50,22 +48,19 @@ class Task(AuditMixin, models.Model):
                 old_task = Task.objects.get(pk=self.pk)
                 old_status = old_task.status
                 old_user_id = old_task.user_id
-                old_date_due = old_task.date_due
             except Task.DoesNotExist:
                 old_status = None
                 old_user_id = None
-                old_date_due = None
         else:
             old_status = None
             old_user_id = None
-            old_date_due = None
 
         # The assignor: whoever gives the task to someone else, re-stamped
         # on every change of hands. Outside a request (the worker, a shell)
-        # there is no actor and the stamps are left as they are.
+        # there is no actor and the stamp is left as it is.
         actor = get_current_user()
         if actor is not None and getattr(actor, "is_authenticated", False):
-            self._stamp_hand_over(actor, old_user_id, old_date_due)
+            self._stamp_hand_over(actor, old_user_id)
 
         # Set date_completed when status becomes Complete. localdate, not
         # now().date(): the latter is the UTC date, which rolls over at 8pm
@@ -78,41 +73,25 @@ class Task(AuditMixin, models.Model):
 
         super().save(*args, **kwargs)
 
-    def _stamp_hand_over(self, actor, old_user_id, old_date_due):
-        """Record who handed the task over and whether its date is theirs.
+    def _stamp_hand_over(self, actor, old_user_id):
+        """Record who handed the task over.
 
-        A date is pinned when the person setting or moving it is not the
-        task's user: the assignor giving a dated task, or anyone dating a
-        task that is someone else's. A user dating their own task, or
-        taking a task on themselves, holds a date of their own. Clearing
-        the date clears the pin too, so an undated task is anyone's to
-        date. The pin names its holder through assigned_by, stamped here
-        when nobody had handed the task over.
-
-        A pin someone else holds survives a hand-over by anyone but them
-        (admins aside): the task changes hands, the date and its holder do
-        not. Passing a pinned task on, or around and back, frees nothing.
+        Giving a task to someone else makes the giver its assignor; taking
+        it on yourself clears the stamp. Once a task has an assignor, only
+        they or an admin change that: the assignee passing the task on, or
+        around and back, moves the task and not the assignor, so the due
+        date stays the assignor's wherever the task goes.
         """
-        handed = old_user_id is None or self.user_id != old_user_id
-        dated = old_user_id is None or self.date_due != old_date_due
-        own = self.user_id == actor.pk
+        if old_user_id is not None and self.user_id == old_user_id:
+            return
         held_by_another = (
-            self.date_pinned
-            and self.assigned_by_id is not None
+            self.assigned_by_id is not None
             and self.assigned_by_id != actor.pk
             and not actor.is_admin
         )
         if held_by_another:
             return
-        if handed:
-            self.assigned_by = None if own else actor
-        if own:
-            if handed or dated:
-                self.date_pinned = False
-        elif handed or dated:
-            self.date_pinned = self.date_due is not None
-            if self.date_pinned and self.assigned_by_id is None:
-                self.assigned_by = actor
+        self.assigned_by = None if self.user_id == actor.pk else actor
 
     def __str__(self):
         return f"{self.description} : {self.id}"

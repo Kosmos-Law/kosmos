@@ -354,25 +354,18 @@ tr > td.importance.complete .button-link {
   width: 7rem;
 }
 
-/* A pinned date: set by whoever handed the task over, shown to the
-   assignee as text with a pin in place of the picker link, and to the
-   assignor as the picker link with the pin beside it. */
-.task-date-pinned {
+/* The due date of a task someone else assigned: shown to the assignee as
+   text in place of the picker link (the assignor's name is on hover). */
+.task-date-held {
   color: var(--color-muted);
   white-space: nowrap;
-}
-
-.task-date-pinned .icon-pin,
-.task-date-pin {
-  color: var(--color-muted-more);
-  margin-left: 0.25rem;
 }
 
 .task-detail-assigned-by {
   color: var(--color-muted);
 }
 
-.task-detail-assigned-by .icon-pin {
+.task-detail-assigned-by .icon-send {
   margin-right: 0.5rem;
 }
 
@@ -407,8 +400,7 @@ tr > td.importance.complete .button-link {
 .tasks-table .date {
   overflow: visible;
   white-space: nowrap;
-  /* Room for the date and the pin of a pinned date. */
-  width: 8.5rem;
+  width: 7rem;
 }
 
 .tasks-table .date .dropdown-menu {

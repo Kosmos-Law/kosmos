@@ -50,11 +50,11 @@
             <span class="task-detail-date">{{ task.date_due|date:"M j, Y"|default:"" }}</span>
           </div>
         </div>
-        {% if task.date_pinned and task.assigned_by %}
+        {% if task.assigned_by %}
           <div class="task-detail-row">
             <span class="task-detail-assigned-by">
-              <i class="icon-pin"></i>
-              Date pinned by {{ task.assigned_by.username|title }}, who alone can move it.
+              <i class="icon-send"></i>
+              Assigned by {{ task.assigned_by.username|title }}, who alone can move the date.
             </span>
           </div>
         {% endif %}

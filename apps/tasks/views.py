@@ -736,13 +736,13 @@ def tasks_toggle_chip(request, user_id):
 
 @login_required
 @require_POST
-def tasks_toggle_pinned(request):
-    """The toolbar's pin: show or hide, beside the user's own tasks, the
-    tasks they pinned for other people. A standing preference on the
-    user (see tasks.widen_for_pins for what it shows)."""
+def tasks_toggle_assigned(request):
+    """The toolbar's watch-list toggle: show or hide, beside the user's
+    own tasks, the tasks they assigned to other people. A standing
+    preference on the user (see tasks.widen_for_assigned)."""
     user = request.user
-    user.show_pinned_tasks = not user.show_pinned_tasks
-    user.save(update_fields=["show_pinned_tasks"])
+    user.show_assigned_tasks = not user.show_assigned_tasks
+    user.save(update_fields=["show_assigned_tasks"])
     return _render_tasks(request)
 
 

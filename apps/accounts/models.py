@@ -72,10 +72,10 @@ class CustomUser(AbstractUser):
     # explicit picks": small firms show everyone, large ones fall back to
     # the overflow menu until the user pins a working set.
     task_user_chips = models.JSONField(default=list, blank=True)
-    # The tasks toolbar's pin toggle: show, beside the user's own tasks,
-    # the tasks they pinned for other people (their watch-list). A
-    # standing preference, so it outlives Restore Defaults and sign-out.
-    show_pinned_tasks = models.BooleanField(default=False)
+    # The tasks toolbar's watch-list toggle: show, beside the user's own
+    # tasks, the tasks they assigned to other people. A standing
+    # preference, so it outlives Restore Defaults and sign-out.
+    show_assigned_tasks = models.BooleanField(default=False)
     is_attorney = models.BooleanField(default=True)
     # Free-text job title ("Attorney", "Paralegal", "Office Manager", ...).
     # Shown in the users table and fed to the AI context so the model never

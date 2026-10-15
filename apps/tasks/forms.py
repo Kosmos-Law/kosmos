@@ -78,13 +78,14 @@ class TaskForm(forms.ModelForm):
             self.fields["matter"].queryset = matters_for_task_form(
                 user, include_id=include_matter or self.instance.matter_id
             )
-            # A pinned date someone else set is shown, not editable. A
-            # disabled field keeps its initial value whatever is posted.
+            # The date of a task someone else assigned is shown, not
+            # editable. A disabled field keeps its initial value whatever
+            # is posted.
             if self.instance.pk and not can_change_due_date(self.instance, user):
                 field = self.fields["date_due"]
                 field.disabled = True
                 field.widget.attrs["title"] = (
-                    f"Pinned by {self.instance.assigned_by.username.title()}. "
+                    f"Assigned by {self.instance.assigned_by.username.title()}. "
                     "Only they can move the date."
                 )
 
