@@ -180,9 +180,7 @@ A view that changes data answers 204 and names the list to refresh.
 Assert both, and the row (`apps/case/tests/test_views_facts.py`):
 
 ```python
-response = client_with_matter.post(
-    f"/case/{matter_id}/facts/toggle-select/{fact.id}/"
-)
+response = client_with_matter.post(f"/case/{matter_id}/facts/toggle-select/{fact.id}/")
 assert response.status_code == 204
 assert response.headers["HX-Trigger"] == "factsChanged"
 ```

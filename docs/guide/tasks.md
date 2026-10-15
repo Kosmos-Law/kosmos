@@ -126,8 +126,7 @@ The form closes and the new task is at the top of the list.
 | **User** | Yes | Any active user. Starts as the user whose chip is selected, otherwise you. |
 | **Importance** | Yes | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
 | **Status** | No | **Pending** (the default), **In progress**, **On hold** or **Complete**. |
-| **Date due** | No | Starts as today. Clear it for a task with no deadline. |
-| **Pinned date** | No | **No** (the default) leaves the date open to whoever has the task. **Yes** pins it, yours alone to move once the task is someone else's: see [Pinned dates](#pinned-dates). |
+| **Date due** | No | Starts as today. Clear it for a task with no deadline. On a task for someone else, the date is yours alone to move: see [Pinned dates](#pinned-dates). |
 | **Date completed** | No | Leave it blank. Kosmos fills it in when the task becomes **Complete**. |
 
 Good to know:
@@ -159,28 +158,31 @@ since you last looked.
 
 ## Pinned dates
 
-A due date is a suggestion unless you pin it. On a task you give
-to someone else, set **Pinned date** to **Yes** in **Add Task** or **Edit
-Task**, and only you, or an administrator, can move the date from then
-on. The person you gave it to sees the date with a pin beside it,
-and the row goes past due on their list like any other until the task is
-done or you move the date. If they cannot meet it, they come to you. You
-see the pin too, beside the date picker, on every date you pinned.
+A due date you set on a task for someone else is pinned: only you, or an
+administrator, can move it from then on. The person you gave it to sees
+the date with a pin beside it, and the row goes past due on their list
+like any other until the task is done or you move the date. If they
+cannot meet it, they come to you. You see the pin too, beside the date
+picker, on every date you hold for someone else. There is nothing to
+switch on. A date you set for yourself is your own, and the only loose
+way to hand a task over is to leave its date blank: the person holding
+it can then set a date of their own and move it as they like, until you
+set or move it yourself.
 
-The rule follows the hand-over. A pinned date on a task you add for
-yourself, or take on yourself, holds nobody. Reassigning a task makes the
-person who reassigned it the one who can move its date. For the person
-holding a pinned task, **Date due** and **Pinned date** cannot be changed in
-**Edit Task**; the date in the list has no picker; and a bulk **Date** or
+The rule follows the hand-over. Reassigning a dated task makes the
+person who reassigned it the one who can move its date, and taking a
+task on yourself makes its date yours. Clearing a date frees it. For the
+person holding a pinned task, **Date due** cannot be changed in **Edit
+Task**; the date in the list has no picker; and a bulk **Date** or
 **Update** change leaves pinned dates out and says how many it skipped.
 Everything else about the task, its status, importance, matter, notes
 and checklist, is open to them as before.
 
 ### Your watch-list
 
-A task you pinned for someone else can sit on your own list too. Click
+A dated task you gave someone else can sit on your own list too. Click
 the pin button beside **Filter**, on the **Tasks** page or a matter's
-**Tasks** tab, and the tasks you pinned for other people appear
+**Tasks** tab, and the tasks whose dates you hold for other people appear
 alongside those of whichever user chip is selected, with their name in
 the **User** column. The date filter applies to them as to any task, so
 a pinned task that goes past due lights up on their list and on yours at
@@ -214,7 +216,7 @@ the chip with three dots: click a name to filter by that user, or the pin
 beside it to keep that user as a chip. You can pin five, and the same
 chips appear on the **Activity** tabs.
 
-**The pin button** adds the tasks you pinned for other people (see
+**The pin button** adds the dated tasks you gave other people (see
 [Your watch-list](#your-watch-list)). **Filter** opens **Filter Tasks** for everything else. Click **Apply**
 to use it. **Restore Defaults** returns to your own open tasks due today
 or earlier. (On a matter's **Tasks** tab, **Restore Defaults** returns

@@ -22,9 +22,10 @@ class Task(AuditMixin, models.Model):
     )
     # Who handed the task to its user: stamped by save() whenever the task
     # is given to someone other than the person saving it, cleared when a
-    # user takes it on themselves. With date_pinned, the due date is theirs
-    # alone to move (admins aside): see access.can_change_due_date. A due
-    # date is suggestive unless the assignor pins it.
+    # user takes it on themselves. A due date set or moved by someone other
+    # than the task's user is pinned: theirs alone to move (admins aside),
+    # see access.can_change_due_date. A date the user sets for themselves
+    # is their own. Both stamps are save()'s work, never a form field.
     assigned_by = models.ForeignKey(
         CustomUser,
         on_delete=models.SET_NULL,
@@ -49,23 +50,22 @@ class Task(AuditMixin, models.Model):
                 old_task = Task.objects.get(pk=self.pk)
                 old_status = old_task.status
                 old_user_id = old_task.user_id
+                old_date_due = old_task.date_due
             except Task.DoesNotExist:
                 old_status = None
                 old_user_id = None
+                old_date_due = None
         else:
             old_status = None
             old_user_id = None
+            old_date_due = None
 
         # The assignor: whoever gives the task to someone else, re-stamped
         # on every change of hands. Outside a request (the worker, a shell)
-        # there is no actor and the stamp is left as it is.
+        # there is no actor and the stamps are left as they are.
         actor = get_current_user()
-        if (
-            actor is not None
-            and getattr(actor, "is_authenticated", False)
-            and (old_user_id is None or self.user_id != old_user_id)
-        ):
-            self.assigned_by = actor if self.user_id != actor.pk else None
+        if actor is not None and getattr(actor, "is_authenticated", False):
+            self._stamp_hand_over(actor, old_user_id, old_date_due)
 
         # Set date_completed when status becomes Complete. localdate, not
         # now().date(): the latter is the UTC date, which rolls over at 8pm
@@ -77,6 +77,30 @@ class Task(AuditMixin, models.Model):
             self.date_completed = None
 
         super().save(*args, **kwargs)
+
+    def _stamp_hand_over(self, actor, old_user_id, old_date_due):
+        """Record who handed the task over and whether its date is theirs.
+
+        A date is pinned when the person setting or moving it is not the
+        task's user: the assignor giving a dated task, or anyone dating a
+        task that is someone else's. A user dating their own task, or
+        taking a task on themselves, holds a date of their own. Clearing
+        the date clears the pin too, so an undated task is anyone's to
+        date. The pin names its holder through assigned_by, stamped here
+        when nobody had handed the task over.
+        """
+        handed = old_user_id is None or self.user_id != old_user_id
+        dated = old_user_id is None or self.date_due != old_date_due
+        own = self.user_id == actor.pk
+        if handed:
+            self.assigned_by = None if own else actor
+        if own:
+            if handed or dated:
+                self.date_pinned = False
+        elif handed or dated:
+            self.date_pinned = self.date_due is not None
+            if self.date_pinned and self.assigned_by_id is None:
+                self.assigned_by = actor
 
     def __str__(self):
         return f"{self.description} : {self.id}"

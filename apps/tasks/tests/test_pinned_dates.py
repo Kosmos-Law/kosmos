@@ -1,6 +1,6 @@
-"""Pinned dates: a due date is suggestive unless the assignor makes it
-pinned; a pinned date on a task handed to someone else is the assignor's (or
-an admin's) alone to move."""
+"""Pinned dates: a due date set or moved by someone other than the task's
+user is pinned, the assignor's (or an admin's) alone to move. A date the
+user set themselves, or no date at all, is theirs."""
 
 import pytest
 from django.test import Client
@@ -57,8 +57,12 @@ def _data(assignee, **changes):
         "importance": "4",
         "status": "Pending",
         "date_due": "2026-11-02",
-        "date_pinned": "False",
     } | changes
+
+
+def _select(client, *tasks):
+    for t in tasks:
+        client.post(reverse("tasks:toggle-select", args=[t.id]))
 
 
 def _toast(response):
@@ -77,12 +81,109 @@ def test_a_task_for_someone_else_records_who_gave_it(client, user, colleague):
     assert Task.objects.get().assigned_by == user
 
 
-def test_a_date_is_suggestive_unless_pinned(client, user, colleague):
+def test_a_dated_task_for_someone_else_is_pinned(client, colleague):
     client.post(reverse("tasks:add"), _data(colleague))
-    assert not Task.objects.get().date_pinned
-    Task.objects.all().delete()
-    client.post(reverse("tasks:add"), _data(colleague, date_pinned="True"))
     assert Task.objects.get().date_pinned
+
+
+def test_an_undated_task_for_someone_else_is_not(client, colleague):
+    client.post(reverse("tasks:add"), _data(colleague, date_due=""))
+    assert not Task.objects.get().date_pinned
+
+
+def test_a_dated_task_for_yourself_is_not(client, user):
+    client.post(reverse("tasks:add"), _data(user))
+    assert not Task.objects.get().date_pinned
+
+
+def test_a_date_the_assignee_sets_on_an_undated_task_is_theirs(
+    client, colleague_client, colleague
+):
+    client.post(reverse("tasks:add"), _data(colleague, date_due=""))
+    task = Task.objects.get()
+    colleague_client.post(
+        reverse("tasks:date", args=[task.id]), {"date_due": "2025-01-31"}
+    )
+    task.refresh_from_db()
+    assert str(task.date_due) == "2025-01-31"
+    assert not task.date_pinned
+    colleague_client.post(
+        reverse("tasks:date", args=[task.id]), {"date_due": "2025-02-28"}
+    )
+    task.refresh_from_db()
+    assert str(task.date_due) == "2025-02-28"
+
+
+def test_the_assignor_moving_that_date_pins_it(client, colleague_client, colleague):
+    client.post(reverse("tasks:add"), _data(colleague, date_due=""))
+    task = Task.objects.get()
+    colleague_client.post(
+        reverse("tasks:date", args=[task.id]), {"date_due": "2025-01-31"}
+    )
+    client.post(reverse("tasks:date", args=[task.id]), {"date_due": "2025-03-31"})
+    task.refresh_from_db()
+    assert task.date_pinned
+    response = colleague_client.post(
+        reverse("tasks:date", args=[task.id]), {"date_due": "2025-04-30"}
+    )
+    assert "Only Ollie" in _toast(response)
+
+
+def test_clearing_the_date_frees_it(client, handed_off):
+    client.post(reverse("tasks:date", args=[handed_off.id]), {"date_due": ""})
+    handed_off.refresh_from_db()
+    assert handed_off.date_due is None
+    assert not handed_off.date_pinned
+
+
+def test_handing_over_your_own_dated_task_pins_it(client, task, user, colleague):
+    client.post(reverse("tasks:task-user", args=[task.id, colleague.id]))
+    task.refresh_from_db()
+    assert task.assigned_by == user
+    assert task.date_pinned
+
+
+def test_dating_a_colleagues_own_task_pins_it_and_names_you(
+    colleague_client, task, colleague
+):
+    colleague_client.post(
+        reverse("tasks:date", args=[task.id]), {"date_due": "2025-01-31"}
+    )
+    task.refresh_from_db()
+    assert task.date_pinned
+    assert task.assigned_by == colleague
+
+
+def test_the_assignee_editing_the_rest_keeps_the_pin(
+    colleague_client, handed_off, colleague
+):
+    colleague_client.post(
+        reverse("tasks:edit", args=[handed_off.id]),
+        _data(colleague, description="Read about Gandhi again", date_due="2024-12-07"),
+    )
+    handed_off.refresh_from_db()
+    assert handed_off.date_pinned
+
+
+def test_bulk_reassigning_dated_tasks_pins_them(client, task, user, colleague):
+    _select(client, task)
+    client.post(reverse("tasks:bulk-set-user"), {"user": colleague.id})
+    task.refresh_from_db()
+    assert task.user == colleague
+    assert task.assigned_by == user
+    assert task.date_pinned
+
+
+def test_bulk_dating_someone_elses_tasks_pins_them(client, user, colleague):
+    theirs = Task.objects.create(
+        user=colleague, description="Bob's task", status="Pending"
+    )
+    _select(client, theirs)
+    client.post(reverse("tasks:bulk-set-due-date"), {"date_due": "2025-01-31"})
+    theirs.refresh_from_db()
+    assert str(theirs.date_due) == "2025-01-31"
+    assert theirs.date_pinned
+    assert theirs.assigned_by == user
 
 
 def test_a_task_for_yourself_has_no_assignor(client, user):
@@ -99,14 +200,19 @@ def test_reassigning_restamps_the_assignor(colleague_client, handed_off, colleag
     assert handed_off.assigned_by == colleague
 
 
-def test_taking_a_task_on_yourself_clears_the_assignor(
-    colleague_client, task, user, colleague
+def test_taking_a_task_on_yourself_clears_the_assignor_and_the_pin(
+    colleague_client, handed_off, colleague
 ):
-    task.assigned_by = user
-    task.save()
-    colleague_client.post(reverse("tasks:task-user", args=[task.id, colleague.id]))
-    task.refresh_from_db()
-    assert task.assigned_by is None
+    third = CustomUser.objects.create(
+        username="Cy", email="cy@example.com", user_rate=100
+    )
+    colleague_client.post(reverse("tasks:task-user", args=[handed_off.id, third.id]))
+    colleague_client.post(
+        reverse("tasks:task-user", args=[handed_off.id, colleague.id])
+    )
+    handed_off.refresh_from_db()
+    assert handed_off.assigned_by is None
+    assert not handed_off.date_pinned
 
 
 def test_an_edit_that_keeps_the_user_keeps_the_assignor(
@@ -147,16 +253,6 @@ def test_an_admin_can(admin_client, handed_off):
     assert str(handed_off.date_due) == "2025-01-31"
 
 
-def test_a_suggestive_date_is_the_assignees_to_move(colleague_client, handed_off):
-    handed_off.date_pinned = False
-    handed_off.save()
-    colleague_client.post(
-        reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
-    )
-    handed_off.refresh_from_db()
-    assert str(handed_off.date_due) == "2025-01-31"
-
-
 def test_a_task_nobody_handed_over_is_anyones_to_move(colleague_client, task):
     colleague_client.post(
         reverse("tasks:date", args=[task.id]), {"date_due": "2025-01-31"}
@@ -181,27 +277,18 @@ def test_the_matter_tab_refuses_too(colleague_client, handed_off, matter):
 def test_the_form_shows_the_assignee_a_disabled_date(handed_off, colleague, user):
     form = TaskForm(instance=handed_off, user=colleague)
     assert form.fields["date_due"].disabled
-    assert form.fields["date_pinned"].disabled
+    assert "date_pinned" not in form.fields
     assert "Pinned by Ollie" in form.fields["date_due"].widget.attrs["title"]
     assert not TaskForm(instance=handed_off, user=user).fields["date_due"].disabled
 
 
-def test_the_assignee_cannot_unpin_a_date(colleague_client, handed_off, colleague):
-    colleague_client.post(
-        reverse("tasks:edit", args=[handed_off.id]),
-        _data(colleague, date_pinned="False", date_due="2025-01-31"),
-    )
-    handed_off.refresh_from_db()
-    assert handed_off.date_pinned
-    assert str(handed_off.date_due) == "2024-12-07"
-
-
-def test_the_assignor_can_unpin_it(client, handed_off, colleague):
+def test_the_assignor_frees_the_date_by_clearing_it(client, handed_off, colleague):
     client.post(
         reverse("tasks:edit", args=[handed_off.id]),
-        _data(colleague, date_pinned="False"),
+        _data(colleague, date_due=""),
     )
     handed_off.refresh_from_db()
+    assert handed_off.date_due is None
     assert not handed_off.date_pinned
 
 
@@ -221,11 +308,6 @@ def test_a_posted_date_from_the_assignee_is_ignored(
 # -----------------------------------------------------
 # bulk changes
 # -----------------------------------------------------
-def _select(client, *tasks):
-    for t in tasks:
-        client.post(reverse("tasks:toggle-select", args=[t.id]))
-
-
 def test_bulk_set_date_skips_handed_over_tasks(colleague_client, handed_off, colleague):
     own = Task.objects.create(
         user=colleague, description="Bob's own task", status="Pending"
@@ -264,7 +346,7 @@ def test_bulk_update_applies_the_rest_but_not_the_date(colleague_client, handed_
 # -----------------------------------------------------
 # what each person sees
 # -----------------------------------------------------
-def test_the_assignee_sees_a_lock_and_the_assignor_a_picker(
+def test_the_assignee_sees_a_pin_and_the_assignor_a_picker(
     client, colleague_client, handed_off
 ):
     for c in (client, colleague_client):

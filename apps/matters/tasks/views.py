@@ -863,9 +863,15 @@ def _bulk_due_date(request, matter_id, selected_tasks, date_due):
     user may reschedule; the ones handed over by someone else are left
     alone and counted in a warning."""
     tasks = Task.objects.filter(id__in=selected_tasks, matter_id=matter_id)
-    allowed = [t.id for t in tasks if can_change_due_date(t, request.user)]
-    skipped = tasks.count() - len(allowed)
-    Task.objects.filter(id__in=allowed).update(date_due=date_due)
+    # Saved one by one, not update()d: save() pins the date on a task
+    # that is someone else's and records the change in history.
+    skipped = 0
+    for task in tasks:
+        if can_change_due_date(task, request.user):
+            task.date_due = date_due
+            task.save()
+        else:
+            skipped += 1
     response = selection_response(TASKS_TRIGGER)
     if skipped:
         toast_warning(response, due_date_skip_message(skipped))
@@ -956,7 +962,11 @@ def tasks_bulk_set_user(request, id):
     user_id = request.POST.get("user")
     if user_id:
         user = get_object_or_404(CustomUser, pk=user_id)
-        Task.objects.filter(id__in=selected_tasks, matter_id=id).update(user=user)
+        # Saved one by one, not update()d: save() stamps the assignor and
+        # pins the date of a dated task handed to someone else.
+        for task in Task.objects.filter(id__in=selected_tasks, matter_id=id):
+            task.user = user
+            task.save()
         clear_selected_ids(request, key)
 
     return selection_response(TASKS_TRIGGER)
