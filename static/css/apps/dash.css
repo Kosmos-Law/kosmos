@@ -57,7 +57,8 @@
 ========================================================================== */
 
 /* The heading in three parts: the title with its link to the calendar,
-   the week's span between its chevrons in the middle, and an empty end.
+   the week's span between its chevrons in the middle, and the Tasks
+   toggle at the end.
    The outer columns share the width left over equally, so the stepper
    stays centred whatever the title holds. */
 .events-header.week-title {
@@ -74,6 +75,34 @@
 
 .week-nav {
   position: relative;
+}
+
+.week-title-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* The Tasks toggle: a check row as the calendar's menu draws its "My
+   tasks", the square icon ticked when the tasks are shown */
+.week-tasks-toggle {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.week-tasks-toggle:hover {
+  background: var(--background-control);
+  color: var(--color-primary);
+}
+
+.week-tasks-toggle[aria-pressed="true"] {
+  color: var(--color-primary);
 }
 
 .week-nav-arrow {
@@ -255,6 +284,48 @@
   top: 0.25rem;
 }
 
+/* A task as the month view draws it (calendar.css): the task chip, a
+   lighter weight than an event so it reads as something to do rather than
+   somewhere to be, and a box before its title that marks it done (the rest
+   of the chip opens it). The title wraps clear of the box. */
+.week-task.week-entry-all-day,
+.week-task.week-entry-all-day:hover {
+  background: var(--calendar-task, var(--calendar-chip, var(--background-control)));
+  border: 1px solid var(--calendar-chip-border, transparent);
+  color: var(--calendar-task-color, var(--color-primary));
+  font-weight: normal;
+}
+
+.week-task .week-entry-title {
+  padding-left: calc(1em + 0.25rem);
+  position: relative;
+}
+
+.week-task-box {
+  color: var(--calendar-task-icon, var(--link));
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  /* an optical nudge onto the title's centre line */
+  top: 2px;
+}
+
+.week-task-box::before {
+  content: "\e167";
+  font-family: lucide;
+}
+
+.week-task-box:hover::before {
+  content: "\e16a";
+}
+
+/* A task overdue from before the week, gathered on today: its date in
+   place of a time, and its text in the urgent colour */
+.week-task.is-overdue,
+.week-task.is-overdue:hover {
+  color: var(--urgent);
+}
+
 .week-more {
   font-size: 0.8125rem;
   padding: 0 0.5rem;
@@ -286,14 +357,16 @@
     display: none;
   }
 
-  /* the title takes the top line, and the stepper its own line under
-     it, centred */
+  /* the title and the Tasks toggle share the top line, and the stepper
+     takes its own line under them, centred */
   .events-header.week-title {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     row-gap: 0.5rem;
   }
 
   .week-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
     justify-content: center;
   }
 
