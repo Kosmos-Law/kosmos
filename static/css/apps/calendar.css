@@ -516,11 +516,13 @@
 
 /* The circle with its margin stands as tall as the other numbers with
    their padding (2.5rem), so today's events start on the same line as
-   its neighbours' and a bar spanning the days keeps clear of them */
+   its neighbours' and a bar spanning the days keeps clear of them. The
+   number is in the lavender (the violet icon colour) on the pale lavender
+   selection circle. */
 .fc .fc-day-today .fc-daygrid-day-number {
   background-color: var(--selected-background);
   border-radius: 50%;
-  color: var(--selected-color);
+  color: var(--icon-violet);
   font-weight: 500;
   height: 2rem;
   line-height: 2rem;

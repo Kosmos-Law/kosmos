@@ -199,11 +199,12 @@
 }
 
 /* Today's number as the month view marks it (calendar.css): in the
-   selection colour, on a circle of it. The circle is drawn behind the
-   number rather than sized round it, so the heading keeps its height and
-   today's entries start on the same line as the other days'. */
+   lavender (the violet icon colour), on the pale lavender selection
+   circle. The circle is drawn behind the number rather than sized round
+   it, so the heading keeps its height and today's entries start on the
+   same line as the other days'. */
 .is-today .week-day-date {
-  color: var(--selected-color);
+  color: var(--icon-violet);
   font-weight: 500;
   position: relative;
   text-align: center;
