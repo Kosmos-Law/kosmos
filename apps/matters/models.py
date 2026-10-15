@@ -1,5 +1,6 @@
 from django.db import models
-from django.db.models.signals import post_delete
+from django.db.models import ProtectedError
+from django.db.models.signals import post_delete, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
@@ -500,7 +501,7 @@ class GroupQuerySet(models.QuerySet):
         """The protected firm-wide system Client group. A matter's client is
         mirrored into a Relationship in this group; it's the one stable reference
         (see is_system) that replaces name-string lookups."""
-        return self.filter(is_system=True, name="Client", matter__isnull=True).first()
+        return self.filter(is_system=True, matter__isnull=True).order_by("id").first()
 
 
 class Group(AuditMixin, models.Model):
@@ -538,7 +539,7 @@ class Group(AuditMixin, models.Model):
 class RoleQuerySet(models.QuerySet):
     def client_role(self):
         """The protected system Client role used for the matter-client mirror."""
-        return self.filter(is_system=True, name="Client").first()
+        return self.filter(is_system=True).order_by("id").first()
 
 
 class Role(AuditMixin, models.Model):
@@ -572,6 +573,23 @@ class Relationship(AuditMixin, models.Model):
 
     def __str__(self):
         return f"matter: {self.matter.id}, contact: {self.contact.id}, role: {self.role.id}"
+
+
+@receiver(pre_delete, sender=Group)
+@receiver(pre_delete, sender=Role)
+def protect_system_rows(sender, instance, **kwargs):
+    """The system Client group and role can never be deleted, by anyone or
+    any road (Settings refuses first; this stops a shell, a queryset delete
+    or a future view). The matter-client mirror, the Contacts tab and the
+    billing contacts all depend on them; a deletion would also cascade
+    through every client's party row. They are seeded on every migrate
+    (apps.matters.system_rows), so an installation always has them."""
+    if instance.is_system:
+        raise ProtectedError(
+            f"The {instance.name} {sender.__name__.lower()} is protected and "
+            "cannot be deleted.",
+            {instance},
+        )
 
 
 @receiver(post_delete, sender=Relationship)

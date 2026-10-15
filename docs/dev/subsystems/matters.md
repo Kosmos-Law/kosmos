@@ -111,8 +111,13 @@ rows that used it). A group is firm-wide when `matter` is null, or a
 matter's own; `Group.MATTER_GROUP_ORDER_BASE` (1000) keeps matter groups
 ordered after the firm's, and `GroupQuerySet.for_matter()` returns the
 active ones for a matter in that order. The firm-wide `Client` group and
-the `Client` role carry `is_system=True` (seeded as such by migration
-`0042`), and Settings refuses to rename or delete them. Co-clients also
+the `Client` role carry `is_system=True`: `apps/matters/system_rows.py`
+seeds them after every `migrate` (a `post_migrate` handler connected in
+`apps.py`; migration `0042` first marked them), so every installation
+has them from its first run, `GroupQuerySet.client_group()` and
+`RoleQuerySet.client_role()` find them by the flag alone (a rename cannot
+lose them), a `pre_delete` receiver raises `ProtectedError` for them on
+any road, and Settings refuses to rename or delete them. Co-clients also
 take the Client role, on a different contact, and are ordinary rows.
 
 **`PracticeArea`** is a name and `is_active`. Migration `0023` created the

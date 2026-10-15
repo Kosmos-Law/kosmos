@@ -16,8 +16,11 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def client_group():
-    """The firm-wide system Client group the choices come from."""
-    return Group.objects.create(name="Client", order=0, is_system=True)
+    """The firm-wide system Client group the choices come from (seeded on
+    migrate; created here for a test database built before the seed)."""
+    return Group.objects.client_group() or Group.objects.create(
+        name="Client", order=1, is_system=True
+    )
 
 
 def on_matter(user, folder, matter, role, group, name, email=None):
