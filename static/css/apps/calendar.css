@@ -551,6 +551,19 @@
   background: var(--background-td);
 }
 
+/* The month view's weekday row is styled as the app's table headers
+   (tables.css): the header fill and left-set text, ruled off below (above)
+   and between its cells. The dash's Calendar Week heads its days the same
+   way. */
+.fc-dayGridMonth-view th.fc-col-header-cell {
+  background: var(--background-th);
+  text-align: left;
+}
+
+.fc-dayGridMonth-view .fc-col-header-cell-cushion {
+  padding: 0.5rem 0.75rem;
+}
+
 .fc td {
   overflow: visible;
   white-space: normal;
