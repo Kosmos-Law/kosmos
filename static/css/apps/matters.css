@@ -160,9 +160,19 @@ Matter Switcher
 ========================================================================== */
 
 
-/* A touch more breathing room to the right of the matter switcher. */
+/* A touch more breathing room to the right of the matter switcher, and the
+   same gap on its left: the header's 0.75rem padding plus the name button's
+   0.75rem padding is 1.5rem short of the right side's padding + margin +
+   toolbar gap (0.75 + 1 + 1.25rem), so the name sits equidistant from the
+   content edge and the Detail pill. Phones keep the width. */
 .matter-toolbar .toolbar-left > .matter-switcher {
   margin-right: 1rem;
+}
+
+@media (width > 768px) {
+  .matter-toolbar .toolbar-left > .matter-switcher {
+    margin-left: 1.5rem;
+  }
 }
 
 /* Pack the toolbar left (override .toolbar's space-between): the stepper group
