@@ -51,8 +51,8 @@ class Matter(AuditMixin, models.Model):
     )
     # The people copied on the matter's billing email: every invoice,
     # payment reminder and payment request pre-fills its Cc with their
-    # addresses (the client stays the To). Ticked from the matter's own
-    # contacts in the Edit Matter form; unlinking a contact from the matter
+    # addresses (the client stays the To). Ticked from the matter's Client
+    # group in the Edit Matter form; unlinking a contact from the matter
     # drops them.
     billing_contacts = models.ManyToManyField(
         Contact, related_name="billing_matters", blank=True

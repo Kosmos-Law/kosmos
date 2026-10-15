@@ -6,7 +6,7 @@ from apps.contacts.models import Contact
 from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
 
-from .models import Matter, PracticeArea
+from .models import Group, Matter, PracticeArea
 
 
 class ContactComboboxWidget(forms.Widget):
@@ -118,17 +118,20 @@ class MatterForm(forms.ModelForm):
         self.fields["client"].queryset = Contact.objects.all()
 
         # The billing contacts (copied on the matter's invoices and payment
-        # requests) are ticked from the matter's own contacts with an email,
-        # other than the client, who is already the To; anyone already ticked
-        # stays on the list even without one. A new matter has no contacts
-        # yet, and a matter with no one to choose has nothing to show, so the
-        # field appears only once there is someone to pick.
+        # requests) are ticked from the matter's own Client group: the
+        # people on the client's side with an email, other than the client,
+        # who is already the To. Anyone already ticked stays on the list even
+        # if they have since lost their email or moved group, so an unrelated
+        # edit never unticks them. A new matter has no contacts yet, and a
+        # matter with no one to choose has nothing to show, so the field
+        # appears only once there is someone to pick.
         matter = self.instance if self.instance.pk else None
         candidates = Contact.objects.none()
         if matter:
+            client_group = Group.objects.client_group()
             candidates = (
                 Contact.objects.filter(
-                    Q(relationship__matter=matter)
+                    Q(relationship__matter=matter, relationship__group=client_group)
                     & ~Q(email__isnull=True)
                     & ~Q(email="")
                     | Q(billing_matters=matter)

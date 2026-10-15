@@ -1,16 +1,23 @@
 """A matter's billing contacts: the people copied on its invoices and
-payment requests. Ticked in Edit Matter from the matter's own contacts (not
-the client, who is the To; not anyone without an email), shown on the
-overview, and dropped when a contact leaves the matter."""
+payment requests. Ticked in Edit Matter from the matter's Client group (not
+the client, who is the To; not anyone without an email; nobody on the other
+side), shown on the overview, and dropped when a contact leaves the
+matter."""
 
 import pytest
 from django.urls import reverse
 
 from apps.contacts.models import Contact
 from apps.matters.forms import MatterForm
-from apps.matters.models import Matter, Relationship
+from apps.matters.models import Group, Matter, Relationship
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def client_group():
+    """The firm-wide system Client group the choices come from."""
+    return Group.objects.create(name="Client", order=0, is_system=True)
 
 
 def on_matter(user, folder, matter, role, group, name, email=None):
@@ -20,19 +27,30 @@ def on_matter(user, folder, matter, role, group, name, email=None):
 
 
 @pytest.fixture
-def jeremy(user, folder, matter, role, group):
-    return on_matter(user, folder, matter, role, group, "Jeremy Henderson", "j@x.test")
+def jeremy(user, folder, matter, role, client_group):
+    return on_matter(
+        user, folder, matter, role, client_group, "Jeremy Henderson", "j@x.test"
+    )
 
 
 @pytest.fixture
-def greg(user, folder, matter, role, group):
-    return on_matter(user, folder, matter, role, group, "Greg Horner", "g@x.test")
+def greg(user, folder, matter, role, client_group):
+    return on_matter(
+        user, folder, matter, role, client_group, "Greg Horner", "g@x.test"
+    )
 
 
 @pytest.fixture
-def silent(user, folder, matter, role, group):
-    """A contact on the matter with no email: never offered."""
-    return on_matter(user, folder, matter, role, group, "No Email")
+def silent(user, folder, matter, role, client_group):
+    """A contact in the Client group with no email: never offered."""
+    return on_matter(user, folder, matter, role, client_group, "No Email")
+
+
+@pytest.fixture
+def opposing(user, folder, matter, role, group):
+    """A contact on the matter outside the Client group (the conftest group
+    is Counsel): never offered, email or not."""
+    return on_matter(user, folder, matter, role, group, "Opposing Counsel", "oc@x.test")
 
 
 def edit_data(matter, **extra):
@@ -57,12 +75,13 @@ def test_billing_cc_joins_the_emails_in_name_order(matter, jeremy, greg, silent)
     assert matter.billing_cc == "g@x.test, j@x.test"
 
 
-def test_candidates_are_the_matters_other_contacts_with_an_email(
-    matter, jeremy, greg, silent
+def test_candidates_are_the_client_group_with_an_email(
+    matter, jeremy, greg, silent, opposing
 ):
     form = MatterForm(instance=matter)
     choices = list(form.fields["billing_contacts"].queryset)
-    assert choices == [greg, jeremy]  # not the client (matter.client), not silent
+    # not the client (matter.client), not silent, not the other side
+    assert choices == [greg, jeremy]
 
 
 def test_a_ticked_contact_stays_offered_without_an_email(matter, jeremy, silent):
@@ -71,7 +90,7 @@ def test_a_ticked_contact_stays_offered_without_an_email(matter, jeremy, silent)
     assert list(form.fields["billing_contacts"].queryset) == [jeremy, silent]
 
 
-def test_field_is_absent_when_there_is_no_one_to_choose(matter, silent):
+def test_field_is_absent_when_there_is_no_one_to_choose(matter, silent, opposing):
     assert "billing_contacts" not in MatterForm(instance=matter).fields
     assert "billing_contacts" not in MatterForm().fields  # a new matter
 
@@ -99,16 +118,17 @@ def test_edit_ticks_and_unticks_billing_contacts(client, matter, jeremy, greg):
     assert matter.billing_contacts.count() == 0
 
 
-def test_edit_refuses_a_contact_who_is_not_on_the_matter(
-    client, user, folder, matter, jeremy
+def test_edit_refuses_anyone_outside_the_client_group(
+    client, user, folder, matter, jeremy, opposing
 ):
     stranger = Contact.objects.create(
         user=user, folder=folder, name="Stranger", email="s@x.test"
     )
     url = reverse("matters:edit", kwargs={"id": matter.id})
-    response = client.post(url, edit_data(matter, billing_contacts=[stranger.id]))
-    assert response.status_code == 200  # the form came back with an error
-    assert matter.billing_contacts.count() == 0
+    for outsider in (stranger, opposing):
+        response = client.post(url, edit_data(matter, billing_contacts=[outsider.id]))
+        assert response.status_code == 200  # the form came back with an error
+        assert matter.billing_contacts.count() == 0
 
 
 def test_overview_names_the_billing_contacts(client, matter, jeremy, greg):

@@ -65,8 +65,8 @@ are in [Architecture](../architecture.md).
   the matter's billing email: `Matter.billing_cc` is their addresses,
   comma-joined (or `""`), and the send invoice, payment reminder and
   payment request modals pre-fill their Cc with it. `MatterForm` offers
-  only the matter's own contacts with an email, other than the client, in
-  a `CheckSelect` dropdown, and a `post_delete` receiver on
+  only the matter's Client-group contacts with an email, other than the
+  client, in a `CheckSelect` dropdown, and a `post_delete` receiver on
   `Relationship` drops a contact who leaves the matter.
 - `billable`, `billing_type` (`HOURLY` or `FLAT_FEE`), `flat_fee_amount`,
   `deferred_fees` and the `report_*` flags belong to billing and are

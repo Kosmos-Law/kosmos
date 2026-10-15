@@ -57,7 +57,7 @@ its status.
 | Field | Required | Notes |
 |---|---|---|
 | **Client** | No | Any contact. Leave it blank for an internal matter with no client. |
-| **Billing Contacts** | No | The people copied on the matter's billing email. When you send an invoice, a payment reminder or a payment request, **Cc** starts with their addresses (the client stays in **To**). Tick them in the dropdown. It offers the matter's contacts with an email address, other than the client, so add a person under **Contacts** first. The field appears only on **Edit Matter**, and only once there is someone to choose. Taking a contact off the matter drops them. |
+| **Billing Contacts** | No | The people copied on the matter's billing email. When you send an invoice, a payment reminder or a payment request, **Cc** starts with their addresses (the client stays in **To**). Tick them in the dropdown. It offers the people in the matter's **Client** group who have an email address, other than the client, so add a person under **Contacts** in the **Client** group first. The field appears only on **Edit Matter**, and only once there is someone to choose. Taking a contact off the matter drops them. |
 | **Status** | Yes | **Pending**, **Open**, **Complete** or **Closed**. |
 | **Open Date** | Yes | The date the matter was opened. |
 | **Matter Name** | Yes | The name shown everywhere in Kosmos. |
