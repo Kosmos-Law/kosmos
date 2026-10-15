@@ -226,12 +226,22 @@
   --fc-neutral-bg-color: var(--background-light);
 }
 
-/* The grid is outlined in its own rule, square, and closes with a
-   bottom rule of its own; the weekday row is ruled off from the days. */
+/* The grid (month, week and day) and the agenda's list are outlined in
+   their own rule, their corners rounded as the app's tables are
+   (tables.css); the grid closes with a bottom rule of its own, and the
+   weekday row is ruled off from the days. The corners clip what is drawn
+   inside them, the header row's fill among it. The "+N more" popover is
+   drawn outside the grid (in the view harness), so it is not cut. */
 .fc .fc-scrollgrid {
   border-bottom-width: 1px !important;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   border-right-width: 1px !important;
+  overflow: hidden;
+}
+
+.fc .fc-list {
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .fc .fc-scrollgrid-section-header > * {
@@ -573,8 +583,16 @@
 /* Year view: the next twelve months as mini months. Everything is a step
    smaller than the month view so a month fits in a third of the width,
    and the chips are trimmed to a line of text. */
+/* No card round the year: the outline and the inset are dropped, so the
+   mini months stand on the page, the outer ones in line with the toolbar
+   above. The months keep their gaps between each other. */
 .fc .fc-multimonth {
-  border-radius: 0;
+  border: 0;
+  margin: 0 -1rem;
+}
+
+.fc .fc-multimonth-multicol .fc-multimonth-month {
+  padding: 0 1rem 1.5rem;
 }
 
 /* Each mini month is closed top and bottom. The app's table rules strip
@@ -587,6 +605,12 @@
 
 .fc-multiMonthRolling-view .fc-multimonth-daygrid-table tr:last-child td {
   border-bottom: solid 1px var(--border-medium);
+}
+
+/* and the right edge, which the same rules strip from a row's last cell */
+.fc-multiMonthRolling-view .fc-multimonth-header-table th:last-child,
+.fc-multiMonthRolling-view .fc-multimonth-daygrid-table td:last-child {
+  border-right: solid 1px var(--border-medium);
 }
 
 .fc .fc-multimonth-title {
