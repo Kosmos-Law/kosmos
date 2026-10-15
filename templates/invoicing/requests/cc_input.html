@@ -1,0 +1,8 @@
+<input type="email"
+       id="request-cc"
+       name="cc"
+       value="{{ cc }}"
+       autocomplete="off"
+       multiple
+       placeholder="name@example.com, name2@example.com"
+       {% if oob %}hx-swap-oob="true"{% endif %}>

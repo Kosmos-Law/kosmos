@@ -61,6 +61,13 @@ are in [Architecture](../architecture.md).
   matter leaves active work (below).
 - `date_start` and `date_end`: the opening date comes from the form; the
   closing date is written by `save()`.
+- `billing_contacts` (many-to-many to `Contact`) are the people copied on
+  the matter's billing email: `Matter.billing_cc` is their addresses,
+  comma-joined (or `""`), and the send invoice, payment reminder and
+  payment request modals pre-fill their Cc with it. `MatterForm` offers
+  only the matter's own contacts with an email, other than the client, in
+  a `CheckSelect` dropdown, and a `post_delete` receiver on
+  `Relationship` drops a contact who leaves the matter.
 - `billable`, `billing_type` (`HOURLY` or `FLAT_FEE`), `flat_fee_amount`,
   `deferred_fees` and the `report_*` flags belong to billing and are
   explained in [Time and billing](time-and-billing.md).

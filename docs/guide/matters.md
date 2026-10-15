@@ -57,6 +57,7 @@ its status.
 | Field | Required | Notes |
 |---|---|---|
 | **Client** | No | Any contact. Leave it blank for an internal matter with no client. |
+| **Billing Contacts** | No | The people copied on the matter's billing email. When you send an invoice, a payment reminder or a payment request, **Cc** starts with their addresses (the client stays in **To**). Tick them in the dropdown. It offers the matter's contacts with an email address, other than the client, so add a person under **Contacts** first. The field appears only on **Edit Matter**, and only once there is someone to choose. Taking a contact off the matter drops them. |
 | **Status** | Yes | **Pending**, **Open**, **Complete** or **Closed**. |
 | **Open Date** | Yes | The date the matter was opened. |
 | **Matter Name** | Yes | The name shown everywhere in Kosmos. |
@@ -103,8 +104,9 @@ timeline, witnesses, notes, emails, AI chat and research.
 ### Overview
 
 **Overview** is the summary of the matter. **Matter Detail** lists its
-status, client, practice area, open date, jurisdiction and billing, and
-the date it was closed once it has been. Beside
+status, client, billing contacts (when it has any), practice area, open
+date, jurisdiction and billing, and the date it was closed once it has
+been. Beside
 it are **Events** (upcoming events), **Tasks** (open tasks) and **Recent
 Actions** (the five latest time entries). Each has a **+** button to add
 one, and you can click a row to edit it. **Financials** shows **Balance

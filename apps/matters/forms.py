@@ -1,5 +1,7 @@
 from django import forms
+from django.db.models import Q
 
+from apps.calendar.widgets import CheckSelect
 from apps.contacts.models import Contact
 from config.helpers import YESNO_CHOICES
 from config.settings import CustomFormRendererCompact
@@ -36,6 +38,7 @@ class MatterForm(forms.ModelForm):
 
         fields = (
             "client",
+            "billing_contacts",
             "status",
             "date_start",
             "name",
@@ -72,6 +75,9 @@ class MatterForm(forms.ModelForm):
                 choices=STATUSES,
             ),
             "client": ContactComboboxWidget(),
+            # Ticked in a dropdown of check rows; the button reads the one
+            # name, or how many are ticked
+            "billing_contacts": CheckSelect(empty_label="None", many_label="copied"),
             "date_start": forms.DateInput(attrs={"type": "date"}),
             "jurisdiction": forms.TextInput(),
             "billable": forms.Select(
@@ -92,6 +98,7 @@ class MatterForm(forms.ModelForm):
             "clio_matter_id": "Clio Matter",
             "client_reference_id": "Client Reference",
             "practice_area": "Practice Area",
+            "billing_contacts": "Billing Contacts",
             "billing_type": "Billing Type",
             "flat_fee_amount": "Flat Fee Amount",
             "deferred_fees": "Deferred Fee Arrangement",
@@ -109,6 +116,31 @@ class MatterForm(forms.ModelForm):
         # Any contact can be a matter's client (the typeahead searches all
         # contacts), so validate the submitted pk against the full set.
         self.fields["client"].queryset = Contact.objects.all()
+
+        # The billing contacts (copied on the matter's invoices and payment
+        # requests) are ticked from the matter's own contacts with an email,
+        # other than the client, who is already the To; anyone already ticked
+        # stays on the list even without one. A new matter has no contacts
+        # yet, and a matter with no one to choose has nothing to show, so the
+        # field appears only once there is someone to pick.
+        matter = self.instance if self.instance.pk else None
+        candidates = Contact.objects.none()
+        if matter:
+            candidates = (
+                Contact.objects.filter(
+                    Q(relationship__matter=matter)
+                    & ~Q(email__isnull=True)
+                    & ~Q(email="")
+                    | Q(billing_matters=matter)
+                )
+                .exclude(pk=matter.client_id)
+                .distinct()
+                .order_by("name")
+            )
+        if candidates.exists():
+            self.fields["billing_contacts"].queryset = candidates
+        else:
+            del self.fields["billing_contacts"]
 
         # Validate server-side (as the add view already does) rather than via
         # the HTML5 `required` attribute. Otherwise the browser silently refuses

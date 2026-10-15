@@ -935,7 +935,7 @@ def invoices_send(request, pk):
     context = {
         "invoice": invoice,
         "default_to": client.email if client else "",
-        "default_cc": "",
+        "default_cc": invoice.matter.billing_cc if invoice.matter else "",
         "default_message": invoice.message or "",
         "error": "",
     }
@@ -991,7 +991,7 @@ def invoices_send_reminder(request, pk):
         "reminder": True,
         "days_since": days_since_sent(invoice),
         "default_to": client.email if client else "",
-        "default_cc": "",
+        "default_cc": invoice.matter.billing_cc if invoice.matter else "",
         "default_message": "",
         "error": "",
     }

@@ -192,7 +192,10 @@ Good to know:
 1. Click **Invoices** → **Approved** and click the send button (a paper
    plane) at the right of the row. **Send Invoice** opens.
 2. Check **To**, which starts as the client's email address. Separate
-   several addresses with commas. Add **Cc (optional)** if you need it.
+   several addresses with commas. **Cc (optional)** starts with the
+   matter's **Billing Contacts**, if it has any (see
+   [Matters](matters.md#open-a-new-matter)); add or remove addresses as you
+   need.
 3. Edit **Message (optional)**, up to 500 characters. It starts as the
    invoice's **Message**.
 4. Tick **Attach invoice PDF (always available at the pay link)** to

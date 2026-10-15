@@ -106,7 +106,7 @@ def test_the_form_offers_the_active_users_in_a_check_select(client, ada):
     assert 'type="checkbox"' in body and 'name="assignees"' in body
     assert "Ada Lovelace" in body
     # nothing ticked reads as the firm's
-    assert "checkSelect('Firm')" in body
+    assert "checkSelect('Firm', 'assigned')" in body
 
 
 # --- the titles ------------------------------------------------------------

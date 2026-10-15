@@ -271,11 +271,12 @@ left out.
 
 1. Click **Invoicing**, then **Requests**, then the plus button, then
    **Request Payment**.
-2. Choose the **Matter**. **To** fills in with the client's email and
-   **Amount** with the open balance.
+2. Choose the **Matter**. **To** fills in with the client's email,
+   **Cc (optional)** with the matter's **Billing Contacts** (if it has
+   any) and **Amount** with the open balance.
 3. Lower **Amount** to ask for part of the balance. It cannot be more
-   than the balance. Add **Cc (optional)** and **Message (optional)** if
-   you want them.
+   than the balance. Change **Cc (optional)** and add **Message
+   (optional)** if you want them.
 4. Tick **Include statement link** or **Include invoice links** to put
    download links for the matter statement or the open invoices in the
    email.

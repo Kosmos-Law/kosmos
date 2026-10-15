@@ -137,6 +137,13 @@ def _payments_off_error():
     return "" if online_payments_enabled() else PAYMENTS_OFF_ERROR
 
 
+def _billing_cc(payment_request):
+    """The Cc a request's modals start with: the matter's billing contact. A
+    trust deposit request belongs to a client, not a matter, so it has none."""
+    matter = payment_request.matter
+    return matter.billing_cc if matter else ""
+
+
 def _open_matters():
     return Matter.objects.exclude(status__in=["Pending", "Closed"]).order_by("name")
 
@@ -242,24 +249,27 @@ def requests_new(request):
 
 @login_required
 def requests_matter_fields(request):
-    """On matter change, return the To input (client email) + the Amount input
-    (the matter's balance due, which the firm can then adjust down). htmx swaps
-    the To field and the Amount field (out-of-band) into the request modal."""
+    """On matter change, return the To input (client email), the Cc input
+    (the matter's billing contacts, if it has any) + the Amount input (the
+    matter's balance due, which the firm can then adjust down). htmx swaps
+    the To field in and the Cc and Amount fields out-of-band."""
     matter_id = request.GET.get("matter")
     email = ""
+    cc = ""
     amount = ""
     if matter_id:
         matter = Matter.objects.filter(pk=matter_id).select_related("client").first()
         if matter:
             if matter.client:
                 email = matter.client.email or ""
+            cc = matter.billing_cc
             balance_cents = matter_balance_cents(matter)
             if balance_cents > 0:
                 amount = f"{Decimal(balance_cents) / 100:.2f}"
     return render(
         request,
         "invoicing/requests/matter_fields.html",
-        {"to": email, "amount": amount},
+        {"to": email, "cc": cc, "amount": amount},
     )
 
 
@@ -459,7 +469,7 @@ def requests_resend(request, pk):
     context = {
         "payment_request": payment_request,
         "to": payment_request.recipient_email,
-        "cc": "",
+        "cc": _billing_cc(payment_request),
         "message": "",
         # Off by default — downloadable at the pay link (see requests_add).
         "include_statement": False,
@@ -518,7 +528,7 @@ def requests_send_reminder(request, pk):
         "reminder": True,
         "days_since": days_since_requested(payment_request),
         "to": payment_request.recipient_email,
-        "cc": "",
+        "cc": _billing_cc(payment_request),
         "message": "",
         "error": _payments_off_error(),
     }

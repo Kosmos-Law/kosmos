@@ -18,7 +18,7 @@ document.addEventListener('alpine:init', () => {
    * reads what is ticked: the empty label with nothing, one choice by
    * name, more by their number.
    */
-  Alpine.data('checkSelect', (empty) => ({
+  Alpine.data('checkSelect', (empty, many = 'assigned') => ({
     label: empty,
     root: null,
 
@@ -37,7 +37,7 @@ document.addEventListener('alpine:init', () => {
       } else if (ticked.length === 1) {
         this.label = ticked[0];
       } else {
-        this.label = `${ticked.length} assigned`;
+        this.label = `${ticked.length} ${many}`;
       }
     },
   }));
