@@ -595,22 +595,48 @@
   padding: 0 1rem 1.5rem;
 }
 
-/* Each mini month is closed top and bottom. The app's table rules strip
-   a header cell's top rule and a body cell's bottom rule (the month grid
-   draws those edges itself), so they are put back on the weekday header
-   and the last week of every month here. */
-.fc-multiMonthRolling-view .fc-multimonth-header-table th {
-  border-top: solid 1px var(--border-medium);
+/* Each mini month is outlined with its corners rounded, as the month
+   grid and the app's tables are. A mini month is two tables, the weekday
+   header over the days, whose collapsed cell borders cannot round; so the
+   tables take separate borders and carry the outline themselves (the
+   header the top and sides, the days the sides and bottom), clipping
+   their cells' fills to the corners, and the cells keep only the rules
+   between them. */
+.fc-multiMonthRolling-view :is(.fc-multimonth-header-table, .fc-multimonth-daygrid-table) {
+  border: solid 1px var(--border-medium);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
 }
 
-.fc-multiMonthRolling-view .fc-multimonth-daygrid-table tr:last-child td {
-  border-bottom: solid 1px var(--border-medium);
+.fc-multiMonthRolling-view .fc-multimonth-header-table {
+  border-bottom: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
-/* and the right edge, which the same rules strip from a row's last cell */
-.fc-multiMonthRolling-view .fc-multimonth-header-table th:last-child,
-.fc-multiMonthRolling-view .fc-multimonth-daygrid-table td:last-child {
+.fc-multiMonthRolling-view .fc-multimonth-daygrid-table {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border-top: 0;
+}
+
+/* the days' own ground stops at the rounded corners too */
+.fc-multiMonthRolling-view .fc-multimonth-daygrid {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.fc-multiMonthRolling-view :is(.fc-multimonth-header-table th, .fc-multimonth-daygrid-table td) {
+  border: 0;
   border-right: solid 1px var(--border-medium);
+}
+
+.fc-multiMonthRolling-view :is(.fc-multimonth-header-table th, .fc-multimonth-daygrid-table td):last-child {
+  border-right: 0;
+}
+
+/* the header ruled off from the days, and each week from the next */
+.fc-multiMonthRolling-view .fc-multimonth-header-table th,
+.fc-multiMonthRolling-view .fc-multimonth-daygrid-table tr:not(:last-child) td {
+  border-bottom: solid 1px var(--border-medium);
 }
 
 .fc .fc-multimonth-title {
