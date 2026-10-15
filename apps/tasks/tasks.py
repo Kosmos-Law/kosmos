@@ -93,22 +93,20 @@ def get_user_chips(request, users, user_id):
     return chips
 
 
-def widen_for_pins(queryset, filter_data, user):
-    """The queryset and filter data for a user who shows their pins.
+def widen_for_assigned(queryset, filter_data, user):
+    """The queryset and filter data for a user who shows their watch-list.
 
-    Their watch-list (the tasks they pinned for other people) joins the
-    chosen user's tasks, and the user dimension leaves the filter data so
-    the FilterSet does not narrow it back out. Every other filter, the
-    date window included, still applies: a pinned task lights up on both
+    The tasks they assigned to other people join the chosen user's tasks,
+    and the user dimension leaves the filter data so the FilterSet does
+    not narrow it back out. Every other filter, the date window included,
+    still applies: an assigned task that goes past due lights up on both
     lists at the same moment. Nothing changes with no user chosen (All),
     nor for a user who keeps the toggle off.
     """
     user_id = filter_data.get("user")
-    if not user.show_pinned_tasks or not str(user_id).isdecimal():
+    if not user.show_assigned_tasks or not str(user_id).isdecimal():
         return queryset, filter_data
-    queryset = queryset.filter(
-        Q(user_id=int(user_id)) | Q(assigned_by=user, date_pinned=True)
-    )
+    queryset = queryset.filter(Q(user_id=int(user_id)) | Q(assigned_by=user))
     return queryset, {k: v for k, v in filter_data.items() if k != "user"}
 
 
@@ -159,7 +157,7 @@ def resolve_task_filter(request):
             "order_by": refreshed.get("order_by", "date_due"),
         }
 
-        queryset, data = widen_for_pins(visible_tasks, filter_data, request.user)
+        queryset, data = widen_for_assigned(visible_tasks, filter_data, request.user)
         filter = TasksFilter(data, queryset=queryset, request=request)
         tasks = filter.qs.select_related("matter", "user", "assigned_by")
 
@@ -188,7 +186,7 @@ def resolve_task_filter(request):
         request.session["tasks_filter"] = default_filter
         request.session.modified = True
 
-        queryset, data = widen_for_pins(visible_tasks, default_filter, request.user)
+        queryset, data = widen_for_assigned(visible_tasks, default_filter, request.user)
         filter = TasksFilter(data, queryset=queryset, request=request)
         tasks = filter.qs.select_related("matter", "user", "assigned_by")
 
@@ -381,7 +379,7 @@ def get_board_data(request):
     board_filter = {k: v for k, v in filter_data.items() if k != "order_by"}
     board_filter["status"] = [value for value, _ in STATUS_CHOICES]
 
-    queryset, board_filter = widen_for_pins(
+    queryset, board_filter = widen_for_assigned(
         tasks_for_user(Task.objects.all(), request.user), board_filter, request.user
     )
     tasks = (

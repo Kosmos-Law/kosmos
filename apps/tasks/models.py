@@ -21,10 +21,10 @@ class Task(AuditMixin, models.Model):
         max_digits=18, decimal_places=8, null=True, blank=True, default=None
     )
     # Who handed the task to its user: stamped by save() whenever the task
-    # is given to someone other than the person saving it, cleared when a
-    # user takes it on themselves. With date_pinned, the due date is theirs
-    # alone to move (admins aside): see access.can_change_due_date. A due
-    # date is suggestive unless the assignor pins it.
+    # is given to someone other than the person saving it, cleared when the
+    # assignor takes it back. The due date of an assigned task is the
+    # assignor's alone to move (admins aside): see access.can_change_due_date.
+    # The stamp is save()'s work, never a form field.
     assigned_by = models.ForeignKey(
         CustomUser,
         on_delete=models.SET_NULL,
@@ -32,7 +32,6 @@ class Task(AuditMixin, models.Model):
         blank=True,
         related_name="tasks_assigned",
     )
-    date_pinned = models.BooleanField(default=False)
     history = HistoricalRecords(table_name="agenda_historicaltask")
 
     def save(self, *args, **kwargs):
@@ -60,12 +59,8 @@ class Task(AuditMixin, models.Model):
         # on every change of hands. Outside a request (the worker, a shell)
         # there is no actor and the stamp is left as it is.
         actor = get_current_user()
-        if (
-            actor is not None
-            and getattr(actor, "is_authenticated", False)
-            and (old_user_id is None or self.user_id != old_user_id)
-        ):
-            self.assigned_by = actor if self.user_id != actor.pk else None
+        if actor is not None and getattr(actor, "is_authenticated", False):
+            self._stamp_hand_over(actor, old_user_id)
 
         # Set date_completed when status becomes Complete. localdate, not
         # now().date(): the latter is the UTC date, which rolls over at 8pm
@@ -77,6 +72,26 @@ class Task(AuditMixin, models.Model):
             self.date_completed = None
 
         super().save(*args, **kwargs)
+
+    def _stamp_hand_over(self, actor, old_user_id):
+        """Record who handed the task over.
+
+        Giving a task to someone else makes the giver its assignor; taking
+        it on yourself clears the stamp. Once a task has an assignor, only
+        they or an admin change that: the assignee passing the task on, or
+        around and back, moves the task and not the assignor, so the due
+        date stays the assignor's wherever the task goes.
+        """
+        if old_user_id is not None and self.user_id == old_user_id:
+            return
+        held_by_another = (
+            self.assigned_by_id is not None
+            and self.assigned_by_id != actor.pk
+            and not actor.is_admin
+        )
+        if held_by_another:
+            return
+        self.assigned_by = None if self.user_id == actor.pk else actor
 
     def __str__(self):
         return f"{self.description} : {self.id}"

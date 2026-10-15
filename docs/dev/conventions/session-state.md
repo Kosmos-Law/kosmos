@@ -87,9 +87,7 @@ for key, val in request.POST.items():
     if key == "csrfmiddlewaretoken":
         continue
     filter_data[key] = val
-filter_data["filter_label"] = detect_filter_label(
-    filter_data, timezone.localdate()
-)
+filter_data["filter_label"] = detect_filter_label(filter_data, timezone.localdate())
 request.session["time_filter"] = filter_data
 return HttpResponse(status=204, headers={"HX-Trigger": "timeChanged"})
 ```

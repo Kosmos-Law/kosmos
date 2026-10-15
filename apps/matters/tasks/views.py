@@ -47,7 +47,7 @@ from apps.tasks.services import (
     quick_date_filters,
     refresh_date_preset,
 )
-from apps.tasks.tasks import TASK_CHIPS_CAP, get_user_chips, widen_for_pins
+from apps.tasks.tasks import TASK_CHIPS_CAP, get_user_chips, widen_for_assigned
 from utils.toasts import toast_warning
 
 TASKS_TRIGGER = "tasksListChanged"
@@ -94,7 +94,7 @@ def get_matter_tasks_data(request, matter_id):
             "order_by": filter_data.get("order_by", "date_due"),
             "matter": matter_id,
         }
-        queryset, data = widen_for_pins(matter_queryset, filter_data, request.user)
+        queryset, data = widen_for_assigned(matter_queryset, filter_data, request.user)
         filter = TasksFilter(data, queryset=queryset, request=request)
         tasks = filter.qs.select_related("user", "assigned_by")
         user_id = filter_data.get("user")
@@ -543,11 +543,12 @@ def tasks_filter_user(request, id, user_id):
 @login_required
 @matter_access_required
 @require_POST
-def tasks_toggle_pinned(request, id):
-    """The tab's pin: the same standing preference as the Tasks page's."""
+def tasks_toggle_assigned(request, id):
+    """The tab's watch-list toggle: the same standing preference as the
+    Tasks page's."""
     user = request.user
-    user.show_pinned_tasks = not user.show_pinned_tasks
-    user.save(update_fields=["show_pinned_tasks"])
+    user.show_assigned_tasks = not user.show_assigned_tasks
+    user.save(update_fields=["show_assigned_tasks"])
     return HttpResponse(status=204, headers={"HX-Trigger": TASKS_TRIGGER})
 
 
@@ -863,9 +864,15 @@ def _bulk_due_date(request, matter_id, selected_tasks, date_due):
     user may reschedule; the ones handed over by someone else are left
     alone and counted in a warning."""
     tasks = Task.objects.filter(id__in=selected_tasks, matter_id=matter_id)
-    allowed = [t.id for t in tasks if can_change_due_date(t, request.user)]
-    skipped = tasks.count() - len(allowed)
-    Task.objects.filter(id__in=allowed).update(date_due=date_due)
+    # Saved one by one, not update()d: save() pins the date on a task
+    # that is someone else's and records the change in history.
+    skipped = 0
+    for task in tasks:
+        if can_change_due_date(task, request.user):
+            task.date_due = date_due
+            task.save()
+        else:
+            skipped += 1
     response = selection_response(TASKS_TRIGGER)
     if skipped:
         toast_warning(response, due_date_skip_message(skipped))
@@ -956,7 +963,11 @@ def tasks_bulk_set_user(request, id):
     user_id = request.POST.get("user")
     if user_id:
         user = get_object_or_404(CustomUser, pk=user_id)
-        Task.objects.filter(id__in=selected_tasks, matter_id=id).update(user=user)
+        # Saved one by one, not update()d: save() stamps the assignor and
+        # pins the date of a dated task handed to someone else.
+        for task in Task.objects.filter(id__in=selected_tasks, matter_id=id):
+            task.user = user
+            task.save()
         clear_selected_ids(request, key)
 
     return selection_response(TASKS_TRIGGER)

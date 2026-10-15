@@ -1,13 +1,11 @@
-{% comment %} A pinned date someone else set: the assignee sees it,
-with the pin and the assignor's name, but gets no picker. The assignor
-and admins keep the picker, with the pin beside it as the sign the date
-is pinned (task.date_locked is computed per viewer by the list builder).
-A suggestive date is the plain picker link. {% endcomment %}
+{% comment %} The due date of a task someone else assigned: the assignee
+sees it as text, with the assignor's name on hover, and gets no picker.
+The assignor and admins get the picker link (task.date_locked is computed
+per viewer by the list builder). {% endcomment %}
 {% if task.date_locked %}
-  <span class="task-date-pinned"
-        title="Pinned by {{ task.assigned_by.username|title }}. Only they can move the date.">
+  <span class="task-date-held"
+        title="Assigned by {{ task.assigned_by.username|title }}. Only they can move the date.">
     {% if task.date_due %}{{ task.date_due|date:'Y-m-d' }}{% endif %}
-    <i class="icon-pin"></i>
   </span>
 {% else %}
   {% if task.date_due %}
@@ -22,9 +20,5 @@ A suggestive date is the plain picker link. {% endcomment %}
        @click.prevent=" const input = document.createElement('input'); input.style.cssText = 'position:absolute;visibility:hidden;height:0;width:0;padding:0;'; $el.parentElement.appendChild(input); flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, onReady: (_, __, fp) => fp.open(), onChange: (_, dateStr) => { htmx.ajax('POST', '{% url "matters:tasks-date" matter.id task.id %}', { target: '#matterTasks', swap: 'outerHTML', values: { date_due: dateStr } }); }, onClose: () => { input.remove(); } }); ">
       <i class="icon-calendar-plus"></i>
     </a>
-  {% endif %}
-  {% if task.date_pinned %}
-    <i class="icon-pin task-date-pin"
-       title="Pinned date. Only you can move it."></i>
   {% endif %}
 {% endif %}

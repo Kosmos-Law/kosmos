@@ -34,11 +34,12 @@ Overdue tasks are highlighted and completed tasks are struck through.
 | **Matter** | The matter name, or **Admin**. Click the name to open that matter's **Tasks** tab. |
 | **Description** | What is to be done. Click it to open **Edit Task**. The two icons after it open the task's checklist and its notes. |
 | **Status** | Click it to choose another status. |
-| **User** | Who the task is assigned to. Click it to assign someone else. |
+| **From** | Who gave the task to the person holding it. Blank when nobody did: the holder added it for themselves, or took it back. A name here means the date is that person's to move: see [Dates on assigned tasks](#dates-on-assigned-tasks). |
+| **To** | Who holds the task. Click it to assign someone else. |
 | **Due** | The due date. Click it to pick another date, or **Clear** to remove it. A task with no date shows a calendar icon: click it to set one. |
 
 Click the sort button beside **Matter**, **Description**, **Status**,
-**User** or **Due** to sort by that column, and click it again to reverse
+**From**, **To** or **Due** to sort by that column, and click it again to reverse
 the order. The flag button does the same for importance. The list starts
 sorted by **Due**: earliest first, then highest importance, with undated
 tasks last. Sorted by **Status**, the statuses run in alphabetical order.
@@ -115,7 +116,7 @@ Good to know:
    `n`, and choose **Task** (see
    [Keyboard shortcuts](getting-started.md#keyboard-shortcuts)).
 2. Choose the **Matter** and type the **Task**.
-3. Check **User**, **Importance** and **Date due**, and click **Submit**.
+3. Check **To**, **Importance** and **Date due**, and click **Submit**.
 
 The form closes and the new task is at the top of the list.
 
@@ -123,11 +124,10 @@ The form closes and the new task is at the top of the list.
 |---|---|---|
 | **Matter** | No | Matters that are **Pending** or **Open**. On the **Tasks** page the blank choice is **Admin**. On a matter it starts on that matter, and a task left blank goes on that matter. A matter in another status is listed when you open the form from it. |
 | **Task** | Yes | The description: 4 to 200 characters. Kosmos capitalises the first letter. |
-| **User** | Yes | Any active user. Starts as the user whose chip is selected, otherwise you. |
+| **To** | Yes | Who holds the task: any active user. Starts as the user whose chip is selected, otherwise you. |
 | **Importance** | Yes | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
 | **Status** | No | **Pending** (the default), **In progress**, **On hold** or **Complete**. |
-| **Date due** | No | Starts as today. Clear it for a task with no deadline. |
-| **Pinned date** | No | **No** (the default) leaves the date open to whoever has the task. **Yes** pins it, yours alone to move once the task is someone else's: see [Pinned dates](#pinned-dates). |
+| **Date due** | No | Starts as today. Clear it for a task with no deadline. On a task for someone else, the date is yours alone to set or move: see [Dates on assigned tasks](#dates-on-assigned-tasks). |
 | **Date completed** | No | Leave it blank. Kosmos fills it in when the task becomes **Complete**. |
 
 Good to know:
@@ -157,37 +157,41 @@ characters at most) and click **Submit**. Click a note's date to edit or
 delete it. The icon is highlighted when a colleague has added a note
 since you last looked.
 
-## Pinned dates
+## Dates on assigned tasks
 
-A due date is a suggestion unless you pin it. On a task you give
-to someone else, set **Pinned date** to **Yes** in **Add Task** or **Edit
-Task**, and only you, or an administrator, can move the date from then
-on. The person you gave it to sees the date with a pin beside it,
-and the row goes past due on their list like any other until the task is
-done or you move the date. If they cannot meet it, they come to you. You
-see the pin too, beside the date picker, on every date you pinned.
+The due date of a task you give to someone else is yours: only you, or an
+administrator, can set it, move it or clear it. The **From** column names
+you on their list, and the **To** column names them on yours. The person
+you gave the task to sees the date as plain text, with your name when
+they hover, and the row goes past due on their list like any other until the task is done
+or you move the date. If they cannot meet it, they come to you. There is
+nothing to switch on, and no loose kind of date: a task you want to hand
+over without a deadline is one you leave undated.
 
-The rule follows the hand-over. A pinned date on a task you add for
-yourself, or take on yourself, holds nobody. Reassigning a task makes the
-person who reassigned it the one who can move its date. For the person
-holding a pinned task, **Date due** and **Pinned date** cannot be changed in
-**Edit Task**; the date in the list has no picker; and a bulk **Date** or
-**Update** change leaves pinned dates out and says how many it skipped.
-Everything else about the task, its status, importance, matter, notes
-and checklist, is open to them as before.
+The rule follows the task, not the row it sits on. If the person you gave
+it to passes it on, or passes it on and takes it back, you are still the
+one who assigned it and the date is still yours. You stop being the
+assignor only by taking the task back yourself, and an administrator who
+reassigns the task takes your place. For the person holding an assigned
+task, **Date due** cannot be changed in **Edit Task**; the date in the
+list has no picker; and a bulk **Date** or **Update** change leaves those
+dates out and says how many it skipped. Everything else about the task,
+its status, importance, matter, notes and checklist, is open to them as
+before. A task you add for yourself has no assignor, and its date is yours
+to move at will.
 
 ### Your watch-list
 
-A task you pinned for someone else can sit on your own list too. Click
-the pin button beside **Filter**, on the **Tasks** page or a matter's
-**Tasks** tab, and the tasks you pinned for other people appear
-alongside those of whichever user chip is selected, with their name in
-the **User** column. The date filter applies to them as to any task, so
-a pinned task that goes past due lights up on their list and on yours at
-the same time. The pin stays on until you click it again: **Restore
+A task you assigned to someone else can sit on your own list too. Click
+the paper-plane button beside **Filter**, on the **Tasks** page or a
+matter's **Tasks** tab, and the tasks you assigned to other people appear
+alongside those of whichever user chip is selected, with your name under
+**From** and theirs under **To**. The date filter applies to them as to any task, so
+an assigned task that goes past due lights up on their list and on yours
+at the same time. The button stays on until you click it again: **Restore
 Defaults** does not turn it off, and it is remembered between sign-ins.
-With **All** selected, the pin changes nothing, since everyone's tasks
-are already shown.
+With **All** selected, it changes nothing, since everyone's tasks are
+already shown.
 
 ## Find tasks
 
@@ -214,7 +218,7 @@ the chip with three dots: click a name to filter by that user, or the pin
 beside it to keep that user as a chip. You can pin five, and the same
 chips appear on the **Activity** tabs.
 
-**The pin button** adds the tasks you pinned for other people (see
+**The paper-plane button** adds the tasks you assigned to other people (see
 [Your watch-list](#your-watch-list)). **Filter** opens **Filter Tasks** for everything else. Click **Apply**
 to use it. **Restore Defaults** returns to your own open tasks due today
 or earlier. (On a matter's **Tasks** tab, **Restore Defaults** returns

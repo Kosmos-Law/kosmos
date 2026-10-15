@@ -136,15 +136,15 @@
         {% include "components/user-chips.html" with filter_user_url="tasks:filter-user" toggle_chip_url="tasks:toggle-chip" chips_target="#tasks" %}
       </div>
       <div class="filter-tools tasks-view-tools">
-        {% comment %} The pin: the viewer's watch-list (tasks they pinned
-        for other people) shown beside the chosen user's tasks. A standing
+        {% comment %} The watch-list toggle: the tasks the viewer assigned
+        to other people shown beside the chosen user's tasks. A standing
         preference on the user, not part of the session filter. {% endcomment %}
         <button type="button"
-                class="btn-icon {% if request.user.show_pinned_tasks %}toggle-active{% endif %}"
-                title="{% if request.user.show_pinned_tasks %}Hide the tasks you pinned for others{% else %}Show the tasks you pinned for others{% endif %}"
-                hx-post="{% url 'tasks:toggle-pinned' %}"
+                class="btn-icon {% if request.user.show_assigned_tasks %}toggle-active{% endif %}"
+                title="{% if request.user.show_assigned_tasks %}Hide the tasks you assigned to others{% else %}Show the tasks you assigned to others{% endif %}"
+                hx-post="{% url 'tasks:toggle-assigned' %}"
                 hx-target="#tasks">
-          <i class="icon-pin"></i>
+          <i class="icon-send"></i>
         </button>
         <button type="button"
                 class="btn-icon {% if custom_filter_active %}toggle-active{% endif %}"

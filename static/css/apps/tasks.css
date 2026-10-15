@@ -327,7 +327,7 @@ tr > td.importance.complete .button-link {
 }
 
 .tasks-table .matter {
-  width: 15rem;
+  width: 13rem;
 }
 
 .tasks-table .description {
@@ -354,25 +354,18 @@ tr > td.importance.complete .button-link {
   width: 7rem;
 }
 
-/* A pinned date: set by whoever handed the task over, shown to the
-   assignee as text with a pin in place of the picker link, and to the
-   assignor as the picker link with the pin beside it. */
-.task-date-pinned {
+/* The due date of a task someone else assigned: shown to the assignee as
+   text in place of the picker link (the assignor's name is on hover). */
+.task-date-held {
   color: var(--color-muted);
   white-space: nowrap;
-}
-
-.task-date-pinned .icon-pin,
-.task-date-pin {
-  color: var(--color-muted-more);
-  margin-left: 0.25rem;
 }
 
 .task-detail-assigned-by {
   color: var(--color-muted);
 }
 
-.task-detail-assigned-by .icon-pin {
+.task-detail-assigned-by .icon-send {
   margin-right: 0.5rem;
 }
 
@@ -400,6 +393,13 @@ tr > td.importance.complete .button-link {
   margin: 0;
 }
 
+/* From (who handed the task over; blank for a task nobody did) and To
+   (who holds it, with the reassign dropdown). */
+.tasks-table .assigned-by {
+  color: var(--color-muted);
+  width: 6rem;
+}
+
 .tasks-table .user {
   width: 7rem;
 }
@@ -407,8 +407,7 @@ tr > td.importance.complete .button-link {
 .tasks-table .date {
   overflow: visible;
   white-space: nowrap;
-  /* Room for the date and the pin of a pinned date. */
-  width: 8.5rem;
+  width: 7rem;
 }
 
 .tasks-table .date .dropdown-menu {
@@ -729,9 +728,22 @@ tr > td.importance.complete .button-link {
   .tasks-table td.matter { order: 1; }
   .tasks-table td.importance { order: 2; }
   .tasks-table td.description { order: 3; }
-  .tasks-table td.user { order: 4; }
-  .tasks-table td.date { order: 5; }
-  .tasks-table td.status { order: 6; }
+  .tasks-table td.assigned-by { order: 4; }
+  .tasks-table td.user { order: 5; }
+  .tasks-table td.date { order: 6; }
+  .tasks-table td.status { order: 7; }
+
+  /* A card has no column header, so the From cell says what it is, and
+     the holder gets a matching "to" on a card that has a From. */
+  .tasks-table td.assigned-by.has-assignor::before {
+    content: "from ";
+    margin-right: 0.25rem;
+  }
+
+  .tasks-table tr:has(td.assigned-by.has-assignor) td.user::before {
+    content: "to ";
+    margin-right: 0.25rem;
+  }
 
   /* Importance accent rail — same palette as the board's cards. */
   .tasks-table tbody tr.importance-7,
