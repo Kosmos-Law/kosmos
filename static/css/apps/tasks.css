@@ -327,7 +327,7 @@ tr > td.importance.complete .button-link {
 }
 
 .tasks-table .matter {
-  width: 15rem;
+  width: 13rem;
 }
 
 .tasks-table .description {
@@ -391,6 +391,13 @@ tr > td.importance.complete .button-link {
 
 .filter #id_status input[type="checkbox"] {
   margin: 0;
+}
+
+/* From (who handed the task over; blank for a task nobody did) and To
+   (who holds it, with the reassign dropdown). */
+.tasks-table .assigned-by {
+  color: var(--color-muted);
+  width: 6rem;
 }
 
 .tasks-table .user {
@@ -721,9 +728,16 @@ tr > td.importance.complete .button-link {
   .tasks-table td.matter { order: 1; }
   .tasks-table td.importance { order: 2; }
   .tasks-table td.description { order: 3; }
-  .tasks-table td.user { order: 4; }
-  .tasks-table td.date { order: 5; }
-  .tasks-table td.status { order: 6; }
+  .tasks-table td.assigned-by { order: 4; }
+  .tasks-table td.user { order: 5; }
+  .tasks-table td.date { order: 6; }
+  .tasks-table td.status { order: 7; }
+
+  /* A card has no column header, so the From cell says what it is. */
+  .tasks-table td.assigned-by.has-assignor::before {
+    content: "from ";
+    margin-right: 0.25rem;
+  }
 
   /* Importance accent rail — same palette as the board's cards. */
   .tasks-table tbody tr.importance-7,

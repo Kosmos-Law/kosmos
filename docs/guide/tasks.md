@@ -34,11 +34,12 @@ Overdue tasks are highlighted and completed tasks are struck through.
 | **Matter** | The matter name, or **Admin**. Click the name to open that matter's **Tasks** tab. |
 | **Description** | What is to be done. Click it to open **Edit Task**. The two icons after it open the task's checklist and its notes. |
 | **Status** | Click it to choose another status. |
-| **User** | Who the task is assigned to. Click it to assign someone else. |
+| **From** | Who gave the task to the person holding it. Blank when nobody did: the holder added it for themselves, or took it back. A name here means the date is that person's to move: see [Dates on assigned tasks](#dates-on-assigned-tasks). |
+| **To** | Who holds the task. Click it to assign someone else. |
 | **Due** | The due date. Click it to pick another date, or **Clear** to remove it. A task with no date shows a calendar icon: click it to set one. |
 
 Click the sort button beside **Matter**, **Description**, **Status**,
-**User** or **Due** to sort by that column, and click it again to reverse
+**From**, **To** or **Due** to sort by that column, and click it again to reverse
 the order. The flag button does the same for importance. The list starts
 sorted by **Due**: earliest first, then highest importance, with undated
 tasks last. Sorted by **Status**, the statuses run in alphabetical order.
@@ -159,9 +160,10 @@ since you last looked.
 ## Dates on assigned tasks
 
 The due date of a task you give to someone else is yours: only you, or an
-administrator, can set it, move it or clear it. The person you gave the
-task to sees the date as plain text, with your name when they hover, and
-the row goes past due on their list like any other until the task is done
+administrator, can set it, move it or clear it. The **From** column names
+you on their list, and the **To** column names them on yours. The person
+you gave the task to sees the date as plain text, with your name when
+they hover, and the row goes past due on their list like any other until the task is done
 or you move the date. If they cannot meet it, they come to you. There is
 nothing to switch on, and no loose kind of date: a task you want to hand
 over without a deadline is one you leave undated.
@@ -183,8 +185,8 @@ to move at will.
 A task you assigned to someone else can sit on your own list too. Click
 the paper-plane button beside **Filter**, on the **Tasks** page or a
 matter's **Tasks** tab, and the tasks you assigned to other people appear
-alongside those of whichever user chip is selected, with their name in
-the **User** column. The date filter applies to them as to any task, so
+alongside those of whichever user chip is selected, with your name under
+**From** and theirs under **To**. The date filter applies to them as to any task, so
 an assigned task that goes past due lights up on their list and on yours
 at the same time. The button stays on until you click it again: **Restore
 Defaults** does not turn it off, and it is remembered between sign-ins.

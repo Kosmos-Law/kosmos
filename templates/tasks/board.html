@@ -31,6 +31,7 @@
             </div>
             <p class="kanban-card-description">{{ task.description }}</p>
             <div class="kanban-card-meta">
+              {% if task.assigned_by %}<span class="kanban-card-from">From {{ task.assigned_by.username|title }}</span>{% endif %}
               {% if task.user %}<span class="kanban-card-user">{{ task.user.username|title }}</span>{% endif %}
               {% if task.date_due %}
                 <span class="kanban-card-date"><i class="icon-calendar"></i> {{ task.date_due|date:'m-d' }}</span>

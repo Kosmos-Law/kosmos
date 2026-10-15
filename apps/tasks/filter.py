@@ -138,6 +138,7 @@ class TasksFilter(django_filters.FilterSet):
             ("description", "description"),
             ("status", "status"),
             ("user__username", "user__username"),
+            ("assigned_by__username", "assigned_by__username"),
         ),
     )
 

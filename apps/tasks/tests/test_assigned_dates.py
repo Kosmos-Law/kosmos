@@ -424,3 +424,53 @@ def test_the_toolbar_button_reads_the_preference(client, user):
     client.post(reverse("tasks:toggle-assigned"))
     html = client.get(reverse("tasks:list")).content.decode()
     assert "Hide the tasks you assigned to others" in html
+
+
+# -----------------------------------------------------
+# the From and To columns
+# -----------------------------------------------------
+def test_the_list_shows_from_and_to(client, colleague_client, handed_off):
+    for c in (client, colleague_client):
+        c.post(reverse("tasks:filter-quick", args=["all"]))
+        c.post(reverse("tasks:filter-user", args=[0]))
+    html = colleague_client.get(reverse("tasks:list")).content.decode()
+    assert 'data-label="From">Ollie<' in html
+    assert 'data-label="To">' in html
+    Task.objects.create(user=handed_off.user, description="Bob's own", status="Pending")
+    html = client.get(reverse("tasks:list")).content.decode()
+    assert html.count('data-label="From">Ollie<') == 1
+    assert 'data-label="From"><' in html
+
+
+def test_the_matter_tab_shows_them_too(colleague_client, handed_off, matter):
+    colleague_client.post(reverse("matters:tasks-filter-user", args=[matter.id, 0]))
+    html = colleague_client.get(
+        reverse("matters:tasks-list", args=[matter.id])
+    ).content.decode()
+    assert 'data-label="From">Ollie<' in html
+
+
+def test_the_list_sorts_by_from(client, user, colleague, handed_off):
+    third = _third()
+    Task.objects.create(
+        user=colleague, assigned_by=third, description="From Cy", status="Pending"
+    )
+    Task.objects.create(user=colleague, description="From nobody", status="Pending")
+    client.post(reverse("tasks:filter-quick", args=["all"]))
+    client.post(reverse("tasks:filter-user", args=[0]))
+    response = client.post(reverse("tasks:filter-sort", args=["assigned_by__username"]))
+    assert _descriptions(response) == [
+        "From Cy",
+        "Read about Mohandas Gandhi",
+        "From nobody",
+    ]
+    response = client.post(reverse("tasks:filter-sort", args=["assigned_by__username"]))
+    assert _descriptions(response)[-1] == "From Cy"
+
+
+def test_the_board_card_names_the_assignor(colleague_client, handed_off):
+    colleague_client.post(reverse("tasks:filter-quick", args=["all"]))
+    colleague_client.post(reverse("tasks:filter-user", args=[0]))
+    colleague_client.post(reverse("tasks:view-mode", args=["board"]))
+    html = colleague_client.get(reverse("tasks:list")).content.decode()
+    assert "From Ollie" in html

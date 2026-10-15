@@ -42,8 +42,19 @@
             <i class="icon-chevrons-up-down"></i>
           </button>
         </th>
+        {% comment %} From and To: who handed the task over (blank when
+        nobody did, so the date is the holder's own) and who holds it. {% endcomment %}
+        <th class="assigned-by">
+          From
+          <button class="btn-sort {% if current_order == 'assigned_by__username' %}active{% endif %}"
+                  hx-target="#tasks"
+                  hx-swap="innerHTML"
+                  hx-post="{% url 'tasks:filter-sort' 'assigned_by__username' %}">
+            <i class="icon-chevrons-up-down"></i>
+          </button>
+        </th>
         <th class="user">
-          User
+          To
           <button class="btn-sort {% if current_order == 'user__username' %}active{% endif %}"
                   hx-target="#tasks"
                   hx-swap="innerHTML"
@@ -95,14 +106,16 @@
           </td>
           <td class="status dropdown-cell {% if task.status == 'Complete' %}complete{% endif %}"
               data-label="Status">{% include "tasks/status.html" %}</td>
+          <td class="assigned-by {% if task.assigned_by %}has-assignor{% endif %} {% if task.status == 'Complete' %}complete{% endif %}"
+              data-label="From">{{ task.assigned_by.username|title|default:"" }}</td>
           <td class="user dropdown-cell {% if task.status == 'Complete' %}complete{% endif %}"
-              data-label="User">{% include "tasks/user.html" %}</td>
+              data-label="To">{% include "tasks/user.html" %}</td>
           <td class="date {% if task.status == 'Complete' %}complete{% endif %}"
               data-label="Due">{% include "tasks/date-display.html" %}</td>
         </tr>
       {% empty %}
         <tr>
-          <td colspan="7" class="empty-message">No tasks found.</td>
+          <td colspan="8" class="empty-message">No tasks found.</td>
         </tr>
       {% endfor %}
     </tbody>
