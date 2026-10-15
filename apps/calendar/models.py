@@ -81,6 +81,16 @@ class Event(AuditMixin, models.Model):
         ]
 
     @property
+    def calendar_title(self):
+        """The event as the calendar names it: its matter, description and
+        assignees' initials, dash-separated."""
+        parts = [self.matter.name] if self.matter else []
+        parts.append(self.description or "Untitled")
+        if self.assignee_initials:
+            parts.append(self.assignee_initials)
+        return " - ".join(parts)
+
+    @property
     def last_date(self):
         """The day the event ends: its end date, or its only day."""
         return self.end_date or self.date

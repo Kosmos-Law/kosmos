@@ -550,22 +550,9 @@ def events_api(request, matter_id=None):
     # Convert to FullCalendar format
     calendar_events = []
     for event in events:
-        matter_name = event.matter.name if event.matter else ""
-        description = event.description or "Untitled"
-
-        # Build title: {Matter} - {Description} - {Assignees' initials}
-        title_parts = []
-        if matter_name:
-            title_parts.append(matter_name)
-        title_parts.append(description)
-        initials = event.assignee_initials
-        if initials:
-            title_parts.append(initials)
-        title = " - ".join(title_parts)
-
         fc_event = {
             "id": str(event.id),
-            "title": title,
+            "title": event.calendar_title,
             "extendedProps": {
                 "matter": event.matter.name if event.matter else "",
                 "matter_id": event.matter.id if event.matter else None,

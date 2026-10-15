@@ -1,14 +1,12 @@
 """The Dash takes which events a user may see from the calendar's access
 helper, not from a rule of its own."""
 
-from types import SimpleNamespace
-
 import pytest
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.calendar.models import Event
-from apps.dash import views
+from apps.dash import week
 
 pytestmark = pytest.mark.django_db
 
@@ -31,7 +29,7 @@ def test_the_dash_calls_events_for_user(user, monkeypatch):
         description="Hearing", status="Pending", date=timezone.localdate()
     )
     seen = []
-    monkeypatch.setattr(views, "events_for_user", _none_and_note(seen))
-    events = views.dash_events_context(SimpleNamespace(user=user))["upcoming_events"]
-    assert list(events) == []
+    monkeypatch.setattr(week, "events_for_user", _none_and_note(seen))
+    days = week.week_context(user)["week"]
+    assert all(day.entries == [] for day in days)
     assert seen == [Event]

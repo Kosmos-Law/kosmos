@@ -58,7 +58,8 @@
    green-gray shadow that lifts them off the wash, lighter than the one
    under dialogs. One list of every card surface, so they all let the same
    amount through:
-     .card, .event-card          the cards proper
+     .card                       the cards proper
+     .week-strip                 the dash's calendar week
      .table, .totals-table table tables (their cells are clear, by the
                                  --background-td token, so the table
                                  carries the one surface)
@@ -72,7 +73,7 @@
 
 [data-theme="light"][data-wash] :is(
   .card,
-  .event-card,
+  .week-strip,
   .table,
   .totals-table table,
   .fc .fc-scrollgrid,
@@ -101,15 +102,6 @@
    solid control colour */
 [data-theme="light"][data-wash] :is(.total, tr.total th, tr.total td) {
   background: var(--background-th);
-}
-
-/* The dash's due and past-due cards keep their yellow, let through */
-[data-theme="light"][data-wash] .event-card:is(.is-today, .is-tomorrow) {
-  background: var(--due-soon-bg);
-}
-
-[data-theme="light"][data-wash] .event-card.past-due {
-  background: var(--past-due-bg);
 }
 
 /* --------------------------------------------------------------------------

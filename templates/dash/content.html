@@ -1,10 +1,7 @@
 {% load humanize %}
 <div class="dashboard">
-  {# Row 1: Upcoming events — card grid, reloads on event edits, hidden when empty #}
-  <div id="dash-events"
-       hx-trigger="eventsChanged from:body"
-       hx-get="{% url 'dash:events-section' %}"
-       hx-target="this">{% include "dash/events_section.html" %}</div>
+  {# Row 1: this week of the calendar, steppable, redrawn on event edits #}
+  {% include "dash/events_section.html" %}
   {# Row 2: Work in Progress — admins toggle by user/matter; others see only self #}
   <div class="dash-row">
     <div id="dash-wip"

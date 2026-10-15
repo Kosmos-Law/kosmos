@@ -39,16 +39,7 @@
   position: relative;
 }
 
-/* ==========================================================================
- Upcoming events — card grid (reuses the kanban-card visual language)
-========================================================================== */
-
-/* With no upcoming events the section renders nothing, but its reload wrapper
-   would still take a flex slot (and a row gap) at the top of the dash. */
-#dash-events:not(:has(.dash-row)) {
-  display: none;
-}
-
+/* A section's heading row (Calendar, Collections) */
 .events-header {
   align-items: center;
   display: flex;
@@ -60,124 +51,265 @@
   margin: 0;
 }
 
-/* Single non-wrapping row of fixed-width cards, left-justified. A few cards sit
-   to the left with empty space on the right; when the content area is narrower
-   than the full set (e.g. the sidebar is expanded), the row scrolls horizontally
-   instead of wrapping a card onto a second line. overflow-x keeps the scroll
-   inside this container, so it never widens the page (on phones the cards stack
-   vertically — see the media query below). padding-bottom gives the scrollbar +
-   hover shadow room. */
-.event-cards-grid {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
+/* ==========================================================================
+ Calendar — this week as a strip of seven columns (after Cloud Portal's
+ home card). See templates/dash/events_section.html and apps/dash/week.py.
+========================================================================== */
+
+/* The heading in three parts: the title with its link to the calendar,
+   the week's span between its chevrons in the middle, and an empty end.
+   The outer columns share the width left over equally, so the stepper
+   stays centred whatever the title holds. */
+.events-header.week-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
-.event-card {
-  background: var(--background-body);
-  border: solid 1px var(--border-medium);
-  border-radius: var(--radius-md);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+.week-title-start,
+.week-nav {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.week-nav {
+  position: relative;
+}
+
+.week-nav-arrow {
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--icon-muted);
   cursor: pointer;
-  display: flex;
-  /* Fixed 16rem width — don't grow or shrink. A few cards stay left-justified
-     with empty space to the right; too many to fit make the row scroll (rather
-     than wrapping or squeezing the cards). */
-  flex: 0 0 16rem;
-  flex-direction: column;
-  gap: 0.4rem;
-
-  /* Without this, min-width:auto lets a long nowrap child (location / matter)
-     force the card past its fixed basis instead of ellipsizing. Also guards
-     the mobile 1fr grid, where grid items have the same auto minimum. */
-  min-width: 0;
-  padding: 0.75rem;
+  padding: 0.25rem;
 }
 
-.event-card:hover {
-  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+.week-nav-arrow:hover {
+  background: var(--background-control);
+  color: var(--color-primary);
 }
 
-/* Due status — light mode tints the whole card (like the kanban past-due
-   cards); dark mode uses a left rail instead, per the light-fill / dark-rail
-   convention. The rail — and the 3px left border that carries it — is
-   dark-only; light cards keep the plain uniform 1px border. */
-/* Due today / due in the next day or two both read as "soon" — yellow tint. */
-.event-card.is-today {
-  background: var(--due-soon-bg);
-}
-
-.event-card.is-tomorrow {
-  background: var(--due-soon-bg);
-}
-
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .event-card {
-  border-left: 3px solid var(--border-medium);
-}
-
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .event-card.is-today {
-  background: var(--background-body);
-  border-left-color: var(--yellow-400);
-}
-
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .event-card.is-tomorrow {
-  background: var(--background-body);
-  border-left-color: var(--yellow-400);
-}
-
-/* A task past its due date — the kanban's past-due treatment: fill in light,
-   rose rail in dark. After is-today/is-tomorrow so past-due wins if a card
-   somehow carries both. */
-.event-card.past-due {
-  background: var(--past-due-bg);
-}
-
-:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .event-card.past-due {
-  background: var(--background-body);
-  border-left-color: var(--past-due-rail);
-}
-
-.event-card-when {
-  color: var(--color-muted);
-  font-weight: 600;
-}
-
-.event-card-matter {
-  color: var(--color-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
+.week-nav-range {
+  color: var(--color-secondary);
+  min-width: 8rem;
+  text-align: center;
   white-space: nowrap;
 }
 
-.event-card-title {
-  color: var(--color-primary);
-  font-weight: 500;
-  margin: 0;
+/* Off this week, a small button back to it stands just left of the
+   stepper, the way the calendar's toolbar has its Today button. It is
+   set off the stepper's edge rather than in its row, so the stepper
+   stays put when it comes and goes. */
+.week-nav-today {
+  background: var(--background-control);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  color: var(--button-toolbar, var(--color-primary));
+  cursor: pointer;
+  margin-right: 0.75rem;
+  padding: 0 0.5rem;
+  position: absolute;
+  right: 100%;
+  white-space: nowrap;
+}
 
-  /* Long unbreakable runs (URLs pasted as descriptions) wrap instead of
-     overflowing the fixed-width card. */
+.week-nav-today:hover {
+  color: var(--color-primary);
+}
+
+/* Seven equal columns, Sunday to Saturday, ruled between neighbours in
+   the same weight as the dash's tables, in a card of its own */
+.week-strip {
+  background: var(--background-body);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* the calendar's dot (calendar.css, on .fc) */
+  --event-dot: var(
+    --calendar-dot,
+    color-mix(in oklab, var(--icon-violet) 65%, var(--background-section))
+  );
+}
+
+.week-day {
+  min-height: 8rem;
+  min-width: 0;
+  padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.week-day + .week-day {
+  border-left: 1px solid var(--border-medium);
+}
+
+/* The weekday on the left and the day of the month in the upper right,
+   as the month view numbers its cells */
+.week-day-head {
+  align-items: baseline;
+  color: var(--color-primary);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  text-decoration: none;
+}
+
+.week-day-head:hover .week-day-name {
+  text-decoration: underline;
+}
+
+.week-day-name {
+  font-weight: 500;
+}
+
+.week-day-date {
+  color: var(--color-secondary);
+}
+
+/* Today's number as the month view marks it (calendar.css): in the
+   selection colour, on a circle of it. The circle is drawn behind the
+   number rather than sized round it, so the heading keeps its height and
+   today's entries start on the same line as the other days'. */
+.is-today .week-day-date {
+  color: var(--selected-color);
+  font-weight: 500;
+  position: relative;
+  text-align: center;
+  z-index: 0;
+}
+
+.is-today .week-day-date::before {
+  background: var(--selected-background);
+  border-radius: 50%;
+  content: "";
+  height: 1.75rem;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1.75rem;
+  z-index: -1;
+}
+
+.week-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* An entry as the calendar's month view draws it (calendar.css): its text
+   the month chips' size (the same deliberate exception to the 1rem floor),
+   its title stopping at two lines with an ellipsis, the whole of it on
+   hover */
+.week-entry {
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 0 0.5rem;
+  position: relative;
+}
+
+.week-entry:hover {
+  background: var(--background-control);
+}
+
+.week-entry-title {
+  -webkit-box-orient: vertical;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
 }
 
-.event-card-meta {
-  align-items: center;
-  color: var(--color-muted);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
+.week-entry-time {
+  margin-right: 0.25rem;
 }
 
-.event-card-type {
-  align-items: center;
-  display: inline-flex;
-  gap: 0.25rem;
+/* An all-day event is a filled chip, in the all-day colour where the
+   theme gives one */
+.week-entry-all-day,
+.week-entry-all-day:hover {
+  background: var(--calendar-allday, var(--calendar-chip, var(--background-control)));
+  border: 1px solid var(--calendar-chip-border, transparent);
+  color: var(--calendar-allday-color, var(--color-primary));
 }
 
-.event-card-location {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* A timed event has no fill: a dot in the left padding, then its time
+   and title as one run of text */
+.week-entry-timed {
+  padding-left: 1.5rem;
+}
+
+.week-entry-dot {
+  border: 4px solid var(--event-dot);
+  border-radius: 4px;
+  left: 0.5rem;
+  position: absolute;
+  top: 0.25rem;
+}
+
+.week-more {
+  font-size: 0.8125rem;
+  padding: 0 0.5rem;
+}
+
+/* A week with nothing on it says so on a phone, where its empty days
+   drop out; seven blank columns say it on a wider screen */
+.week-nothing {
+  display: none;
+}
+
+/* On a phone the days stack, and a day with nothing on it drops out so
+   the list is the week's agenda rather than seven headings */
+@media (width <= 768px) {
+  .week-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .week-day {
+    min-height: 0;
+  }
+
+  .week-day + .week-day {
+    border-left: none;
+    border-top: 1px solid var(--border-medium);
+  }
+
+  .week-day.is-empty {
+    display: none;
+  }
+
+  /* the title takes the top line, and the stepper its own line under
+     it, centred */
+  .events-header.week-title {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.5rem;
+  }
+
+  .week-nav {
+    justify-content: center;
+  }
+
+  /* the stepper has its line to itself here, so the button back to this
+     week simply leads it */
+  .week-nav-today {
+    margin-right: 0.25rem;
+    position: static;
+  }
+
+  .week-nothing {
+    color: var(--color-muted);
+    display: block;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+  }
 }
 
 /* ==========================================================================
@@ -330,16 +462,6 @@
 }
 
 @media (width <= 768px) {
-  /* Stack the event cards vertically on phones (no horizontal scroll) — the
-     dashboard is already a single column at this width. Grid 1fr makes each
-     card full-width; the desktop fixed-width flex sizing doesn't apply here. */
-  .event-cards-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    overflow-x: visible;
-    padding-bottom: 0;
-  }
-
   /* Drop the period dropdown on mobile so it doesn't compete for space with
      the By User / By Matter toggle. The .chart-toggle group is left intact. */
   #dash-wip .toolbar-right .dropdown {

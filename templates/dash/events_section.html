@@ -1,13 +1,85 @@
-{% if upcoming_events %}
-  <div class="dash-row">
-    <div class="events-header">
-      <h2>Upcoming Events</h2>
+<div class="dash-row"
+     id="dash-events"
+     hx-get="{% url 'dash:events-section' %}?start={{ week_first|date:'Y-m-d' }}"
+     hx-trigger="eventsChanged from:body"
+     hx-swap="outerHTML">
+  <div class="events-header week-title">
+    <div class="week-title-start">
+      <h2>Calendar</h2>
       <a href="{% url 'calendar:index' %}" class="btn-ghost"><i class="icon-arrow-up-right"></i></a>
     </div>
-    <div class="event-cards-grid">
-      {% for event in upcoming_events %}
-        {% include "calendar/event-card.html" with show_matter=True %}
-      {% endfor %}
+    <div class="week-nav">
+      {% if not week_is_current %}
+        <button type="button"
+                class="week-nav-today"
+                hx-get="{% url 'dash:events-section' %}?start={{ week_today|date:'Y-m-d' }}"
+                hx-target="#dash-events"
+                hx-swap="outerHTML">This Week</button>
+      {% endif %}
+      <button type="button"
+              class="week-nav-arrow"
+              aria-label="Previous week"
+              title="Previous week"
+              hx-get="{% url 'dash:events-section' %}?start={{ week_previous|date:'Y-m-d' }}"
+              hx-target="#dash-events"
+              hx-swap="outerHTML">
+        <i class="icon-chevron-left"></i>
+      </button>
+      <span class="week-nav-range">{{ week_range }}</span>
+      <button type="button"
+              class="week-nav-arrow"
+              aria-label="Next week"
+              title="Next week"
+              hx-get="{% url 'dash:events-section' %}?start={{ week_next|date:'Y-m-d' }}"
+              hx-target="#dash-events"
+              hx-swap="outerHTML">
+        <i class="icon-chevron-right"></i>
+      </button>
     </div>
   </div>
-{% endif %}
+  {% comment %}
+  A week, Sunday to Saturday, as a strip of columns: a row of the
+  calendar's month view, today's number circled as it is there. Each column
+  heads with the weekday and, in its upper right, the day of the month, and
+  opens the calendar on that day. Under it the day's pending events, drawn
+  as the month view draws them: an all-day event a filled chip, a timed one
+  a dot, its time and its title; a click opens the event. A day with nothing
+  on it keeps its column, blank; on a phone the strip stacks and empty days
+  drop out. The chevrons swap in the week before or after
+  (apps/dash/week.py), and the card redraws itself when an event changes.
+  {% endcomment %}
+  <div class="week-strip">
+    {% for day in week %}
+      <div class="week-day{% if day.is_today %} is-today{% endif %}{% if not day.count %} is-empty{% endif %}">
+        <a class="week-day-head"
+           href="{% url 'calendar:index' %}?date={{ day.date|date:'Y-m-d' }}">
+          <span class="week-day-name">{{ day.label }}</span>
+          <span class="week-day-date">{{ day.date|date:"j" }}</span>
+        </a>
+        <ul class="week-entries">
+          {% for event in day.entries %}
+            <li class="week-entry {% if event.start_time %}week-entry-timed{% else %}week-entry-all-day{% endif %}"
+                title="{{ event.calendar_title }}"
+                role="button"
+                tabindex="0"
+                hx-get="{% url 'calendar:edit' id=event.id %}"
+                hx-trigger="click, keyup[key=='Enter']"
+                hx-target="#htmx-modal-container">
+              {% if event.start_time %}<span class="week-entry-dot"></span>{% endif %}
+              <span class="week-entry-title">
+                {% if event.start_time %}<span class="week-entry-time">{{ event.time_label }}</span>{% endif %}
+                {{ event.calendar_title }}
+              </span>
+            </li>
+          {% endfor %}
+          {% if day.more %}
+            <li class="week-more">
+              <a href="{% url 'calendar:index' %}?date={{ day.date|date:'Y-m-d' }}">{{ day.more }} more</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    {% endfor %}
+    {% if not week_count %}<p class="week-nothing">Nothing on the calendar this week.</p>{% endif %}
+  </div>
+</div>
