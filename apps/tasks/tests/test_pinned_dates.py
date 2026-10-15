@@ -191,28 +191,84 @@ def test_a_task_for_yourself_has_no_assignor(client, user):
     assert Task.objects.get().assigned_by is None
 
 
-def test_reassigning_restamps_the_assignor(colleague_client, handed_off, colleague):
-    third = CustomUser.objects.create(
+def _third():
+    return CustomUser.objects.create(
         username="Cy", email="cy@example.com", user_rate=100
     )
+
+
+def test_the_assignee_passing_a_pinned_task_on_keeps_its_holder(
+    colleague_client, handed_off, user
+):
+    third = _third()
     colleague_client.post(reverse("tasks:task-user", args=[handed_off.id, third.id]))
     handed_off.refresh_from_db()
-    assert handed_off.assigned_by == colleague
+    assert handed_off.user == third
+    assert handed_off.assigned_by == user
+    assert handed_off.date_pinned
 
 
-def test_taking_a_task_on_yourself_clears_the_assignor_and_the_pin(
-    colleague_client, handed_off, colleague
+def test_passing_it_around_and_back_frees_nothing(
+    colleague_client, handed_off, user, colleague
 ):
-    third = CustomUser.objects.create(
-        username="Cy", email="cy@example.com", user_rate=100
-    )
+    third = _third()
     colleague_client.post(reverse("tasks:task-user", args=[handed_off.id, third.id]))
     colleague_client.post(
         reverse("tasks:task-user", args=[handed_off.id, colleague.id])
     )
     handed_off.refresh_from_db()
+    assert handed_off.user == colleague
+    assert handed_off.assigned_by == user
+    assert handed_off.date_pinned
+    response = colleague_client.post(
+        reverse("tasks:date", args=[handed_off.id]), {"date_due": "2025-01-31"}
+    )
+    assert "Only Ollie" in _toast(response)
+
+
+def test_the_holder_passing_it_on_stays_the_holder(client, handed_off, user):
+    third = _third()
+    client.post(reverse("tasks:task-user", args=[handed_off.id, third.id]))
+    handed_off.refresh_from_db()
+    assert handed_off.assigned_by == user
+    assert handed_off.date_pinned
+
+
+def test_the_holder_taking_it_back_frees_it(client, handed_off, user):
+    client.post(reverse("tasks:task-user", args=[handed_off.id, user.id]))
+    handed_off.refresh_from_db()
     assert handed_off.assigned_by is None
     assert not handed_off.date_pinned
+
+
+def test_an_admin_reassigning_takes_the_pin_over(admin_client, handed_off):
+    third = _third()
+    admin_client.post(reverse("tasks:task-user", args=[handed_off.id, third.id]))
+    handed_off.refresh_from_db()
+    assert handed_off.assigned_by.username == "Ada"
+    assert handed_off.date_pinned
+
+
+def test_reassigning_an_unpinned_task_restamps_the_assignor(
+    client, colleague_client, colleague
+):
+    client.post(reverse("tasks:add"), _data(colleague, date_due=""))
+    task = Task.objects.get()
+    third = _third()
+    colleague_client.post(reverse("tasks:task-user", args=[task.id, third.id]))
+    task.refresh_from_db()
+    assert task.assigned_by == colleague
+    assert not task.date_pinned
+
+
+def test_taking_an_unpinned_task_on_yourself_clears_the_assignor(
+    colleague_client, task, user, colleague
+):
+    task.assigned_by = user
+    task.save()
+    colleague_client.post(reverse("tasks:task-user", args=[task.id, colleague.id]))
+    task.refresh_from_db()
+    assert task.assigned_by is None
 
 
 def test_an_edit_that_keeps_the_user_keeps_the_assignor(

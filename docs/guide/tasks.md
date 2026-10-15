@@ -169,10 +169,12 @@ way to hand a task over is to leave its date blank: the person holding
 it can then set a date of their own and move it as they like, until you
 set or move it yourself.
 
-The rule follows the hand-over. Reassigning a dated task makes the
-person who reassigned it the one who can move its date, and taking a
-task on yourself makes its date yours. Clearing a date frees it. For the
-person holding a pinned task, **Date due** cannot be changed in **Edit
+The pin follows the task. If the person holding it passes it on, or
+passes it on and takes it back, the date and the person who set it stay
+as they are: only that person, or an administrator, can move the date,
+clear it, or hand the task over with a new date of their own. Taking a
+task back yourself makes its date yours again, and clearing a date frees
+it. For the person holding a pinned task, **Date due** cannot be changed in **Edit
 Task**; the date in the list has no picker; and a bulk **Date** or
 **Update** change leaves pinned dates out and says how many it skipped.
 Everything else about the task, its status, importance, matter, notes

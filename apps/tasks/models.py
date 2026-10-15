@@ -88,10 +88,22 @@ class Task(AuditMixin, models.Model):
         the date clears the pin too, so an undated task is anyone's to
         date. The pin names its holder through assigned_by, stamped here
         when nobody had handed the task over.
+
+        A pin someone else holds survives a hand-over by anyone but them
+        (admins aside): the task changes hands, the date and its holder do
+        not. Passing a pinned task on, or around and back, frees nothing.
         """
         handed = old_user_id is None or self.user_id != old_user_id
         dated = old_user_id is None or self.date_due != old_date_due
         own = self.user_id == actor.pk
+        held_by_another = (
+            self.date_pinned
+            and self.assigned_by_id is not None
+            and self.assigned_by_id != actor.pk
+            and not actor.is_admin
+        )
+        if held_by_another:
+            return
         if handed:
             self.assigned_by = None if own else actor
         if own:
