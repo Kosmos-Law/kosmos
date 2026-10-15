@@ -64,12 +64,9 @@ def show_holidays(request):
 
 def menu_is_active(request):
     """Whether the calendar's menu holds anything off its defaults: a
-    filter set, or an overlay switched from how it starts."""
-    return (
-        filter_is_active(request)
-        or show_tasks(request) != DEFAULT_SHOW_TASKS
-        or show_holidays(request) != DEFAULT_SHOW_HOLIDAYS
-    )
+    filter set, or the holidays switched from how they start. The tasks
+    have a toolbar button of their own, which shows their state."""
+    return filter_is_active(request) or show_holidays(request) != DEFAULT_SHOW_HOLIDAYS
 
 
 def assignees_label(names):

@@ -1,3 +1,15 @@
 {% include "calendar/status-dropdown.html" %}
 {% include "calendar/assigned-dropdown.html" %}
 {% include "calendar/matter-dropdown.html" %}
+{% comment %}
+The Tasks toggle, a toolbar button as on the dash's Calendar Week: the
+user's open tasks on the grid, the button selected while they show. It
+re-renders with these menus after the change (eventsChanged).
+{% endcomment %}
+<button type="button"
+        class="calendar-tasks-toggle{% if show_tasks %} toggle-active{% endif %}"
+        aria-pressed="{% if show_tasks %}true{% else %}false{% endif %}"
+        hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
+        hx-swap="none">
+  <i class="icon-square-check-big"></i>Tasks
+</button>

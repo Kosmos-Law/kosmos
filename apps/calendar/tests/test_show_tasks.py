@@ -47,6 +47,10 @@ def _menu(client):
     return client.get(reverse("calendar:overlays")).content.decode()
 
 
+def _toolbar(client):
+    return client.get(reverse("calendar:filter-menus")).content.decode()
+
+
 def _feed(client):
     return {
         row["id"]: row for row in client.get(reverse("calendar:feed"), MARCH).json()
@@ -64,8 +68,9 @@ def test_the_toggle(client, tasks):
     assert response.status_code == 204
     assert response["HX-Trigger"] == "eventsChanged"
     assert client.get(reverse("calendar:index")).context["show_tasks"] is True
-    assert reverse("calendar:show-tasks", args=["off"]) in _menu(client)
-    assert client.get(reverse("calendar:index")).context["menu_active"] is True
+    assert reverse("calendar:show-tasks", args=["off"]) in _toolbar(client)
+    # the button shows the state; the sliders button does not light for it
+    assert client.get(reverse("calendar:index")).context["menu_active"] is False
 
     client.post(reverse("calendar:show-tasks", args=["off"]))
     page = client.get(reverse("calendar:index"))
@@ -130,6 +135,13 @@ def test_an_unreadable_date_changes_nothing(client, tasks):
     assert tasks["open"].date_due == date(2030, 3, 4)
 
 
-def test_the_menu_offers_the_toggle(client):
-    assert reverse("calendar:show-tasks", args=["on"]) in _menu(client)
-    assert "My tasks" in _menu(client)
+def test_the_toolbar_has_a_tasks_button_and_the_menu_does_not(client):
+    toolbar = _toolbar(client)
+    assert reverse("calendar:show-tasks", args=["on"]) in toolbar
+    assert 'class="calendar-tasks-toggle"' in toolbar
+    assert "My tasks" not in _menu(client)
+
+    client.post(reverse("calendar:show-tasks", args=["on"]))
+    assert 'class="calendar-tasks-toggle toggle-active"' in _toolbar(client)
+    page = client.get(reverse("calendar:index")).content.decode()
+    assert "calendar-tasks-toggle toggle-active" in page

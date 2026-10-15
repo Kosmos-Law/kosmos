@@ -1,20 +1,23 @@
 {% comment %}
 The calendar menu's rows (calendar/overlays.html). On the grid: the
 overlays as check rows drawn with the square icons the lists use for
-selection, then Filter and the list view, each behind its own icon. On
+selection (on the main calendar the tasks have a toolbar button of their
+own, calendar/filter-menus.html, so only a matter's tab lists them here), then Filter and the list view, each behind its own icon. On
 the list: Filter and the calendar view, since the overlays draw only on
 the grid. On a matter's Events tab (context: matter) there is no Filter,
 and the view switch is the tab's own. Each check row posts the state it
 would move to.
 {% endcomment %}
 {% if view_mode == "calendar" %}
-  <li>
-    <div class="dropdown-item check-menu-check"
-         hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
-         hx-swap="none">
-      <i class="{% if show_tasks %}icon-square-check{% else %}icon-square{% endif %}"></i>My tasks
-    </div>
-  </li>
+  {% if matter %}
+    <li>
+      <div class="dropdown-item check-menu-check"
+           hx-post="{% if show_tasks %}{% url 'calendar:show-tasks' 'off' %}{% else %}{% url 'calendar:show-tasks' 'on' %}{% endif %}"
+           hx-swap="none">
+        <i class="{% if show_tasks %}icon-square-check{% else %}icon-square{% endif %}"></i>My tasks
+      </div>
+    </li>
+  {% endif %}
   <li>
     <div class="dropdown-item check-menu-check"
          hx-post="{% if show_holidays %}{% url 'calendar:show-holidays' 'off' %}{% else %}{% url 'calendar:show-holidays' 'on' %}{% endif %}"
