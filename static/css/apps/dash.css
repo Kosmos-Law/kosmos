@@ -283,13 +283,13 @@
 /* The box sits as far from the chip's left edge as from the text after
    it: the chip's left padding and the gap after the box are one step */
 .week-task.week-entry-all-day {
-  padding-left: 0.25rem;
+  padding-left: 0.375rem;
 }
 
 /* the box's width, then the step; less a pixel for the room the box
    glyph leaves on its own right, so the two gaps read equal */
 .week-task .week-entry-title {
-  padding-left: calc(1em + 0.25rem - 1px);
+  padding-left: calc(1em + 0.375rem - 1px);
   position: relative;
 }
 
@@ -298,8 +298,7 @@
   cursor: pointer;
   left: 0;
   position: absolute;
-  /* an optical nudge onto the title's centre line */
-  top: 1px;
+  top: 0;
 }
 
 .week-task-box::before {
@@ -326,6 +325,7 @@
 /* The tasks' fold reads quieter than the day's own entries, centred
    under the chips */
 .week-more-tasks {
+  margin-top: 0.25rem;
   text-align: center;
 }
 
