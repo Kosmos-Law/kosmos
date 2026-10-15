@@ -29,6 +29,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from apps.accounts.models import CustomUser
+from apps.calendar.invitations import (
+    is_calendar_recipient,
+    receive as calendar_inbound,
+)
 from apps.intakes.assess import run_assessment
 from apps.intakes.forms import IntakeForm
 from apps.intakes.models import InboundEmail, Intake, Note
@@ -136,10 +140,17 @@ def mailgun_inbound(request):
     if not _verify_mailgun_signature(request.POST):
         return HttpResponse(status=403)
 
+    # The firm's calendar address shares the route: a forwarded calendar
+    # invitation, or a guest's answer to one of the firm's
+    recipient = request.POST.get("recipient", "")
+    if is_calendar_recipient(recipient):
+        outcome = calendar_inbound(request.POST, request.FILES)
+        logger.info("Calendar address message: %s", outcome)
+        return HttpResponse(status=200)
+
     # The Mailgun route is shared (route-quota 1): it also relays billing
     # replies and posts to prod and dev alike, so only mail addressed to
     # THIS instance's intake mailbox becomes an intake here
-    recipient = request.POST.get("recipient", "")
     local_part = recipient.split("@")[0].strip().lower()
     if local_part != settings.INTAKE_INBOUND_RECIPIENT:
         return HttpResponse(status=200)

@@ -71,3 +71,35 @@
   margin: 0.5rem 0 0;
   padding: 0;
 }
+
+/* ==========================================================================
+   Guests (templates/components/guests.html)
+
+   Below Notifications, in its manner: the people outside the firm invited
+   to the event, each with their answer, and the row that invites another.
+   ========================================================================== */
+
+/* How each guest answered, after their name: muted until they do */
+.guest-status {
+  color: var(--color-muted);
+}
+
+.guest-accepted {
+  color: var(--true);
+}
+
+.guest-declined {
+  color: var(--urgent);
+}
+
+.guest-add input[type="email"] {
+  flex: 1 1 14rem;
+}
+
+.guest-add input[type="text"] {
+  flex: 1 1 10rem;
+}
+
+.guests-note {
+  margin: 0.5rem 0 0;
+}

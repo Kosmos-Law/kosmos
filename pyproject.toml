@@ -53,6 +53,7 @@ dependencies = [
     "pyotp>=2.10.0",
     "segno>=1.6.6",
     "holidays>=0.86",
+    "icalendar==7.3.0",
 ]
 
 [dependency-groups]

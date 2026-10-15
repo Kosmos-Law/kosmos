@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
@@ -13,15 +13,14 @@ from django.db.models import (
     Sum,
 )
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
-from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.accounts.access import filter_matters_for_user
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.time.models import TimeEntry
-from apps.calendar.access import events_for_user
-from apps.calendar.models import Event
+from apps.dash.week import SHOW_TASKS_KEY, show_tasks, week_context
 from apps.invoicing.applications.models import CreditApplication, PaymentApplication
 from apps.invoicing.credits.models import Credit
 from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
@@ -38,31 +37,38 @@ from apps.trust.available import trust_available_by_client
 from apps.trust.trust import get_pending_client_balance
 
 
-def dash_events_context(request):
-    """The next upcoming pending events, plus any still-pending past-due
-    ones — an event stays on the dash until it's marked complete or
-    canceled, and past-due cards sort first (rose past-due treatment in
-    the card CSS).
-
-    Seven fills the ~107.5rem usable width of the capped dash (16rem cards + 1rem
-    gaps) edge-to-edge; the event-cards row scrolls horizontally for any that
-    don't fit (e.g. when the sidebar is expanded). See static/css/apps/dash.css.
-    """
-    today = timezone.localdate()
-    return {
-        "upcoming_events": events_for_user(Event.objects.all(), request.user)
-        .filter(status="Pending", date__isnull=False)
-        .order_by("date", "start_time", "party")[:7],
-        "today": today,
-        "tomorrow": today + timedelta(days=1),
-        "yesterday": today - timedelta(days=1),
-    }
+def _week_of(value):
+    """The date in a ?start or posted start, or None for this week."""
+    try:
+        return date.fromisoformat(value or "")
+    except ValueError:
+        return None
 
 
 @login_required
 def events_section(request):
-    """Render just the dash upcoming-events grid (reloaded on eventsChanged)."""
-    return render(request, "dash/events_section.html", dash_events_context(request))
+    """Render just the dash Calendar Week: the week holding ?start (today's
+    week by default), for its chevrons and its reload on event and task
+    changes."""
+    context = week_context(
+        request.user, _week_of(request.GET.get("start")), tasks=show_tasks(request)
+    )
+    return render(request, "dash/events_section.html", context)
+
+
+@login_required
+@require_POST
+def week_tasks(request, state):
+    """The Calendar Week's Tasks toggle: show the user's open tasks on it,
+    or hide them, and redraw the week in view."""
+    if state not in ("on", "off"):
+        return HttpResponseBadRequest("Unknown state.")
+    request.session[SHOW_TASKS_KEY] = state == "on"
+    request.session.modified = True
+    context = week_context(
+        request.user, _week_of(request.POST.get("start")), tasks=state == "on"
+    )
+    return render(request, "dash/events_section.html", context)
 
 
 def dash_wip_context(request):
@@ -368,7 +374,7 @@ def dash_collections_context(request):
 def dash_index(request):
     context = {
         "app": "dash",
-        **dash_events_context(request),
+        **week_context(request.user, tasks=show_tasks(request)),
         **dash_wip_context(request),
         **dash_collections_context(request),
     }

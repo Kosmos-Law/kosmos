@@ -884,6 +884,19 @@ wheels = [
 ]
 
 [[package]]
+name = "icalendar"
+version = "7.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "tzdata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/47/2b/1bbf82d316df18c3331d9a06228819c8a5814ceda545a3e9980e52ffce1b/icalendar-7.3.0.tar.gz", hash = "sha256:7bd001c8e648205e1bde5c6a5b77096598e8d0893dcf57755c6c597635620132", size = 525811, upload-time = "2026-08-19T15:10:21.05Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bb/82/50bff78b0bb0c7d7c0cb39e0ee189b92f611fff6bd7cf57f25e92d5a7551/icalendar-7.3.0-py3-none-any.whl", hash = "sha256:8355acfe17be81b368f0b1e3740817cea9b56ea889931f8f1a87c62f2d28db0b", size = 542540, upload-time = "2026-08-19T15:10:19.525Z" },
+]
+
+[[package]]
 name = "identify"
 version = "2.6.16"
 source = { registry = "https://pypi.org/simple" }
@@ -1018,6 +1031,7 @@ dependencies = [
     { name = "google-genai" },
     { name = "gunicorn" },
     { name = "holidays" },
+    { name = "icalendar" },
     { name = "markdown" },
     { name = "ocrmypdf" },
     { name = "odfpy" },
@@ -1069,6 +1083,7 @@ requires-dist = [
     { name = "google-genai", specifier = "==1.54.0" },
     { name = "gunicorn", specifier = ">=25.1.0" },
     { name = "holidays", specifier = ">=0.86" },
+    { name = "icalendar", specifier = "==7.3.0" },
     { name = "markdown", specifier = "==3.8.1" },
     { name = "ocrmypdf", specifier = "==16.12.0" },
     { name = "odfpy", specifier = "==1.4.1" },

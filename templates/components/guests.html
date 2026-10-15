@@ -1,0 +1,49 @@
+{% comment %}
+The Guests section of the Edit Event dialog: the people outside the firm
+invited to the event, with each one's answer, and the row that invites
+another. Like Notifications it stands outside the main form, and every
+change re-renders it in place. Context from apps.calendar.guest_views
+.guests_context: guests (each with a delete_url), guest_form (None while
+the server has no calendar address), guest_add_url.
+{% endcomment %}
+<div id="guests" class="reminders guests">
+  <h2 class="reminders-title">Guests</h2>
+  <ul class="reminder-list">
+    {% for guest in guests %}
+      <li>
+        <span>{{ guest.name|default:guest.email }}</span>
+        {% if guest.name %}<span class="reminder-channel">{{ guest.email }}</span>{% endif %}
+        <span class="guest-status guest-{{ guest.status }}">{{ guest.get_status_display }}</span>
+        <button type="button"
+                class="btn-icon"
+                title="Remove, and cancel their invitation"
+                hx-post="{{ guest.delete_url }}"
+                hx-target="#guests"
+                hx-swap="outerHTML">
+          <i class="icon-x"></i>
+        </button>
+      </li>
+    {% empty %}
+      <li class="reminder-none">No guests.</li>
+    {% endfor %}
+  </ul>
+  {% if guest_form %}
+    <form class="reminder-add guest-add"
+          hx-post="{{ guest_add_url }}"
+          hx-target="#guests"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      {{ guest_form.email }}
+      {{ guest_form.name }}
+      <button type="submit" class="btn btn-secondary">Invite</button>
+    </form>
+    {{ guest_form.non_field_errors }}
+    {{ guest_form.email.errors }}
+    {{ guest_form.name.errors }}
+    <p class="reminder-none guests-note">
+      For people outside the firm. The invitation is emailed at once, and their answer shows here. People in the firm are assignees.
+    </p>
+  {% else %}
+    <p class="reminder-none guests-note">Inviting guests is not set up on this server.</p>
+  {% endif %}
+</div>

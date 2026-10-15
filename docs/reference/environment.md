@@ -101,6 +101,7 @@ variable belongs to stays off or falls back until it is set.
 | `KOSMOS_SEAM_KEY` | empty | Shared secret for the intake API used by a connected website or intake application (the X-Seam-Key header). While blank, that API refuses every request. |
 | `MAILGUN_WEBHOOK_SIGNING_KEY` | empty | Mailgun HTTP webhook signing key, verifying inbound mail posted to /api/inbound-email/. While blank, that webhook refuses every request. |
 | `INTAKE_INBOUND_RECIPIENT` | `kosmos-intakes` | The part before the @ of the address this instance accepts forwarded intake mail on. Mail for any other address is dropped, which lets several instances share one Mailgun route. |
+| `CALENDAR_INBOUND_ADDRESS` | empty | The firm's calendar address, on the same Mailgun route: firm users forward calendar invitations to it to post firm events, and it is the organiser of the invitations sent to an event's guests, so their answers come back to it. Empty turns both off. |
 | `INTAKE_FORM_LINK_MAX_AGE` | `2592000` | Seconds a client intake-form link stays valid. Defaults to 30 days. (integer) |
 
 ## Billing and payments

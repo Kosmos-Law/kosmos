@@ -13,10 +13,11 @@ from django.views.decorators.http import require_http_methods, require_POST
 import apps.calendar.google as google
 import apps.calendar.sync as sync
 from apps.accounts.access import matter_access_required
-from apps.calendar import holidays
+from apps.calendar import holidays, invitations
 from apps.calendar.access import event_for_user, matters_for_events
 from apps.calendar.filter import EventFilter, assignee_tokens
 from apps.calendar.forms import EventForm
+from apps.calendar.guest_views import guests_context
 from apps.calendar.models import Event
 from apps.calendar.reminder_views import reminders_context
 from apps.management.filter_manager import FilterManager
@@ -342,6 +343,9 @@ def events_edit(request, id, origin="events"):
             use_required_attribute=False,
         )
 
+        # what the guests were told, to send again if it changes
+        before = invitations.details(event)
+
         if form.is_valid():
             event = form.save(commit=False)
             event.user = request.user
@@ -352,6 +356,7 @@ def events_edit(request, id, origin="events"):
 
             event.save()
             form.save_m2m()
+            invitations.after_change(event, before, request.user)
 
             sync_failed = sync.push_event(event) == "failed"
 
@@ -369,17 +374,21 @@ def events_edit(request, id, origin="events"):
     # Warn only about a half-finished setup, never a firm without Google.
     google_problem = google.setup_problem()
 
-    context = {
-        "app": "events",
-        "edit": True,
-        "add": False,
-        "results": None,
-        "action": f"/events/{id}/edit",
-        "event": event,
-        "google_problem": google_problem,
-        "form": form,
-        "origin": origin,
-    } | reminders_context(event, request.user)
+    context = (
+        {
+            "app": "events",
+            "edit": True,
+            "add": False,
+            "results": None,
+            "action": f"/events/{id}/edit",
+            "event": event,
+            "google_problem": google_problem,
+            "form": form,
+            "origin": origin,
+        }
+        | reminders_context(event, request.user)
+        | guests_context(event)
+    )
 
     return render(request, "calendar/form.html", context)
 
@@ -393,7 +402,9 @@ def events_delete(request, id, origin="events"):
 
     event = event_for_user(id, request.user)
 
-    # Remove from Google (queues a retry on failure) before deleting locally.
+    # The guests hear it is off, then it goes from Google (queuing a retry
+    # on failure) before it is deleted here
+    invitations.send_cancellation(event, list(event.guests.all()), request.user)
     sync_failed = sync.delete_event_remote(event) == "failed"
 
     event.delete()
@@ -550,22 +561,9 @@ def events_api(request, matter_id=None):
     # Convert to FullCalendar format
     calendar_events = []
     for event in events:
-        matter_name = event.matter.name if event.matter else ""
-        description = event.description or "Untitled"
-
-        # Build title: {Matter} - {Description} - {Assignees' initials}
-        title_parts = []
-        if matter_name:
-            title_parts.append(matter_name)
-        title_parts.append(description)
-        initials = event.assignee_initials
-        if initials:
-            title_parts.append(initials)
-        title = " - ".join(title_parts)
-
         fc_event = {
             "id": str(event.id),
-            "title": title,
+            "title": event.calendar_title,
             "extendedProps": {
                 "matter": event.matter.name if event.matter else "",
                 "matter_id": event.matter.id if event.matter else None,

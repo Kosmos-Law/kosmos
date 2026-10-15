@@ -168,6 +168,8 @@ document.addEventListener("alpine:init", () => {
         // pared to navigation; wider screens get the full set of views,
         // the agenda among them.
         initialView: phone ? "listRolling" : this.savedView(),
+        // A link from the dash's week names the day to open on
+        initialDate: this.linkedDate(),
         headerToolbar: phone
           ? { left: "prev,next", center: "title", right: "today" }
           : {
@@ -298,6 +300,12 @@ document.addEventListener("alpine:init", () => {
       document.body.addEventListener("tasksListChanged", () => {
         this.calendar.refetchEvents();
       });
+    },
+
+    linkedDate() {
+      // The day in the page's ?date=YYYY-MM-DD, or undefined for today
+      const date = new URLSearchParams(window.location.search).get("date");
+      return /^\d{4}-\d{2}-\d{2}$/.test(date || "") ? date : undefined;
     },
 
     savedView() {
