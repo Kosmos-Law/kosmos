@@ -83,13 +83,14 @@ def _task_entry(task, today, gather_overdue):
 
 
 def _entry_key(entry):
-    """Gathered overdue tasks first, then all-day events, then the day's
-    tasks, then timed events by time, each run by title."""
+    """A day's events, then its tasks, as the calendar orders them: the
+    events all-day first, then timed by time; the tasks led by any overdue
+    ones gathered on today; each run by title."""
     return (
+        entry.kind != "event",
         not entry.overdue,
         entry.time is not None,
         entry.time or time.min,
-        entry.kind != "event",
         entry.title.lower(),
     )
 
