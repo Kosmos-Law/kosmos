@@ -733,9 +733,15 @@ tr > td.importance.complete .button-link {
   .tasks-table td.date { order: 6; }
   .tasks-table td.status { order: 7; }
 
-  /* A card has no column header, so the From cell says what it is. */
+  /* A card has no column header, so the From cell says what it is, and
+     the holder gets a matching "to" on a card that has a From. */
   .tasks-table td.assigned-by.has-assignor::before {
     content: "from ";
+    margin-right: 0.25rem;
+  }
+
+  .tasks-table tr:has(td.assigned-by.has-assignor) td.user::before {
+    content: "to ";
     margin-right: 0.25rem;
   }
 

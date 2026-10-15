@@ -116,7 +116,7 @@ Good to know:
    `n`, and choose **Task** (see
    [Keyboard shortcuts](getting-started.md#keyboard-shortcuts)).
 2. Choose the **Matter** and type the **Task**.
-3. Check **User**, **Importance** and **Date due**, and click **Submit**.
+3. Check **To**, **Importance** and **Date due**, and click **Submit**.
 
 The form closes and the new task is at the top of the list.
 
@@ -124,7 +124,7 @@ The form closes and the new task is at the top of the list.
 |---|---|---|
 | **Matter** | No | Matters that are **Pending** or **Open**. On the **Tasks** page the blank choice is **Admin**. On a matter it starts on that matter, and a task left blank goes on that matter. A matter in another status is listed when you open the form from it. |
 | **Task** | Yes | The description: 4 to 200 characters. Kosmos capitalises the first letter. |
-| **User** | Yes | Any active user. Starts as the user whose chip is selected, otherwise you. |
+| **To** | Yes | Who holds the task: any active user. Starts as the user whose chip is selected, otherwise you. |
 | **Importance** | Yes | **Highest**, **Higher**, **High**, **Normal** (the default), **Low**, **Lower** or **Lowest**. |
 | **Status** | No | **Pending** (the default), **In progress**, **On hold** or **Complete**. |
 | **Date due** | No | Starts as today. Clear it for a task with no deadline. On a task for someone else, the date is yours alone to set or move: see [Dates on assigned tasks](#dates-on-assigned-tasks). |

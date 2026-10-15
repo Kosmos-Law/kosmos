@@ -32,6 +32,8 @@ class TaskForm(forms.ModelForm):
 
         labels = {
             "description": "Task",
+            # Matches the list's From and To columns: who holds the task.
+            "user": "To",
         }
 
         IMPORTANCE_CHOICES = (
