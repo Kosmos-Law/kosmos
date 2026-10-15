@@ -193,7 +193,7 @@ Good to know:
    plane) at the right of the row. **Send Invoice** opens.
 2. Check **To**, which starts as the client's email address. Separate
    several addresses with commas. **Cc (optional)** starts with the
-   matter's **Billing Contacts**, if it has any (see
+   matter's **Additional Billing Contacts**, if it has any (see
    [Matters](matters.md#open-a-new-matter)); add or remove addresses as you
    need.
 3. Edit **Message (optional)**, up to 500 characters. It starts as the

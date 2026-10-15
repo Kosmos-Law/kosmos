@@ -19,7 +19,7 @@ are in [Architecture](../architecture.md).
 | `apps/matters/filter.py` | `MatterFilter` (django-filter) for the list |
 | `apps/matters/get_matter_list.py` | Session filter, pagination and the quick-status buttons |
 | `apps/matters/client_wizard.py` | Create a contact or convert an intake from inside the matter form |
-| `apps/matters/templatetags/matter_tags.py` | `get_open_matters`, `get_adjacent_open_matters` (the switcher and steppers) |
+| `apps/matters/templatetags/matter_tags.py` | `get_open_matters`, `get_adjacent_open_matters` (the switcher and the `[` / `]` keys) |
 | `apps/matters/contacts/` | The matter's Contacts tab: party rows, assign, groups |
 | `apps/matters/proceedings/`, `settlement/`, `rates/` | One model, form and views each |
 | `apps/matters/ledger/` | The Ledger tab: `get_ledger_data.py`, `generate_ledger.py` (PDF) |
@@ -183,13 +183,16 @@ paths by regex; this covers the tab-switch route). `VALID_DETAIL_TABS`
 lists the nine tabs.
 
 The header's matter switcher (`templates/matters/includes/switcher.html`)
-and the prev/next steppers come from `get_open_matters` and
+and the previous/next matter come from `get_open_matters` and
 `get_adjacent_open_matters` in `matter_tags.py`: the open matters the user
-may see, by name, wrapping at the ends. The steppers are hidden when the
-current matter is not on that list (closed, or not the user's). In
-`static/js/main.js`, `[` and `]` click those steppers on a matter page,
-unless the page declares a user cycle (`data-cycle-*-url`: the Tasks,
-Time, Expenses and Flat Fees lists), which the brackets walk instead.
+may see, by name, wrapping at the ends. The title bar
+(`templates/matters/includes/header.html`) carries the neighbours as
+`data-matter-prev-url` / `data-matter-next-url`, left off when the
+current matter is not on that list (closed, or not the user's); there are
+no visible steppers. In `static/js/main.js`, `[` and `]` open those on a
+matter page, unless the page declares a user cycle (`data-cycle-*-url`:
+the Tasks, Time, Expenses and Flat Fees lists), which the brackets walk
+instead. The bar's far right is the Edit Matter button.
 Space then `m` opens `matterSwitcher`, which fetches `/matters/api/open/`
 (`open_matters_json`, the same filtered list).
 

@@ -1,33 +1,26 @@
 {% load matter_tags %}
-<div class="detail-header">
+{% comment %}
+The matter title bar, shared by the Detail and Case sides. The previous and
+next open matter ride along as data attributes for the [ and ] keys
+(static/js/main.js); the tag returns both or neither. Edit Matter sits on
+the far right.
+{% endcomment %}
+{% get_adjacent_open_matters matter as adjacent %}
+<div class="detail-header"
+     {% if adjacent.prev %} data-matter-prev-url="{% url 'matters:overview-index' id=adjacent.prev.id %}" data-matter-next-url="{% url 'matters:overview-index' id=adjacent.next.id %}"{% endif %}>
   <div class="toolbar matter-toolbar">
-    {% if mode == 'detail' %}
-      {% get_adjacent_open_matters matter as adjacent %}
-      <a class="detail-back"
-         href="{% url 'matters:index' %}"
-         aria-label="Back to matters"><i class="icon-chevron-left"></i></a>
-    {% endif %}
     <div class="toolbar-left">
       {% include "matters/includes/switcher.html" %}
       {% include "matters/includes/mode-pills.html" %}
       {% include "matters/includes/action_buttons.html" %}
     </div>
-    {% comment %}
-    Prev/next grouped as one segmented navigator, pushed to the far right
-    (the back chevron holds the left edge). The tag returns prev+next
-    together or neither.
-    {% endcomment %}
-    {% if adjacent.prev %}
-      <div class="matter-step-group">
-        <a class="matter-step matter-step-prev"
-           href="{% url 'matters:overview-index' id=adjacent.prev.id %}"
-           title="{{ adjacent.prev.name }}"
-           aria-label="Previous matter"><i class="icon-chevron-left"></i></a>
-        <a class="matter-step matter-step-next"
-           href="{% url 'matters:overview-index' id=adjacent.next.id %}"
-           title="{{ adjacent.next.name }}"
-           aria-label="Next matter"><i class="icon-chevron-right"></i></a>
-      </div>
-    {% endif %}
+    <button type="button"
+            class="matter-edit"
+            title="Edit matter"
+            aria-label="Edit matter"
+            hx-get="{% url 'matters:edit' id=matter.id %}"
+            hx-target="#htmx-modal-container">
+      <i class="icon-square-pen"></i>
+    </button>
   </div>
 </div>

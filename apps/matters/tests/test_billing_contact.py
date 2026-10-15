@@ -136,11 +136,11 @@ def test_edit_refuses_anyone_outside_the_client_group(
 
 def test_overview_names_the_billing_contacts(client, matter, jeremy, greg):
     url = f"/matters/{matter.id}/overview"
-    assert "Billing Contacts" not in client.get(url).content.decode()
+    assert "Additional Billing Contacts" not in client.get(url).content.decode()
 
     matter.billing_contacts.set([jeremy, greg])
     page = client.get(url).content.decode()
-    assert "Billing Contacts" in page
+    assert "Additional Billing Contacts" in page
     assert page.index("Greg Horner") < page.index("Jeremy Henderson")
 
 

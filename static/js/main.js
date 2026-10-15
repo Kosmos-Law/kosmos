@@ -925,8 +925,9 @@ document.addEventListener('keydown', function(event) {
 //  Stepper shortcuts — [ / ] cycle the page's stepper
 //  On pages with a user cycle (Tasks / Time / Expenses / Flat Fees declare
 //  data-cycle-*-url endpoints; a 204 + HX-Trigger refreshes the list) the
-//  brackets walk the user filter. Otherwise, on a matter detail page, they
-//  click the header's prev/next matter chevrons. Ignored while typing or in
+//  brackets walk the user filter. Otherwise, on a matter page, they open the
+//  previous or next open matter, which the title bar carries as
+//  data-matter-prev-url / data-matter-next-url. Ignored while typing or in
 //  a modal.
 // ==========================================================================
 
@@ -952,8 +953,10 @@ document.addEventListener('keydown', function(event) {
     }
     return;
   }
-  const step = document.querySelector(prev ? '.matter-step-prev' : '.matter-step-next');
-  if (!step) return;
+  const header = document.querySelector('[data-matter-next-url]');
+  if (!header) return;
+  const target = prev ? header.dataset.matterPrevUrl : header.dataset.matterNextUrl;
+  if (!target) return;
   event.preventDefault();
-  step.click();
+  window.location.assign(target);
 });

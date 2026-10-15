@@ -171,41 +171,9 @@ Matter Switcher
   justify-content: flex-start;
 }
 
-/* The back chevron is a direct toolbar child here (no toolbar-left gap to
-   space it), so give it its own gap before the switcher. */
-.matter-toolbar > .detail-back {
-  margin-right: 0.5rem;
-}
-
-/* Prev/next as one segmented navigator, anchored to the far right (the back
-   chevron holds the left edge) — a muted pill with a hairline divider between
-   the two chevrons, walking the open-matters list (wrapping at the ends). */
-.matter-step-group {
-  display: inline-flex;
+/* Edit Matter: the toolbar's last child, pushed to the far right. */
+.matter-toolbar > .matter-edit {
   margin-left: auto;
-  overflow: hidden;
-}
-
-/* `a.matter-step` matches the specificity of the generic `.toolbar a` button
-   skin (toolbar.css) so this later rule strips its fill and border. */
-.matter-toolbar a.matter-step {
-  align-items: center;
-  background: none;
-  border: none;
-  color: var(--color-muted);
-  display: inline-flex;
-  font-size: 1.25rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.matter-toolbar a.matter-step:hover {
-  background: var(--background-control);
-  color: var(--color-primary);
-}
-
-/* Hairline divider between the two segments. */
-.matter-step-group .matter-step-prev {
-  border-right: 1px solid var(--border-medium);
 }
 
 /* Mobile: pare the matter title to the name + the +Time action. Hides the
@@ -215,7 +183,7 @@ Matter Switcher
 @media (width <= 768px) {
   .matter-toolbar .mode-pills,
   .matter-toolbar .expense-action,
-  .matter-toolbar .matter-step-group,
+  .matter-toolbar .matter-edit,
   .matter-toolbar .toolbar-right {
     display: none;
   }
@@ -460,17 +428,6 @@ Matter Overview tab
   flex-direction: column;
   gap: 1.25rem;
   min-width: 0;
-}
-
-/* Icon-only edit button riding the Matter Detail heading row, pinned right. */
-.overview-table-head .overview-edit {
-  color: var(--color-muted);
-  cursor: pointer;
-  float: right;
-}
-
-.overview-table-head .overview-edit:hover {
-  color: var(--color-primary);
 }
 
 .overview-table th,

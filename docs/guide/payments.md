@@ -272,7 +272,7 @@ left out.
 1. Click **Invoicing**, then **Requests**, then the plus button, then
    **Request Payment**.
 2. Choose the **Matter**. **To** fills in with the client's email,
-   **Cc (optional)** with the matter's **Billing Contacts** (if it has
+   **Cc (optional)** with the matter's **Additional Billing Contacts** (if it has
    any) and **Amount** with the open balance.
 3. Lower **Amount** to ask for part of the balance. It cannot be more
    than the balance. Change **Cc (optional)** and add **Message

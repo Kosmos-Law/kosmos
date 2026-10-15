@@ -85,7 +85,7 @@ These work on both sides of a matter unless the row says otherwise. See
 |---|---|
 | `c` | Changes to the **Case** side, on the tab you last used there. |
 | `d` | Changes to the **Detail** side, on the tab you last used there. |
-| `[` and `]` | On the **Detail** side, open the previous or the next matter on its **Overview** tab. |
+| `[` and `]` | Open the previous or the next matter on its **Overview** tab. |
 | `i` | On the **Tasks** tab, puts the cursor in **+ Quick Task**. On the **Notes** tab, in **Keyword Search**. On the **AI** tab, in **Filter conversations . . .**. |
 
 Good to know:

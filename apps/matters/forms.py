@@ -98,7 +98,7 @@ class MatterForm(forms.ModelForm):
             "clio_matter_id": "Clio Matter",
             "client_reference_id": "Client Reference",
             "practice_area": "Practice Area",
-            "billing_contacts": "Billing Contacts",
+            "billing_contacts": "Additional Billing Contacts",
             "billing_type": "Billing Type",
             "flat_fee_amount": "Flat Fee Amount",
             "deferred_fees": "Deferred Fee Arrangement",
