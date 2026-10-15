@@ -397,11 +397,14 @@ tr > td.importance.complete .button-link {
    (who holds it, with the reassign dropdown): the same width and the
    same link colour as To's button, so the pair reads as one. */
 .tasks-table .assigned-by {
-  color: var(--link);
   width: 7rem;
 }
 
-[data-theme="basic"] .tasks-table .assigned-by {
+.tasks-table td.assigned-by {
+  color: var(--link);
+}
+
+[data-theme="basic"] .tasks-table td.assigned-by {
   color: color-mix(in oklch, var(--color-darker) 65%, var(--color-primary));
 }
 
