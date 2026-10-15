@@ -101,3 +101,34 @@ intakes list within a minute. If nothing appears, check the `InboundEmail`
 rows in the admin: no row means the message was rejected at the webhook
 (signature, sender or recipient); a `failed` row means the AI call failed
 but a fallback intake should still be linked.
+
+## Calendar invitations
+
+The same route and webhook can carry the firm's calendar address,
+`kosmos-calendar@mail.example.com`. Set it in `config/.env`:
+
+```
+CALENDAR_INBOUND_ADDRESS=kosmos-calendar@mail.example.com
+```
+
+and add its local part to the route's expression, for example
+`match_recipient("(kosmos-intakes|kosmos-calendar)@mail\.example\.com")`.
+While the variable is empty, both uses below are off.
+
+- **Forwarding in.** A firm user forwards a calendar invitation (the
+  email with its `.ics` attachment) to the address from their Kosmos login
+  email. It is posted as a firm event, with no assignees and no matter. A
+  later revision of the same invitation updates the event, a cancellation
+  removes it, and the user gets a short email saying what happened.
+- **Inviting guests.** The Edit Event dialog has a Guests section for
+  people outside the firm. Each is emailed an invitation their calendar
+  app can answer; the address is its organiser, so the answers come back
+  here, show against the guest, and are emailed to whoever invited them. A
+  change to the event goes out again; deleting it, or removing a guest,
+  sends a cancellation. An address that belongs to a firm user, or is on
+  the firm's own email domain (Settings > Firm), is refused with a pointer
+  to the event's assignees.
+
+Like the intake address, the sender check reads the message's From
+header, which can be forged. Each calendar-address message logs the SPF,
+DKIM and DMARC results Mailgun reports.

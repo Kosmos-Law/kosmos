@@ -51,6 +51,15 @@ class Event(AuditMixin, models.Model):
     # event removed on Google and kept here (see detached_from_google); it is
     # never pushed again.
     google_synced_at = models.DateTimeField(null=True, blank=True)
+    # A calendar invitation forwarded in (apps.calendar.invitations): its
+    # identifier, so a later revision of it updates this event and a
+    # cancellation removes it, and its revision, so an older one is stale
+    ical_uid = models.CharField(max_length=255, blank=True, default="")
+    ical_sequence = models.IntegerField(default=0)
+    # The invitations this event sends its guests: their identifier, set
+    # when the first goes out, and their revision, raised with each change
+    invite_uid = models.CharField(max_length=255, blank=True, default="")
+    invite_sequence = models.IntegerField(default=0)
     history = HistoricalRecords(table_name="agenda_historicalevent")
 
     def __str__(self):
@@ -157,6 +166,41 @@ class EventReminder(ReminderMixin):
     @property
     def target_date(self):
         return self.event.date
+
+
+class EventGuest(models.Model):
+    """Someone outside the firm invited to an event (apps.calendar
+    .invitations): their address, who invited them, and how they answered
+    the invitation, if they have. People in the firm are assignees."""
+
+    STATUS_CHOICES = [
+        ("needs-action", "Invited"),
+        ("accepted", "Yes"),
+        ("tentative", "Maybe"),
+        ("declined", "No"),
+    ]
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="guests")
+    email = models.EmailField()
+    name = models.CharField(max_length=100, blank=True, default="")
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="needs-action"
+    )
+    invited_by = models.ForeignKey(
+        "accounts.CustomUser", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    invited_at = models.DateTimeField(default=timezone.now)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "app_event_guest"
+        ordering = ["invited_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["event", "email"], name="guest_once")
+        ]
+
+    def __str__(self):
+        return self.name or self.email
 
 
 class CalendarSyncState(models.Model):

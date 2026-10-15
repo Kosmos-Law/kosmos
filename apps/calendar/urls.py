@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.calendar.api import api_events
+from apps.calendar.guest_views import guest_add, guest_delete
 from apps.calendar.reminder_views import reminder_add, reminder_delete
 from apps.calendar.views import (
     events_add,
@@ -79,6 +80,12 @@ urlpatterns = [
         "events/<int:id>/delete/<str:origin>",
         events_delete,
         name="delete-origin",
+    ),
+    path("events/<int:id>/guests/add", guest_add, name="guest-add"),
+    path(
+        "events/<int:id>/guests/<int:guest_id>/delete",
+        guest_delete,
+        name="guest-delete",
     ),
     path("events/<int:id>/reminders/add", reminder_add, name="reminder-add"),
     path(
