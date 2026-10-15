@@ -1,6 +1,6 @@
-"""The sidebar's account menu (who is signed in, Settings, Log out), Sign
-Out Everywhere on the Security page, and the icon that stands for the
-user."""
+"""The sidebar's account menu (who is signed in, Log out) and the Settings
+button beside it, Sign Out Everywhere on the Security page, and the icon
+that stands for the user."""
 
 import re
 
@@ -38,7 +38,18 @@ def test_the_menu_shows_who_is_signed_in_and_logs_out(user):
     assert "James Craig" in html
     assert "james@example.com" in html
     assert f'action="{reverse("accounts:logout")}"' in html
-    assert ">Settings</a>" not in html.split('class="account-menu')[0]
+    assert "Settings" not in html.split('class="account-menu')[1].split("</aside>")[0]
+
+
+def test_settings_is_a_nav_button_of_its_own_and_lights_on_its_pages(user):
+    client = signed_in_client(user)
+    tasks = client.get(reverse("tasks:index")).content.decode()
+    settings = client.get(reverse("settings:profile-index")).content.decode()
+
+    button = r'<li\s*(class="active")?\s*>\s*<a id="nav-settings"\s+href="/settings/"'
+    assert re.search(button, tasks).group(1) is None
+    assert re.search(button, settings).group(1) == 'class="active"'
+    assert 'class="account-menu active' not in settings
 
 
 def test_log_out_signs_out(user):
