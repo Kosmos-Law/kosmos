@@ -226,12 +226,22 @@
   --fc-neutral-bg-color: var(--background-light);
 }
 
-/* The grid is outlined in its own rule, square, and closes with a
-   bottom rule of its own; the weekday row is ruled off from the days. */
+/* The grid (month, week and day) and the agenda's list are outlined in
+   their own rule, their corners rounded as the app's tables are
+   (tables.css); the grid closes with a bottom rule of its own, and the
+   weekday row is ruled off from the days. The corners clip what is drawn
+   inside them, the header row's fill among it. The "+N more" popover is
+   drawn outside the grid (in the view harness), so it is not cut. */
 .fc .fc-scrollgrid {
   border-bottom-width: 1px !important;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   border-right-width: 1px !important;
+  overflow: hidden;
+}
+
+.fc .fc-list {
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .fc .fc-scrollgrid-section-header > * {
@@ -506,11 +516,13 @@
 
 /* The circle with its margin stands as tall as the other numbers with
    their padding (2.5rem), so today's events start on the same line as
-   its neighbours' and a bar spanning the days keeps clear of them */
+   its neighbours' and a bar spanning the days keeps clear of them. The
+   number is in the lavender (the violet icon colour) on the pale lavender
+   selection circle. */
 .fc .fc-day-today .fc-daygrid-day-number {
   background-color: var(--selected-background);
   border-radius: 50%;
-  color: var(--selected-color);
+  color: var(--icon-violet);
   font-weight: 500;
   height: 2rem;
   line-height: 2rem;
@@ -551,6 +563,19 @@
   background: var(--background-td);
 }
 
+/* The month view's weekday row is styled as the app's table headers
+   (tables.css): the header fill and left-set text, ruled off below (above)
+   and between its cells. The dash's Calendar Week heads its days the same
+   way. */
+.fc-dayGridMonth-view th.fc-col-header-cell {
+  background: var(--background-th);
+  text-align: left;
+}
+
+.fc-dayGridMonth-view .fc-col-header-cell-cushion {
+  padding: 0.5rem 0.75rem;
+}
+
 .fc td {
   overflow: visible;
   white-space: normal;
@@ -560,19 +585,59 @@
 /* Year view: the next twelve months as mini months. Everything is a step
    smaller than the month view so a month fits in a third of the width,
    and the chips are trimmed to a line of text. */
+/* No card round the year: the outline and the inset are dropped, so the
+   mini months stand on the page, the outer ones in line with the toolbar
+   above. The months keep their gaps between each other. */
 .fc .fc-multimonth {
-  border-radius: 0;
+  border: 0;
+  margin: 0 -1rem;
 }
 
-/* Each mini month is closed top and bottom. The app's table rules strip
-   a header cell's top rule and a body cell's bottom rule (the month grid
-   draws those edges itself), so they are put back on the weekday header
-   and the last week of every month here. */
-.fc-multiMonthRolling-view .fc-multimonth-header-table th {
-  border-top: solid 1px var(--border-medium);
+.fc .fc-multimonth-multicol .fc-multimonth-month {
+  padding: 0 1rem 1.5rem;
 }
 
-.fc-multiMonthRolling-view .fc-multimonth-daygrid-table tr:last-child td {
+/* Each mini month is outlined with its corners rounded, as the month
+   grid and the app's tables are. A mini month is two tables, the weekday
+   header over the days, whose collapsed cell borders cannot round; so the
+   tables take separate borders and carry the outline themselves (the
+   header the top and sides, the days the sides and bottom), clipping
+   their cells' fills to the corners, and the cells keep only the rules
+   between them. */
+.fc-multiMonthRolling-view :is(.fc-multimonth-header-table, .fc-multimonth-daygrid-table) {
+  border: solid 1px var(--border-medium);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.fc-multiMonthRolling-view .fc-multimonth-header-table {
+  border-bottom: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.fc-multiMonthRolling-view .fc-multimonth-daygrid-table {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border-top: 0;
+}
+
+/* the days' own ground stops at the rounded corners too */
+.fc-multiMonthRolling-view .fc-multimonth-daygrid {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.fc-multiMonthRolling-view :is(.fc-multimonth-header-table th, .fc-multimonth-daygrid-table td) {
+  border: 0;
+  border-right: solid 1px var(--border-medium);
+}
+
+.fc-multiMonthRolling-view :is(.fc-multimonth-header-table th, .fc-multimonth-daygrid-table td):last-child {
+  border-right: 0;
+}
+
+/* the header ruled off from the days, and each week from the next */
+.fc-multiMonthRolling-view .fc-multimonth-header-table th,
+.fc-multiMonthRolling-view .fc-multimonth-daygrid-table tr:not(:last-child) td {
   border-bottom: solid 1px var(--border-medium);
 }
 

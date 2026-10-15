@@ -84,6 +84,13 @@ document.body.addEventListener("htmx:beforeRequest", (event) => {
   }
 });
 
+// Whether an entry is a task, for the calendar's order. FullCalendar hands
+// its order function the entry with its extended props, by version either
+// under extendedProps or spread onto it.
+function isTask(entry) {
+  return Number((entry.extendedProps || entry).kind === "task");
+}
+
 // A task's box is an element of its own, so a click on it can be told
 // from a click on the rest of the chip: the box marks the task done, the
 // chip opens it. It goes where the dot would be in the agenda, and before
@@ -179,6 +186,18 @@ document.addEventListener("alpine:init", () => {
                 "multiMonthRolling,dayGridMonth,timeGridWeek,timeGridDay,listRolling",
             },
         noEventsContent: "No events",
+
+        // A day's tasks come after its events, in every view; within each,
+        // FullCalendar's own order (start, longest first, all-day first,
+        // title). Left to that order alone, a task sorted among the events
+        // by its title.
+        eventOrder: [
+          (a, b) => isTask(a) - isTask(b),
+          "start",
+          "-duration",
+          "allDay",
+          "title",
+        ],
 
         // The year view: the next twelve months as mini months, three
         // across, from the month in view rather than from January, so in

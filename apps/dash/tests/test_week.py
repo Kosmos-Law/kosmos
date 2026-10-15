@@ -133,7 +133,7 @@ def test_tasks_stay_off_the_week_with_the_toggle_off(user):
     assert _days(user)[4].entries == []
 
 
-def test_open_tasks_land_on_their_days_between_all_day_and_timed_events(user):
+def test_open_tasks_land_on_their_days_below_the_events(user):
     timed = _event(date=TODAY, start_time=time(9))
     all_day = _event(date=TODAY)
     task = _task(user, date_due=TODAY)
@@ -143,8 +143,21 @@ def test_open_tasks_land_on_their_days_between_all_day_and_timed_events(user):
     days = week.week_context(user, today=TODAY, tasks=True)["week"]
     assert _entries(days[4]) == [
         ("event", all_day.id),
-        ("task", task.id),
         ("event", timed.id),
+        ("task", task.id),
+    ]
+
+
+def test_overdue_tasks_lead_todays_tasks_below_its_events(user):
+    event = _event(date=TODAY, start_time=time(15))
+    today_task = _task(user, date_due=TODAY, description="A task")
+    old = _task(user, date_due=date(2026, 9, 2), description="Z task")
+
+    days = week.week_context(user, today=TODAY, tasks=True)["week"]
+    assert _entries(days[4]) == [
+        ("event", event.id),
+        ("task", old.id),
+        ("task", today_task.id),
     ]
 
 
@@ -196,7 +209,7 @@ def test_past_three_tasks_the_rest_fold_into_more_tasks(user):
         _task(user, date_due=TODAY, description=f"Task {n}")
 
     today = week.week_context(user, today=TODAY, tasks=True)["week"][4]
-    assert [e.kind for e in today.entries] == ["task"] * 3 + ["event"]
-    assert today.entries[-1].id == event.id
+    assert [e.kind for e in today.entries] == ["event"] + ["task"] * 3
+    assert today.entries[0].id == event.id
     assert today.more_tasks == 2
     assert today.more == 0

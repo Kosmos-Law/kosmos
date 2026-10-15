@@ -139,11 +139,27 @@
   border-radius: var(--radius-md);
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* the header row's fill keeps to the rounded corners */
+  overflow: hidden;
   /* the calendar's dot (calendar.css, on .fc) */
   --event-dot: var(
     --calendar-dot,
     color-mix(in oklab, var(--icon-violet) 65%, var(--background-section))
   );
+}
+
+/* The weekday header row, styled as the app's table headers (tables.css):
+   the header fill, a rule under it, ruled between its cells. Its text
+   stands where the cells' entries start. */
+.week-head-cell {
+  background: var(--background-th);
+  border-bottom: 1px solid var(--border-medium);
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+}
+
+.week-head-cell + .week-head-cell {
+  border-left: 1px solid var(--border-medium);
 }
 
 .week-day {
@@ -156,22 +172,25 @@
   border-left: 1px solid var(--border-medium);
 }
 
-/* The weekday on the left and the day of the month in the upper right,
-   as the month view numbers its cells */
+/* The day of the month in the upper right, as the month view numbers its
+   cells. The weekday beside it shows only on a phone, where the header
+   row gives way to a stacked list. */
 .week-day-head {
   align-items: baseline;
   color: var(--color-primary);
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 0.5rem;
   text-decoration: none;
 }
 
+.week-day-head:hover .week-day-date,
 .week-day-head:hover .week-day-name {
   text-decoration: underline;
 }
 
 .week-day-name {
+  display: none;
   font-weight: 500;
 }
 
@@ -180,11 +199,12 @@
 }
 
 /* Today's number as the month view marks it (calendar.css): in the
-   selection colour, on a circle of it. The circle is drawn behind the
-   number rather than sized round it, so the heading keeps its height and
-   today's entries start on the same line as the other days'. */
+   lavender (the violet icon colour), on the pale lavender selection
+   circle. The circle is drawn behind the number rather than sized round
+   it, so the heading keeps its height and today's entries start on the
+   same line as the other days'. */
 .is-today .week-day-date {
-  color: var(--selected-color);
+  color: var(--icon-violet);
   font-weight: 500;
   position: relative;
   text-align: center;
@@ -346,8 +366,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .week-head-cell {
+    display: none;
+  }
+
   .week-day {
     min-height: 0;
+  }
+
+  .week-day-head {
+    justify-content: space-between;
+  }
+
+  .week-day-name {
+    display: inline;
   }
 
   .week-day + .week-day {
