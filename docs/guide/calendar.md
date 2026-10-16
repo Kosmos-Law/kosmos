@@ -18,7 +18,7 @@ belong to a matter. The same event appears in several places:
 - A matter's **Events** tab: that matter's events.
 - A matter's **Overview**: under **Events**, its pending events dated
   today or later.
-- The Dash, under **Upcoming Events**. See
+- The Dash, under **Calendar Week**. See
   [Start the day on the Dash](getting-started.md#start-the-day-on-the-dash).
 - The daily digest email, if you have switched it on. See
   [Make it yours](getting-started.md#make-it-yours).
@@ -217,7 +217,7 @@ Good to know:
 
 ## Get reminded of events
 
-Three things bring events to you. **Upcoming Events** on the Dash and the
+Three things bring events to you. **Calendar Week** on the Dash and the
 daily digest email show every pending event you can see, not only those
 assigned to you. A notification on an event is yours alone: it goes to
 you, at a time you choose, by email or as a push to your phone.

@@ -15,6 +15,7 @@ import apps.calendar.sync as sync
 from apps.accounts.access import matter_access_required
 from apps.calendar import holidays, invitations
 from apps.calendar.access import event_for_user, matters_for_events
+from apps.calendar.feed import event_entry, feed_date, task_entry
 from apps.calendar.filter import EventFilter, assignee_tokens
 from apps.calendar.forms import EventForm
 from apps.calendar.guest_views import guests_context
@@ -507,11 +508,6 @@ def events_calendar(request):
     return render(request, "calendar/calendar.html", context)
 
 
-def _feed_date(value):
-    """The date in one of the feed's ISO date or date-time parameters."""
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
-
-
 @login_required
 @matter_access_required
 def events_api(request, matter_id=None):
@@ -529,12 +525,12 @@ def events_api(request, matter_id=None):
     # Parse FullCalendar's ISO date parameters
     try:
         if start_param:
-            start_date = _feed_date(start_param)
+            start_date = feed_date(start_param)
         else:
             start_date = timezone.localdate() - timedelta(days=30)
 
         if end_param:
-            end_date = _feed_date(end_param)
+            end_date = feed_date(end_param)
         else:
             end_date = timezone.localdate() + timedelta(days=60)
     except ValueError:
@@ -558,54 +554,7 @@ def events_api(request, matter_id=None):
         .prefetch_related("assignees")
     )
 
-    # Convert to FullCalendar format
-    calendar_events = []
-    for event in events:
-        fc_event = {
-            "id": str(event.id),
-            "title": event.calendar_title,
-            "extendedProps": {
-                "matter": event.matter.name if event.matter else "",
-                "matter_id": event.matter.id if event.matter else None,
-                "assignees": event.assignee_names,
-                "event_type": event.event_type or "",
-                "location": event.location or "",
-                "party": event.party or "",
-                "status": event.status or "",
-            },
-        }
-
-        # Handle timed vs all-day events. A timed event over several days
-        # ends at its end time on its last day. FullCalendar's end is
-        # exclusive, so an all-day event over several days ends the day
-        # after its last.
-        if event.start_time and event.end_time:
-            fc_event["start"] = f"{event.date}T{event.start_time}"
-            fc_event["end"] = f"{event.last_date}T{event.end_time}"
-            fc_event["allDay"] = False
-        elif event.start_time:
-            fc_event["start"] = f"{event.date}T{event.start_time}"
-            fc_event["allDay"] = False
-        else:
-            fc_event["start"] = str(event.date)
-            if event.end_date:
-                fc_event["end"] = str(event.end_date + timedelta(days=1))
-            fc_event["allDay"] = True
-
-        # Add status-based styling
-        classes = []
-        if event.status == "Pending":
-            classes.append("fc-event-pending")
-        elif event.status == "Complete":
-            classes.append("fc-event-complete")
-        elif event.status == "Missed":
-            classes.append("fc-event-missed")
-        if not event.matter:
-            classes.append("fc-event-no-matter")
-        if classes:
-            fc_event["className"] = " ".join(classes)
-
-        calendar_events.append(fc_event)
+    calendar_events = [event_entry(event) for event in events]
 
     # The overlays: on a matter's tab, the user's tasks on that matter
     if show_tasks(request):
@@ -633,23 +582,7 @@ def _task_feed(user, first, last, matter_id=None):
     )
     if matter_id:
         tasks = tasks.filter(matter_id=matter_id)
-    feed = []
-    for task in tasks:
-        title = task.description or "Untitled"
-        if task.matter_id:
-            title = f"{task.matter.name} - {title}"
-        feed.append(
-            {
-                "id": f"task-{task.id}",
-                "title": title,
-                "start": str(task.date_due),
-                "allDay": True,
-                "className": "fc-event-task",
-                "durationEditable": False,
-                "extendedProps": {"kind": "task", "task_id": task.id},
-            }
-        )
-    return feed
+    return [task_entry(task) for task in tasks]
 
 
 @login_required

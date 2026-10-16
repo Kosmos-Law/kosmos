@@ -59,9 +59,16 @@ The first time you open Kosmos each day, it takes you to the **Dash**,
 whichever page you asked for. After that it leaves you alone until the
 next day. The Dash shows up to three sections:
 
-- **Upcoming Events**: the next seven pending events on the matters you
-  can see, earliest first. An event whose date has passed stays here
-  until it is no longer pending. Click a card to open the event.
+- **Calendar Week**: this week of the calendar, Sunday to Saturday, with
+  the pending events on the matters you can see. It works as the
+  calendar's month view does. Click an event to open it, drag it to
+  another day to move it, or click an empty part of a day to add an
+  event on that day. Click a day's number to open the calendar on it.
+  The arrows step a week at a time, and **This Week** brings you back.
+  With **Tasks** on (as it starts), your open tasks are on their days
+  too, after the events, and any overdue ones are gathered on today.
+  Click a task's box to mark it done. Past three tasks, a day's others
+  fold into a link to the task list. On a phone the week is a list.
 - **Work in Progress**: work that is recorded but not yet billed, as a
   chart and a table of **Hours**, **Gross**, **Comp** and **Net** for each
   matter. It starts on **This Month**. Use the date button on the right to
