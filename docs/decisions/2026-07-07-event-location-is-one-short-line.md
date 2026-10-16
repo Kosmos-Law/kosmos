@@ -1,5 +1,8 @@
 # An event's location is one short line (2026-07-07)
 
+> Replaced on 2026-10-16 by
+> [An event's meeting has fields of its own](2026-10-16-event-meeting-fields.md).
+
 Events gained a free-text Location field on 2026-06-20, as a `TextField`.
 Within three weeks users were pasting whole meeting invitations into it.
 The field was meant to say where the event is, in a line.

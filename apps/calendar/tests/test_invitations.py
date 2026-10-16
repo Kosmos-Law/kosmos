@@ -20,7 +20,7 @@ from apps.settings.models import Firm
 pytestmark = pytest.mark.django_db
 
 KEY = "signing-key"
-ADDRESS = "kosmos-calendar@mail.example.com"
+ADDRESS = "calendar@mail.example.com"
 
 
 @pytest.fixture(autouse=True)

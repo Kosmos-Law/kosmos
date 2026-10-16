@@ -11,6 +11,7 @@ from django.db.models import F
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from apps.calendar import meetings
 from utils.prepare_path import prepare_path
 
 logger = getLogger(__name__)
@@ -139,12 +140,13 @@ def add_event(event):
                 "timeZone": settings.TIME_ZONE,
             }
 
-        # Map the free-text location to Google's location field; fall back to
-        # the meeting type so type-only events still show something there.
-        if event.location:
-            new_event["location"] = event.location
-        elif event.event_type:
-            new_event["location"] = event.event_type
+        # The place, or the meeting's link when it has none, or the
+        # meeting type so type-only events still show something there; the
+        # link and the details as the description (see meetings.meeting_text)
+        location = event.location or event.meeting_url or event.event_type
+        if location:
+            new_event["location"] = location
+        new_event["description"] = meetings.meeting_text(event)
 
         google_event = (
             service.events().insert(calendarId=CALENDAR_ID, body=new_event).execute()
@@ -282,12 +284,13 @@ def edit_event(event):
                 "date": str(event.last_date + timedelta(days=1)),
             }
 
-        # Map the free-text location to Google's location field; fall back to
-        # the meeting type so type-only events still show something there.
-        if event.location:
-            revised_event["location"] = event.location
-        elif event.event_type:
-            revised_event["location"] = event.event_type
+        # The place, or the meeting's link when it has none, or the
+        # meeting type so type-only events still show something there; the
+        # link and the details as the description (see meetings.meeting_text)
+        location = event.location or event.meeting_url or event.event_type
+        if location:
+            revised_event["location"] = location
+        revised_event["description"] = meetings.meeting_text(event)
 
         result = (
             service.events()
@@ -599,10 +602,38 @@ def _read_title(google_event, local_event=None):
     return {"description": title}
 
 
+def _google_meeting(google_event, location):
+    """A Google event's meeting link and details: the link from Google's own
+    meeting (Meet, or a conferencing add-on's), else the "Join:" line Kosmos
+    writes first in the description (see meetings.meeting_text), else a
+    meeting service's link in the location or the description. The
+    details are the description without that line."""
+    description = meetings.plain_text(google_event.get("description") or "")
+    url = ""
+    for entry in (google_event.get("conferenceData") or {}).get("entryPoints", []):
+        if entry.get("entryPointType") == "video" and entry.get("uri"):
+            url = entry["uri"]
+            break
+    url = url or google_event.get("hangoutLink") or ""
+
+    first, _, rest = description.partition("\n")
+    if first.startswith("Join: ") and meetings.is_link_only(first[len("Join: ") :]):
+        url = url or first[len("Join: ") :].strip()
+        description = rest.strip()
+    if not url:
+        url = meetings.find_meeting_url(location) or meetings.find_meeting_url(
+            description
+        )
+    if not url and meetings.is_link_only(location):
+        url = location
+    return url, description[: meetings.DETAILS_LIMIT]
+
+
 def _parse_google_event(google_event):
     """
     Parse Google Calendar event into local Event model fields.
-    Extracts: date, end_date, start_time, end_time, event_type, location
+    Extracts: date, end_date, start_time, end_time, event_type, location,
+    meeting_url, details
     Note: party, status, user_id cannot be determined from Google data. The
     matter and description come from the title: see _title_fields.
     """
@@ -646,18 +677,28 @@ def _parse_google_event(google_event):
         )
 
     # Parse location: a bare meeting-type value maps to event_type (legacy
-    # data), anything else is treated as a free-text location. Google's
-    # location is unbounded; truncate to our column limit so a long value
-    # can't fail the whole sync run. The location is always set, to nothing
-    # when Google holds no free text, so one removed there is removed here.
+    # data), a meeting's link or its service's name is no place, anything
+    # else is treated as a free-text location. Google's location is
+    # unbounded; truncate to our column limit so a long value can't fail the
+    # whole sync run. The location, link and details are always set, to
+    # nothing when Google holds none, so one removed there is removed here.
     # The meeting type is left as it is: it is Kosmos's own classification,
     # and Google only ever shows it in place of a missing location.
-    location = google_event.get("location") or ""
+    location = (google_event.get("location") or "").strip()
+    url, details = _google_meeting(google_event, location)
     event_data["location"] = None
     if location in ["Zoom", "Virtual", "Phone", "In-person"]:
         event_data["event_type"] = location
-    elif location:
+    elif (
+        location
+        and location != url
+        and not meetings.is_link_only(location)
+        and not meetings.is_service_name(location)
+    ):
         max_length = Event._meta.get_field("location").max_length
         event_data["location"] = location[:max_length]
+    url_limit = Event._meta.get_field("meeting_url").max_length
+    event_data["meeting_url"] = url if len(url) <= url_limit else ""
+    event_data["details"] = details
 
     return event_data

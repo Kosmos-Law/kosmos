@@ -45,7 +45,8 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 
 ## Tasks, calendar, email and intakes
 
-- [An event's location is one short line (2026-07-07)](2026-07-07-event-location-is-one-short-line.md)
+- [An event's location is one short line (2026-07-07)](2026-07-07-event-location-is-one-short-line.md), replaced by
+- [An event's meeting has fields of its own (2026-10-16)](2026-10-16-event-meeting-fields.md)
 - [Client forms replace the website questionnaire (2026-07-25)](2026-07-25-client-forms-replace-the-website-questionnaire.md)
 - [Intake email: forwarding rules and canned replies (2026-07-28)](2026-07-28-intake-email-rules.md)
 - [The Gmail mirror: one mailbox per user, Gmail is the archive (2026-07-31)](2026-07-31-gmail-mirror-per-user-mailboxes.md)

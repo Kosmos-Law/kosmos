@@ -57,8 +57,11 @@ depth and refuses cycles). Attaching copies the items into a `Checklist`
 checklists intact.
 
 **Event** (`app_event`). `date`, `start_time`, `end_time`, `description`
-(255 characters), `location` (150, a short pointer such as a meeting link
-or a courtroom, on purpose not a notes field), `event_type`, `party`,
+(255 characters), `location` (255, the place), `meeting_url` (the join
+link), `details` (free text: passcode, dial-ins, agenda),
+`organizer_name` and `organizer_email` (a forwarded invitation's
+organizer; see [the decision](../../decisions/2026-10-16-event-meeting-fields.md)
+and `apps/calendar/meetings.py`), `event_type`, `party`,
 `status` (Pending, Complete or Missed, free text), `user` (who saved it),
 `assignees` (a many-to-many to users; none means the firm's event), and
 `matter` (`CASCADE`). `google_id` and `google_synced_at`

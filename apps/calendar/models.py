@@ -37,10 +37,21 @@ class Event(AuditMixin, models.Model):
     event_type = models.CharField(
         max_length=50, choices=EVENT_TYPE_CHOICES, blank=True, null=True
     )
-    # CharField (not TextField) on purpose: location is a short pointer — a
-    # meeting link or "courthouse & courtroom" — not a notes field. 150 still
-    # fits a Zoom URL + passcode.
-    location = models.CharField(max_length=150, blank=True, null=True)
+    # The place, as iCalendar's LOCATION: "courthouse & courtroom", an
+    # address. A meeting's link is meeting_url, and its passcode and dial-in
+    # numbers are in details.
+    location = models.CharField(max_length=255, blank=True, null=True)
+    # The link that joins a virtual meeting (Zoom, Teams, Meet, Webex): an
+    # invitation's CONFERENCE, sent out as CONFERENCE and URL
+    meeting_url = models.URLField(max_length=2000, blank=True, default="")
+    # Free text, as iCalendar's DESCRIPTION and Google's description: what a
+    # forwarded invitation says (passcode, meeting ID, dial-in numbers,
+    # agenda), or anything the user writes
+    details = models.TextField(blank=True, default="")
+    # Who sent a forwarded invitation (its ORGANIZER), shown on the event;
+    # blank for an event made in Kosmos, whose organizer is the firm
+    organizer_name = models.CharField(max_length=255, blank=True, default="")
+    organizer_email = models.EmailField(blank=True, default="")
     status = models.CharField(max_length=50, blank=True, null=True)
     google_id = models.CharField(max_length=255, blank=True, null=True)
     # When this event was last successfully pushed to Google Calendar. NULL means

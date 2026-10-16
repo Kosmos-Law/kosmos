@@ -294,6 +294,7 @@ textarea:focus {
 .form-compact input[type="password"],
 .form-compact input[type="number"],
 .form-compact input[type="email"],
+.form-compact input[type="url"],
 .form-compact input[type="color"],
 .form-compact textarea {
   width: 100%;

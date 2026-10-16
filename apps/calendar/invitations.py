@@ -39,10 +39,11 @@ from icalendar import (
     Event as VEvent,
     vCalAddress,
     vText,
+    vUri,
 )
 
 from apps.accounts.models import CustomUser
-from apps.calendar import sync
+from apps.calendar import meetings, sync
 from apps.calendar.events import default_end_time
 from apps.calendar.models import Event
 
@@ -51,6 +52,8 @@ logger = logging.getLogger(__name__)
 PRODID = "-//Kosmos//Calendar//EN"
 UTC = dt_timezone.utc
 ANSWERS = {"accepted", "declined", "tentative"}
+URL_LIMIT = Event._meta.get_field("meeting_url").max_length
+EMAIL_LIMIT = Event._meta.get_field("organizer_email").max_length
 
 # Mail providers anyone may have an address at: a firm whose own email is
 # at one of these has no domain of its own to keep guests off
@@ -134,6 +137,10 @@ class Invitation:
     end_date: date | None
     start_time: object
     end_time: object
+    meeting_url: str = ""
+    details: str = ""
+    organizer_name: str = ""
+    organizer_email: str = ""
 
 
 def calendar_text(post, files):
@@ -197,16 +204,22 @@ def parse_invitation(text):
             if last > event_date:
                 end_date = last
 
+    meeting_url, location, details = meetings.invitation_meeting(vevent)
+    organizer_name, organizer_email = meetings.invitation_organizer(vevent)
     return Invitation(
         uid=str(vevent.get("UID", "")).strip(),
         sequence=int(vevent.get("SEQUENCE", 0) or 0),
         cancelled=method == "CANCEL" or status == "CANCELLED",
         summary=str(vevent.get("SUMMARY", "")).strip(),
-        location=str(vevent.get("LOCATION", "")).strip(),
+        location=location,
         date=event_date,
         end_date=end_date,
         start_time=start_time,
         end_time=end_time,
+        meeting_url=meeting_url,
+        details=details,
+        organizer_name=organizer_name,
+        organizer_email=organizer_email,
     )
 
 
@@ -243,6 +256,18 @@ def post_invitation(user, invitation):
     event.start_time = invitation.start_time
     event.end_time = invitation.end_time
     event.location = _fit(invitation.location, "location") or None
+    event.meeting_url = (
+        invitation.meeting_url if len(invitation.meeting_url) <= URL_LIMIT else ""
+    )
+    if event.meeting_url and not event.event_type:
+        event.event_type = meetings.meeting_type(event.meeting_url)
+    event.details = invitation.details
+    event.organizer_name = _fit(invitation.organizer_name, "organizer_name")
+    event.organizer_email = (
+        invitation.organizer_email
+        if len(invitation.organizer_email) <= EMAIL_LIMIT
+        else ""
+    )
     event.ical_sequence = invitation.sequence
     event.save()
     sync.push_event(event)
@@ -262,6 +287,8 @@ def details(event):
         event.end_time,
         event.description,
         event.location,
+        event.meeting_url,
+        event.details,
     )
 
 
@@ -278,8 +305,21 @@ def _vevent(event, guests, method, organiser):
     vevent.add("sequence", event.invite_sequence)
     vevent.add("dtstamp", datetime.now(UTC))
     vevent.add("summary", event.description or "Untitled")
-    if event.location:
-        vevent.add("location", event.location)
+    # Many calendar apps show only the location and the text, so a meeting
+    # with no place has its link as its location, and the link heads the
+    # text; CONFERENCE and URL carry it for the apps that read them
+    if event.location or event.meeting_url:
+        vevent.add("location", event.location or event.meeting_url)
+    text = meetings.meeting_text(event)
+    if text:
+        vevent.add("description", text)
+    if event.meeting_url:
+        vevent.add("url", event.meeting_url)
+        conference = vUri(event.meeting_url)
+        conference.params["VALUE"] = "URI"
+        conference.params["FEATURE"] = "VIDEO"
+        conference.params["LABEL"] = "Join"
+        vevent.add("conference", conference, encode=0)
     if event.start_time:
         # A moment, given in UTC, which every calendar app reads
         start = event.start_at
@@ -339,6 +379,9 @@ def _send(event, guests, method, subject, intro, user):
     lines = [intro, "", event.description or "Untitled", when(event)]
     if event.location:
         lines.append(event.location)
+    meeting = meetings.meeting_text(event)
+    if meeting:
+        lines += ["", meeting]
     lines += ["", f"{organiser}"]
     sent = 0
     for guest in guests:
