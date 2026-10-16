@@ -80,3 +80,13 @@ def test_board_column_status_is_kept_when_left_alone(client, user):
     url = reverse("tasks:add") + "?status=on-hold"
     assert client.post(url, _data(user, status="On hold")).status_code == 204
     assert Task.objects.get(description="Draft the motion").status == "On hold"
+
+
+# -----------------------------------------------------
+# the Tasks tab opens the dialog from its toolbar
+# -----------------------------------------------------
+
+
+def test_tasks_toolbar_has_the_add_button(client):
+    html = client.get(reverse("tasks:index")).content.decode()
+    assert f'hx-get="{reverse("tasks:add")}"' in html
