@@ -428,7 +428,7 @@ INTAKE_INBOUND_RECIPIENT = env(
 # Mailgun route as the intake address: a firm user forwards a calendar
 # invitation to it to post a firm event, and it is the organiser named in
 # the invitations sent to an event's guests, so their answers come back to
-# it. Each instance owns its own (kosmos-calendar@ on production,
+# it. Each instance owns its own (calendar@ on production,
 # kosmos-dev-calendar@ on a test server). Empty turns both off.
 CALENDAR_INBOUND_ADDRESS = env("CALENDAR_INBOUND_ADDRESS", default="").lower()
 

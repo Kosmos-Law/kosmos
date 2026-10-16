@@ -160,7 +160,7 @@ def test_the_firms_invitation_carries_the_link_and_the_text(meeting):
 
 
 def test_the_email_gives_the_link_and_the_text(meeting, user, settings, mailoutbox):
-    settings.CALENDAR_INBOUND_ADDRESS = "kosmos-calendar@mail.example.com"
+    settings.CALENDAR_INBOUND_ADDRESS = "calendar@mail.example.com"
     guest = EventGuest.objects.create(event=meeting, email="ann@example.org")
 
     assert invitations.send_invitation(meeting, [guest], user) == 1
