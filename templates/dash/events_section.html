@@ -1,132 +1,64 @@
-<div class="dash-row"
-     id="dash-events"
-     hx-get="{% url 'dash:events-section' %}?start={{ week_first|date:'Y-m-d' }}"
-     hx-trigger="eventsChanged from:body, tasksListChanged from:body"
-     hx-swap="outerHTML">
+{% comment %}
+The dash's Calendar Week: a one-week slice of the calendar's month view,
+Sunday to Saturday, drawn by FullCalendar from dash:week-feed
+(apps/dash/week.py) through the calendar's own component
+(events-calendar.js). It works as the month view does: the weekday header
+row over the days, today's number circled, an all-day event a filled chip
+and a timed one a dot, its time and its title. An event drags to another
+day; a click opens it; a click on an empty part of a day adds an event on
+that day; a day's number opens the calendar on it. With the Tasks toggle on
+(as it starts), the user's open tasks are on their days, after the events,
+a box before the title that marks the task done; on the week holding today
+the overdue ones are gathered on today, dated and in the urgent colour.
+Past three tasks, a day's others fold into "N more tasks", to the task
+list. The chevrons step a week; on a phone the week is its agenda. The
+card refetches when an event or a task changes.
+{% endcomment %}
+<div class="dash-row" id="dash-events" x-data="eventsCalendar({week: true, apiUrl: '{% url 'dash:week-feed' %}', tasks:
+  {% if week_tasks %}
+    true
+  {% else %}
+    false
+  {% endif %}
+  , tasksUrls: {on: '{% url 'dash:week-tasks' 'on' %}', off: '{% url 'dash:week-tasks' 'off' %}'}})" x-init="initCalendar()">
   <div class="events-header week-title">
     <div class="week-title-start">
       <h2>Calendar Week</h2>
       <a href="{% url 'calendar:index' %}" class="btn-ghost"><i class="icon-arrow-up-right"></i></a>
     </div>
     <div class="week-nav">
-      {% if not week_is_current %}
-        <button type="button"
-                class="week-nav-today"
-                hx-get="{% url 'dash:events-section' %}?start={{ week_today|date:'Y-m-d' }}"
-                hx-target="#dash-events"
-                hx-swap="outerHTML">This Week</button>
-      {% endif %}
+      <button type="button"
+              class="week-nav-today"
+              x-show="!isCurrentWeek"
+              x-cloak
+              @click="calendar.today()">This Week</button>
       <button type="button"
               class="week-nav-arrow"
               aria-label="Previous week"
               title="Previous week"
-              hx-get="{% url 'dash:events-section' %}?start={{ week_previous|date:'Y-m-d' }}"
-              hx-target="#dash-events"
-              hx-swap="outerHTML">
+              @click="calendar.prev()">
         <i class="icon-chevron-left"></i>
       </button>
-      <span class="week-nav-range">{{ week_range }}</span>
+      <span class="week-nav-range" x-text="weekRange"></span>
       <button type="button"
               class="week-nav-arrow"
               aria-label="Next week"
               title="Next week"
-              hx-get="{% url 'dash:events-section' %}?start={{ week_next|date:'Y-m-d' }}"
-              hx-target="#dash-events"
-              hx-swap="outerHTML">
+              @click="calendar.next()">
         <i class="icon-chevron-right"></i>
       </button>
     </div>
     <div class="week-title-end toolbar">
       <button type="button"
-              {% if week_tasks %}class="toggle-active"{% endif %}
-              aria-pressed="{% if week_tasks %}true{% else %}false{% endif %}"
-              hx-post="{% if week_tasks %}{% url 'dash:week-tasks' 'off' %}{% else %}{% url 'dash:week-tasks' 'on' %}{% endif %}"
-              hx-vals='{"start": "{{ week_first|date:'Y-m-d' }}"}'
-              hx-target="#dash-events"
-              hx-swap="outerHTML">
+              :class="tasks && 'toggle-active'"
+              :aria-pressed="tasks ? 'true' : 'false'"
+              @click="toggleTasks()">
         <i class="icon-square-check-big"></i>Tasks
       </button>
     </div>
   </div>
-  {% comment %}
-  A week, Sunday to Saturday, as a strip of columns: a row of the
-  calendar's month view under its weekday header row, today's number
-  circled as it is there. The header row is styled as a table header. Each
-  day's cell has the day of the month in its upper right, which opens the
-  calendar on that day (on a phone, where the header row gives way to a
-  stacked list, the weekday stands before it). Under it the day's pending events, drawn
-  as the month view draws them: an all-day event a filled chip, a timed one
-  a dot, its time and its title; a click opens the event. With the Tasks
-  toggle on (as it starts), the user's open tasks are on their days as the month view has
-  them, a box before the title: the box marks the task done and the rest of
-  the chip opens it. On this week, tasks overdue from before it are
-  gathered at the head of today's tasks, dated and in the urgent colour. A
-  day's tasks come after its events, as on the calendar. Past
-  three tasks, a day's others fold into "N more tasks", to the task list. A day with nothing
-  on it keeps its column, blank; on a phone the strip stacks and empty days
-  drop out. The chevrons swap in the week before or after
-  (apps/dash/week.py), and the card redraws itself when an event changes.
-  {% endcomment %}
-  <div class="week-strip">
-    {% for day in week %}<div class="week-head-cell" aria-hidden="true">{{ day.label }}</div>{% endfor %}
-    {% for day in week %}
-      <div class="week-day{% if day.is_today %} is-today{% endif %}{% if not day.count %} is-empty{% endif %}">
-        <a class="week-day-head"
-           href="{% url 'calendar:index' %}?date={{ day.date|date:'Y-m-d' }}">
-          <span class="week-day-name">{{ day.label }}</span>
-          <span class="week-day-date">{{ day.date|date:"j" }}</span>
-        </a>
-        <ul class="week-entries">
-          {% for entry in day.entries %}
-            {% if entry.kind == "task" %}
-              <li class="week-entry week-task week-entry-all-day{% if entry.overdue %} is-overdue{% endif %}"
-                  title="{{ entry.title }}"
-                  role="button"
-                  tabindex="0"
-                  hx-get="{% url 'tasks:edit' id=entry.id %}"
-                  hx-trigger="click, keyup[key=='Enter']"
-                  hx-target="#htmx-modal-container">
-                <span class="week-entry-title">
-                  <span class="week-task-box"
-                        role="button"
-                        aria-label="Mark &quot;{{ entry.title }}&quot; done"
-                        title="Mark done"
-                        hx-post="{% url 'calendar:task-done' task_id=entry.id %}"
-                        hx-trigger="click consume"
-                        hx-swap="none"></span>
-                  {% if entry.time_label %}<span class="week-entry-time">{{ entry.time_label }}</span>{% endif %}
-                  {{ entry.title }}
-                </span>
-              </li>
-            {% else %}
-              <li class="week-entry {% if entry.time %}week-entry-timed{% else %}week-entry-all-day{% endif %}"
-                  title="{{ entry.title }}"
-                  role="button"
-                  tabindex="0"
-                  hx-get="{% url 'calendar:edit' id=entry.id %}"
-                  hx-trigger="click, keyup[key=='Enter']"
-                  hx-target="#htmx-modal-container">
-                {% if entry.time %}<span class="week-entry-dot"></span>{% endif %}
-                <span class="week-entry-title">
-                  {% if entry.time %}<span class="week-entry-time">{{ entry.time_label }}</span>{% endif %}
-                  {{ entry.title }}
-                </span>
-              </li>
-            {% endif %}
-          {% endfor %}
-          {% if day.more_tasks %}
-            <li class="week-more week-more-tasks">
-              <a href="{% url 'tasks:index' %}">{{ day.more_tasks }} more task{{ day.more_tasks|pluralize }}</a>
-            </li>
-          {% endif %}
-          {% if day.more %}
-            <li class="week-more">
-              <a href="{% url 'calendar:index' %}?date={{ day.date|date:'Y-m-d' }}">{{ day.more }} more</a>
-            </li>
-          {% endif %}
-        </ul>
-      </div>
-    {% endfor %}
-    {% if not week_count %}<p class="week-nothing">Nothing on the calendar this week.</p>{% endif %}
-  </div>
+  <div class="dash-week-calendar"
+       x-ref="grid"
+       hx-disinherit="*"
+       hx-boost="false"></div>
 </div>

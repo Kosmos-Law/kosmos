@@ -368,18 +368,18 @@
    title wraps under its time rather than under its own first word. (The
    year view keeps the one-line chip, cut with an ellipsis.) The selector
    matches the chip rules' weight, so its padding wins. */
-.fc-dayGridMonth-view .fc-event.fc-daygrid-dot-event {
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-event.fc-daygrid-dot-event {
   display: block;
   padding-left: 1.375rem;
   position: relative;
 }
 
-.fc-dayGridMonth-view .fc-daygrid-dot-event .fc-event-time,
-.fc-dayGridMonth-view .fc-daygrid-dot-event .fc-event-title {
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-event-time,
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-event-title {
   display: inline;
 }
 
-.fc-dayGridMonth-view .fc-daygrid-dot-event .fc-daygrid-event-dot {
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-daygrid-event-dot {
   left: 0.375rem;
   margin: 0;
   position: absolute;
@@ -460,11 +460,49 @@
   text-indent: 0;
 }
 
+/* The dash's Calendar Week gathers the tasks overdue from before it on
+   today: each is dated after its box, and its text is in the urgent
+   colour */
+.fc-event.fc-event-task.fc-event-overdue:not(.fc-list-event) .fc-event-title,
+.fc-list-event.fc-event-overdue .fc-list-event-title {
+  color: var(--urgent) !important;
+}
+
+.fc-task-due {
+  margin-right: 0.25rem;
+}
+
+/* The dash's fold of a day's tasks past its first three: "N more tasks",
+   quieter than the day's own entries, centred under the chips, to the
+   task list */
+/* (the selectors outweigh the all-day chip's, which they follow) */
+.fc-event.fc-daygrid-block-event.fc-event-more-tasks,
+.fc-event.fc-daygrid-block-event.fc-event-more-tasks:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  margin-top: 0.25rem;
+}
+
+.fc-event.fc-daygrid-block-event.fc-event-more-tasks .fc-event-title,
+.fc-list-event.fc-event-more-tasks .fc-list-event-title {
+  color: var(--color-muted) !important;
+  font-weight: normal !important;
+  text-align: center;
+}
+
+.fc-event.fc-event-more-tasks:hover .fc-event-title {
+  text-decoration: underline;
+}
+
+.fc-list-event.fc-event-more-tasks .fc-list-event-graphic .fc-list-event-dot {
+  display: none;
+}
+
 /* In the month grid a chip's title stops at two lines, with an ellipsis;
    the chip's tooltip has the whole of it. A timed entry's time is inside
    its title there (events-calendar.js), so the two are cut together. A
    chip that runs over several days has their width for its two lines. */
-.fc-dayGridMonth-view .fc-daygrid-event .fc-event-title {
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-event .fc-event-title {
   -webkit-box-orient: vertical;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -493,8 +531,13 @@
 
 /* Day cells. The height is the month view's: the year view's mini months
    keep FullCalendar's own compact cells. */
-.fc-dayGridMonth-view .fc-daygrid-day-frame {
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-day-frame {
   min-height: 6rem;
+}
+
+/* the dash's week has the one row, so its days stand taller */
+.fc-dashWeek-view .fc-daygrid-day-frame {
+  min-height: 8rem;
 }
 
 .fc .fc-daygrid-day-number {
@@ -567,12 +610,12 @@
    (tables.css): the header fill and left-set text, ruled off below (above)
    and between its cells. The dash's Calendar Week heads its days the same
    way. */
-.fc-dayGridMonth-view th.fc-col-header-cell {
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) th.fc-col-header-cell {
   background: var(--background-th);
   text-align: left;
 }
 
-.fc-dayGridMonth-view .fc-col-header-cell-cushion {
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-col-header-cell-cushion {
   padding: 0.5rem 0.75rem;
 }
 

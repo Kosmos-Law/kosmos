@@ -30,6 +30,6 @@ def test_the_dash_calls_events_for_user(user, monkeypatch):
     )
     seen = []
     monkeypatch.setattr(week, "events_for_user", _none_and_note(seen))
-    days = week.week_context(user)["week"]
-    assert all(day.entries == [] for day in days)
+    today = timezone.localdate()
+    assert week.week_feed(user, today, today, today) == []
     assert seen == [Event]

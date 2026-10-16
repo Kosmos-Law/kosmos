@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
@@ -13,14 +13,16 @@ from django.db.models import (
     Sum,
 )
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.access import filter_matters_for_user
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.time.models import TimeEntry
-from apps.dash.week import SHOW_TASKS_KEY, show_tasks, week_context
+from apps.calendar.feed import feed_date
+from apps.dash.week import SHOW_TASKS_KEY, show_tasks, week_feed
 from apps.invoicing.applications.models import CreditApplication, PaymentApplication
 from apps.invoicing.credits.models import Credit
 from apps.invoicing.invoices.models import UNSENT_STATUSES, Invoice
@@ -37,38 +39,31 @@ from apps.trust.available import trust_available_by_client
 from apps.trust.trust import get_pending_client_balance
 
 
-def _week_of(value):
-    """The date in a ?start or posted start, or None for this week."""
-    try:
-        return date.fromisoformat(value or "")
-    except ValueError:
-        return None
-
-
 @login_required
-def events_section(request):
-    """Render just the dash Calendar Week: the week holding ?start (today's
-    week by default), for its chevrons and its reload on event and task
-    changes."""
-    context = week_context(
-        request.user, _week_of(request.GET.get("start")), tasks=show_tasks(request)
+def week_feed_view(request):
+    """The Calendar Week's entries for FullCalendar, from its ?start up to
+    its ?end (exclusive), as JSON: the calendar's feed needs it."""
+    try:
+        first = feed_date(request.GET.get("start", ""))
+        last = feed_date(request.GET.get("end", "")) - timedelta(days=1)
+    except ValueError:
+        return HttpResponseBadRequest("start and end must be ISO dates.")
+    entries = week_feed(
+        request.user, first, last, timezone.localdate(), tasks=show_tasks(request)
     )
-    return render(request, "dash/events_section.html", context)
+    return JsonResponse(entries, safe=False)
 
 
 @login_required
 @require_POST
 def week_tasks(request, state):
     """The Calendar Week's Tasks toggle: show the user's open tasks on it,
-    or hide them, and redraw the week in view."""
+    or hide them. The card refetches its entries."""
     if state not in ("on", "off"):
         return HttpResponseBadRequest("Unknown state.")
     request.session[SHOW_TASKS_KEY] = state == "on"
     request.session.modified = True
-    context = week_context(
-        request.user, _week_of(request.POST.get("start")), tasks=state == "on"
-    )
-    return render(request, "dash/events_section.html", context)
+    return HttpResponse(status=204)
 
 
 def dash_wip_context(request):
@@ -374,7 +369,7 @@ def dash_collections_context(request):
 def dash_index(request):
     context = {
         "app": "dash",
-        **week_context(request.user, tasks=show_tasks(request)),
+        "week_tasks": show_tasks(request),
         **dash_wip_context(request),
         **dash_collections_context(request),
     }
