@@ -82,10 +82,17 @@
   width: auto;
 }
 
-/* The form's own top margin is the gap below the note. */
-.event-detached-note {
+/* The form's own top margin is the gap below the note; the note's own
+   top margin clears the Deadline Calculator button above it. */
+.event-detached-note,
+.event-organizer {
   color: var(--color-muted);
-  margin: 0;
+  margin: 0.75rem 0 0;
+}
+
+.events-form #id_details {
+  resize: vertical;
+  width: 100%;
 }
 
 .events-form #id_description {

@@ -27,12 +27,16 @@ class EventForm(forms.ModelForm):
             "description",
             "event_type",
             "location",
+            "meeting_url",
+            "details",
         )
         labels = {
             "assignees": "Assigned to",
             "end_date": "Through",
             "event_type": "Type",
             "location": "Location",
+            "meeting_url": "Meeting link",
+            "details": "Details",
         }
         PARTIES = (
             ("Client", "Client"),
@@ -64,7 +68,20 @@ class EventForm(forms.ModelForm):
             "location": forms.TextInput(
                 attrs={
                     "class": "span2",
-                    "placeholder": "Zoom link & passcode, or courthouse address & courtroom",
+                    "placeholder": "Courthouse address and courtroom",
+                }
+            ),
+            "meeting_url": forms.URLInput(
+                attrs={
+                    "class": "span3",
+                    "placeholder": "Zoom, Teams or Meet link",
+                }
+            ),
+            "details": forms.Textarea(
+                attrs={
+                    "class": "span3",
+                    "rows": 4,
+                    "placeholder": "Passcode, dial-in numbers, agenda",
                 }
             ),
         }

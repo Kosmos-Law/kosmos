@@ -118,7 +118,14 @@ choose **Event**.
 | **Status** | Yes | **Pending** (the default), **Complete** or **Missed**. |
 | **Party** | Yes | Who the event involves: **Client** (the default), **Opposing**, **All** or **Other**. There is no list of attendees. |
 | **Type** | No | **Zoom**, **Virtual**, **Phone** or **In-person**. |
-| **Location** | No | A meeting link and passcode, or a courthouse address and courtroom. 150 characters at most. |
+| **Location** | No | Where it is: a courthouse address and courtroom, an office. 255 characters at most. |
+| **Meeting link** | No | The link that joins a Zoom, Teams, Meet or Webex meeting. Once the event is saved, **Edit Event** has a **Join** button that opens it. |
+| **Details** | No | Anything else, as long as you need: the passcode, the meeting ID, the dial-in numbers, an agenda. |
+
+An event posted from a forwarded invitation fills these in from the
+invitation: the meeting link, the invitation's text as **Details**,
+**Zoom** or **Virtual** as its **Type**, and the place, if it names one.
+**Edit Event** also shows who sent the invitation, as **Organizer**.
 
 Good to know:
 
@@ -260,11 +267,11 @@ Once it is connected, events travel both ways:
 
 | What you do | What happens |
 |---|---|
-| Add or change a **Pending** event in Kosmos | Google is updated at once. The title is the matter name, " - ", then the description, or the description alone when the event has no matter. The date, the last day, the times and the **Location** go too, or the **Type** when there is no location. |
+| Add or change a **Pending** event in Kosmos | Google is updated at once. The title is the matter name, " - ", then the description, or the description alone when the event has no matter. The date, the last day, the times and the **Location** go too, or the **Meeting link** or the **Type** when there is no location. Google's description is the meeting link ("Join:" and the link) and then the **Details**. |
 | Mark an event **Complete** or **Missed** | It stays on Google as last sent. Later changes in Kosmos are not sent, and changes on Google are not brought in. |
 | Delete an event in Kosmos | It is removed from Google. |
 | Add an event on Google | It arrives in Kosmos within about two minutes as a **Pending** event assigned to **Firm**, with no **Party** set. An event over several days keeps its span. If its title is a matter's full name, " - ", then a description, it joins that matter. Otherwise it has no matter and the whole title is its description. |
-| Change a synced event on Google | Kosmos takes the new title, date, times and location within about two minutes. A location removed on Google is removed in Kosmos. The event keeps its matter unless the new title starts with another matter's full name and " - ". |
+| Change a synced event on Google | Kosmos takes the new title, date, times, location and description (as **Details**) within about two minutes, and a Google Meet added there as the **Meeting link**. A location, link or description removed on Google is removed in Kosmos. The event keeps its matter unless the new title starts with another matter's full name and " - ". |
 | Delete a synced event on Google | A **Pending** event is deleted from Kosmos. A **Complete** or **Missed** event stays in Kosmos, and so does a **Pending** event whose latest changes had not reached Google. |
 
 If Google cannot be reached when you save, a warning says the event was

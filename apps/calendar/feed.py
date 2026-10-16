@@ -22,6 +22,7 @@ def event_entry(event):
             "assignees": event.assignee_names,
             "event_type": event.event_type or "",
             "location": event.location or "",
+            "meeting_url": event.meeting_url,
             "party": event.party or "",
             "status": event.status or "",
         },
