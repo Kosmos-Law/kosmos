@@ -190,7 +190,8 @@ def test_the_dash_draws_the_week_as_a_calendar(user):
     client = Client()
     client.force_login(user)
     response = client.get(reverse("dash:index"))
-    content = response.content.decode()
+    # The template formatter lays the x-data object over several lines
+    content = " ".join(response.content.decode().split())
     assert "eventsCalendar({week: true" in content
     assert reverse("dash:week-feed") in content
     assert "tasks: true" in content
