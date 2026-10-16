@@ -20,19 +20,25 @@
                 hx-post="{% url 'tasks:bulk-delete' %}"
                 hx-confirm="Delete {{ selected_tasks|length }} selected task(s)? This cannot be undone."
                 hx-swap="none">
-          <i class="icon-circle-x"></i>
+          <i class="icon-trash-2"></i>
         </button>
       </div>
     {% else %}
       {% comment %} One left-to-right sentence: the plain-language input
       anchors the bar (the board uses its per-column quick-adds instead),
-      the everyday filters follow (chips, then the elastic date label
-      last so the chips never jitter), and Filter + the view toggle sit
-      on the right. {% endcomment %}
+      the add button opens the full dialog beside it, the everyday filters
+      follow (chips, then the elastic date label last so the chips never
+      jitter), and Filter + the view toggle sit on the right. {% endcomment %}
       {% if view_mode != 'board' %}
         {% include "tasks/form-quick.html" %}
       {% endif %}
       <div class="filter-tools tasks-primary-tools">
+        <button type="button"
+                class="btn-icon"
+                hx-get="{% url 'tasks:add' %}"
+                hx-target="#htmx-modal-container">
+          <i class="icon-plus"></i>
+        </button>
         <div class="dropdown" x-data="dropdown()">
           <button type="button"
                   id="tasks-date-filter"

@@ -559,8 +559,10 @@
   padding: 0.5rem;
 }
 
-/* Today highlight - only the day number */
-.fc .fc-day-today {
+/* Today highlight - only the day number. Today's header cell carries
+   fc-day-today too; it keeps its siblings' header fill, since the circled
+   number already marks the day. */
+.fc .fc-day-today:not(.fc-col-header-cell) {
   background-color: transparent !important;
 }
 
