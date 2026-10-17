@@ -926,7 +926,7 @@ document.addEventListener('keydown', function(event) {
 //  On pages with a user cycle (Tasks / Time / Expenses / Flat Fees declare
 //  data-cycle-*-url endpoints; a 204 + HX-Trigger refreshes the list) the
 //  brackets walk the user filter. Otherwise, on a matter page, they open the
-//  previous or next open matter, which the title bar carries as
+//  previous or next open matter, which the matter switcher carries as
 //  data-matter-prev-url / data-matter-next-url. Ignored while typing or in
 //  a modal.
 // ==========================================================================

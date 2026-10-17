@@ -1,13 +1,11 @@
 {% load matter_tags %}
 {% comment %}
 The matter title bar, shared by the Detail and Case sides. The previous and
-next open matter ride along as data attributes for the [ and ] keys
-(static/js/main.js); the tag returns both or neither. Edit Matter follows
-the add-time and add-expense buttons.
+next open matter for the [ and ] keys ride on the matter switcher, which
+tab and mode switches keep current. Edit Matter follows the add-time and
+add-expense buttons.
 {% endcomment %}
-{% get_adjacent_open_matters matter as adjacent %}
-<div class="detail-header"
-     {% if adjacent.prev %} data-matter-prev-url="{% url 'matters:overview-index' id=adjacent.prev.id %}" data-matter-next-url="{% url 'matters:overview-index' id=adjacent.next.id %}"{% endif %}>
+<div class="detail-header">
   <div class="toolbar matter-toolbar">
     <div class="toolbar-left">
       {% include "matters/includes/switcher.html" %}

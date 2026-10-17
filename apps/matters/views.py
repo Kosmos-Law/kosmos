@@ -572,7 +572,11 @@ def switcher(request, id):
     return render(
         request,
         "matters/includes/switcher.html",
-        {"matter": matter, "mode": "detail", "subapp": request.GET.get("tab", "")},
+        {
+            "matter": matter,
+            "mode": "case" if request.GET.get("mode") == "case" else "detail",
+            "subapp": request.GET.get("tab", ""),
+        },
     )
 
 

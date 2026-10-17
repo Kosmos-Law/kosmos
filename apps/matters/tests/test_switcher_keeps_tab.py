@@ -49,3 +49,26 @@ def test_switcher_links_carry_the_current_tab(client, matter, second_matter):
     content = response.content.decode()
     assert 'id="matter-switcher"' in content
     assert f"/matters/{second_matter.id}?tab=activity" in content
+
+
+def test_bracket_keys_carry_the_current_tab(client, matter, second_matter):
+    content = client.get(f"/matters/{matter.id}/tab/activity/").content.decode()
+
+    assert f'data-matter-next-url="/matters/{second_matter.id}?tab=activity"' in content
+
+
+def test_bracket_keys_stay_on_the_case_side(client, matter, second_matter):
+    content = client.get(f"/case/{matter.id}/tab/facts/").content.decode()
+
+    assert (
+        f'data-matter-next-url="/case/select-matter/{second_matter.id}/?tab=facts"'
+        in content
+    )
+
+
+def test_switcher_refresh_keeps_the_case_side(client, matter, second_matter):
+    content = client.get(
+        f"/matters/{matter.id}/switcher?mode=case&tab=facts"
+    ).content.decode()
+
+    assert f"/case/select-matter/{second_matter.id}/?tab=facts" in content
