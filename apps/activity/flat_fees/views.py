@@ -88,10 +88,15 @@ def flat_fees_filter_matter(request, matter_id):
         "entered": None,
         "invoice": None,
         "order_by": "-date",
+        # Override the toolbar's date preset too, or a stored "Today" would
+        # re-derive its window on the next read.
+        "filter_label": "all",
     }
     for key, val in new_values.items():
         filter_data[key] = val
     filter_data["matter"] = matter_id
+    # Every user's entries on the matter, not the toolbar's user.
+    filter_data.pop("user", None)
     request.session["flat_fees_filter"] = filter_data
     return redirect("activity:flat-fees-index")
 
