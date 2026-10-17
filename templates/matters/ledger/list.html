@@ -33,7 +33,9 @@
     <table class="ledger-totals">
       <tr>
         <th>Work in Progress</th>
-        <td class="numeric">${{ work_in_progress|floatformat:2|intcomma }}</td>
+        <td class="numeric">
+          <a href="{% url 'activity:time-filter-matter' matter.id %}?wip=1">${{ work_in_progress|floatformat:2|intcomma }}</a>
+        </td>
       </tr>
       {% comment %}
         Invoices not yet sent: their work is still in progress, so each is
@@ -89,7 +91,24 @@
               {# invoices -------------------------------------- #}
               {% if transaction.kind == 'invoice' %}
                 <div class="ledger-desc">
-                  <a href="{% url 'invoicing:invoices-detail-index' transaction.id %}">{{ transaction.description }}</a>
+                  <div class="dropdown" x-data="dropdown()">
+                    <button class="button-link"
+                            type="button"
+                            x-ref="button"
+                            @click="toggle()"
+                            :aria-expanded="open">{{ transaction.description }}</button>
+                    <ul class="dropdown-menu" x-ref="menu" x-show="open">
+                      <li>
+                        <a class="dropdown-item"
+                           href="{% url 'invoicing:invoices-detail-index' transaction.id %}"><i class="icon-eye"></i> View Invoice</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item"
+                           target="_blank"
+                           href="{% url 'invoicing:invoices-pdf-download' transaction.id %}"><i class="icon-file-down"></i> Download</a>
+                      </li>
+                    </ul>
+                  </div>
                   {% if transaction.invoice_status == 'PAID' %}
                     <span class="app-badge badge-green">Paid</span>
                   {% elif transaction.invoice_status == 'SENT' %}
@@ -165,7 +184,7 @@
             {% else %}
               <td class="numeric">-${{ transaction.amount|floatformat:2|intcomma }}</td>
             {% endif %}
-            <td class="numeric{% if transaction.balance <= 0 %} money-positive{% endif %}">
+            <td class="numeric{% if transaction.balance <= 0 %} money-positive{% endif %}{% if forloop.last %} total{% endif %}">
               ${{ transaction.balance|abs|floatformat:2|intcomma }}
             </td>
           </tr>
@@ -184,6 +203,6 @@
   <div class="ledger-pdf-action">
     <a href="{% url 'matters:ledger-pdf' matter.id %}"
        target="_blank"
-       class="btn-icon">Download PDF</a>
+       class="btn-icon">Download Ledger</a>
   </div>
 {% endblock subcontent %}

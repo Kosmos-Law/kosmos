@@ -131,6 +131,9 @@ def time_filter_matter(request, matter_id):
         "entered": None,
         "invoice": None,
         "order_by": "-date",
+        # Override the toolbar's date preset too, or a stored "Today" would
+        # re-derive its window on the next read.
+        "filter_label": "all",
     }
 
     for key, val in new_values.items():
@@ -140,6 +143,16 @@ def time_filter_matter(request, matter_id):
     time_filter_data["matter"] = matter_id
     expenses_filter_data["matter"] = matter_id
 
+    # The ledger's Work in Progress figure links here with ?wip=1 to open
+    # the matter's unbilled entries.
+    if request.GET.get("wip"):
+        wip = activity_date_filters(timezone.localdate())["unbilled"]
+        time_filter_data.update(wip)
+        expenses_filter_data.update(wip)
+
+    # Every user's entries on the matter, not the toolbar's user.
+    time_filter_data.pop("user", None)
+    expenses_filter_data.pop("user", None)
     request.session["time_filter"] = time_filter_data
     request.session["expenses_filter"] = expenses_filter_data
 

@@ -10,6 +10,7 @@ matter to the choices whatever its status.
 import pytest
 from django.urls import reverse
 
+from apps.accounts.models import CustomUser
 from apps.activity.time.models import TimeEntry
 from apps.matters.models import Matter
 
@@ -65,3 +66,53 @@ def test_filter_modal_offers_the_bound_closed_matter(client, user, closed_matter
     assert response.status_code == 200
     matter_field = response.context["filter"].form.fields["matter"]
     assert matter_field.queryset.filter(pk=closed_matter.id).exists()
+
+
+def test_view_in_activity_tab_clears_toolbar_overrides(client, user, matter):
+    """The toolbar's date preset and user chip must not narrow the matter view."""
+    colleague = CustomUser.objects.create(
+        username="Colleague", email="colleague@example.com", user_rate=100
+    )
+    mine = make_entry(user, matter)
+    theirs = make_entry(colleague, matter)
+
+    session = client.session
+    session["time_filter"] = {
+        "filter_label": "today",
+        "date_min": "2026-10-17",
+        "date_max": "2026-10-17",
+        "user": user.id,
+        "order_by": "-date",
+    }
+    session.save()
+
+    response = client.get(
+        reverse("activity:time-filter-matter", args=[matter.id]), follow=True
+    )
+    assert response.status_code == 200
+
+    objects = list(response.context["objects"])
+    assert mine in objects
+    assert theirs in objects
+    stored = client.session["time_filter"]
+    assert stored["filter_label"] == "all"
+    assert "user" not in stored
+
+
+def test_ledger_wip_link_opens_the_matters_unbilled_entries(client, user, matter):
+    unbilled = make_entry(user, matter)
+    entered = make_entry(user, matter)
+    entered.entered = True
+    entered.save()
+
+    response = client.get(
+        reverse("activity:time-filter-matter", args=[matter.id]) + "?wip=1",
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    objects = list(response.context["objects"])
+    assert unbilled in objects
+    assert entered not in objects
+    assert client.session["time_filter"]["filter_label"] == "unbilled"
+    assert client.session["expenses_filter"]["filter_label"] == "unbilled"

@@ -1,10 +1,28 @@
 {% load matter_tags %}
+{% comment %}
+Each matter link carries the tab being viewed (?tab=), so switching matters
+lands on the same tab when the other matter can show it. Tab and mode
+switches re-render this out of band to keep the tab current. The previous
+and next open matter ride along, the same way, as data attributes for the
+[ and ] keys (static/js/main.js); the tag returns both or neither, and
+the attributes are empty when there are none.
+{% endcomment %}
 {% get_open_matters as open_matters %}
+{% get_adjacent_open_matters matter as adjacent %}
+{% if adjacent.prev and mode == "case" %}
+  {% url 'case:select-matter' adjacent.prev.id as prev_url %}
+  {% url 'case:select-matter' adjacent.next.id as next_url %}
+{% elif adjacent.prev %}
+  {% url 'matters:detail' id=adjacent.prev.id as prev_url %}
+  {% url 'matters:detail' id=adjacent.next.id as next_url %}
+{% endif %}
 <div id="matter-switcher"
      class="matter-switcher dropdown"
      x-data="dropdown()"
+     data-matter-prev-url="{{ prev_url }}{% if prev_url and subapp %}?tab={{ subapp }}{% endif %}"
+     data-matter-next-url="{{ next_url }}{% if next_url and subapp %}?tab={{ subapp }}{% endif %}"
      hx-trigger="mattersChanged from:body"
-     hx-get="{% url 'matters:switcher' matter.id %}"
+     hx-get="{% url 'matters:switcher' matter.id %}?mode={{ mode|default:'detail' }}{% if subapp %}&amp;tab={{ subapp }}{% endif %}"
      hx-swap="outerHTML"
      {% if oob %}hx-swap-oob="true"{% endif %}>
   <button type="button" x-ref="button" @click="toggle()" :aria-expanded="open">
@@ -16,7 +34,7 @@
     {% for m in open_matters %}
       <li>
         <a class="dropdown-item {% if m.id == matter.id %}toggle-active{% endif %}"
-           href="{% if mode == 'case' %}{% url 'case:select-matter' m.id %}{% else %}{% url 'matters:detail' id=m.id %}{% endif %}">
+           href="{% if mode == 'case' %}{% url 'case:select-matter' m.id %}{% else %}{% url 'matters:detail' id=m.id %}{% endif %}{% if subapp %}?tab={{ subapp }}{% endif %}">
           {{ m.name }}
         </a>
       </li>
