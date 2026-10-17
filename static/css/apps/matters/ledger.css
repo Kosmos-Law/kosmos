@@ -59,6 +59,11 @@
   font-weight: 500;
 }
 
+/* The closing balance carries the same weight as the totals above. */
+.table.ledger tr:last-child td.numeric:last-child {
+  font-weight: 500;
+}
+
 .ledger-totals td {
   border-right: none;
   width: 10rem;
