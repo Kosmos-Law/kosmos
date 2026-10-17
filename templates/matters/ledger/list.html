@@ -184,7 +184,7 @@
             {% else %}
               <td class="numeric">-${{ transaction.amount|floatformat:2|intcomma }}</td>
             {% endif %}
-            <td class="numeric{% if transaction.balance <= 0 %} money-positive{% endif %}">
+            <td class="numeric{% if transaction.balance <= 0 %} money-positive{% endif %}{% if forloop.last %} total{% endif %}">
               ${{ transaction.balance|abs|floatformat:2|intcomma }}
             </td>
           </tr>
