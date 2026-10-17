@@ -143,6 +143,13 @@ def time_filter_matter(request, matter_id):
     time_filter_data["matter"] = matter_id
     expenses_filter_data["matter"] = matter_id
 
+    # The ledger's Work in Progress figure links here with ?wip=1 to open
+    # the matter's unbilled entries.
+    if request.GET.get("wip"):
+        wip = activity_date_filters(timezone.localdate())["unbilled"]
+        time_filter_data.update(wip)
+        expenses_filter_data.update(wip)
+
     # Every user's entries on the matter, not the toolbar's user.
     time_filter_data.pop("user", None)
     expenses_filter_data.pop("user", None)

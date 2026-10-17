@@ -97,3 +97,22 @@ def test_view_in_activity_tab_clears_toolbar_overrides(client, user, matter):
     stored = client.session["time_filter"]
     assert stored["filter_label"] == "all"
     assert "user" not in stored
+
+
+def test_ledger_wip_link_opens_the_matters_unbilled_entries(client, user, matter):
+    unbilled = make_entry(user, matter)
+    entered = make_entry(user, matter)
+    entered.entered = True
+    entered.save()
+
+    response = client.get(
+        reverse("activity:time-filter-matter", args=[matter.id]) + "?wip=1",
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    objects = list(response.context["objects"])
+    assert unbilled in objects
+    assert entered not in objects
+    assert client.session["time_filter"]["filter_label"] == "unbilled"
+    assert client.session["expenses_filter"]["filter_label"] == "unbilled"

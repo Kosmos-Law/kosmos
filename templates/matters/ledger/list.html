@@ -33,7 +33,9 @@
     <table class="ledger-totals">
       <tr>
         <th>Work in Progress</th>
-        <td class="numeric">${{ work_in_progress|floatformat:2|intcomma }}</td>
+        <td class="numeric">
+          <a href="{% url 'activity:time-filter-matter' matter.id %}?wip=1">${{ work_in_progress|floatformat:2|intcomma }}</a>
+        </td>
       </tr>
       {% comment %}
         Invoices not yet sent: their work is still in progress, so each is
