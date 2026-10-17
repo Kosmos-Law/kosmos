@@ -112,8 +112,11 @@ def select_matter(request, matter_id):
     # Store as last viewed matter
     request.session["last_viewed_matter"] = matter.id
 
-    # Redirect to the last used tab for this matter
-    tab = get_last_tab(request, matter.id)
+    # The matter switcher passes the tab being viewed on the previous
+    # matter; otherwise, or if this matter can't show it, the last used tab.
+    tab = request.GET.get("tab")
+    if tab not in VALID_TABS or not tab_available(request.user, tab, matter.id):
+        tab = get_last_tab(request, matter.id)
     return redirect_to_tab(matter.id, tab)
 
 

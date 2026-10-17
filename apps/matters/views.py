@@ -175,7 +175,10 @@ def order_by(request, order):
 @matter_access_required
 def detail(request, id):
     request.session["matters-view"] = "detail"
-    tab = get_last_detail_tab(request, id)
+    # The matter switcher passes the tab being viewed on the previous matter.
+    tab = request.GET.get("tab")
+    if tab not in VALID_DETAIL_TABS:
+        tab = get_last_detail_tab(request, id)
     return redirect(f"/matters/{id}/{tab}")
 
 
@@ -569,7 +572,7 @@ def switcher(request, id):
     return render(
         request,
         "matters/includes/switcher.html",
-        {"matter": matter, "mode": "detail"},
+        {"matter": matter, "mode": "detail", "subapp": request.GET.get("tab", "")},
     )
 
 
