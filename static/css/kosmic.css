@@ -1,13 +1,16 @@
 /* ==========================================================================
    Kosmic — the landing page's night sky behind the app.
 
-   Ported from kosmos.law's Sky.astro: the aurora that comes up across the
-   window every minute or so, the star field, the twinkling stars and
-   constellations, and the two shooting stars. The markup and images are
-   generated from that component (scripts/build-kosmic-sky.mjs); the
-   animation is here. Unlike the landing page, where the stars scroll away
-   with the hero, the whole sky is fixed to the window: the app's pages
-   scroll over it.
+   Ported from kosmos.law's Sky.astro: the aurora, the star field, the
+   twinkling stars and constellations, and the two shooting stars. The
+   markup, images and the live aurora (js/kosmic-aurora.js, a WebGL
+   shader on the canvas) are generated from that component
+   (scripts/build-kosmic-sky.mjs); the rest of the animation is here. The
+   drawn sheets are the aurora's fallback, for browsers without WebGL and
+   for the moment before the first frame; they come up every few minutes
+   rather than the landing page's every minute. Unlike the landing page,
+   where the stars scroll away with the hero, the whole sky is fixed to
+   the window: the app's pages scroll over it.
 
    Each star's twinkle timing is generated too, into kosmic-stars.css.
    The sky only exists under data-theme="kosmic". Hidden, its images are
@@ -88,27 +91,49 @@
   inset: 0;
 }
 
+/* The live display takes over from the drawn sheets once it is running
+   (the script marks its root live). */
+.kosmic-aurora canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.kosmic-aurora.live span {
+  display: none;
+}
+
 /* Each sheet comes up, flares and dims a few times, and goes out, then
-   waits out the rest of three minutes; the three follow a few seconds apart,
-   so the display spreads across the sky and never pulses as one. All the
-   while they sway from the hem: the feet stay put and the rays lean. A
-   sheet is wider than the window, so its ends stay out of sight as it
-   sways, and never narrower than 640px, so on a phone its folds are not
-   pinched shut. */
+   waits out the rest of three minutes; the four follow a few seconds
+   apart, so the display spreads across the sky and never pulses as one.
+   All the while they move in two times at once. Slowly, they swing about
+   the zenith the rays point at, high over the top of the window, and
+   reach down from it and draw back, the way a corona turns overhead.
+   Faster, each leans and drifts in its own rhythm, so neighbouring runs
+   of rays lean against one another and a wave seems to pass along the
+   curtains. The slow swing is on the rotate and scale properties and the
+   fast one on transform, so the two compose rather than fight. A sheet is
+   wider than the window, so its ends stay out of sight as it moves, and
+   never narrower than 640px, so on a phone its folds are not pinched
+   shut; and taller than the window, so that when it draws back toward the
+   zenith its flat lower edge stays out of sight. */
 .kosmic-aurora span {
-  --width: max(116%, 640px);
+  --width: max(124%, 640px);
   position: absolute;
   top: -2%;
   left: 50%;
   width: var(--width);
-  height: 104%;
+  height: 112%;
   margin-left: calc(var(--width) / -2);
   background-size: 100% 100%;
   opacity: 0;
-  transform-origin: 50% 100%;
+  /* The zenith, as a share of the sheet. */
+  transform-origin: 56% -120%;
   animation:
     kosmic-aurora-show 180s ease-in-out 3s infinite,
-    kosmic-aurora-sway 37s ease-in-out infinite alternate;
+    kosmic-aurora-sway 37s ease-in-out infinite alternate,
+    kosmic-aurora-wave 13s ease-in-out infinite alternate;
 }
 
 .kosmic-aurora span:nth-child(1) {
@@ -117,15 +142,23 @@
 
 .kosmic-aurora span:nth-child(2) {
   background-image: url("../images/kosmic/aurora-2.svg");
-  animation-delay: 4.5s, -11s;
-  animation-duration: 180s, 47s;
-  animation-direction: normal, alternate-reverse;
+  animation-delay: 4.5s, -11s, -5s;
+  animation-duration: 180s, 47s, 17s;
+  animation-direction: normal, alternate-reverse, alternate;
 }
 
 .kosmic-aurora span:nth-child(3) {
   background-image: url("../images/kosmic/aurora-3.svg");
-  animation-delay: 6s, -23s;
-  animation-duration: 180s, 59s;
+  animation-delay: 6s, -23s, -9s;
+  animation-duration: 180s, 59s, 11s;
+  animation-direction: normal, alternate, alternate-reverse;
+}
+
+.kosmic-aurora span:nth-child(4) {
+  background-image: url("../images/kosmic/aurora-4.svg");
+  animation-delay: 7.5s, -31s, -2s;
+  animation-duration: 180s, 53s, 21s;
+  animation-direction: normal, alternate-reverse, alternate;
 }
 
 /* Orion hangs at the left, Cassiopeia at the right, Libra low in the
@@ -246,16 +279,34 @@
 
 @keyframes kosmic-aurora-sway {
   0% {
-    transform: translate3d(-1.5%, 0, 0) skewX(-3deg) scaleY(0.96);
+    rotate: -1.2deg;
+    scale: 0.97;
   }
   35% {
-    transform: translate3d(-0.3%, 0, 0) skewX(1.5deg) scaleY(1.04);
+    rotate: 0.3deg;
+    scale: 1.03;
   }
   70% {
-    transform: translate3d(0.6%, 0, 0) skewX(-1deg) scaleY(0.99);
+    rotate: -0.4deg;
+    scale: 1;
   }
   100% {
-    transform: translate3d(1.5%, 0, 0) skewX(3deg) scaleY(1.06);
+    rotate: 1.2deg;
+    scale: 1.05;
+  }
+}
+
+/* The lean is a shear about the zenith, so the feet move and the tops,
+   far nearer the zenith, hardly do: the rays wave from the hem. */
+@keyframes kosmic-aurora-wave {
+  0% {
+    transform: translate3d(-1.2%, 0, 0) skewX(-2deg);
+  }
+  40% {
+    transform: translate3d(0.4%, 0, 0) skewX(0.8deg);
+  }
+  100% {
+    transform: translate3d(1.2%, 0, 0) skewX(2deg);
   }
 }
 
