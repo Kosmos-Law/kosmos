@@ -66,7 +66,9 @@ float fbm(vec2 p) {
 /* One curtain, at a point (th, r) of the sky: angle from straight down
    out of the zenith, and distance from it. foot is the hem's radius,
    height how far up the rays reach, slope how the hem runs across the
-   sky, hue how far the tips lean from violet (0) to lilac and frost (1).
+   sky, hue how far the tips lean from violet (0) to lilac and frost (1),
+   fill how much more of the curtain is lit than the noise alone would
+   light (0 for the usual groups and gaps).
 
    The rays are all but straight, as rays are: they run along the field
    lines. The curtain's sweep is in its hem, which folds and wanders, so
@@ -74,7 +76,7 @@ float fbm(vec2 p) {
    smoke. The hem is one crisp edge, with the brightest light just above
    it; everything else is soft. */
 vec3 curtain(float th, float r, float t, float seed, float foot, float height,
-        float slope, float hue) {
+        float slope, float hue, float fill) {
     // Each run of rays has a slight lean of its own, straight but not
     // quite at the zenith, so the fan is not ruled from one point; and a
     // slow broad drift, nothing like a bend.
@@ -83,7 +85,7 @@ vec3 curtain(float th, float r, float t, float seed, float foot, float height,
             + 0.04 * (fbm(vec2(th * 1.3 + seed, r * 0.8 - t * 0.05)) - 0.5);
     // Where the curtain is: groups of rays with dark sky between them,
     // and pulses of brightness running along it.
-    float presence = smoothstep(0.42, 0.7, fbm(vec2(a * 5.0 + seed * 7.0, t * 0.03)));
+    float presence = smoothstep(0.42, 0.7, fill + fbm(vec2(a * 5.0 + seed * 7.0, t * 0.03)));
     presence *= 0.5 + 0.5 * noise(vec2(a * 9.0 - t * 0.2, seed));
     // The striations, which the hem is ragged by too.
     float n1 = noise(vec2(a * 75.0 + t * 0.25, seed * 5.0));
@@ -155,12 +157,12 @@ void main() {
     // corner and the title, touching neither; it drifts in and out of
     // view. Each drifts a little across the sky.
     float left = th + 0.05 * sin(t * 0.021);
-    c += curtain(th, r, t, 1.0, 2.0, 0.95, 0.0, 0.5)
-        * 0.6 * smoothstep(-0.55, -0.42, left) * smoothstep(-0.2, -0.3, left);
-    c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3)
+    c += curtain(th, r, t, 1.0, 1.9, 1.15, 0.0, 0.5, 0.15)
+        * 0.9 * smoothstep(-0.55, -0.42, left) * smoothstep(-0.2, -0.3, left);
+    c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3, 0.0)
         * smoothstep(-0.1, 0.2, th + 0.08 * sin(t * 0.017 + 2.0));
     float m = th + 0.06 * sin(t * 0.025 + 4.0);
-    c += curtain(th, r, t, 3.0, 2.05, 0.8, -0.1, 0.1) * exp(-m * m * 60.0);
+    c += curtain(th, r, t, 3.0, 2.05, 0.8, -0.1, 0.1, 0.0) * exp(-m * m * 60.0);
     c *= env * u_fade;
     // Tone-mapped on the brightest channel, and the colour scaled with
     // it, so a bright core stays green rather than burning to white.
