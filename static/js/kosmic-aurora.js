@@ -108,7 +108,7 @@ vec3 curtain(float th, float r, float t, float seed, float foot, float height,
     float s = (pow(n1, 5.0) * 3.0 + 0.15) * (0.6 + 0.8 * n2) * (0.85 + 0.3 * n3);
     // One edge at the hem, ragged from ray to ray, the brightest light
     // just above it, then a long fade to the tip.
-    float prof = smoothstep(-0.08, 0.06, u) * (exp(-up * 2.6) + 0.6 * exp(-up * 10.0));
+    float prof = smoothstep(-0.08, 0.06, u) * (exp(-up * 2.2) + 0.6 * exp(-up * 10.0));
     // Pulses run along the curtain, and now and then a flame runs up a
     // ray, fast.
     prof *= 0.65 + 0.5 * noise(vec2(a * 14.0 - t * 0.6, u * 1.5 + seed));
@@ -146,15 +146,19 @@ void main() {
     // The display swells and subsides over minutes, and never quite goes.
     float env = 0.5 + 0.5 * smoothstep(0.25, 0.8, fbm(vec2(t * 0.02, 7.7)));
     vec3 c = vec3(0.0);
-    // A high, dim drapery over the left; the main curtain, tall and bright,
-    // over the right; and a short bright pair low in the middle. Each
+    // The main curtain, tall and bright, over the right, and a bright pair
+    // in the middle, with their hems low in the window: on the landing
+    // page the cards cover that ground, and the hems peek out from behind
+    // them. A third curtain stands far to the left with its hem just
+    // outside the window's edge, so only its upper reach crosses the
+    // top-left corner, by the logo; it drifts in and out of view. Each
     // drifts a little across the sky.
-    c += curtain(th, r, t, 1.0, 1.5, 0.55, 0.1, 0.5)
-        * 0.6 * smoothstep(0.3, -0.15, th + 0.08 * sin(t * 0.021));
-    c += curtain(th, r, t, 2.0, 1.95, 0.8, 0.15, 0.3)
-        * smoothstep(-0.2, 0.15, th + 0.08 * sin(t * 0.017 + 2.0));
+    c += curtain(th, r, t, 1.0, 1.75, 0.9, 0.0, 0.5)
+        * 0.9 * smoothstep(-0.4, -0.6, th + 0.06 * sin(t * 0.021));
+    c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3)
+        * smoothstep(-0.1, 0.2, th + 0.08 * sin(t * 0.017 + 2.0));
     float m = th + 0.06 * sin(t * 0.025 + 4.0);
-    c += curtain(th, r, t, 3.0, 2.15, 0.85, -0.1, 0.1) * exp(-m * m * 25.0);
+    c += curtain(th, r, t, 3.0, 2.05, 0.8, -0.1, 0.1) * exp(-m * m * 60.0);
     c *= env * u_fade;
     // Tone-mapped on the brightest channel, and the colour scaled with
     // it, so a bright core stays green rather than burning to white.
