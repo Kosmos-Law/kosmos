@@ -66,15 +66,21 @@ float fbm(vec2 p) {
 /* One curtain, at a point (th, r) of the sky: angle from straight down
    out of the zenith, and distance from it. foot is the hem's radius,
    height how far up the rays reach, slope how the hem runs across the
-   sky, hue how far the tips lean from violet (0) to lilac and frost (1). */
+   sky, hue how far the tips lean from violet (0) to lilac and frost (1).
+
+   The rays are all but straight, as rays are: they run along the field
+   lines. The curtain's sweep is in its hem, which folds and wanders, so
+   the sheet still hooks and scallops without the rays bending like
+   smoke. The hem is one crisp edge, with the brightest light just above
+   it; everything else is soft. */
 vec3 curtain(float th, float r, float t, float seed, float foot, float height,
         float slope, float hue) {
-    // The bends. The slow one, which changes with the radius, curves the
-    // rays; the quick one ripples them. Both travel in time, so waves run
-    // along the curtain.
-    float w = 0.17 * (fbm(vec2(th * 1.3 + seed, r * 1.6 - t * 0.1)) - 0.5)
-            + 0.03 * (noise(vec2(th * 4.0 + seed * 3.0 - t * 0.12, r * 3.0 + t * 0.3)) - 0.5);
-    float a = th + w;
+    // Each run of rays has a slight lean of its own, straight but not
+    // quite at the zenith, so the fan is not ruled from one point; and a
+    // slow broad drift, nothing like a bend.
+    float tilt = 0.14 * (noise(vec2(th * 4.0 + seed * 3.0, t * 0.02)) - 0.5);
+    float a = th + tilt * (r - foot) / height
+            + 0.04 * (fbm(vec2(th * 1.3 + seed, r * 0.8 - t * 0.05)) - 0.5);
     // Where the curtain is: groups of rays with dark sky between them,
     // and pulses of brightness running along it.
     float presence = smoothstep(0.42, 0.7, fbm(vec2(a * 5.0 + seed * 7.0, t * 0.03)));
@@ -82,33 +88,48 @@ vec3 curtain(float th, float r, float t, float seed, float foot, float height,
     // The striations, which the hem is ragged by too.
     float n1 = noise(vec2(a * 75.0 + t * 0.25, seed * 5.0));
     float n2 = noise(vec2(a * 200.0 - t * 0.4, seed * 9.0));
-    // The hem wanders across the sky, hangs lower where the curtain
-    // folds, and is ragged from ray to ray.
+    float n3 = noise(vec2(a * 420.0 + t * 0.3, seed * 13.0));
+    // The hem: it wanders across the sky and folds, with waves running
+    // along it, hangs lower where the curtain is thick, and is ragged
+    // from ray to ray.
     float f = foot + slope * a
-            + 0.3 * (fbm(vec2(a * 2.5 + seed, t * 0.04 + seed)) - 0.5)
-            + 0.12 * presence
-            + 0.08 * (n1 - 0.5);
-    float h = height * (0.6 + 0.8 * noise(vec2(a * 6.0 + seed, t * 0.07)));
+            + 0.42 * (fbm(vec2(a * 3.0 + seed, t * 0.07 + seed)) - 0.5)
+            + 0.10 * (noise(vec2(a * 6.0 - t * 0.35, seed + 2.0)) - 0.5)
+            + 0.2 * presence
+            + 0.1 * (noise(vec2(a * 40.0 + t * 0.2, seed * 3.0)) - 0.5)
+            + 0.04 * (n1 - 0.5);
+    float reach = 0.6 + 0.8 * noise(vec2(a * 6.0 + seed, t * 0.07));
+    float h = height * reach;
     // Up the ray: 0 at the hem, 1 at its full reach.
     float u = (f - r) / h;
     float up = max(u, 0.0);
     // Striations: most faint, a few sharp and bright, drifting along the
-    // curtain.
-    float s = (pow(n1, 4.0) * 3.0 + 0.12) * (0.6 + 0.8 * n2);
-    // Brightest just above the hem, a long fade to the tip, a soft rise
-    // from below, and light streaming up the ray.
-    float prof = smoothstep(-0.12, 0.1, u) * exp(-up * 2.0);
-    prof *= 0.7 + 0.4 * noise(vec2(a * 30.0, u * 2.5 - t * 0.3));
+    // curtain, with fine grain between.
+    float s = (pow(n1, 5.0) * 3.0 + 0.15) * (0.6 + 0.8 * n2) * (0.85 + 0.3 * n3);
+    // One edge at the hem, ragged from ray to ray, the brightest light
+    // just above it, then a long fade to the tip.
+    float prof = smoothstep(-0.08, 0.06, u) * (exp(-up * 2.6) + 0.6 * exp(-up * 10.0));
+    // Pulses run along the curtain, and now and then a flame runs up a
+    // ray, fast.
+    prof *= 0.65 + 0.5 * noise(vec2(a * 14.0 - t * 0.6, u * 1.5 + seed));
+    prof *= 1.0 + 0.4 * pow(noise(vec2(a * 20.0 + seed, u * 1.2 - t * 1.2)), 3.0);
     float I = presence * s * prof;
-    // And a soft halo of airglow about the whole curtain.
-    I += presence * 0.12 * smoothstep(-0.3, 0.15, u) * exp(-up * 1.5)
-        * (0.6 + 0.4 * noise(vec2(a * 12.0, u * 2.0 - t * 0.1)));
-    vec3 col = mix(GREEN, TEAL, smoothstep(0.05, 0.45, u));
-    col = mix(col, mix(VIOLET, LILAC, hue), smoothstep(0.4, 1.0, u));
-    col = mix(col, FROST, 0.5 * hue * smoothstep(0.2, 0.6, u));
+    // The body of the sheet, a soft glow between the rays, thickest low
+    // down, and a little airglow about the whole curtain.
+    I += presence * 0.1 * smoothstep(-0.1, 0.1, u) * exp(-up * 2.5)
+        * (0.5 + 0.5 * noise(vec2(a * 25.0, u * 3.0 - t * 0.15)));
+    I += presence * 0.04 * smoothstep(-0.2, 0.15, u) * exp(-up * 1.5);
+    // The brightest cores stay green rather than burning to white.
+    I /= 1.0 + 0.35 * I;
+    // Oxygen green, through and through; a cooler cast toward the
+    // middle, and violet only on the tops of the tallest rays.
+    vec3 col = mix(GREEN, TEAL, 0.35 * smoothstep(0.2, 0.7, u));
+    float tall = smoothstep(0.9, 1.3, reach);
+    col = mix(col, mix(VIOLET, LILAC, hue), tall * smoothstep(0.55, 1.1, u));
+    col = mix(col, FROST, 0.25 * hue * smoothstep(0.3, 0.8, u));
     // The pink lower fringe of a bright, low curtain.
-    col = mix(col, PINK, smoothstep(0.1, -0.05, u) * clamp(I * 1.2 - 0.3, 0.0, 1.0));
-    return col * I * 3.2;
+    col = mix(col, PINK, smoothstep(0.08, -0.03, u) * clamp(I * 1.2 - 0.4, 0.0, 1.0));
+    return col * I * 3.4;
 }
 
 void main() {
@@ -123,20 +144,24 @@ void main() {
     float th = atan(d.x, d.y);
     float t = u_time;
     // The display swells and subsides over minutes, and never quite goes.
-    float env = 0.4 + 0.6 * smoothstep(0.25, 0.8, fbm(vec2(t * 0.02, 7.7)));
+    float env = 0.5 + 0.5 * smoothstep(0.25, 0.8, fbm(vec2(t * 0.02, 7.7)));
     vec3 c = vec3(0.0);
     // A high, dim drapery over the left; the main curtain, tall and bright,
     // over the right; and a short bright pair low in the middle. Each
     // drifts a little across the sky.
-    c += curtain(th, r, t, 1.0, 1.5, 0.7, 0.1, 0.8)
-        * 0.7 * smoothstep(0.3, -0.15, th + 0.08 * sin(t * 0.021));
-    c += curtain(th, r, t, 2.0, 1.95, 1.0, 0.15, 0.3)
+    c += curtain(th, r, t, 1.0, 1.5, 0.55, 0.1, 0.5)
+        * 0.6 * smoothstep(0.3, -0.15, th + 0.08 * sin(t * 0.021));
+    c += curtain(th, r, t, 2.0, 1.95, 0.8, 0.15, 0.3)
         * smoothstep(-0.2, 0.15, th + 0.08 * sin(t * 0.017 + 2.0));
     float m = th + 0.06 * sin(t * 0.025 + 4.0);
-    c += curtain(th, r, t, 3.0, 2.15, 1.05, -0.1, 0.1) * exp(-m * m * 25.0);
+    c += curtain(th, r, t, 3.0, 2.15, 0.85, -0.1, 0.1) * exp(-m * m * 25.0);
     c *= env * u_fade;
-    vec3 o = 1.0 - exp(-c * 1.2);
-    gl_FragColor = vec4(o, max(o.r, max(o.g, o.b)));
+    // Tone-mapped on the brightest channel, and the colour scaled with
+    // it, so a bright core stays green rather than burning to white.
+    float l = max(c.r, max(c.g, c.b));
+    float m2 = 1.0 - exp(-l * 1.2);
+    vec3 o = l > 0.0 ? c * (m2 / l) : c;
+    gl_FragColor = vec4(o, m2);
 }`;
 
     /* The display is drawn only while its root has a size. The app that
