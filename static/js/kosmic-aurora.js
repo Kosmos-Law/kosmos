@@ -157,8 +157,8 @@ void main() {
     // corner and the title, touching neither; it drifts in and out of
     // view. Each drifts a little across the sky.
     float left = th + 0.05 * sin(t * 0.021);
-    c += curtain(th, r, t, 1.0, 1.9, 1.15, 0.0, 0.5, 0.15)
-        * 0.9 * smoothstep(-0.63, -0.5, left) * smoothstep(-0.28, -0.38, left);
+    c += curtain(th, r, t, 1.0, 2.0, 1.15, 0.0, 0.5, 0.15)
+        * 0.55 * smoothstep(-0.7, -0.56, left) * smoothstep(-0.34, -0.44, left);
     c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3, 0.0)
         * smoothstep(-0.1, 0.2, th + 0.08 * sin(t * 0.017 + 2.0));
     float m = th + 0.06 * sin(t * 0.025 + 4.0);
