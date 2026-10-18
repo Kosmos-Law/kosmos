@@ -149,12 +149,13 @@ void main() {
     // The main curtain, tall and bright, over the right, and a bright pair
     // in the middle, with their hems low in the window: on the landing
     // page the cards cover that ground, and the hems peek out from behind
-    // them. A third curtain stands far to the left with its hem just
-    // outside the window's edge, so only its upper reach crosses the
-    // top-left corner, by the logo; it drifts in and out of view. Each
-    // drifts a little across the sky.
-    c += curtain(th, r, t, 1.0, 1.75, 0.9, 0.0, 0.5)
-        * 0.9 * smoothstep(-0.4, -0.6, th + 0.06 * sin(t * 0.021));
+    // them. A third, fainter curtain stands over the left with its hem
+    // low and outside the window's edge, so its upper reach is spread
+    // across the upper-left quarter of the sky, toward the logo but not
+    // pointed at it; it drifts in and out of view. Each drifts a little
+    // across the sky.
+    c += curtain(th, r, t, 1.0, 2.0, 0.95, 0.0, 0.5)
+        * 0.6 * smoothstep(-0.2, -0.45, th + 0.06 * sin(t * 0.021));
     c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3)
         * smoothstep(-0.1, 0.2, th + 0.08 * sin(t * 0.017 + 2.0));
     float m = th + 0.06 * sin(t * 0.025 + 4.0);
