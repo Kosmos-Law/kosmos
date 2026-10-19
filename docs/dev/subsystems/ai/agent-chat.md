@@ -29,7 +29,7 @@ successor of the retired research chat mode; see
 | `apps/llm/agent_types.py` | `LoopResult`, `TurnUsage`, the forced-answer note |
 | `apps/llm/anthropic_client.py`, `gemini_client.py` | `send_to_claude_with_tools()`, `send_to_gemini_with_tools()` |
 | `apps/ai/caselaw_blocks.py` | The `save-caselaw` write block |
-| `apps/case/semantic.py`, `embeddings.py` | The pgvector index `search_materials` fuses with keyword hits |
+| `apps/case/semantic.py`, `apps/llm/embeddings.py` | The pgvector index `search_materials` fuses with keyword hits |
 | `templates/ai/agent-status.html`, `agent-step.html`, `agent-trail.html`, `chat-statusbar.html` | The live rows, the collapsed trail, the pinned bar |
 | `apps/ai/templatetags/ai_extras.py` | Filters for the trail and the bar |
 

@@ -27,7 +27,8 @@ drafts are `apps/drafts` over `apps/drive` and the case AI chat.
 | `static/js/notes-library.js` | Drag-and-drop and context menus on the Library tab |
 | `static/js/vendor/tiptap.bundle.js` | The TipTap bundle (see below) |
 | `apps/notes/tests/js/` | Node tests for the editor modules |
-| `apps/drafts/models.py` | `DraftLink`, `ApiToken`, `CompanionRound` |
+| `apps/drafts/models.py` | `DraftLink`, `CompanionRound` |
+| `apps/accounts/models.py`, `apps/accounts/api_auth.py` | `ApiToken` (formerly `drafts.CompanionToken`, same table) and `kosmos_api_auth` |
 | `apps/drafts/services.py` | Drive listing, link creation, the stale refresh |
 | `apps/drafts/chat.py` | The draft section of the AI context and the edit rounds |
 | `apps/drafts/companion.py` | The API the extension polls, and the `.oxt` build |
@@ -58,8 +59,8 @@ drafts are `apps/drafts` over `apps/drive` and the case AI chat.
   reads), `doc_text_at`, `companion_seen`. `sibling_links()` are the
   links to the same file by the same user; `companion_active` is true
   when any sibling was polled in the last 15 seconds.
-- **`ApiToken`**: one per user, the `X-Kosmos-Token` key the
-  extension and the MCP server both send.
+- **`ApiToken`** (in `apps/accounts`): one per user, the `X-Kosmos-Token`
+  key the extension and the MCP server both send.
 - **`CompanionRound`**: one AI edit round, `edits` (wire dicts from
   `apps.drive.redline.edit_to_dict`), `status` (pending, applied, failed,
   expired), `delivered_at`, `result`, `error`, `edit_index`.

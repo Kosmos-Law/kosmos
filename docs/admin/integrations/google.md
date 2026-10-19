@@ -148,7 +148,9 @@ tab.
 Saving a mapping syncs that folder once. After that the background worker
 keeps it current: the `drive-sync` job runs every minute and processes
 only what changed, and `drive-sync-nightly-full` re-crawls every linked
-folder each night. Both do nothing until Drive is connected. See
+folder each night. Both do nothing until Drive is connected, and both
+pause while an administrator has the case file switched off under
+Settings > Features. See
 [Scheduled jobs](../../reference/schedules.md).
 
 The first run crawls all linked matters and stores a cursor; later runs

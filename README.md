@@ -24,7 +24,9 @@ separately. Clients can be asked for trust deposits the same way.
 
 **Case building.** Documents with OCR text extraction, highlights and
 citations, a chronological fact timeline, witness tracking, and case law
-pulled from CourtListener and saved to the matter.
+pulled from CourtListener and saved to the matter. The case file and the
+notes library are a module of their own, with their own entries in the
+sidebar, and an administrator can switch either off for the whole firm.
 
 **AI assistance.** Per-matter chat with a context system that selects the
 relevant documents, notes, case law and prior conversations for each question

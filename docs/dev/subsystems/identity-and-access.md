@@ -217,7 +217,10 @@ partial update is never answered with a redirect.
 check applies to every request: a path matching `AI_PATTERN` while no AI
 provider is configured, or `CASELAW_PATTERN` while there is no
 CourtListener token, gets `404` (the feature does not exist on this
-server; see [AI is optional](ai/context.md#ai-is-optional)). The rest
+server; see [AI is optional](ai/context.md#ai-is-optional)). A signed-in
+user also gets `404` on `CASE_FILE_PATTERN` or `LIBRARY_PATTERN` while
+the firm's administrator has that feature switched off (Settings >
+Features; `apps/settings/features/__init__.py`). The rest
 runs for signed-in non-admins only and answers `403` with an empty body.
 It checks, in order: `ADMIN_ONLY_PATHS` (the settings pages that change the
 firm); `PERMISSION_PATHS`, a list of `(prefix, flag)` pairs; then
