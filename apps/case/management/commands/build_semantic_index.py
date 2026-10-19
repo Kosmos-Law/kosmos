@@ -1,19 +1,16 @@
-"""Backfill the semantic material index (apps/case/ai/semantic.py).
+"""Backfill the semantic material index (apps/case/semantic.py).
 
-Embeds every open matter's documents, notes, emails, highlights and
-timeline facts, plus the firm library. Unchanged objects (same content
-hash) are skipped, so re-runs are cheap; run once after deploy and
-whenever the index needs a catch-up (for example after qcluster
-downtime).
+Embeds every open matter's materials of every registered kind (documents,
+notes, emails, highlights and timeline facts), plus the firm library.
+Unchanged objects (same content hash) are skipped, so re-runs are cheap;
+run once after deploy and whenever the index needs a catch-up (for
+example after qcluster downtime).
 """
 
 from django.core.management.base import BaseCommand
 
-from apps.case.ai.semantic import index_object
-from apps.case.models import Document, Fact, Highlight
-from apps.mail.models import Email
+from apps.case import semantic
 from apps.matters.models import Matter
-from apps.notes.models import Note, get_library_notes
 
 
 class Command(BaseCommand):
@@ -28,7 +25,7 @@ class Command(BaseCommand):
 
         def run(kind, queryset):
             for obj in queryset.iterator():
-                chunks = index_object(kind, obj)
+                chunks = semantic.index_object(kind, obj)
                 totals["objects"] += 1
                 totals["chunks"] += chunks
                 if totals["objects"] % 100 == 0:
@@ -37,33 +34,21 @@ class Command(BaseCommand):
                         f"{totals['chunks']} chunks so far"
                     )
 
+        kinds = semantic.kinds()
         if not options["library"]:
             matters = Matter.objects.filter(status="Open")
             if options["matter"]:
                 matters = Matter.objects.filter(id=options["matter"])
             for matter in matters:
                 self.stdout.write(f"Indexing {matter.name} ({matter.id})...")
-                run("document", Document.objects.filter(matter=matter))
-                run("note", Note.objects.filter(matter=matter))
-                run("email", Email.objects.filter(matter=matter).dedup())
-                run(
-                    "highlight",
-                    Highlight.objects.filter(document__matter=matter).select_related(
-                        "document", "caselaw"
-                    ),
-                )
-                run(
-                    "highlight",
-                    Highlight.objects.filter(caselaw__matter=matter).select_related(
-                        "document", "caselaw"
-                    ),
-                )
-                run("fact", Fact.objects.filter(matter=matter))
-
+                for entry in kinds:
+                    if entry.backfill:
+                        run(entry.kind, entry.backfill(matter))
         if not options["matter"]:
             self.stdout.write("Indexing the firm library...")
-            run("library", get_library_notes())
-
+            for entry in kinds:
+                if entry.backfill_library:
+                    run(entry.kind, entry.backfill_library())
         self.stdout.write(
             self.style.SUCCESS(
                 f"Indexed {totals['objects']} objects, {totals['chunks']} chunks "

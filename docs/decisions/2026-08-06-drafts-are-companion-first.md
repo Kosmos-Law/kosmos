@@ -94,4 +94,4 @@ saying "edits you approve".
   companion-first" and "Retired designs".
 - [Drafting with LibreOffice](../admin/integrations/libreoffice.md).
 - [Claude Desktop: packaging roadmap](claude-desktop-roadmap.md): the
-  same token (`CompanionToken`) serves the MCP server.
+  same token (`ApiToken`) serves the MCP server.

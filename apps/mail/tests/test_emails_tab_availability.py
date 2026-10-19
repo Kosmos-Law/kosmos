@@ -74,7 +74,7 @@ def test_remembered_emails_tab_kept_when_shown(client, matter, oauth_ready):
 
     response = client.get(reverse("case:select-matter", args=[matter.id]))
 
-    assert response["Location"] == reverse("case:emails-index", args=[matter.id])
+    assert response["Location"] == reverse("mail:emails-index", args=[matter.id])
 
 
 def test_get_last_tab_leaves_other_tabs_alone(rf, matter, oauth_missing):
@@ -84,7 +84,7 @@ def test_get_last_tab_leaves_other_tabs_alone(rf, matter, oauth_missing):
 
 
 def test_not_connected_copy_says_each_person_connects(client, matter, oauth_ready):
-    body = client.get(reverse("case:emails-index", args=[matter.id])).content.decode()
+    body = client.get(reverse("mail:emails-index", args=[matter.id])).content.decode()
 
     assert "Each person connects their own" in body
     assert "An admin can connect it" not in body
@@ -92,7 +92,7 @@ def test_not_connected_copy_says_each_person_connects(client, matter, oauth_read
 
 def test_label_modal_copy_says_each_person_connects(client, matter, oauth_ready):
     body = client.get(
-        reverse("case:emails-label-link-modal", args=[matter.id])
+        reverse("mail:emails-label-link-modal", args=[matter.id])
     ).content.decode()
 
     assert "Each person connects their own" in body

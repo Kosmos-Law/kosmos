@@ -19,6 +19,17 @@ The systemd, nginx and gunicorn templates are documented beside the files
 themselves, in
 [`deploy/README.md`](https://github.com/Kosmos-Law/kosmos/blob/dev/deploy/README.md).
 
+## Features
+
+The case builder's two features, the case file (each matter's documents,
+highlights, timeline, witnesses, emails, labels, search and AI tab) and
+the library (the notes), are on by default. An administrator switches
+either off for the whole firm under Settings > Features: the sidebar
+entry and every path go away for everyone, the data stays, and the Drive
+mirror pauses while the case file is off. The MCP matter API under
+`/case/api/` and the matter-scoped notes keep working with the case file
+off.
+
 ## Integrations
 
 Each integration stays off until it is configured.

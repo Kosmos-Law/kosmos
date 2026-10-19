@@ -9,15 +9,16 @@ import zipfile
 import pytest
 from django.utils import timezone
 
+from apps.accounts.models import ApiToken
 from apps.drafts import companion
-from apps.drafts.models import CompanionRound, CompanionToken
+from apps.drafts.models import CompanionRound
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
 def token(user):
-    return CompanionToken.for_user(user)
+    return ApiToken.for_user(user)
 
 
 @pytest.fixture
@@ -40,7 +41,7 @@ def test_api_requires_valid_token(link):
 
 
 def test_token_is_stable_per_user(user):
-    assert CompanionToken.for_user(user).key == CompanionToken.for_user(user).key
+    assert ApiToken.for_user(user).key == ApiToken.for_user(user).key
 
 
 def test_sessions_lists_own_links(api, link, matter, user):
@@ -147,7 +148,7 @@ def test_oxt_download_is_personalized_zip(client, user, settings):
     assert "kosmos_companion.py" in names
     config = json.loads(archive.read("config.json"))
     assert config["server"] == "https://kosmos.example"
-    assert config["token"] == CompanionToken.for_user(user).key
+    assert config["token"] == ApiToken.for_user(user).key
     # The version is declared twice: LibreOffice reads description.xml,
     # the extension's Status message and the setup dialog read the server's.
     assert config["version"] == companion.EXTENSION_VERSION
@@ -174,7 +175,7 @@ def test_sessions_name_the_file_and_the_conversation(api, link):
 @pytest.fixture
 def sibling(link, matter, user):
     """A second conversation linking the same Drive file."""
-    from apps.case.ai.models import Conversation
+    from apps.ai.models import Conversation
     from apps.drafts.models import DraftLink
 
     conv = Conversation.objects.create(
@@ -226,7 +227,7 @@ def test_document_push_updates_all_siblings(api, link, sibling, monkeypatch):
 
 
 def test_other_file_links_do_not_share(api, link, matter, user):
-    from apps.case.ai.models import Conversation
+    from apps.ai.models import Conversation
     from apps.drafts.models import DraftLink
 
     conv = Conversation.objects.create(

@@ -2,8 +2,8 @@
 
 import logging
 
-from apps.case.ai.providers import complete
 from apps.case.courtlistener import fetch_cluster, fetch_opinion
+from apps.llm.providers import complete
 from apps.settings.ai import ai_enabled
 
 logger = logging.getLogger(__name__)

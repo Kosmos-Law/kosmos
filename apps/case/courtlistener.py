@@ -11,9 +11,12 @@ from datetime import date
 from typing import Optional
 
 import requests
-from django.conf import settings
 
-from apps.case.courtlistener_throttle import throttled_request
+from apps.case.courtlistener_throttle import throttled_request  # noqa: F401
+
+# The integration's on/off switch lives in settings; re-exported here for the
+# case app and the AI agent, which take the client and the switch together.
+from apps.settings.courtlistener import caselaw_available, get_api_token  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -55,19 +58,6 @@ NO_TOKEN_ERROR = (
     "CourtListener isn't configured. An administrator sets "
     "COURTLISTENER_API_KEY in config/.env."
 )
-
-
-def get_api_token() -> str:
-    """Get CourtListener API token from settings."""
-    return getattr(settings, "COURTLISTENER_API_TOKEN", "")
-
-
-def caselaw_available(user) -> bool:
-    """Saved case law is offered when CourtListener is set up and the user
-    holds the Research permission (admins hold every permission)."""
-    return bool(get_api_token()) and bool(
-        user and user.is_authenticated and (user.is_admin or user.perm_research)
-    )
 
 
 def lookup_citation(citation_text: str) -> CaseLookupResult:

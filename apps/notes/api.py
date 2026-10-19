@@ -3,7 +3,7 @@
 Consumed by the Claude Desktop MCP server (tools/kosmos_notes_mcp.py) so a
 Desktop conversation can list, read, and search the user's notes. Auth is
 the same per-user X-Kosmos-Token bearer key the LibreOffice companion uses
-(CompanionToken, via kosmos_api_auth) with a 401 body that carries setup
+(ApiToken, via kosmos_api_auth) with a 401 body that carries setup
 guidance the model relays verbatim.
 
 Reads are unrestricted within the user's access; the single write path
@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.access import filter_matters_for_user
-from apps.drafts.api_auth import (
+from apps.accounts.api_auth import (
     TOKEN_HELP,
     kosmos_api_auth as notes_api_auth,
 )

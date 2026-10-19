@@ -77,6 +77,8 @@ INSTALLED_APPS = [
     "apps.dash",
     "apps.contacts",
     "apps.case",
+    "apps.ai",
+    "apps.llm",
     "apps.folders",
     "apps.intakes",
     "apps.matters",
@@ -439,10 +441,10 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
 
 # Days after a matter closes before the weekly purge deletes its AI chats
-# (apps/case/ai/purge.py). 0 keeps them indefinitely.
+# (apps/ai/purge.py). 0 keeps them indefinitely.
 CHAT_RETENTION_DAYS = env.int("CHAT_RETENTION_DAYS", default=180)
 
-# Save-time semantic re-indexing (apps/case/ai/semantic.py); tests turn
+# Save-time semantic re-indexing (apps/case/semantic.py); tests turn
 # it off so every model save does not enqueue an embedding task.
 SEMANTIC_AUTO_INDEX = env.bool("SEMANTIC_AUTO_INDEX", default=True)
 

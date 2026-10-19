@@ -14,6 +14,10 @@ model live here.
 | Path | What it holds |
 |---|---|
 | `apps/case/views.py`, `apps/case/urls.py` | The shell: tab switching, matter selection, every `case:` route |
+| `apps/case/tabs.py`, `apps/case/registrations.py` | The tab registry, and what the case app registers at start-up: its tabs, its semantic-index kinds, its matter lookups |
+| `apps/case/services.py` | The public surface the apps above the case builder import from (with `models.py`, `courtlistener.py` and `jurisdictions.py`); see [Module boundaries](../architecture.md#module-boundaries) |
+| `apps/case/semantic.py` | The semantic index: chunking, embedding, the kind registry, save-time re-indexing, `semantic_entries()` |
+| `apps/case/notes/` | The Notes tab, a matter-scoped view over `apps/notes` |
 | `apps/case/models.py` | `Label`, `Document`, `Highlight`, `Fact`, `Witness`, `CaseLaw` |
 | `apps/case/documents/` | Documents tab, upload, duplicate detection, mbox import, OCR task, viewer, the Drive Folder modal |
 | `apps/drive/` | The Drive mirror: changes feed, folder mappings, upsert, tombstones |
@@ -75,26 +79,47 @@ and must keep the pair consistent itself.
 
 ## How it works
 
+### Switching it off
+
+The case file and the library are firm-wide features an administrator
+switches under Settings > Features (`Firm.case_file_enabled`,
+`Firm.library_enabled`, read through `apps/settings/features/__init__.py`).
+Off, `PermissionMiddleware` answers 404 under `/case/` (less the MCP API
+and the matter-scoped note routes) or `/notes/`; the sidebar, the matter
+header's cross-link, the Notes tab's `available` and the notes kind in the
+firm-wide search read the same switches, and the Drive mirror's scheduled
+syncs return early. Nothing is deleted.
+
 ### The shell
 
-`templates/matters/matter-base.html` holds a `#mode-content` block that the
-mode pills switch between the matter's Detail view (`matters:mode-content`)
-and the Case view (`case:mode-content`). Inside Case, `case-nav.html` is
-the tab bar; each tab link GETs `case:tab-content` into `.detail-body`
-and pushes the tab's own index URL. `views.tab_content` stores the tab in
-the session (`set_last_tab`, keyed by matter), and `_get_case_tab_data()`
-dispatches to the tab's `get_*_data()` function, which the tab's own
-`index` and `list` views also call, so a full page load and an HTMX swap
-build the same context. `VALID_TABS` in `apps/case/views.py` is the list a
-stored tab is checked against, and `tab_available(user, tab)` drops the
-`ai` tab when no AI provider is configured and `caselaws` without a
-CourtListener token or `perm_research`, so a remembered tab that has
-gone falls back to Documents. `case-nav.html` shows the AI tab only with
-`ai_enabled`, and otherwise a Case Law tab when `caselaw_available` (see
-[AI is optional](ai/context.md#ai-is-optional)).
+The case file is one of the two sides of a matter (the other is the
+record under `/matters/<id>/`); Case in the sidebar opens `/case/`,
+which reopens the last matter on its last tab, and the matter header
+links each side to the other. Inside, `case-nav.html` is the tab bar;
+each tab link GETs `case:tab-content` into `.detail-body` and pushes the
+tab's own index URL. `views.tab_content` stores the tab in the session
+(`set_last_tab`, keyed by matter) and `_get_case_tab_data()` calls the
+tab's registered data function, which the tab's own `index` and `list`
+views also call, so a full page load and an HTMX swap build the same
+context.
 
-`case-content.html` and `case-tab-content.html` wrap every tab in a `div`
-that re-fetches its list on a `*Changed` event from `body`
+The tabs are a registry, `apps/case/tabs.py`. Each `Tab` names its index
+and list URLs, its template, its data function, its order, whether this
+server and user can open it (`available`) and whether the nav lists it
+(`listed`, defaulting to `available`), and the wrapper id and HTMX
+trigger its list answers to. The case app registers its own tabs in
+`apps/case/registrations.py`; the AI tab is registered by `apps/ai/apps.py`
+(available once a provider is configured, and lit for the saved case law
+that is a view inside it) and the Emails tab by `apps/mail/apps.py`
+(available once Google sign-in is set up or the matter holds synced
+emails). `tab_available(user, tab, matter_id)` is the registry's answer,
+so a remembered tab that has gone falls back to Documents, and the Case
+Law tab is listed only while AI is off (see
+[AI is optional](ai/context.md#ai-is-optional)). The nav is rendered by
+the `case_tabs` template tag (`apps/case/templatetags/case_tags.py`).
+
+`case-content.html` and `case-tab-content.html` include `tab-wrapper.html`,
+which wraps the tab in a `div` that re-fetches its list on a `*Changed` event from `body`
 (`documentsChanged`, `highlightsChanged`, and so on); mutating views
 answer `204` with that `HX-Trigger` rather than rendering. Filters, sort
 keys, pagination and multi-select state all live in the session under
@@ -265,7 +290,7 @@ cases and the viewer need `perm_research`, enforced by URL pattern in the
 middleware.
 
 With AI configured the list is a view of the AI tab:
-`templates/case/ai/view-pills.html` puts a Conversations | Case Law
+`templates/ai/view-pills.html` puts a Conversations | Case Law
 switch in both toolbars, shown only when `caselaw_available` (a
 CourtListener token, and an admin or a `perm_research` user).
 `/case/<id>/caselaws/` and the `caselaws` tab key render the list with
@@ -290,7 +315,7 @@ Search inside a matter (`apps/case/search/views.py`) is hybrid:
 `watson.search(query)` over the whole index (the case models are
 registered in `apps/case/search_config.py`), keeping the document,
 highlight, fact and note hits on this matter, then meaning matches from
-the pgvector index (`apps/case/ai/semantic.py`, `semantic_entries()`)
+the pgvector index (`apps/case/semantic.py`, `semantic_entries()`)
 appended and marked `semantic` (none without a Gemini key, which the
 embeddings need). Highlights on case law are left out
 because the result row renders document highlights only. The importance

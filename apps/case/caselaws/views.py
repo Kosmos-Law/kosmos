@@ -14,7 +14,6 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.access import filter_matters_for_user
 from apps.case.courtlistener import fetch_case_by_citation
-from apps.case.facts.sorting import sort_keys, stored_sort_key
 from apps.case.highlights.importance import (
     DEFAULT_IMPORTANCE,
     IMPORTANCE_CHOICES,
@@ -22,6 +21,7 @@ from apps.case.highlights.importance import (
 )
 from apps.case.models import CaseLaw, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
+from apps.management.sorting import sort_keys, stored_sort_key
 from apps.matters.models import Matter
 from utils.safe_json import json_for_script
 from utils.toasts import toast_warning
@@ -98,7 +98,7 @@ def caselaws_index(request, matter_id):
     set_last_tab(request, matter_id, "caselaws")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "caselaws",
         "matter": matter,
         "matters": matters,

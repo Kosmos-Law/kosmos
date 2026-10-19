@@ -1,0 +1,102 @@
+{% load humanize markdown_extras citation_extras %}
+<script>
+  // Idempotent globals; defined here too because message-single may be the
+  // initial swap target via HTMX before the messages partial has loaded. The
+  // shared cleaner (and the native-copy interceptor) live in messages.html.
+  if (!window.aiCleanForExport) {
+    window.aiCleanForExport = function (root) {
+      root
+        .querySelectorAll(".citation-vetting, .citation-badge-wrapper")
+        .forEach((n) => n.remove());
+      root.querySelectorAll("mark").forEach((m) => {
+        const span = document.createElement("span");
+        span.style.backgroundColor = "#fff1a8";
+        span.style.color = "#000";
+        span.innerHTML = m.innerHTML;
+        m.replaceWith(span);
+      });
+      root.querySelectorAll("[class], [id]").forEach((n) => {
+        n.removeAttribute("class");
+        n.removeAttribute("id");
+      });
+      // Paragraph gaps on screen come from the chat stylesheet, which doesn't
+      // travel with the clipboard; email composers default <p> to no margin.
+      root.querySelectorAll("p").forEach((p) => {
+        p.style.margin = "0 0 0.75em";
+      });
+      return root;
+    };
+  }
+  if (typeof window.copyMessageText === "undefined") {
+    window.copyMessageText = function (buttonEl) {
+      const messageText = buttonEl
+        .closest(".ai-message-content")
+        .querySelector(".ai-message-text");
+      if (!messageText) return;
+      const clone = window.aiCleanForExport(messageText.cloneNode(true));
+      const showCopied = () => {
+        buttonEl.innerHTML = "<i class='icon-check'></i>";
+        setTimeout(() => {
+          buttonEl.innerHTML = "<i class='icon-copy'></i>";
+        }, 2000);
+      };
+      const text = clone.innerText;
+      if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+        const item = new ClipboardItem({
+          "text/html": new Blob([clone.innerHTML], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        });
+        navigator.clipboard
+          .write([item])
+          .then(showCopied)
+          .catch(() => navigator.clipboard.writeText(text).then(showCopied));
+      } else {
+        navigator.clipboard.writeText(text).then(showCopied);
+      }
+    };
+  }
+</script>
+<div class="ai-message ai-message-{{ message.role }}"
+     id="message-{{ message.id }}"
+     data-initials="{% if message.user %}{{ message.user.first_name|slice:":1" }}{{ message.user.last_name|slice:":1" }}{% endif %}">
+  <div class="ai-message-header">
+    {% if message.role == "user" %}
+      <i class="icon-user-circle"></i>
+      <span>
+        {% if message.user %}
+          {{ message.user.get_full_name|default:message.user.username }}
+        {% else %}
+          You
+        {% endif %}
+      </span>
+    {% else %}
+      <i class="icon-bot"></i>
+      <span>Assistant</span>
+    {% endif %}
+    <span class="ai-message-time">{{ message.created_at|naturaltime }}</span>
+  </div>
+  <div class="ai-message-content">
+    {% if message.role == "assistant" %}
+      {% if message.agent_run %}
+        {% include "ai/agent-trail.html" with message=message %}
+      {% elif message.research_trail %}
+        {% include "ai/research-trail.html" with message=message %}
+      {% elif message.activity_log %}
+        {% include "ai/activity-log.html" with message=message %}
+      {% endif %}
+      {% include "ai/vetting-wrapper.html" with message=message %}
+      {% if message.research_trail %}
+        {% include "ai/authorities.html" with message=message %}
+      {% endif %}
+    {% else %}
+      <div class="ai-message-text">{{ message.content|linebreaks }}</div>
+    {% endif %}
+    {% if message.role == "assistant" %}
+      <button class="ai-copy-btn btn-icon"
+              onclick="window.copyMessageText(this)"
+              title="Copy to clipboard">
+        <i class="icon-copy"></i>
+      </button>
+    {% endif %}
+  </div>
+</div>

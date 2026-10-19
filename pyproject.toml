@@ -67,6 +67,7 @@ dev = [
     "pre-commit==3.7.1",
     # Dev-server gunicorn reload watcher
     "inotify>=0.2.12",
+    "import-linter>=2.15",
 ]
 
 [tool.pytest.ini_options]
@@ -105,3 +106,93 @@ omit = ["*migration*", "*__init__.py*"]
 
 [tool.coverage.report]
 show_missing = true
+
+# ---------------------------------------------------------------------------
+# Module boundaries, checked by `uv run lint-imports` (CI runs it).
+#
+# The case builder (apps.case, apps.drive, apps.notes) is a module with a
+# known surface, so it could one day be extracted: it depends only on the
+# core (accounts, settings, management, matters, contacts, folders) and
+# the model-provider layer (apps.llm); the core never imports it; and the
+# apps that sit on top of it (apps.ai, apps.mail, apps.drafts) reach it
+# only through apps.case.models, apps.case.services, apps.case.courtlistener
+# and apps.case.jurisdictions. Direct imports are what is checked; tests and
+# migrations are exempt.
+# ---------------------------------------------------------------------------
+[tool.importlinter]
+root_packages = ["apps"]
+
+[[tool.importlinter.contracts]]
+name = "The case builder depends only on the core"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["apps.case", "apps.drive", "apps.notes"]
+forbidden_modules = [
+    "apps.ai", "apps.drafts", "apps.mail",
+    "apps.intakes", "apps.invoicing", "apps.trust", "apps.activity",
+    "apps.tasks", "apps.calendar", "apps.dash", "apps.reports",
+    "apps.checklists",
+]
+ignore_imports = [
+    "apps.*.tests.** -> apps.**",
+    "apps.*.migrations.** -> apps.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "The core does not know the case builder"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = [
+    "apps.accounts", "apps.settings", "apps.management", "apps.matters",
+    "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
+    "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",
+    "apps.dash", "apps.reports", "apps.intakes", "apps.search",
+]
+forbidden_modules = ["apps.case", "apps.drive", "apps.notes"]
+ignore_imports = [
+    "apps.*.tests.** -> apps.**",
+    "apps.*.migrations.** -> apps.**",
+    # The one sanctioned seam: Settings > Integrations is where Google is
+    # connected, for the Drive mirror as for Gmail.
+    "apps.settings.integrations.** -> apps.drive.google",
+]
+
+[[tool.importlinter.contracts]]
+name = "The case app's internals are private"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = [
+    "apps.ai", "apps.llm", "apps.drafts", "apps.mail",
+    "apps.accounts", "apps.settings", "apps.management", "apps.matters",
+    "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
+    "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",
+    "apps.dash", "apps.reports", "apps.intakes", "apps.search",
+]
+forbidden_modules = [
+    "apps.case.documents", "apps.case.facts", "apps.case.highlights",
+    "apps.case.labels", "apps.case.witnesses", "apps.case.caselaws",
+    "apps.case.search", "apps.case.notes", "apps.case.views",
+    "apps.case.semantic", "apps.case.search_config", "apps.case.tabs",
+    "apps.case.registrations", "apps.case.abbreviate",
+    "apps.case.courtlistener_throttle",
+    "apps.case.management", "apps.case.templatetags", "apps.case.urls",
+    "apps.case.apps",
+]
+ignore_imports = [
+    "apps.*.tests.** -> apps.**",
+    "apps.*.migrations.** -> apps.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "The model-provider layer stands alone"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["apps.llm"]
+forbidden_modules = [
+    "apps.ai", "apps.case", "apps.drive", "apps.notes", "apps.mail",
+    "apps.drafts", "apps.accounts", "apps.management", "apps.matters",
+    "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
+    "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",
+    "apps.dash", "apps.reports", "apps.intakes", "apps.search",
+]
+ignore_imports = ["apps.*.tests.** -> apps.**"]

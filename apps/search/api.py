@@ -14,18 +14,17 @@ from django.views.decorators.http import require_GET
 from watson import search as watson
 
 from apps.accounts.access import filter_matters_for_user
+from apps.accounts.api_auth import kosmos_api_auth
 from apps.contacts.models import Contact
-from apps.drafts.api_auth import kosmos_api_auth
 from apps.intakes.models import Intake
 from apps.matters.models import Matter
-from apps.notes.models import Note
+from apps.search import registry
 from apps.search.views import (
-    SEARCH_SCOPES,
     expand_search_with_synonyms,
     search_proceedings_by_case_number,
+    search_scopes,
 )
 
-SCOPE_NAMES = ("all",) + tuple(key for key, _label, _model in SEARCH_SCOPES)
 RESULT_CAP = 20
 
 
@@ -63,11 +62,6 @@ def _intake_line(intake):
     return f"- [intake:{intake.id}] {intake.name} ({', '.join(b for b in bits if b)})"
 
 
-def _note_line(note):
-    where = f" in [matter:{note.matter.id}] {note.matter.name}" if note.matter else ""
-    return f"- [note:{note.id}] {note.title or 'Untitled'}{where}"
-
-
 @kosmos_api_auth
 @require_GET
 def api_search(request):
@@ -75,13 +69,16 @@ def api_search(request):
     scope = request.GET.get("scope") or "all"
     if not query:
         return JsonResponse({"error": "Provide q."}, status=400)
-    if scope not in SCOPE_NAMES:
+    scopes = search_scopes()
+    scope_names = ("all",) + tuple(key for key, _label, _model in scopes)
+    if scope not in scope_names:
         return JsonResponse(
-            {"error": f"Unknown scope. Valid scopes: {', '.join(SCOPE_NAMES)}."},
+            {"error": f"Unknown scope. Valid scopes: {', '.join(scope_names)}."},
             status=400,
         )
     user = request.api_user
-    wanted = {key for key, _label, _model in SEARCH_SCOPES if scope in ("all", key)}
+    wanted = {key for key, _label, _model in scopes if scope in ("all", key)}
+    extra_kinds = [kind for kind in registry.kinds() if kind.key in wanted]
     if "intakes" in wanted and not (user.is_admin or user.perm_intakes):
         wanted.discard("intakes")
 
@@ -111,8 +108,8 @@ def api_search(request):
             "matters": Matter,
             "contacts": Contact,
             "intakes": Intake,
-            "notes": Note,
         }
+        models.update((kind.key, kind.model) for kind in extra_kinds)
         to_search = tuple(models[key] for key in models if key in wanted)
         seen = set()
         for term in expand_search_with_synonyms(query):
@@ -130,9 +127,12 @@ def api_search(request):
                     found["contacts"].append(obj)
                 elif isinstance(obj, Intake):
                     found["intakes"].append(obj)
-                elif isinstance(obj, Note):
-                    if obj.matter_id is None or obj.matter_id in accessible_ids:
-                        found["notes"].append(obj)
+                else:
+                    for kind in extra_kinds:
+                        if isinstance(obj, kind.model):
+                            if kind.visible(obj, user, accessible_ids):
+                                found[kind.key].append(obj)
+                            break
     if "proceedings" in wanted:
         found["proceedings"] = list(
             search_proceedings_by_case_number(query).filter(
@@ -145,11 +145,11 @@ def api_search(request):
         "proceedings": ("Proceedings", _proceeding_line),
         "contacts": ("Contacts", _contact_line),
         "intakes": ("Intakes", _intake_line),
-        "notes": ("Notes", _note_line),
     }
+    formatters.update((kind.key, (kind.label, kind.line)) for kind in extra_kinds)
     sections = []
     total = 0
-    for key, _label, _model in SEARCH_SCOPES:
+    for key, _label, _model in scopes:
         rows = found.get(key) or []
         if not rows:
             continue

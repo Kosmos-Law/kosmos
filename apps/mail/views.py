@@ -9,8 +9,8 @@ from django.utils.html import format_html
 from django.views.decorators.http import require_POST
 
 import apps.mail.google as mail_google
-from apps.case.ai.status import status_cache
-from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
+from apps.case.services import get_matter_from_url, get_session_key, set_last_tab
+from apps.llm.status import status_cache
 from apps.matters.models import Matter
 
 from .filters import EmailFilter
@@ -84,13 +84,13 @@ def emails_index(request, matter_id):
     set_last_tab(request, matter_id, "emails")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "emails",
         "matter": matter,
         "matters": matters,
     } | get_emails_data(request, matter, matter_id)
 
-    return render(request, "case/emails/main.html", context)
+    return render(request, "mail/main.html", context)
 
 
 @login_required
@@ -103,7 +103,7 @@ def emails_list(request, matter_id):
         "matters": matters,
     } | get_emails_data(request, matter, matter_id)
 
-    return render(request, "case/emails/list.html", context)
+    return render(request, "mail/list.html", context)
 
 
 @login_required
@@ -129,9 +129,7 @@ def emails_filter(request, matter_id):
     filter_data = request.session.get(filter_session_key, {})
     filter_obj = EmailFilter(filter_data, queryset=Email.objects.filter(matter=matter))
 
-    return render(
-        request, "case/emails/filter.html", {"filter": filter_obj, "matter": matter}
-    )
+    return render(request, "mail/filter.html", {"filter": filter_obj, "matter": matter})
 
 
 @login_required
@@ -150,7 +148,7 @@ def emails_filter_keyword(request, matter_id):
     request.session[filter_session_key] = filter_data
 
     context = {"matter": matter} | get_emails_data(request, matter, matter_id)
-    return render(request, "case/emails/table.html", context)
+    return render(request, "mail/table.html", context)
 
 
 @login_required
@@ -171,7 +169,7 @@ def emails_sort(request, matter_id, order):
     request.session[filter_session_key] = filter_data
     request.session.modified = True
 
-    return redirect("case:emails-list", matter_id=matter_id)
+    return redirect("mail:emails-list", matter_id=matter_id)
 
 
 @login_required
@@ -183,7 +181,7 @@ def emails_list_items(request, matter_id):
     """
     matter, _ = get_matter_from_url(request, matter_id)
     context = {"matter": matter} | get_emails_data(request, matter, matter_id)
-    return render(request, "case/emails/list-items.html", context)
+    return render(request, "mail/list-items.html", context)
 
 
 def _own_gmail_url(email, user):
@@ -219,7 +217,7 @@ def _preview_response(request, email, changed=False):
     column, whose row shows the importance and the promoted mark."""
     response = render(
         request,
-        "case/emails/preview.html",
+        "mail/preview.html",
         {"email": email, "gmail_url": _own_gmail_url(email, request.user)},
     )
     if changed:
@@ -318,7 +316,7 @@ def label_link_modal(request, matter_id):
         "suggested_label": suggested,
         "suggested_short": suggested_short,
     }
-    return render(request, "case/emails/label-link-modal.html", context)
+    return render(request, "mail/label-link-modal.html", context)
 
 
 def _matter_name_for(user, matter):
@@ -387,7 +385,7 @@ def emails_refresh(request, matter_id):
         _start_refresh(matter)
     return render(
         request,
-        "case/emails/refresh-button.html",
+        "mail/refresh-button.html",
         {"matter": matter, "syncing": True, "polls": 0},
     )
 
@@ -406,11 +404,11 @@ def emails_refresh_status(request, matter_id):
     if status_cache.get(_refresh_cache_key(matter.id)) == "running" and polls < 150:
         return render(
             request,
-            "case/emails/refresh-button.html",
+            "mail/refresh-button.html",
             {"matter": matter, "syncing": True, "polls": polls + 1},
         )
 
-    response = render(request, "case/emails/refresh-button.html", {"matter": matter})
+    response = render(request, "mail/refresh-button.html", {"matter": matter})
     response["HX-Trigger"] = "emailsChanged"
     return response
 

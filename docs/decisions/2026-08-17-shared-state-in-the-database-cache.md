@@ -80,7 +80,7 @@ Instances so far:
 - `config/settings.py`, `CACHES`: "It is per-process: each gunicorn
   worker and the qcluster worker has its own copy, so anything that must
   be seen across processes cannot live here (see ai_status below)."
-- `apps/case/ai/status.py` (the writers and the heartbeat);
+- `apps/llm/status.py` (the writers and the heartbeat);
   `apps/mail/views.py` (the refresh flag).
 - `docs/dev/subsystems/platform-and-config.md`, "Things that bite": "The
   default cache is per process."

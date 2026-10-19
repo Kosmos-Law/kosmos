@@ -11,7 +11,7 @@ import base64
 import logging
 import os
 
-from apps.case.documents.tasks import extract_existing_text, sanitize_text
+from apps.case.services import extract_existing_text, sanitize_text
 from apps.drive.convert import to_markdown
 
 from .models import Email, GmailAccount

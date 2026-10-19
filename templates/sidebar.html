@@ -62,12 +62,6 @@
           <span class="sidebar-label">Activity</span>
         </a>
       </li>
-      <li {% if app == 'notes' %}class="active"{% endif %}>
-        <a id="nav-notes" href="{% url 'notes:index' %}" data-tooltip="Library">
-          <i class="icon-library"></i>
-          <span class="sidebar-label">Library</span>
-        </a>
-      </li>
       {% if user.is_admin or user.perm_financial %}
         <li class="nav-item-invoicing{% if app == 'invoicing' %} active{% endif %}">
           <a id="nav-invoicing"
@@ -95,6 +89,30 @@
              data-tooltip="Reports">
             <i class="icon-chart-no-axes-combined"></i>
             <span class="sidebar-label">Reports</span>
+          </a>
+        </li>
+      {% endif %}
+      {% comment %}
+        The case builder: the matter's working file (documents, highlights,
+        timeline, witnesses, notes, emails, search, AI) and the notes
+        library. Case reopens the last matter on its last tab. Each entry
+        is a feature the firm's administrator can switch off (Settings >
+        Features).
+      {% endcomment %}
+      {% if case_file_enabled or library_enabled %}<li class="sidebar-divider" aria-hidden="true"></li>{% endif %}
+      {% if case_file_enabled %}
+        <li {% if app == 'case' %}class="active"{% endif %}>
+          <a id="nav-case" href="{% url 'case:case-index' %}" data-tooltip="Case">
+            <i class="icon-folder-open"></i>
+            <span class="sidebar-label">Case</span>
+          </a>
+        </li>
+      {% endif %}
+      {% if library_enabled %}
+        <li {% if app == 'notes' %}class="active"{% endif %}>
+          <a id="nav-notes" href="{% url 'notes:index' %}" data-tooltip="Library">
+            <i class="icon-library"></i>
+            <span class="sidebar-label">Library</span>
           </a>
         </li>
       {% endif %}

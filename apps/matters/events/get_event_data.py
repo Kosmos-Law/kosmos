@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from apps.calendar.events import annotate_durations
 from apps.calendar.models import Event
-from apps.case.facts.sorting import sort_keys, stored_sort_key
+from apps.management.sorting import sort_keys, stored_sort_key
 from apps.matters.proceedings.models import Proceeding
 
 # The columns the matter Events tab sorts by: the list's own sort buttons.

@@ -13,14 +13,15 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from django_q.tasks import async_task
 
-from apps.case.documents.mbox import (
+from apps.case.models import Document
+from apps.case.services import (
+    PROCESS_DOCUMENT_OCR_TASK,
     EmailMetadata,
     extract_last_name,
     generate_email_description,
     generate_email_pdf,
     parse_email_address,
 )
-from apps.case.models import Document
 
 
 def _email_metadata(email):
@@ -80,13 +81,13 @@ def promote_email(email, user, base_url):
 
     try:
         async_task(
-            "apps.case.documents.tasks.process_document_ocr",
+            PROCESS_DOCUMENT_OCR_TASK,
             document.id,
             task_name=f"OCR-{document.id}",
             group="ocr_processing",
         )
     except Exception:
-        from apps.case.documents.tasks import process_document_ocr
+        from apps.case.services import process_document_ocr
 
         process_document_ocr(document.id)
 

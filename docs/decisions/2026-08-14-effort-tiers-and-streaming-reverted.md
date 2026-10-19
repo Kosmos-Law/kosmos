@@ -58,10 +58,10 @@ effort control anywhere in the chat and no `Conversation.effort` field.
 
 ## Evidence
 
-- `apps/case/ai/tasks.py`, `process_ai_request()`: the stages each
+- `apps/ai/tasks.py`, `process_ai_request()`: the stages each
   report through the activity log; no effort branch.
 - `apps/case/migrations/0091_remove_conversation_effort.py`.
-- `templates/case/ai/status.html`: the status line and log rows.
+- `templates/ai/status.html`: the status line and log rows.
 - Commits, all 2026-08-14 unless noted: "feat(ai): effort tiers for
   Analysis mode's context apparatus"; "revert(ai): prune Analysis effort
   tiers in favor of answer streaming"; "feat(ai): stream the answer into

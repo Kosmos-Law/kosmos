@@ -1,12 +1,7 @@
-from django.contrib.auth.decorators import login_required
 from django.urls import path
 from django.views.generic import RedirectView
 
-from apps.case import (
-    api as case_api,
-    views,
-)
-from apps.case.ai import views as ai
+from apps.case import views
 from apps.case.caselaws import views as caselaws
 from apps.case.documents import (
     drive,
@@ -18,63 +13,10 @@ from apps.case.labels import views as labels
 from apps.case.notes import views as notes
 from apps.case.search import views as search
 from apps.case.witnesses import views as witnesses
-from apps.drafts import (
-    companion as drafts_companion,
-    views as drafts,
-)
-from apps.mail import views as mail
 
 app_name = "case"
 
 urlpatterns = [
-    # Token-authed JSON API for the Claude Desktop MCP server. The
-    # facts/witnesses/emails/conversations routes must precede the
-    # <str:section> catch-all so their POST/extra-segment forms match first.
-    path(
-        "case/api/matter/<int:matter_id>/facts/",
-        case_api.api_matter_facts,
-        name="api-matter-facts",
-    ),
-    path(
-        "case/api/matter/<int:matter_id>/witnesses/",
-        case_api.api_matter_witnesses,
-        name="api-matter-witnesses",
-    ),
-    path(
-        "case/api/matter/<int:matter_id>/emails/<str:thread_id>/",
-        case_api.api_email_thread,
-        name="api-email-thread",
-    ),
-    path(
-        "case/api/matter/<int:matter_id>/conversations/<int:conversation_id>/",
-        case_api.api_conversation,
-        name="api-conversation",
-    ),
-    path(
-        "case/api/matter/<int:matter_id>/search/",
-        case_api.api_search_materials,
-        name="api-search-materials",
-    ),
-    path(
-        "case/api/matter/<int:matter_id>/<str:section>/",
-        case_api.api_matter_section,
-        name="api-matter-section",
-    ),
-    path(
-        "case/api/documents/<int:document_id>/",
-        case_api.api_document,
-        name="api-document",
-    ),
-    path(
-        "case/api/invoices/<int:invoice_id>/",
-        case_api.api_invoice,
-        name="api-invoice",
-    ),
-    path(
-        "case/api/tasks/",
-        case_api.api_create_task,
-        name="api-create-task",
-    ),
     # Root case URL - redirects to last viewed matter
     path("case/", views.case_index, name="case-index"),
     path("case/no-matter/", views.no_matter, name="no-matter"),
@@ -83,11 +25,6 @@ urlpatterns = [
         "case/select-matter/<int:matter_id>/",
         views.select_matter,
         name="select-matter",
-    ),
-    path(
-        "case/<int:matter_id>/mode-content/",
-        views.mode_content,
-        name="mode-content",
     ),
     path(
         "case/<int:matter_id>/tab/<str:tab>/",
@@ -617,123 +554,6 @@ urlpatterns = [
         drive.drive_folder_unlink,
         name="documents-drive-unlink",
     ),
-    # Draft links (a conversation pinned to a Drive ODT; edits apply via
-    # the LibreOffice companion)
-    path(
-        "case/ai/conversations/<int:conv_id>/draft/picker/",
-        drafts.draft_picker,
-        name="draft-picker",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/draft/link/",
-        drafts.draft_link,
-        name="draft-link",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/draft/unlink/",
-        drafts.draft_unlink,
-        name="draft-unlink",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/draft/chip/",
-        drafts.draft_chip,
-        name="draft-chip",
-    ),
-    # LibreOffice companion: setup modal + personalized .oxt (browser,
-    # logged-in) and the token-authed JSON API the extension polls.
-    path(
-        "case/drafts/companion/setup/",
-        drafts.draft_companion_setup,
-        name="draft-companion-setup",
-    ),
-    path(
-        "case/drafts/companion/kosmos-companion.oxt",
-        login_required(drafts_companion.companion_oxt),
-        name="draft-companion-oxt",
-    ),
-    path(
-        "case/drafts/companion/api/sessions/",
-        drafts_companion.api_sessions,
-        name="companion-api-sessions",
-    ),
-    path(
-        "case/drafts/companion/api/<int:link_id>/hello/",
-        drafts_companion.api_hello,
-        name="companion-api-hello",
-    ),
-    path(
-        "case/drafts/companion/api/<int:link_id>/ops/",
-        drafts_companion.api_ops,
-        name="companion-api-ops",
-    ),
-    path(
-        "case/drafts/companion/api/<int:link_id>/rounds/<int:round_id>/",
-        drafts_companion.api_result,
-        name="companion-api-result",
-    ),
-    # Emails (matter-scoped, synced from Gmail via apps.mail)
-    path("case/<int:matter_id>/emails/", mail.emails_index, name="emails-index"),
-    path("case/<int:matter_id>/emails/list/", mail.emails_list, name="emails-list"),
-    path(
-        "case/<int:matter_id>/emails/list/items/",
-        mail.emails_list_items,
-        name="emails-list-items",
-    ),
-    path(
-        "case/<int:matter_id>/emails/label/link/",
-        mail.label_link_modal,
-        name="emails-label-link-modal",
-    ),
-    path(
-        "case/<int:matter_id>/emails/label/link/set/",
-        mail.label_link,
-        name="emails-label-link",
-    ),
-    path(
-        "case/<int:matter_id>/emails/label/unlink/",
-        mail.label_unlink,
-        name="emails-label-unlink",
-    ),
-    path(
-        "case/<int:matter_id>/emails/refresh/",
-        mail.emails_refresh,
-        name="emails-refresh",
-    ),
-    path(
-        "case/<int:matter_id>/emails/refresh/status/",
-        mail.emails_refresh_status,
-        name="emails-refresh-status",
-    ),
-    path(
-        "case/<int:matter_id>/emails/filter/",
-        mail.emails_filter,
-        name="emails-filter",
-    ),
-    path(
-        "case/<int:matter_id>/emails/filter/keyword/",
-        mail.emails_filter_keyword,
-        name="emails-filter-keyword",
-    ),
-    path(
-        "case/<int:matter_id>/emails/sort/<str:order>/",
-        mail.emails_sort,
-        name="emails-sort",
-    ),
-    path(
-        "case/emails/<int:email_id>/importance/<int:value>/",
-        mail.email_importance,
-        name="email-importance",
-    ),
-    path(
-        "case/emails/<int:email_id>/preview/",
-        mail.email_preview,
-        name="email-preview",
-    ),
-    path(
-        "case/emails/<int:email_id>/promote/",
-        mail.email_promote,
-        name="email-promote",
-    ),
     # Labels (matter-scoped)
     path("case/<int:matter_id>/labels/", labels.labels_index, name="labels-index"),
     path("case/<int:matter_id>/labels/list/", labels.labels_list, name="labels-list"),
@@ -780,38 +600,6 @@ urlpatterns = [
         "case/<int:matter_id>/search/clear/",
         search.search_clear,
         name="search-clear",
-    ),
-    # AI Chat (matter-scoped)
-    path("case/<int:matter_id>/ai/", ai.ai_index, name="ai-index"),
-    path("case/<int:matter_id>/ai/list/", ai.ai_list, name="ai-list"),
-    path("case/<int:matter_id>/ai/sort/<str:order>/", ai.ai_sort, name="ai-sort"),
-    path("case/<int:matter_id>/ai/filter/", ai.ai_filter, name="ai-filter"),
-    path("case/<int:matter_id>/ai/messages/", ai.message_list, name="ai-messages"),
-    path("case/<int:matter_id>/ai/send/", ai.send_message, name="ai-send"),
-    path(
-        "case/<int:matter_id>/ai/conversations/",
-        ai.conversation_list,
-        name="ai-conversations",
-    ),
-    path(
-        "case/<int:matter_id>/ai/conversations/new/",
-        ai.new_conversation_view,
-        name="ai-new-conversation-view",
-    ),
-    path(
-        "case/<int:matter_id>/ai/conversations/create/",
-        ai.create_conversation,
-        name="ai-create-conversation",
-    ),
-    path(
-        "case/<int:matter_id>/ai/conversations/new/prompt/",
-        ai.new_conversation_prompt,
-        name="ai-new-conversation-prompt",
-    ),
-    path(
-        "case/<int:matter_id>/ai/prompt-editor/",
-        ai.prompt_editor_modal,
-        name="ai-prompt-editor",
     ),
     # ==========================================================================
     # OBJECT-SPECIFIC ROUTES (operate on specific objects by ID)
@@ -1054,108 +842,6 @@ urlpatterns = [
         "case/labels/remove-from/<str:object_type>/<int:object_id>/",
         labels.remove_label_from,
         name="remove-label-from",
-    ),
-    # AI conversation operations
-    path(
-        "case/ai/status/<int:conv_id>/",
-        ai.ai_status,
-        name="ai-status",
-    ),
-    path(
-        "case/ai/cancel/<int:conv_id>/",
-        ai.cancel_request,
-        name="ai-cancel",
-    ),
-    path(
-        "case/ai/messages/<int:message_id>/delete/",
-        ai.delete_message,
-        name="ai-delete-message",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/",
-        ai.select_conversation,
-        name="ai-select-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/view/",
-        ai.conversation_view,
-        name="ai-conversation-view",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/delete/",
-        ai.delete_conversation,
-        name="ai-delete-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/clone/",
-        ai.clone_conversation,
-        name="ai-clone-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/append-form/",
-        ai.append_conversation_form,
-        name="ai-append-form",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/append/",
-        ai.append_conversation,
-        name="ai-append-conversation",
-    ),
-    path(
-        "case/ai/messages/<int:message_id>/split/",
-        ai.split_conversation,
-        name="ai-split-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/set-ai/<str:state>/",
-        ai.set_ai_context,
-        name="ai-set-ai-context",
-    ),
-    path(
-        "case/ai/messages/<int:message_id>/vetting-status/",
-        ai.message_vetting_status,
-        name="ai-message-vetting-status",
-    ),
-    path(
-        "case/ai/messages/<int:message_id>/citation/<int:citation_index>/vetting/",
-        ai.citation_vetting_detail,
-        name="ai-citation-vetting-detail",
-    ),
-    # AI conversation selection & bulk actions
-    path(
-        "case/<int:matter_id>/ai/toggle-select/<int:conv_id>/",
-        ai.ai_toggle_select,
-        name="ai-toggle-select",
-    ),
-    path(
-        "case/<int:matter_id>/ai/select-all/",
-        ai.ai_select_all,
-        name="ai-select-all",
-    ),
-    path(
-        "case/<int:matter_id>/ai/clear-selection/",
-        ai.ai_clear_selection,
-        name="ai-clear-selection",
-    ),
-    path(
-        "case/<int:matter_id>/ai/bulk-set-context/<str:state>/",
-        ai.ai_bulk_set_context,
-        name="ai-bulk-set-context",
-    ),
-    path(
-        "case/<int:matter_id>/ai/bulk-delete/",
-        ai.ai_bulk_delete,
-        name="ai-bulk-delete",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/rename/",
-        ai.rename_conversation,
-        name="ai-rename-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/rename-form/",
-        ai.rename_form,
-        name="ai-rename-form",
     ),
     # ==========================================================================
     # LEGACY ROUTES (redirect to new structure)

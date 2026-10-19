@@ -21,8 +21,9 @@ import pytest
 from django.test import Client
 from django.utils import timezone
 
+from apps.accounts.models import ApiToken
 from apps.drafts import companion
-from apps.drafts.models import CompanionRound, CompanionToken
+from apps.drafts.models import CompanionRound
 
 SOURCE = Path(companion.COMPANION_SRC) / "kosmos_companion.py"
 EDITS = [{"op": "replace", "old": "a", "new": "b"}]
@@ -341,7 +342,7 @@ def connection(ext, link, user, monkeypatch):
     """A connected extension: its real Api methods and round handling, the
     real server, and a document that records what was applied to it."""
     client = Client()
-    client.defaults["HTTP_X_KOSMOS_TOKEN"] = CompanionToken.for_user(user).key
+    client.defaults["HTTP_X_KOSMOS_TOKEN"] = ApiToken.for_user(user).key
     api = ext.Api("https://unused", "unused")
     transport = ClientApi(client, "/case/drafts/companion/api")
     api._call = transport._call

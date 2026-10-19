@@ -58,11 +58,11 @@ script.
 - A morphed out-of-band fragment must carry the same `class` and
   `hx-ext` as the standing element, or the next swap silently
   downgrades to `innerHTML`.
-- A standalone page that includes `case/ai/status.html` must load
+- A standalone page that includes `ai/status.html` must load
   idiomorph itself; `base.html` does, the standalone windows do each
   with a comment saying why.
 - Do not add a second poller pattern. The comments on
-  `templates/case/ai/status.html` and `chat-statusbar.html` are
+  `templates/ai/status.html` and `chat-statusbar.html` are
   required reading before touching either.
 
 ## Evidence
@@ -83,8 +83,8 @@ script.
   top of a delivered reply" (2026-08-23): "every terminal status
   response ... carries HX-Reswap: outerHTML so the poller is replaced
   whatever the page's swap support."
-- `templates/case/ai/status.html`, the header comment; `_terminal()`
-  and `_poll_ended()` in `apps/case/ai/views.py`.
+- `templates/ai/status.html`, the header comment; `_terminal()`
+  and `_poll_ended()` in `apps/ai/views.py`.
 - `docs/dev/conventions/htmx-alpine.md`, "The settle gotcha" and
   "idiomorph".
 

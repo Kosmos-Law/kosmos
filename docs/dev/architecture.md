@@ -22,25 +22,24 @@ subsystem pages group them.
 | [Tasks and calendar](subsystems/tasks-and-calendar.md) | `apps/tasks`, `apps/checklists`, `apps/calendar`, `apps/dash` | Tasks and the daily digest; checklist templates; events and the Google Calendar sync; the dashboard. |
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
-| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/search` | Documents and OCR, highlights, facts, witnesses, labels, the case search tab and the saved case law; the Google Drive mirror; the global search modal. |
-| [AI](subsystems/ai/context.md) | `apps/case/ai` | The context builders, the chat surfaces, the agent tool loop (with its CourtListener research tools), the semantic index. |
-| [Notes and drafts](subsystems/notes-and-drafts.md) | `apps/notes`, `apps/drafts` | The notes editor, folders and library; draft links and the LibreOffice companion (`companion_src/`). |
-| [Email and intakes](subsystems/email-and-intakes.md) | `apps/mail`, `apps/intakes` | Gmail sync onto matters; intakes, the inbound Mailgun webhook, the client forms. |
+| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab, the saved case law and the semantic index; the Google Drive mirror; the notes and the library. |
+| [AI](subsystems/ai/context.md) | `apps/ai`, `apps/llm` | The context builders, the chat surfaces, the agent tool loop (with its CourtListener research tools) and the Claude Desktop API over a matter; the model-provider layer (the Anthropic and Gemini clients, embeddings, pricing, the status store). |
+| [Notes and drafts](subsystems/notes-and-drafts.md) | `apps/notes`, `apps/drafts` | The notes editor, folders and library (part of the case builder); draft links and the LibreOffice companion (`companion_src/`). |
+| [Email and intakes](subsystems/email-and-intakes.md) | `apps/mail`, `apps/intakes`, `apps/search` | Gmail sync onto matters and the Emails tab; intakes, the inbound Mailgun webhook, the client forms; the global search modal. |
 | Settings | `apps/settings` | One package per Settings page (`firm/`, `users/`, `permissions/`, `appearance/`, `integrations/`, `claude/`, and so on) and the `Firm` record. |
 
 Three apps are thin: `apps/dash`, `apps/reports` and `apps/search` have
 no models of their own (`apps/search` holds the watson registrations in
-`search_config.py`, the search modal's views and the `search/api/` JSON
-endpoint in `api.py` that the MCP server's `search_kosmos` tool calls).
-None of
-the directories under `apps/` is vestigial: every one is installed and
-routed. There is no `billing`, `lab` or `research` app; billing lives in
-`apps/invoicing` and case-law research in the agentic chat's tools
-(`apps/case/ai/agent_tools.py`) over the CourtListener client in
-`apps/case/courtlistener.py`. Three packages have no `urls.py`:
-`apps/mail` and `apps/drafts` have their views mounted from
-`apps/case/urls.py`, and `apps/drive` has no views at all (it is driven
-by signals, the worker and management commands).
+`search_config.py`, the search modal's views, the registry of kinds other
+apps add to it and the `search/api/` JSON endpoint in `api.py` that the
+MCP server's `search_kosmos` tool calls); `apps/llm` has none either.
+None of the directories under `apps/` is vestigial: every one is
+installed and routed. There is no `billing`, `lab` or `research` app;
+billing lives in `apps/invoicing` and case-law research in the agentic
+chat's tools (`apps/ai/agent_tools.py`) over the CourtListener client in
+`apps/case/courtlistener.py`. Two packages have no `urls.py`: `apps/llm`
+has no views, and `apps/drive` has none at all (it is driven by signals,
+the worker and management commands).
 
 ## `config/`
 
@@ -59,51 +58,81 @@ The middleware order is fixed in `MIDDLEWARE`: Django's own stack, then
 `simple_history`'s `HistoryRequestMiddleware`. What each does is on the
 [platform page](subsystems/platform-and-config.md#middleware).
 
-## The two shells
+## The practice shell and the case builder
 
-A user works in one of two shells, both wrapped by `templates/base.html`.
+Every page is wrapped by `templates/base.html`, whose sidebar
+(`templates/sidebar.html`) is the one navigation. It lists the practice
+pages first: Dash, Matters, Calendar, Tasks, Contacts, Activity and, by
+permission flag, Invoicing, Intakes and Reports. Below a rule come the
+case builder's two entries, Case and Library, with Search, Settings and
+Shortcuts in the utility list under them. The sidebar's list is
+`hx-boost`ed with `hx-target="#main-content"` and
+`hx-select="#main-content"`, so a click fetches the full page and swaps
+only the content column; the sidebar itself is never re-rendered by
+navigation. Which item is active comes from the `app` context variable
+each view sets: the matter record's views set `matters`, the case
+shell's `case`, the notes editor's `notes`.
 
-**The Practice shell** is the firm-wide one: `templates/sidebar.html` lists
-Dash, Matters, Calendar, Tasks, Contacts, Activity, Library and, by
-permission flag, Invoicing, Intakes and Reports, with Search, Settings and
-Shortcuts below. The sidebar's list is `hx-boost`ed with
-`hx-target="#main-content"` and `hx-select="#main-content"`, so a click
-fetches the full page and swaps only the content column; the sidebar
-itself is never re-rendered by navigation. Which item is active comes
-from the `app` context variable each view sets.
+**The matter record**, under `/matters/<id>/...`, is the practice
+manager's view of a matter: Overview, Contacts, Rates, Activity, Events,
+Tasks, Proceedings, Settlement and Ledger
+(`templates/matters/includes/detail-nav.html`).
 
-**The matter workspace** opens from a matter and has two modes, switched
-by the pills in `templates/matters/includes/mode-pills.html`:
+**The case file**, under `/case/<id>/...`, is the case builder's view of
+the same matter: Documents, Highlights, Timeline, Witnesses, Notes,
+Emails, Labels, Search and AI (or Case Law while AI is off). Case in the
+sidebar opens `/case/`, which reopens the last matter on its last tab;
+the shell remembers both in the session (`last_viewed_matter`,
+`case_tab_<id>`). The tabs are not a list in a template: each is a `Tab`
+registered in `apps/case/tabs.py`, the case app's own from
+`apps/case/registrations.py` and the AI and Emails tabs from the
+`apps.ai` and `apps.mail` AppConfigs, and `case-nav.html` renders what
+is registered and visible.
 
-- **Detail**, under `/matters/<id>/...`, is the matter's record: Overview,
-  Contacts, Rates, Activity, Events, Tasks, Proceedings, Settlement and
-  Ledger (`templates/matters/includes/detail-nav.html`).
-- **Case**, under `/case/<id>/...`, is the matter's working file:
-  Documents, Highlights, Timeline, Witnesses, Notes, Emails, Labels,
-  Search, AI and Research (`templates/case/includes/case-nav.html`).
-
-Both modes extend `templates/matters/matter-base.html`, which places the
-matter header (`matters/includes/header.html`: the matter switcher, the
-mode pills, the action buttons) above a `#mode-content` block. Switching
-mode swaps that block through `matters:mode-content` or
-`case:mode-content`; switching tab inside a mode swaps `.detail-body`
-through `matters:tab-content` or `case:tab-content`. The tab views
-(`apps/matters/views.py` and `apps/case/views.py`) gather the tab's data
-through one `get_<tab>_data()` function per tab, shared by the full-page
-view and the partial, so a tab renders the same either way. The case
-shell remembers the last matter and the last tab per matter in the
-session (`last_viewed_matter`, `case_tab_<id>`), which is how `/case/`
-reopens where the user left off.
+Both extend `templates/matters/matter-base.html`, which places the
+matter header (`matters/includes/header.html`: the matter switcher, a
+link to the other side of the same matter, the action buttons) above
+the content block. Switching tab inside the case file swaps
+`.detail-body` through `case:tab-content`; inside the record through
+`matters:tab-content`. The tab views (`apps/matters/views.py` and
+`apps/case/views.py`) gather the tab's data through one
+`get_<tab>_data()` function per tab, shared by the full-page view and
+the partial, so a tab renders the same either way.
 
 The templates directory follows the shells: `templates/base.html` and
-`templates/sidebar.html` are the Practice shell; `templates/matters/` and
-`templates/case/` are the workspace; every other app has a directory of
-its own. `templates/components/` holds the pieces several pages include:
+`templates/sidebar.html` are the shell; `templates/matters/` the record,
+`templates/case/` the case file, `templates/ai/` and `templates/mail/`
+the tabs those apps contribute; every other app has a directory of its
+own. `templates/components/` holds the pieces several pages include:
 the form-field renderers (`form-fields-template*.html`, selected through
 `FORM_RENDERER` in settings), the HTMX modal shell, the brand marks and
 gradients, the user chips and the format toolbar. `templates/base-minimal.html`
 is the no-sidebar base for the sign-in pages, the public payment and
 intake-form pages, the notes editor and the AI prompt windows.
+
+## Module boundaries
+
+The case builder (`apps/case`, `apps/drive`, `apps/notes`) is a module
+with a known surface, so that it could be extracted one day, or retired.
+Four import-linter contracts in `pyproject.toml` hold the line, and CI
+runs them (`uv run lint-imports`):
+
+- the case builder imports only the core (`accounts`, `settings`,
+  `management`, `matters`, `contacts`, `folders`) and `apps/llm`;
+- the core never imports the case builder (Settings > Integrations'
+  import of `apps/drive/google.py` is the one named exception);
+- the apps on top of it (`apps/ai`, `apps/mail`, `apps/drafts`) reach it
+  only through `apps/case/models.py`, `apps/case/services.py`,
+  `apps/case/courtlistener.py` and `apps/case/jurisdictions.py`;
+- `apps/llm` imports nothing but `apps/settings`.
+
+What crosses the boundary is registered at start-up rather than
+imported: case-shell tabs (`apps/case/tabs.py`), semantic-index kinds
+(`apps/case/semantic.py`), matter lookups for the access middleware
+(`apps/accounts/access.py`), kinds in the firm-wide search
+(`apps/search/registry.py`), and the `matter_closed` signal
+(`apps/matters/signals.py`). The record is [The case builder is a module
+with its own navigation](../decisions/2026-10-19-the-case-builder-is-a-module-with-its-own-navigation.md).
 
 ## How a request moves
 
@@ -168,16 +197,16 @@ reconciliation, the daily digest, the chat purge. The worker is configured by `Q
 settings and explained on the [operations page](subsystems/operations.md).
 
 **In-process daemon threads** run the interactive AI chats. `send_message`
-in `apps/case/ai/views.py` saves the user's message, seeds a status entry
+in `apps/ai/views.py` saves the user's message, seeds a status entry
 and starts `threading.Thread(target=process_ai_request, daemon=True)`
-(`apps/case/ai/tasks.py`) inside the gunicorn worker that took the
-request; the intake chat (`apps/intakes/chat.py`) does the same. The browser polls `case:ai-status`
+(`apps/ai/tasks.py`) inside the gunicorn worker that took the
+request; the intake chat (`apps/intakes/chat.py`) does the same. The browser polls `ai:status`
 every second. The code does not record why chats run on threads rather
 than the queue; the consequence it does record is that a restart of the
 web process ends every reply in flight, and the status cache below exists
 to report that honestly.
 
-The two meet in **the status cache**. `apps/case/ai/status.py` defines
+The two meet in **the status cache**. `apps/llm/status.py` defines
 `status_cache`, the `ai_status` cache from settings: a `DatabaseCache`
 over the `ai_status_cache` table, created by `manage.py createcachetable`
 and not by a migration. It has to be in the database because production
@@ -206,18 +235,19 @@ rules are the two functions at the bottom of `config/urls.py`, and
 Two indexes, both in PostgreSQL:
 
 - **Keyword** search is `django-watson`. Models register in
-  `apps/search/search_config.py` (matters, contacts, intakes) and
-  `apps/case/search_config.py` (documents, highlights, facts, notes,
-  emails). The case search tab (`apps/case/search/views.py`) calls
+  `apps/search/search_config.py` (matters, contacts, intakes),
+  `apps/case/search_config.py` (documents, highlights, facts, notes) and
+  `apps/mail/apps.py` (emails). The case search tab (`apps/case/search/views.py`) calls
   `watson.search()`; the agent's `search_materials` tool
-  (`apps/case/ai/agent_tools.py`) queries `watson_searchentry` directly
+  (`apps/ai/agent_tools.py`) queries `watson_searchentry` directly
   with `websearch_to_tsquery`, scoped to one matter. `Document` and
   `Highlight` also carry their own `SearchVectorField`, kept current by
   the OCR task and `update_search_vectors`.
-- **Semantic** search is `apps/case/ai/semantic.py`: material text is
-  chunked, embedded with Gemini (`apps/case/ai/embeddings.py`, 768
-  dimensions) and stored as `MaterialChunk` rows with a pgvector column
-  and an HNSW index. `semantic_entries()` returns cosine neighbours, and
+- **Semantic** search is `apps/case/semantic.py`: the text of every
+  registered kind of material (the case app registers its own, `apps/mail`
+  adds emails) is chunked, embedded with Gemini (`apps/llm/embeddings.py`,
+  768 dimensions) and stored as `MaterialChunk` rows with a pgvector
+  column and an HNSW index. `semantic_entries()` returns cosine neighbours, and
   the agent tool fuses them with the keyword hits. Saves enqueue
   re-indexing on the worker when `SEMANTIC_AUTO_INDEX` is on and a Gemini
   key is configured; `build_semantic_index` backfills. Without a Gemini

@@ -11,7 +11,7 @@ copy, Ctrl+Z is version control, and saving the file (which syncs to Drive)
 is publishing.
 
 Conversation is imported for the class (not a string label): it lives in
-apps/case/ai/models.py, which is NOT loaded by apps.case's models.py, so a
+apps/ai/models.py, which is NOT loaded by apps.case's models.py, so a
 lazy 'case.Conversation' reference only resolves if something else has
 imported that module first.
 """
@@ -22,7 +22,7 @@ from datetime import timedelta
 from django.db import models
 from django.utils import timezone
 
-from apps.case.ai.models import Conversation
+from apps.ai.models import Conversation
 
 # A companion counts as connected while its last poll is this recent. The
 # extension polls every ~2.5 seconds, so this tolerates a few missed cycles
@@ -82,31 +82,10 @@ class DraftLink(models.Model):
         return self.sibling_links().filter(companion_seen__gte=cutoff).exists()
 
 
-def _new_token_key():
+def _new_token_key():  # pragma: no cover
+    """Retired with CompanionToken (now accounts.ApiToken); kept because
+    migration 0002 imports it."""
     return secrets.token_urlsafe(32)
-
-
-class CompanionToken(models.Model):
-    """A user's API key for the LibreOffice companion extension.
-
-    Created on first visit to the companion setup modal and baked into the
-    .oxt that user downloads, so the extension authenticates without any
-    manual configuration.
-    """
-
-    user = models.OneToOneField(
-        "accounts.CustomUser", on_delete=models.CASCADE, related_name="companion_token"
-    )
-    key = models.CharField(max_length=64, unique=True, default=_new_token_key)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Companion token for {self.user}"
-
-    @classmethod
-    def for_user(cls, user):
-        token, _ = cls.objects.get_or_create(user=user)
-        return token
 
 
 class CompanionRound(models.Model):

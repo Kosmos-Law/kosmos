@@ -9,7 +9,7 @@ from apps.contacts.models import Contact
 from apps.intakes.models import Intake
 from apps.matters.models import Matter
 from apps.matters.proceedings.models import Proceeding
-from apps.notes.models import Note
+from apps.search import registry
 
 
 class RegexpReplace(Func):
@@ -50,14 +50,19 @@ def search_proceedings_by_case_number(search_text):
     )
 
 
-# Available search scopes
-SEARCH_SCOPES = [
+# The search's own scopes; the kinds other apps register (apps/search/
+# registry.py) follow them.
+BUILTIN_SCOPES = [
     ("matters", "Matters", Matter),
     ("proceedings", "Proceedings", Proceeding),
     ("contacts", "Contacts", Contact),
     ("intakes", "Intakes", Intake),
-    ("notes", "Notes", Note),
 ]
+
+
+def search_scopes():
+    return BUILTIN_SCOPES + [(k.key, k.label, k.model) for k in registry.kinds()]
+
 
 # Synonym mappings for search
 SEARCH_SYNONYMS = {
@@ -79,9 +84,10 @@ def expand_search_with_synonyms(query):
 
 def scopes_for(user):
     """The search tabs a user gets: Intakes only with the Intakes permission."""
+    scopes = search_scopes()
     if user.is_admin or user.perm_intakes:
-        return SEARCH_SCOPES
-    return [scope for scope in SEARCH_SCOPES if scope[0] != "intakes"]
+        return scopes
+    return [scope for scope in scopes if scope[0] != "intakes"]
 
 
 @login_required
@@ -121,7 +127,7 @@ def results(request):
     scope_intakes = scope in ("all", "intakes") and (
         request.user.is_admin or request.user.perm_intakes
     )
-    scope_notes = scope in ("all", "notes")
+    extra_kinds = [k for k in registry.kinds() if scope in ("all", k.key)]
 
     # Save to session for persistence
     request.session["search_scope"] = scope
@@ -135,7 +141,8 @@ def results(request):
                 "proceedings": None,
                 "contacts": None,
                 "intakes": None,
-                "notes": None,
+                "extra_sections": [],
+                "has_results": False,
                 "scopes": scopes_for(request.user),
                 "active_scope": scope,
             },
@@ -145,10 +152,10 @@ def results(request):
     proceedings = []
     contacts = []
     intakes = []
-    notes = []
+    extra = {kind.key: [] for kind in extra_kinds}
 
-    # Matters, their proceedings and their notes surface only for matters
-    # the user can open.
+    # Matters, their proceedings and the registered kinds' rows surface only
+    # for matters the user can open (each kind decides what that means).
     accessible_matter_ids = set(
         filter_matters_for_user(Matter.objects.all(), request.user).values_list(
             "id", flat=True
@@ -175,7 +182,7 @@ def results(request):
             )
         if scope_intakes:
             intakes = list(Intake.objects.filter(phone__contains=text).order_by("name"))
-        # Notes don't have phone numbers, skip for digit search
+        # The registered kinds have no phone numbers; skipped for digits.
     else:
         # Expand search terms with synonyms
         search_terms = expand_search_with_synonyms(text)
@@ -188,8 +195,7 @@ def results(request):
             models_to_search.append(Contact)
         if scope_intakes:
             models_to_search.append(Intake)
-        if scope_notes:
-            models_to_search.append(Note)
+        models_to_search.extend(kind.model for kind in extra_kinds)
 
         if models_to_search:
             # Use watson for fuzzy search
@@ -197,8 +203,8 @@ def results(request):
                 "matter": set(),
                 "contact": set(),
                 "intake": set(),
-                "note": set(),
             }
+            seen_extra = {kind.key: set() for kind in extra_kinds}
 
             for term in search_terms:
                 search_results = watson.search(term, models=tuple(models_to_search))
@@ -215,14 +221,18 @@ def results(request):
                     elif isinstance(obj, Intake) and obj.id not in seen_ids["intake"]:
                         seen_ids["intake"].add(obj.id)
                         intakes.append(obj)
-                    elif isinstance(obj, Note) and obj.id not in seen_ids["note"]:
-                        # General notes plus notes of matters the user can access
-                        if (
-                            obj.matter_id is None
-                            or obj.matter_id in accessible_matter_ids
-                        ):
-                            seen_ids["note"].add(obj.id)
-                            notes.append(obj)
+                    else:
+                        for kind in extra_kinds:
+                            if (
+                                isinstance(obj, kind.model)
+                                and obj.id not in seen_extra[kind.key]
+                            ):
+                                seen_extra[kind.key].add(obj.id)
+                                if kind.visible(
+                                    obj, request.user, accessible_matter_ids
+                                ):
+                                    extra[kind.key].append(obj)
+                                break
 
             # Search proceedings by case number (fuzzy match)
             if scope_proceedings:
@@ -236,9 +246,16 @@ def results(request):
         "proceedings": proceedings,
         "contacts": contacts,
         "intakes": intakes,
-        "notes": notes,
+        "extra_sections": [
+            {"kind": kind, "rows": extra[kind.key]}
+            for kind in extra_kinds
+            if extra[kind.key]
+        ],
         "scopes": scopes_for(request.user),
         "active_scope": scope,
     }
+    context["has_results"] = any(
+        (matters, proceedings, contacts, intakes, context["extra_sections"])
+    )
 
     return render(request, "search/results.html", context)

@@ -29,37 +29,25 @@ def filter_matters_for_user(queryset, user):
 
 
 # Case-workspace routes name the thing they act on by its own id (a document,
-# a fact, a conversation), not by matter. Each entry maps such a URL keyword
-# to the model that owns it and the lookup that reaches its matter id, so a
-# route's matter can be found without the view's help. A route that gains a
-# new kind of id needs a line here to be covered.
-_CASE = "apps.case.models"
-_AI = "apps.case.ai.models"
-MATTER_LOOKUPS = {
-    "document_id": (f"{_CASE}.Document", ("matter_id",)),
-    "highlight_id": (
-        f"{_CASE}.Highlight",
-        ("document__matter_id", "caselaw__matter_id"),
-    ),
-    "caselaw_id": (f"{_CASE}.CaseLaw", ("matter_id",)),
-    "fact_id": (f"{_CASE}.Fact", ("matter_id",)),
-    "witness_id": (f"{_CASE}.Witness", ("matter_id",)),
-    "label_id": (f"{_CASE}.Label", ("matter_id",)),
-    "note_id": ("apps.notes.models.Note", ("matter_id",)),
-    "conv_id": (f"{_AI}.Conversation", ("matter_id",)),
-    "message_id": (f"{_AI}.Message", ("conversation__matter_id",)),
-    "email_id": ("apps.mail.models.Email", ("matter_id",)),
-}
+# a fact, a conversation), not by matter. Each lookup maps such a URL keyword
+# to the model that owns it and the fields that reach its matter id, so a
+# route's matter can be found without the view's help. The apps that own the
+# rows register their lookups at start-up (the case app in
+# apps/case/registrations.py, the AI and mail apps in their AppConfigs); a
+# route that gains a new kind of id needs a registration to be covered.
+MATTER_LOOKUPS = {}
 
 # The label and witness pickers take the object as a (type, id) pair.
-OBJECT_TYPE_KEYS = {
-    "document": "document_id",
-    "highlight": "highlight_id",
-    "fact": "fact_id",
-    "note": "note_id",
-    "caselaw": "caselaw_id",
-    "witness": "witness_id",
-}
+OBJECT_TYPE_KEYS = {}
+
+
+def register_matter_lookup(key, model, fields, object_type=None):
+    """Cover routes whose URL keyword ``key`` is a ``model`` id; ``fields``
+    are the lookups from a row to its matter id. ``object_type`` is the
+    (type, id) pair's name for the same rows, when the pickers take one."""
+    MATTER_LOOKUPS[key] = (model, tuple(fields))
+    if object_type:
+        OBJECT_TYPE_KEYS[object_type] = key
 
 
 def matter_ids_for_route(view_kwargs):
@@ -67,8 +55,6 @@ def matter_ids_for_route(view_kwargs):
     keywords. An id that matches no row contributes nothing (the view will
     answer 404), as does a row with no matter (a library note, an intake
     chat)."""
-    from django.utils.module_loading import import_string
-
     lookups = {}
     for key, value in view_kwargs.items():
         if key in MATTER_LOOKUPS:
@@ -82,8 +68,8 @@ def matter_ids_for_route(view_kwargs):
     if "matter_id" in view_kwargs:
         matter_ids.add(view_kwargs["matter_id"])
     for key, pk in lookups.items():
-        model_path, fields = MATTER_LOOKUPS[key]
-        row = import_string(model_path).objects.filter(pk=pk).values_list(*fields)
+        model, fields = MATTER_LOOKUPS[key]
+        row = model.objects.filter(pk=pk).values_list(*fields)
         for values in row[:1]:
             matter_ids.update(v for v in values if v is not None)
     return matter_ids

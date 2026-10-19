@@ -177,7 +177,7 @@ def test_new_chat_window_shows_paperclip_before_first_message(
 def test_create_conversation_endpoint(client, matter):
     import json
 
-    from apps.case.ai.models import Conversation
+    from apps.ai.models import Conversation
 
     response = client.post(
         f"/case/{matter.id}/ai/conversations/create/",

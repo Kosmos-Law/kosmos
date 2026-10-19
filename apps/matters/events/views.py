@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, render
 
 from apps.accounts.access import matter_access_required
 from apps.calendar.events import MATTER_VIEW_MODE_KEY, matter_menu_context
-from apps.case.facts.sorting import stored_sort_key
+from apps.management.sorting import stored_sort_key
 from apps.matters.events.get_event_data import (
     DEFAULT_SORT,
     SORT_FIELDS,

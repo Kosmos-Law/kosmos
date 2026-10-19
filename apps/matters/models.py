@@ -111,7 +111,7 @@ class Matter(AuditMixin, models.Model):
     # of the "Matters - Open" Drive/Gmail roots, so its mirrors are unlinked.
     # "Complete" is the closing-out phase (usually waiting on a trust
     # reimbursement); "Closed" is final and additionally starts the chat
-    # retention clock (apps/case/ai/purge.py).
+    # retention clock (apps/ai/purge.py).
     INACTIVE_STATUSES = ("Complete", "Closed")
     # Still being worked: what the task, event and assignment forms offer.
     ACTIVE_STATUSES = ("Pending", "Open")
@@ -142,22 +142,21 @@ class Matter(AuditMixin, models.Model):
                         status="Dismissed"
                     ).update(status="Concluded")
 
-            # Drop the matter's Drive folder mappings along with its Drive
-            # and Gmail links. Closed-out files move out of the "Matters -
-            # Open" Drive/Gmail roots, so stale links only produce
-            # missing-folder and missing-label drift warnings (and automatic
-            # label setup would recreate the matter's Gmail labels). Synced
-            # rows all survive the unlink: record Documents are append-only
-            # and Email rows are only removed by label events on a
-            # still-mapped matter.
+            # Drop the matter's Drive and Gmail links. Closed-out files move
+            # out of the "Matters - Open" Drive/Gmail roots, so stale links
+            # only produce missing-folder and missing-label drift warnings
+            # (and automatic label setup would recreate the matter's Gmail
+            # labels). The Drive mirror drops its folder mappings on the
+            # signal (apps/drive/signals.py); synced rows all survive the
+            # unlink: record Documents are append-only and Email rows are
+            # only removed by label events on a still-mapped matter.
             self.gmail_label_name = None
             self.drive_folder = None
             self.drive_folder_id = None
-            if self.pk:
-                from apps.drive.models import DriveFolderMapping, DriveMatterState
+            if self.pk and not was_inactive:
+                from apps.matters.signals import matter_closed
 
-                DriveFolderMapping.objects.filter(matter=self).delete()
-                DriveMatterState.objects.filter(matter=self).delete()
+                matter_closed.send(sender=Matter, matter=self)
 
         elif was_inactive:
             # Reopened: the matter no longer has a closing date.

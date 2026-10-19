@@ -291,8 +291,8 @@ def generate_document_summary(document_id):
     """
     if not ai_enabled():
         return
-    from apps.case.ai.providers import complete
     from apps.case.models import Document
+    from apps.llm.providers import complete
 
     try:
         document = Document.objects.get(id=document_id)

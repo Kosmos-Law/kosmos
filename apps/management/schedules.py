@@ -90,7 +90,7 @@ def schedule_specs():
         ),
         ScheduleSpec(
             "chat-purge-weekly",
-            "apps.case.ai.purge.scheduled_purge_closed_chats",
+            "apps.ai.purge.scheduled_purge_closed_chats",
             "0 3 * * 0",
             description=(
                 "Deletes AI chat history for matters that have been closed "

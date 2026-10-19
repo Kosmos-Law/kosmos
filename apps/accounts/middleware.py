@@ -80,7 +80,17 @@ class PermissionMiddleware:
         "/settings/contacts/",
         "/settings/matters/",
         "/settings/tasks/",
+        "/settings/features/",
     ]
+
+    # The case builder's features, switched off for the whole firm by an
+    # administrator (Settings > Features). Off, the paths 404 for everyone.
+    # The matter-scoped note routes belong to the library, not the case
+    # file; the MCP matter API under /case/api/ serves practice data too
+    # and stays up.
+    CASE_FILE_PATTERN = re.compile(r"^/case/")
+    CASE_FILE_EXEMPT = re.compile(r"^/case/api/|^/case/\d+/notes/|^/case/notes/")
+    LIBRARY_PATTERN = re.compile(r"^/notes/|^/case/\d+/(tab/)?notes/|^/case/notes/")
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -92,10 +102,26 @@ class PermissionMiddleware:
             if not ai_enabled():
                 return HttpResponseNotFound()
         if self.CASELAW_PATTERN.match(request.path):
-            from apps.case.courtlistener import get_api_token
+            from apps.settings.courtlistener import get_api_token
 
             if not get_api_token():
                 return HttpResponseNotFound()
+        # The feature switches are read only for a signed-in user: anyone
+        # else gets the sign-in redirect from the view, and the firm row is
+        # not fetched for every anonymous hit.
+        if request.user.is_authenticated:
+            if self.CASE_FILE_PATTERN.match(
+                request.path
+            ) and not self.CASE_FILE_EXEMPT.match(request.path):
+                from apps.settings.features import case_file_enabled
+
+                if not case_file_enabled():
+                    return HttpResponseNotFound()
+            if self.LIBRARY_PATTERN.match(request.path):
+                from apps.settings.features import library_enabled
+
+                if not library_enabled():
+                    return HttpResponseNotFound()
 
         if request.user.is_authenticated and not request.user.is_admin:
             if any(request.path.startswith(p) for p in self.ADMIN_ONLY_PATHS):

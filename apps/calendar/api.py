@@ -1,6 +1,6 @@
 """JSON API for the calendar, for another app to overlay Kosmos's events
 on its own calendar (Cloud Portal does). Auth is the user's X-Kosmos-Token
-key (CompanionToken, via kosmos_api_auth), the one the Claude Desktop page
+key (ApiToken, via kosmos_api_auth), the one the Claude Desktop page
 in Settings issues, so the events returned are the ones that user may see.
 
 GET events/api/?start=YYYY-MM-DD&end=YYYY-MM-DD returns the events on those
@@ -22,9 +22,9 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from apps.accounts.api_auth import kosmos_api_auth
 from apps.calendar.access import events_for_user
 from apps.calendar.models import Event
-from apps.drafts.api_auth import kosmos_api_auth
 
 RANGE_LIMIT_DAYS = 400
 

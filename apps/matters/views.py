@@ -352,30 +352,6 @@ def overview_work_status_update(request, id):
 
 @login_required
 @matter_access_required
-def mode_content(request, id):
-    """Return detail mode content partial for HTMX, or redirect for regular request."""
-    matter = get_object_or_404(Matter, pk=id)
-    tab = get_last_detail_tab(request, id)
-
-    if not request.headers.get("HX-Request"):
-        return redirect(f"/matters/{id}/{tab}")
-
-    context = {
-        "matter": matter,
-        "matters": Matter.objects.filter(status="Open").order_by("name"),
-        "mode": "detail",
-        "subapp": tab,
-    }
-
-    # Fetch tab data directly for single-request loading
-    tab_data = _get_detail_tab_data(request, matter, tab)
-    context.update(tab_data)
-
-    return render(request, "matters/includes/detail-content.html", context)
-
-
-@login_required
-@matter_access_required
 def tab_content(request, id, tab):
     """Return tab content with wrapper for HTMX tab switching."""
     matter = get_object_or_404(Matter, pk=id)
@@ -589,9 +565,7 @@ def delete(request, id):
     if request.method == "GET":
         from apps.activity.expenses.models import ExpenseEntry
         from apps.activity.time.models import TimeEntry
-        from apps.case.models import Document
         from apps.invoicing.invoices.models import Invoice
-        from apps.notes.models import Note
         from apps.tasks.models import Task
 
         context = {
@@ -599,8 +573,10 @@ def delete(request, id):
             "time_entries_count": TimeEntry.objects.filter(matter=matter).count(),
             "expense_entries_count": ExpenseEntry.objects.filter(matter=matter).count(),
             "tasks_count": Task.objects.filter(matter=matter).count(),
-            "documents_count": Document.objects.filter(matter=matter).count(),
-            "notes_count": Note.objects.filter(matter=matter).count(),
+            # The case builder's rows, counted through their reverse relations
+            # so the matter app needs none of its models.
+            "documents_count": matter.documents.count(),
+            "notes_count": matter.notes.count(),
             "events_count": Event.objects.filter(matter=matter).count(),
             "invoices_count": Invoice.objects.filter(matter=matter).count(),
         }

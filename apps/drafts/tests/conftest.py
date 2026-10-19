@@ -3,7 +3,7 @@ from django.test import Client
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
-from apps.case.ai.models import Conversation
+from apps.ai.models import Conversation
 from apps.drafts.models import DraftLink
 from apps.matters.models import Matter
 

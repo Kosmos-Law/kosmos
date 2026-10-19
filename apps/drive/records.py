@@ -36,6 +36,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 
 from apps.case.models import Document
+from apps.case.services import PROCESS_DOCUMENT_OCR_TASK
 
 from . import google, mappings
 from .models import DriveFolderMapping, DriveRecordTombstone
@@ -142,13 +143,13 @@ def _queue_ocr(document_id):
         from django_q.tasks import async_task
 
         async_task(
-            "apps.case.documents.tasks.process_document_ocr",
+            PROCESS_DOCUMENT_OCR_TASK,
             document_id,
             task_name=f"OCR-{document_id}",
             group="ocr_processing",
         )
     except Exception:
-        from apps.case.documents.tasks import process_document_ocr
+        from apps.case.services import process_document_ocr
 
         process_document_ocr(document_id)
 

@@ -4,8 +4,8 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from watson import search as watson
 
-from apps.case.ai.semantic import semantic_entries
 from apps.case.models import Document, Fact, Highlight, Label
+from apps.case.semantic import semantic_entries
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.notes.models import Note
 
@@ -91,7 +91,7 @@ def get_search_data(request, matter, matter_id):
             if result_item:
                 results.append(result_item)
 
-        # Meaning matches from the semantic index (apps/case/ai/semantic.py):
+        # Meaning matches from the semantic index (apps/case/semantic.py):
         # material the keywords missed, appended after the keyword hits and
         # labeled in the row. Every filter below applies to them too.
         scope_kinds = [
@@ -266,7 +266,7 @@ def search_index(request, matter_id):
     set_last_tab(request, matter_id, "search")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "search",
         "matter": matter,
         "matters": matters,
@@ -281,7 +281,7 @@ def search_list(request, matter_id):
     matter, matters = get_matter_from_url(request, matter_id)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "search",
         "matter": matter,
         "matters": matters,

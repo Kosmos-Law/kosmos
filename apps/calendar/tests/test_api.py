@@ -7,8 +7,8 @@ import pytest
 from django.test import Client
 from django.urls import reverse
 
+from apps.accounts.models import ApiToken
 from apps.calendar.models import Event
-from apps.drafts.models import CompanionToken
 
 pytestmark = pytest.mark.django_db
 
@@ -18,7 +18,7 @@ MARCH = {"start": "2030-03-01", "end": "2030-03-31"}
 @pytest.fixture
 def api(user):
     api = Client()
-    api.defaults["HTTP_X_KOSMOS_TOKEN"] = CompanionToken.for_user(user).key
+    api.defaults["HTTP_X_KOSMOS_TOKEN"] = ApiToken.for_user(user).key
     return api
 
 
@@ -97,7 +97,7 @@ def test_a_user_sees_only_the_matters_they_may(user, matter, events):
         username="lim", email="lim@example.com", perm_all_matters=False
     )
     api = Client()
-    api.defaults["HTTP_X_KOSMOS_TOKEN"] = CompanionToken.for_user(limited).key
+    api.defaults["HTTP_X_KOSMOS_TOKEN"] = ApiToken.for_user(limited).key
 
     rows = api.get(reverse("calendar:api-events"), MARCH).json()["events"]
 

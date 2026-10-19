@@ -19,16 +19,16 @@ def _set_tab(client, matter, tab):
 
 
 @pytest.mark.parametrize("tab, event, _route", WRAPPERS)
-def test_mode_content_wraps_the_tab(client, matter, tab, event, _route, monkeypatch):
+def test_reopening_the_matter_wraps_the_tab(
+    client, matter, tab, event, _route, monkeypatch
+):
     # The Emails tab is only remembered on a server with Google sign-in.
     monkeypatch.setattr(
         "apps.settings.integrations.oauth.google_oauth_configured", lambda: True
     )
     _set_tab(client, matter, tab)
 
-    body = client.get(
-        f"/case/{matter.id}/mode-content/", HTTP_HX_REQUEST="true"
-    ).content.decode()
+    body = client.get(f"/case/select-matter/{matter.id}/", follow=True).content.decode()
 
     assert f'id="{tab}"' in body
     assert f'hx-trigger="{event} from:body"' in body

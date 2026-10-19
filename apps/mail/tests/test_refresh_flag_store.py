@@ -33,7 +33,7 @@ def clear_flag(matter):
 
 
 def test_refresh_sets_the_flag_in_the_cross_process_store(client, matter, fake_gmail):
-    client.post(reverse("case:emails-refresh", args=[matter.id]))
+    client.post(reverse("mail:emails-refresh", args=[matter.id]))
 
     assert caches["ai_status"].get(f"emails_refresh_{matter.id}") == "running"
     assert cache.get(f"emails_refresh_{matter.id}") is None
@@ -44,7 +44,7 @@ def test_poll_from_another_worker_sees_the_running_flag(client, matter, fake_gma
     caches["ai_status"].set(f"emails_refresh_{matter.id}", "running", 600)
 
     response = client.get(
-        reverse("case:emails-refresh-status", args=[matter.id]), {"polls": 1}
+        reverse("mail:emails-refresh-status", args=[matter.id]), {"polls": 1}
     )
 
     body = response.content.decode()
@@ -56,7 +56,7 @@ def test_poll_ignores_a_flag_in_the_per_process_cache(client, matter, fake_gmail
     cache.set(f"emails_refresh_{matter.id}", "running", 600)
 
     response = client.get(
-        reverse("case:emails-refresh-status", args=[matter.id]), {"polls": 1}
+        reverse("mail:emails-refresh-status", args=[matter.id]), {"polls": 1}
     )
 
     assert response["HX-Trigger"] == "emailsChanged"

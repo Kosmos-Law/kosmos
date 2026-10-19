@@ -21,17 +21,17 @@ successor of the retired research chat mode; see
 
 | Module | Holds |
 |---|---|
-| `apps/case/ai/agent.py` | `run_agent_request()`, the agent-mode twin of `tasks.process_ai_request()` |
-| `apps/case/ai/agent_prompt.py` | The orientation: `build_agent_system()`, `build_agent_history()`, the material index, `RESEARCH_PROTOCOL` |
-| `apps/case/ai/agent_working_set.py` | The carried-forward text of materials read in earlier turns |
-| `apps/case/ai/agent_tools.py` | Tool definitions, `AgentBudget`, the executor and the parallel batch runner |
-| `apps/case/ai/agent_state.py` | `AgentRunState` and `AgentStatusWriter`: the live payload and the persisted `Message.agent_run` |
-| `apps/case/ai/agent_types.py` | `LoopResult`, `TurnUsage`, the forced-answer note |
-| `apps/case/ai/anthropic_client.py`, `gemini_client.py` | `send_to_claude_with_tools()`, `send_to_gemini_with_tools()` |
-| `apps/case/ai/caselaw_blocks.py` | The `save-caselaw` write block |
-| `apps/case/ai/semantic.py`, `embeddings.py` | The pgvector index `search_materials` fuses with keyword hits |
-| `templates/case/ai/agent-status.html`, `agent-step.html`, `agent-trail.html`, `chat-statusbar.html` | The live rows, the collapsed trail, the pinned bar |
-| `apps/case/templatetags/ai_extras.py` | Filters for the trail and the bar |
+| `apps/ai/agent.py` | `run_agent_request()`, the agent-mode twin of `tasks.process_ai_request()` |
+| `apps/ai/agent_prompt.py` | The orientation: `build_agent_system()`, `build_agent_history()`, the material index, `RESEARCH_PROTOCOL` |
+| `apps/ai/agent_working_set.py` | The carried-forward text of materials read in earlier turns |
+| `apps/ai/agent_tools.py` | Tool definitions, `AgentBudget`, the executor and the parallel batch runner |
+| `apps/ai/agent_state.py` | `AgentRunState` and `AgentStatusWriter`: the live payload and the persisted `Message.agent_run` |
+| `apps/llm/agent_types.py` | `LoopResult`, `TurnUsage`, the forced-answer note |
+| `apps/llm/anthropic_client.py`, `gemini_client.py` | `send_to_claude_with_tools()`, `send_to_gemini_with_tools()` |
+| `apps/ai/caselaw_blocks.py` | The `save-caselaw` write block |
+| `apps/case/semantic.py`, `embeddings.py` | The pgvector index `search_materials` fuses with keyword hits |
+| `templates/ai/agent-status.html`, `agent-step.html`, `agent-trail.html`, `chat-statusbar.html` | The live rows, the collapsed trail, the pinned bar |
+| `apps/ai/templatetags/ai_extras.py` | Filters for the trail and the bar |
 
 ## Flow
 
@@ -66,7 +66,7 @@ unwatched is still collected.
 Segment A, byte-stable across turns while the matter is unchanged (so the
 provider cache keeps hitting):
 
-1. `apps/case/ai/prompts/legal.md` (the legal instructions, jurisdiction
+1. `apps/ai/prompts/legal.md` (the legal instructions, jurisdiction
    substituted)
 2. the working method (orient from the index, read before relying, pinned
    first, batch independent reads, budget, one-sentence narration before
@@ -136,7 +136,7 @@ offered only to a user with the Research permission
 | `read_caselaw` | saved case notes, summary and the opinion (`_fetch_caselaw_opinion_text`, cached 1h) |
 | `read_conversation` | an earlier conversation's transcript |
 | `read_invoice` | `format_invoice` (Financial permission) |
-| `read_matter_section` | `apps.case.api.SECTIONS[section](matter)`, capped 150k; the money sections need the Financial permission |
+| `read_matter_section` | `apps.ai.api.SECTIONS[section](matter)`, capped 150k; the money sections need the Financial permission |
 | `search_caselaw` | CourtListener opinion search (`apps/case/courtlistener.py`: `search_opinions` + `sanitize_query`), court filter from `jurisdictions.get_court_ids` (state defaults from the matter's jurisdiction), optional `filed_after`; up to 3 query variants merged on cluster_id, `published` flag = has reporter citations |
 | `lookup_citation` | `courtlistener.lookup_citation`: exact citation to case/cluster; not-found is a normal payload, not an error |
 | `read_opinion` | full cluster text (majority + concurrences/dissents, capped 250k) via `_opinion_for_cluster`, cached 24h at `agent_opinion_cluster_{id}`; sliced like every read |
@@ -215,7 +215,7 @@ it belongs to the retired research chat's renderer.
 
 ## UI
 
-- `templates/case/ai/new-conversation-modal.html`: Mode (a Classic |
+- `templates/ai/new-conversation-modal.html`: Mode (a Classic |
   Agentic select), Model, Name. New conversations default to Classic.
 - `conversation-standalone.html`: hidden `kind` field, Agentic header
   badge; `table.html` shows the badge in the list.
@@ -226,7 +226,7 @@ it belongs to the retired research chat's renderer.
   (`chat-statusbar.html`), updated out-of-band by the same poll. The log
   pin yields to a reader who scrolled up.
 - `agent-trail.html`: the same rows collapsed above the answer, totals
-  in the summary. Filters in `apps/case/templatetags/ai_extras.py`.
+  in the summary. Filters in `apps/ai/templatetags/ai_extras.py`.
 
 ## Access
 

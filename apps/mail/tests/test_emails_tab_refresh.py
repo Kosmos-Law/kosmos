@@ -30,14 +30,14 @@ def test_tab_click_renders_the_wrapper_that_listens_for_changes(
 
     assert 'id="emails"' in body
     assert 'hx-trigger="emailsChanged from:body"' in body
-    assert reverse("case:emails-list", args=[matter.id]) in body
+    assert reverse("mail:emails-list", args=[matter.id]) in body
 
 
 # ── Clear Filters ────────────────────────────────────────────────────────
 
 
 def test_clear_filters_stores_no_filter(client, matter, fake_gmail):
-    url = reverse("case:emails-filter", args=[matter.id])
+    url = reverse("mail:emails-filter", args=[matter.id])
     client.post(url, {"sender": "carol"})
 
     response = client.post(url, {"reset": "true"})
@@ -47,9 +47,9 @@ def test_clear_filters_stores_no_filter(client, matter, fake_gmail):
 
 
 def test_cleared_filter_does_not_read_as_active(client, matter, fake_gmail):
-    client.post(reverse("case:emails-filter", args=[matter.id]), {"reset": "true"})
+    client.post(reverse("mail:emails-filter", args=[matter.id]), {"reset": "true"})
 
-    response = client.get(reverse("case:emails-list", args=[matter.id]))
+    response = client.get(reverse("mail:emails-list", args=[matter.id]))
 
     assert response.context["filters_active"] is False
     # With no emails the tab says so, rather than blaming a filter.
@@ -61,15 +61,15 @@ def test_a_leftover_reset_key_is_not_a_filter(client, matter, fake_gmail):
     session[f"emails_filter_{matter.id}"] = {"reset": "true"}
     session.save()
 
-    response = client.get(reverse("case:emails-list", args=[matter.id]))
+    response = client.get(reverse("mail:emails-list", args=[matter.id]))
 
     assert response.context["filters_active"] is False
 
 
 def test_a_real_filter_still_reads_as_active(client, matter, fake_gmail):
-    client.post(reverse("case:emails-filter", args=[matter.id]), {"sender": "carol"})
+    client.post(reverse("mail:emails-filter", args=[matter.id]), {"sender": "carol"})
 
-    response = client.get(reverse("case:emails-list", args=[matter.id]))
+    response = client.get(reverse("mail:emails-list", args=[matter.id]))
 
     assert response.context["filters_active"] is True
 
@@ -80,7 +80,7 @@ def test_a_real_filter_still_reads_as_active(client, matter, fake_gmail):
 def test_importance_change_tells_the_list_column_to_reload(client, matter, fake_gmail):
     email = make_email(matter, "m1", attachments=[])
 
-    response = client.post(reverse("case:email-importance", args=[email.id, 7]))
+    response = client.post(reverse("mail:email-importance", args=[email.id, 7]))
 
     assert response["HX-Trigger"] == "emailItemsChanged"
 
@@ -88,20 +88,20 @@ def test_importance_change_tells_the_list_column_to_reload(client, matter, fake_
 def test_opening_an_email_does_not_reload_the_list(client, matter, fake_gmail):
     email = make_email(matter, "m1", attachments=[])
 
-    response = client.get(reverse("case:email-preview", args=[email.id]))
+    response = client.get(reverse("mail:email-preview", args=[email.id]))
 
     assert "HX-Trigger" not in response
 
 
 def test_list_column_listens_and_reloads_alone(client, matter, fake_gmail):
     email = make_email(matter, "m1", attachments=[])
-    items_url = reverse("case:emails-list-items", args=[matter.id])
+    items_url = reverse("mail:emails-list-items", args=[matter.id])
 
-    tab = client.get(reverse("case:emails-list", args=[matter.id])).content.decode()
+    tab = client.get(reverse("mail:emails-list", args=[matter.id])).content.decode()
     assert f'hx-get="{items_url}"' in tab
     assert 'hx-trigger="emailItemsChanged from:body"' in tab
 
-    client.post(reverse("case:email-importance", args=[email.id, 7]))
+    client.post(reverse("mail:email-importance", args=[email.id, 7]))
     items = client.get(items_url).content.decode()
     assert "email-list-item importance-7" in items
     assert "email-preview" in items  # each row still opens the reading pane
@@ -128,7 +128,7 @@ def test_promote_tells_the_list_column_to_reload(
     )
 
     with timezone.override(ZoneInfo("America/New_York")):
-        response = client.post(reverse("case:email-promote", args=[email.id]))
+        response = client.post(reverse("mail:email-promote", args=[email.id]))
 
     assert response["HX-Trigger"] == "emailItemsChanged"
     email.refresh_from_db()
@@ -147,7 +147,7 @@ def _colleague_account():
 
 
 def _preview(client, email):
-    return client.get(reverse("case:email-preview", args=[email.id])).content.decode()
+    return client.get(reverse("mail:email-preview", args=[email.id])).content.decode()
 
 
 def test_gmail_link_is_offered_for_the_users_own_mailbox(client, matter, fake_gmail):

@@ -110,7 +110,7 @@ def test_refresh_if_stale_refetches(link, drive):
 def test_refresh_follows_a_rename_in_drive(link, drive, user, matter):
     """The companion pairs a document with its link by file name, so a
     stale name leaves the renamed file unable to connect."""
-    from apps.case.ai.models import Conversation
+    from apps.ai.models import Conversation
 
     sibling = DraftLink.objects.create(
         conversation=Conversation.objects.create(matter=matter, title="B", user=user),

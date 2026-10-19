@@ -1,7 +1,7 @@
 """Intake AI chat: converse with the AI about a prospective-client intake.
 
 Reuses the case-chat machinery (Conversation/Message models, the cache
-status protocol polled by case:ai-status, the shared message templates)
+status protocol polled by ai:status, the shared message templates)
 with intake context instead of matter context, pinned to Gemini Pro. At
 most one live conversation per intake - resumable until explicitly ended.
 "End & summarize" posts a Kosmos comment with the conclusions and deletes
@@ -19,25 +19,25 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from apps.case.ai.models import Conversation, Message
-from apps.case.ai.providers import DEEP, chat_llm
-from apps.case.ai.status import (
+from apps.ai.models import Conversation, Message
+from apps.intakes.assess import _intake_context
+from apps.intakes.forms import IntakeForm
+from apps.intakes.inbound import _kosmos_user
+from apps.intakes.models import Intake, Note
+from apps.llm.providers import DEEP, chat_llm
+from apps.llm.status import (
     FINAL_TTL,
     RUNNING_TTL,
     RunHeartbeat,
     status_cache,
 )
-from apps.intakes.assess import _intake_context
-from apps.intakes.forms import IntakeForm
-from apps.intakes.inbound import _kosmos_user
-from apps.intakes.models import Intake, Note
 from apps.matters.models import PracticeArea
 from config.helpers import normalize_phone
 
 logger = logging.getLogger(__name__)
 
 # Intake chats have no picker: they run at the "deep" tier on whichever
-# provider is configured (apps/case/ai/providers.py), recorded on the
+# provider is configured (apps/llm/providers.py), recorded on the
 # conversation so later turns stay on the same provider.
 
 CHAT_PREAMBLE = """You are discussing a prospective-client INTAKE with the firm - a potential
@@ -74,7 +74,7 @@ CHAT_TEXT_LIMIT = 100_000
 
 
 def _system_prompt(intake, user):
-    from apps.case.ai.context import build_request_info, load_legal_prompt
+    from apps.ai.context import build_request_info, load_legal_prompt
     from apps.settings.models import Firm
 
     company = Firm.objects.first()
@@ -198,10 +198,10 @@ def _apply_update_blocks(response_text, intake):
 
 def _process_intake_chat(conversation_id, intake_id, user_id):
     """Background thread: same cache-status protocol process_ai_request
-    uses, so the shared case:ai-status polling cycle works unchanged."""
+    uses, so the shared ai:status polling cycle works unchanged."""
     from django.contrib.auth import get_user_model
 
-    from apps.case.ai.providers import ANTHROPIC, GEMINI, complete
+    from apps.llm.providers import ANTHROPIC, GEMINI, complete
 
     cache_key = f"ai_status_{conversation_id}"
 
@@ -230,7 +230,7 @@ def _process_intake_chat(conversation_id, intake_id, user_id):
         conversation = Conversation.objects.get(id=conversation_id)
         system_context = _system_prompt(intake, user)
 
-        from apps.case.ai.context import build_chat_history
+        from apps.ai.context import build_chat_history
 
         chat_history = build_chat_history(conversation)
 
@@ -347,7 +347,7 @@ def chat_send(request, id):
 
     response = render(
         request,
-        "case/ai/messages.html",
+        "ai/messages.html",
         {
             "messages": conversation.messages.all(),
             "conversation": conversation,
@@ -370,7 +370,7 @@ def chat_messages(request, id):
     )
     return render(
         request,
-        "case/ai/messages.html",
+        "ai/messages.html",
         {"messages": messages, "conversation": conversation, "intake": intake},
     )
 
@@ -394,7 +394,7 @@ def chat_end(request, id):
     """End & summarize: post the conclusions as a Kosmos comment, then
     delete the conversation. On summary failure the conversation is kept
     so nothing is lost."""
-    from apps.case.ai.providers import complete
+    from apps.llm.providers import complete
 
     intake = get_object_or_404(Intake, pk=id)
     conversation = _live_conversation(intake)

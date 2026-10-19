@@ -17,9 +17,9 @@ modal and fixed for the conversation's life).
 
 ## What was removed
 
-- `apps/case/ai/research_chat.py` — the worker (survey-protocol prompt,
+- `apps/ai/research_chat.py` — the worker (survey-protocol prompt,
   effort directives, grounding of `[cluster:n]` markers, live log).
-- `apps/case/ai/research_tools.py` — the tool layer (search/read/skim/
+- `apps/ai/research_tools.py` — the tool layer (search/read/skim/
   abstract/citing/lookup/treatment/library tools, per-effort budgets).
 - `send_to_claude_with_tools` / `send_to_gemini_with_tools` — the
   provider tool loops (research chat was their only caller).
@@ -37,7 +37,7 @@ follow-ups).
   data on old conversations (the AI list still badges old research
   conversations, and clones copy the fields).
 - `Message.research_trail` and its renderers
-  (`templates/case/ai/research-trail.html`, `authorities.html`,
+  (`templates/ai/research-trail.html`, `authorities.html`,
   `Message.cited_authorities()`): old research answers keep their
   collapsible trail and Authorities section, with case links into the
   cluster viewer.

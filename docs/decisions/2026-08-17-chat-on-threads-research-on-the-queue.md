@@ -70,10 +70,10 @@ that errors a run stranded for thirty minutes.
 
 ## Evidence
 
-- `apps/case/ai/status.py`, module docstring: "The store must be visible
+- `apps/llm/status.py`, module docstring: "The store must be visible
   across processes: prod runs several gunicorn workers, and a poll usually
   lands in a different worker than the one that owns the run thread."
-- `apps/case/ai/views.py`, `send_message()` (the daemon thread) and
+- `apps/ai/views.py`, `send_message()` (the daemon thread) and
   `ai_status()` (a missing key while the latest message is the user's
   means the run died).
 - `config/settings.py`: the `ai_status` cache alias and `Q_CLUSTER`.

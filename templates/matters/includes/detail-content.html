@@ -1,6 +1,3 @@
 {% include "matters/includes/detail-nav.html" %}
 <div class="detail-body">{% include "matters/includes/tab-body.html" %}</div>
-{% with oob=True mode="detail" %}
-  {% include "matters/includes/mode-pills.html" %}
-  {% include "matters/includes/switcher.html" %}
-{% endwith %}
+{% include "matters/includes/switcher.html" with oob=True mode="detail" %}

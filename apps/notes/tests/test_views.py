@@ -1178,9 +1178,9 @@ class TestNotesApi:
 
     @staticmethod
     def _token(user):
-        from apps.drafts.models import CompanionToken
+        from apps.accounts.models import ApiToken
 
-        return CompanionToken.for_user(user).key
+        return ApiToken.for_user(user).key
 
     @staticmethod
     def _index(*notes):
@@ -1348,9 +1348,9 @@ class TestClaudeSettings:
     rotate/revoke, script download."""
 
     def test_page_renders_config_with_token(self, client, user):
-        from apps.drafts.models import CompanionToken
+        from apps.accounts.models import ApiToken
 
-        token = CompanionToken.for_user(user)
+        token = ApiToken.for_user(user)
         content = client.get(reverse("settings:claude-index")).content.decode()
         assert token.key in content
         assert "mcpServers" in content
@@ -1361,19 +1361,19 @@ class TestClaudeSettings:
         assert "mcpServers" not in content
 
     def test_rotate_changes_key(self, client, user):
-        from apps.drafts.models import CompanionToken
+        from apps.accounts.models import ApiToken
 
-        old = CompanionToken.for_user(user).key
+        old = ApiToken.for_user(user).key
         response = client.post(reverse("settings:claude-rotate"))
         assert response.status_code == 302
-        assert CompanionToken.objects.get(user=user).key != old
+        assert ApiToken.objects.get(user=user).key != old
 
     def test_revoke_deletes_token(self, client, user):
-        from apps.drafts.models import CompanionToken
+        from apps.accounts.models import ApiToken
 
-        CompanionToken.for_user(user)
+        ApiToken.for_user(user)
         client.post(reverse("settings:claude-revoke"))
-        assert not CompanionToken.objects.filter(user=user).exists()
+        assert not ApiToken.objects.filter(user=user).exists()
 
     def test_script_download(self, client):
         response = client.get(reverse("settings:claude-script"))

@@ -1,77 +1,21 @@
-{% load mail_tags %}
+{% load case_tags %}
+{% comment %}
+  The tabs come from the registry in apps/case/tabs.py, in order, filtered
+  to what this server and user can see (AI only once a provider is set up,
+  Emails once Gmail is, Case Law only while AI is off).
+{% endcomment %}
 <nav id="detail-subnav"
      class="subnav"
      {% if oob %}hx-swap-oob="true"{% endif %}>
   <ul>
-    <li {% if subapp == "documents" %}class="active"{% endif %}>
-      <a href="{% url 'case:documents-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='documents' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:documents-index' matter.id %}">Documents</a>
-    </li>
-    <li {% if subapp == "highlights" %}class="active"{% endif %}>
-      <a href="{% url 'case:highlights-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='highlights' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:highlights-index' matter.id %}">Highlights</a>
-    </li>
-    <li {% if subapp == "facts" %}class="active"{% endif %}>
-      <a href="{% url 'case:facts-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='facts' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:facts-index' matter.id %}">Timeline</a>
-    </li>
-    <li {% if subapp == "witnesses" %}class="active"{% endif %}>
-      <a href="{% url 'case:witnesses-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='witnesses' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:witnesses-index' matter.id %}">Witnesses</a>
-    </li>
-    <li {% if subapp == "notes" %}class="active"{% endif %}>
-      <a href="{% url 'case:notes-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='notes' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:notes-index' matter.id %}">Notes</a>
-    </li>
-    {% emails_tab_available matter.id as show_emails %}
-    {% if show_emails or subapp == "emails" %}
-      <li {% if subapp == "emails" %}class="active"{% endif %}>
-        <a href="{% url 'case:emails-index' matter.id %}"
-           hx-get="{% url 'case:tab-content' matter_id=matter.id tab='emails' %}"
+    {% case_tabs matter as tabs %}
+    {% for tab in tabs %}
+      <li {% if subapp == tab.name or subapp in tab.also_active %}class="active"{% endif %}>
+        <a href="{% url tab.index_url matter.id %}"
+           hx-get="{% url 'case:tab-content' matter_id=matter.id tab=tab.name %}"
            hx-target=".detail-body"
-           hx-push-url="{% url 'case:emails-index' matter.id %}">Emails</a>
+           hx-push-url="{% url tab.index_url matter.id %}">{{ tab.label }}</a>
       </li>
-    {% endif %}
-    <li {% if subapp == "labels" %}class="active"{% endif %}>
-      <a href="{% url 'case:labels-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='labels' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:labels-index' matter.id %}">Labels</a>
-    </li>
-    <li {% if subapp == "search" %}class="active"{% endif %}>
-      <a href="{% url 'case:search-index' matter.id %}"
-         hx-get="{% url 'case:tab-content' matter_id=matter.id tab='search' %}"
-         hx-target=".detail-body"
-         hx-push-url="{% url 'case:search-index' matter.id %}">Search</a>
-    </li>
-    {% comment %}
-      AI appears only once an AI provider is set up; saved case law is a
-      view inside it, or its own tab when AI is off and CourtListener is on.
-    {% endcomment %}
-    {% if ai_enabled %}
-      <li {% if subapp == "ai" or subapp == "caselaws" %}class="active"{% endif %}>
-        <a href="{% url 'case:ai-index' matter.id %}"
-           hx-get="{% url 'case:tab-content' matter_id=matter.id tab='ai' %}"
-           hx-target=".detail-body"
-           hx-push-url="{% url 'case:ai-index' matter.id %}">AI</a>
-      </li>
-    {% elif caselaw_available %}
-      <li {% if subapp == "caselaws" %}class="active"{% endif %}>
-        <a href="{% url 'case:caselaws-index' matter.id %}"
-           hx-get="{% url 'case:tab-content' matter_id=matter.id tab='caselaws' %}"
-           hx-target=".detail-body"
-           hx-push-url="{% url 'case:caselaws-index' matter.id %}">Case Law</a>
-      </li>
-    {% endif %}
+    {% endfor %}
   </ul>
 </nav>

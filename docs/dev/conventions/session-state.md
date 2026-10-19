@@ -19,7 +19,7 @@ followed by every list, whether or not it uses the helpers.
 | `apps/management/views.py`, `urls.py` | `clear_filters`: the generic Restore Defaults endpoint |
 | `apps/management/schedules.py` | not state: the recurring job table, covered in [Operations](../subsystems/operations.md) |
 | `apps/tasks/services.py`, `apps/activity/presets.py` | semantic date presets |
-| `apps/case/facts/sorting.py` | sort-key validation for the case lists |
+| `apps/management/sorting.py` | sort-key validation for the case lists |
 | `templates/selection/`, `templates/pagination.html`, `templates/components/user-chips.html` | the shared partials |
 
 ## Keys
@@ -172,7 +172,7 @@ as `order_by` in the filter dict and reverses it on a second click of
 the same column. The key reaches `order_by()` on the queryset, so it is
 validated twice: when posted, and again when read, because a session
 can already hold a key from before the check existed or one posted
-through the filter dialog. `apps/case/facts/sorting.py` is the shared
+through the filter dialog. `apps/management/sorting.py` is the shared
 check:
 
 ```python

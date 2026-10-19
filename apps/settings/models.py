@@ -67,6 +67,10 @@ class Firm(AuditMixin):
     # is taken to Settings > Security after signing in and can go nowhere
     # else until it is set up (apps/accounts/middleware.py).
     require_authenticator = models.BooleanField(default=False)
+    # The case builder's features, on or off for the whole firm (Settings >
+    # Features, admins only). Read through apps/settings/features.py.
+    case_file_enabled = models.BooleanField(default=True)
+    library_enabled = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = "firms"

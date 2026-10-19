@@ -13,7 +13,7 @@ pytestmark = pytest.mark.django_db
 class TestInterpretQuickAdd:
     def _mock_gemini(self, monkeypatch, reply):
         monkeypatch.setattr(
-            "apps.case.ai.gemini_client.send_to_gemini_streaming",
+            "apps.llm.gemini_client.send_to_gemini_streaming",
             lambda *args, **kwargs: (reply, 10, 5),
         )
 
@@ -139,7 +139,7 @@ class TestQuickAddAiOptIn:
             name="Test Firm", quick_task_ai=True, quick_task_ai_model="claude-sonnet"
         )
         monkeypatch.setattr(
-            "apps.case.ai.anthropic_client.send_to_claude",
+            "apps.llm.anthropic_client.send_to_claude",
             lambda *args, **kwargs: ('{"description": "Call the client"}', 10, 5),
         )
         response = client.post(

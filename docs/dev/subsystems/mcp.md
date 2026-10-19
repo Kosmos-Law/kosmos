@@ -5,7 +5,7 @@ runs on their own machine, talking to token-authenticated JSON APIs in
 `apps/notes`, `apps/case` and `apps/search`. User-facing setup is in the
 operator guide: [Claude Desktop access to Kosmos](../../admin/integrations/claude-desktop.md).
 
-Access is per user: requests authenticate with the same `CompanionToken`
+Access is per user: requests authenticate with the same `ApiToken`
 the LibreOffice companion uses (header `X-Kosmos-Token`), so a user's
 Claude sees exactly what that user can see, and deactivating the user
 kills the token.
@@ -15,16 +15,16 @@ kills the token.
 | Module | Holds |
 |---|---|
 | `tools/kosmos_notes_mcp.py` | The stdio MCP server Claude Desktop launches; one tool per API call |
-| `apps/drafts/api_auth.py` | `kosmos_api_auth`, the token decorator that sets `request.api_user` |
+| `apps/accounts/api_auth.py` | `kosmos_api_auth`, the token decorator that sets `request.api_user` |
 | `apps/notes/api.py` | Matter list, note manifests, note read and the gated note write, note search |
-| `apps/case/api.py` | A matter's sections as AI-ready text, documents, email threads, conversations, invoices, hybrid search, the three write endpoints |
+| `apps/ai/api.py` | A matter's sections as AI-ready text, documents, email threads, conversations, invoices, hybrid search, the three write endpoints |
 | `apps/search/api.py` | Practice-wide search, as the search page does it |
 | `apps/settings/claude/views.py` | Settings → Claude Desktop: the config block, script download, rotate and revoke |
-| `apps/case/ai/context.py` | The section formatters the matter API reuses |
+| `apps/ai/context.py` | The section formatters the matter API reuses |
 
 ## Data model
 
-`CompanionToken` (`apps/drafts/models.py`) is one row per user
+`ApiToken` (`apps/drafts/models.py`) is one row per user
 (`OneToOneField`, `CASCADE`) with a unique `key`. There is no separate MCP
 token: rotating the key from the Claude Desktop page re-keys the
 LibreOffice companion too. `Note.ai_write_until` is the per-note write
@@ -40,12 +40,12 @@ grant (below).
     `all | library | matters | matter:<id>`, restricted to open matters.
     Ranking and scope parsing are shared with the Ctrl+K palette so the
     two surfaces cannot drift.
-  - `apps/case/api.py`, under `case/api/`: `matter/<id>/<section>/` serves
+  - `apps/ai/api.py`, under `case/api/`: `matter/<id>/<section>/` serves
     the sixteen `SECTIONS` as AI-ready text (overview, contacts, rates,
     activity, events, tasks, proceedings, settlement, documents,
     highlights, timeline, witnesses, emails, conversations, ledger,
     trust), reusing the in-app chat's formatters from
-    `apps/case/ai/context.py` where they exist; `documents/<id>/`,
+    `apps/ai/context.py` where they exist; `documents/<id>/`,
     `matter/<id>/emails/<thread_id>/`, `matter/<id>/conversations/<id>/`
     and `invoices/<id>/` serve full content; `matter/<id>/search/` runs
     the agent's own `search_materials` handler so ranking is identical;
@@ -111,7 +111,7 @@ Three write surfaces, all create-or-append, none destructive:
 ## Things that bite
 
 - **The formatters are shared on purpose.** A change to a section
-  formatter in `apps/case/ai/context.py` changes what both the in-app chat
+  formatter in `apps/ai/context.py` changes what both the in-app chat
   and Claude Desktop see; a new section needs a `SECTIONS` entry and, if
   it carries money, a place in `FINANCIAL_SECTIONS`.
 - **Matter scope differs by API.** The notes and case APIs serve open

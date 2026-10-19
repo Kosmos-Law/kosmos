@@ -18,6 +18,9 @@
             <li {% if subapp == "firm" %}class="active"{% endif %}>
               <a href="{% url 'settings:firm-index' %}">Firm</a>
             </li>
+            <li {% if subapp == "features" %}class="active"{% endif %}>
+              <a href="{% url 'settings:features-index' %}">Features</a>
+            </li>
           {% endif %}
           <li {% if subapp == "notifications" %}class="active"{% endif %}>
             <a href="{% url 'settings:notifications-index' %}">Notifications</a>

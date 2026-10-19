@@ -182,11 +182,11 @@ Matter Switcher
 }
 
 /* Mobile: pare the matter title to the name + the +Time action. Hides the
-   Detail/Case mode pills (so Case is unreachable on phones — accepted for now),
+   link between the record and the case file (the sidebar reaches both),
    the +Expense action, and the edit/print tools; +Time stays, pushed to the far
    right. */
 @media (width <= 768px) {
-  .matter-toolbar .mode-pills,
+  .matter-toolbar .matter-crosslink,
   .matter-toolbar .expense-action,
   .matter-toolbar .matter-edit,
   .matter-toolbar .toolbar-right {
@@ -282,6 +282,26 @@ Mode Pills (Detail/Case toggle)
 .mode-pills {
   display: inline-flex;
   gap: 0;
+}
+
+/* The link from the matter record to its case file and back, in the
+   matter toolbar after the switcher: a pill of its own. */
+.matter-toolbar .matter-crosslink {
+  background: var(--background-control);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  padding: 0.5rem 0.75rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.matter-toolbar .matter-crosslink:hover {
+  color: var(--color-text);
+}
+
+.matter-toolbar .matter-crosslink > i {
+  margin-right: 0.25rem;
 }
 
 /* Matter detail/case toolbar: keep the gap between buttons a uniform 1.25rem.

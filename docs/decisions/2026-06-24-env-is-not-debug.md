@@ -63,7 +63,7 @@ Behaviour that depends on the machine's role keys off `ENV`:
 - `config/settings.py`: `ENV = env("ENV")`, present since the move to an
   `.env` file ("fix: Environment variables switched from python file to
   .env file", 2024-06-24).
-- `apps/case/ai/auto_summary.py` and `apps/dash/agenda.py`: the
+- `apps/ai/auto_summary.py` and `apps/dash/agenda.py`: the
   `settings.ENV != "prod"` early return.
 - `docs/dev/subsystems/platform-and-config.md`, "Settings and the
   environment" and "Things that bite".
