@@ -2,8 +2,8 @@
 
 The thread is the context unit: one item per Gmail thread (not per message),
 matching how correspondence is actually discussed. Shared by
-apps/case/ai/context.py (always-included and incremental collection) and
-apps/case/ai/selector.py (the auto-item manifest).
+apps/ai/context.py (always-included and incremental collection) and
+apps/ai/selector.py (the auto-item manifest).
 """
 
 

@@ -1,3 +1,4 @@
+import secrets
 from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser
@@ -271,3 +272,33 @@ class SignInThrottle(models.Model):
     @classmethod
     def clear(cls, email):
         cls.objects.filter(email=cls.key(email)).delete()
+
+
+def _new_token_key():
+    return secrets.token_urlsafe(32)
+
+
+class ApiToken(models.Model):
+    """A user's key for the Kosmos JSON APIs: the Claude Desktop MCP server
+    (notes, matter, calendar and search APIs) and the LibreOffice companion
+    extension. Issued on the Claude Desktop settings page or on first visit
+    to the companion setup modal, and baked into the .oxt that user
+    downloads. Formerly drafts.ApiToken; the table kept its name.
+    """
+
+    user = models.OneToOneField(
+        "accounts.CustomUser", on_delete=models.CASCADE, related_name="api_token"
+    )
+    key = models.CharField(max_length=64, unique=True, default=_new_token_key)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "drafts_companiontoken"
+
+    def __str__(self):
+        return f"API token for {self.user}"
+
+    @classmethod
+    def for_user(cls, user):
+        token, _ = cls.objects.get_or_create(user=user)
+        return token

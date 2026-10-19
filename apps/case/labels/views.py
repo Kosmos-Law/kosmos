@@ -22,7 +22,7 @@ def labels_index(request, matter_id):
     set_last_tab(request, matter_id, "labels")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "labels",
     } | label_data
 
@@ -34,7 +34,7 @@ def labels_list(request, matter_id):
     label_data = get_label_data(request, matter_id)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "labels",
     } | label_data
 

@@ -22,7 +22,7 @@ Two rules, both keyed on the matter's status:
   matter that still has a label. Reopening does not relink; the user maps
   the folder again.
 - `Closed`, and only `Closed`, starts a retention clock.
-  `apps/case/ai/purge.py` deletes a matter's AI conversations, messages
+  `apps/ai/purge.py` deletes a matter's AI conversations, messages
   and their history rows once it has been Closed for
   `CHAT_RETENTION_DAYS` (180; `0` switches the purge off). `closed_at()`
   reads the simple-history rows newest-first and takes the start of the
@@ -68,7 +68,7 @@ being "not final".
 - `Matter.save()` in `apps/matters/models.py`, the comment beginning
   "Drop the matter's Drive folder mappings along with its Drive and Gmail
   links", and the comment on `INACTIVE_STATUSES`.
-- `apps/case/ai/purge.py`, module docstring ("Chats are working notes,
+- `apps/ai/purge.py`, module docstring ("Chats are working notes,
   not part of the client file") and `closed_at()`.
 - `CHAT_RETENTION_DAYS` became an environment variable in "fix: close the
   operator gaps the documentation audit found" (2026-10-01).

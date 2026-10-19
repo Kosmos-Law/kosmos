@@ -7,7 +7,7 @@ from django.test import Client
 
 from apps.accounts.access import matter_ids_for_route
 from apps.accounts.models import CustomUser
-from apps.case.ai.models import Conversation, Message
+from apps.ai.models import Conversation, Message
 from apps.matters.models import Matter
 
 pytestmark = pytest.mark.django_db

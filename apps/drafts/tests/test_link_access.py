@@ -11,9 +11,10 @@ import json
 import pytest
 from django.test import Client
 
-from apps.case.ai.models import Conversation
+from apps.accounts.models import ApiToken
+from apps.ai.models import Conversation
 from apps.drafts import services
-from apps.drafts.models import CompanionRound, CompanionToken, DraftLink
+from apps.drafts.models import CompanionRound, DraftLink
 from apps.intakes.models import Intake
 
 pytestmark = pytest.mark.django_db
@@ -74,11 +75,11 @@ class TestLinkedFileMustBeInTheMatterFolder:
         assert not DraftLink.objects.exists()
 
 
-class TestCompanionTokenFollowsMatterAccess:
+class TestApiTokenFollowsMatterAccess:
     @pytest.fixture
     def api(self, user):
         api = Client()
-        api.defaults["HTTP_X_KOSMOS_TOKEN"] = CompanionToken.for_user(user).key
+        api.defaults["HTTP_X_KOSMOS_TOKEN"] = ApiToken.for_user(user).key
         return api
 
     @pytest.fixture

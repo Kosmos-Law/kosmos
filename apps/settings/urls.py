@@ -3,6 +3,7 @@ from django.urls import path
 import apps.settings.appearance.views as appearance_urls
 import apps.settings.claude.views as claude_urls
 import apps.settings.contacts.views as contact_urls
+import apps.settings.features.views as features_urls
 import apps.settings.firm.views as firm_urls
 import apps.settings.intake_emails.views as intake_email_urls
 import apps.settings.integrations.views as integration_urls
@@ -75,6 +76,7 @@ urlpatterns = [
     ),
     # Firm
     path("settings/firm/", firm_urls.firm_index, name="firm-index"),
+    path("settings/features/", features_urls.features_index, name="features-index"),
     path("settings/tasks/", tasks_urls.tasks_index, name="tasks-index"),
     path(
         "settings/firm/logo/<slug:slot>/upload/",

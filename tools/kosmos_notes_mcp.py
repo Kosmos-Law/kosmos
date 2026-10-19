@@ -6,7 +6,7 @@
 
 A deliberately thin stdio translator: every tool is one HTTP call against
 the token-authed JSON APIs in Kosmos (apps/notes/api.py for notes,
-apps/case/api.py for the matter record, apps/search/api.py for the
+apps/ai/api.py for the matter record, apps/search/api.py for the
 practice-wide search), which own all access control, ranking, and
 formatting. Reads cover notes, every section of a matter (including its
 AI conversations, ledger, and trust position), invoices, the matter's

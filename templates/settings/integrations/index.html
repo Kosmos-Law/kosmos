@@ -64,6 +64,12 @@
                  href="{% url 'settings:google-login' 'drive' %}">Connect</a>
             {% endif %}
           </div>
+          {% if not case_file_enabled %}
+            <p class="detail-text drive-sync-note">
+              The case file is switched off (Settings &gt; Features), so the
+              Drive mirror is paused until it is on again.
+            </p>
+          {% endif %}
           {% if drive_status %}
             {% if drive_status.linked_matters %}
               <p class="detail-text drive-sync-note">

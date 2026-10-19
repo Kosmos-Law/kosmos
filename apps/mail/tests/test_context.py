@@ -1,8 +1,8 @@
 import pytest
 from django.utils import timezone
 
-from apps.case.ai.context import collect_context_items
-from apps.case.ai.selector import _parse_selector_response, build_manifest
+from apps.ai.context import collect_context_items
+from apps.ai.selector import _parse_selector_response, build_manifest
 from apps.mail.models import Email
 
 pytestmark = pytest.mark.django_db

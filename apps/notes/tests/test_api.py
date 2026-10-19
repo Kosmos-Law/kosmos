@@ -9,15 +9,14 @@ import pytest
 from django.test import Client
 from django.utils import timezone
 
-from apps.accounts.models import CustomUser
-from apps.drafts.models import CompanionToken
+from apps.accounts.models import ApiToken, CustomUser
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
 def api(user):
-    return Client(HTTP_X_KOSMOS_TOKEN=CompanionToken.for_user(user).key)
+    return Client(HTTP_X_KOSMOS_TOKEN=ApiToken.for_user(user).key)
 
 
 @pytest.fixture
@@ -26,7 +25,7 @@ def restricted_api():
     outsider = CustomUser.objects.create(
         username="outsider", email="outsider@example.com", perm_all_matters=False
     )
-    return Client(HTTP_X_KOSMOS_TOKEN=CompanionToken.for_user(outsider).key)
+    return Client(HTTP_X_KOSMOS_TOKEN=ApiToken.for_user(outsider).key)
 
 
 def grant(note, hours=24):

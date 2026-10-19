@@ -1,0 +1,9 @@
+{% comment %}
+  A tab's content inside the wrapper its list partial refreshes into. Each
+  tab registers (apps/case/tabs.py) the wrapper's id and the trigger its
+  list answers to, ``<name>Changed from:body`` unless it says otherwise.
+{% endcomment %}
+<div id="{{ tab.element_id }}"
+     hx-trigger="{{ tab.trigger }}"
+     hx-get="{% url tab.list_url matter.id %}"
+     hx-target="this">{% include tab_template %}</div>

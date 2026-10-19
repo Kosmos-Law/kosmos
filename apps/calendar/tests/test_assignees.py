@@ -213,7 +213,7 @@ def test_helpers():
 
 
 def test_the_api_lists_the_assignees(client, events, user):
-    from apps.drafts.models import CompanionToken  # noqa: F401
+    from apps.accounts.models import ApiToken  # noqa: F401
 
     event = events["both"]
     assert event.assignee_names == ["Ada", "Nico"]

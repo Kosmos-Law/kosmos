@@ -2,10 +2,10 @@
 
 import pytest
 
-from apps.case.ai import semantic
-from apps.case.ai.agent_tools import make_agent_executor
-from apps.case.ai.models import MaterialChunk
-from apps.case.ai.semantic import chunk_text, index_object, semantic_entries
+from apps.ai.agent_tools import make_agent_executor
+from apps.case import semantic
+from apps.case.models import MaterialChunk
+from apps.case.semantic import chunk_text, index_object, semantic_entries
 from apps.notes.models import Note
 
 pytestmark = pytest.mark.django_db

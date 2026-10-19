@@ -52,7 +52,7 @@ def test_taken_label_does_not_name_a_matter_the_user_is_not_on(
     _connect(fake_gmail, restricted_user)
 
     content = restricted_client.get(
-        reverse("case:emails-label-link-modal", args=[matter.id])
+        reverse("mail:emails-label-link-modal", args=[matter.id])
     ).content.decode()
 
     assert "linked to another matter" in content
@@ -66,7 +66,7 @@ def test_taken_label_names_a_matter_the_user_is_on(
     matter2.members.add(restricted_user)
 
     content = restricted_client.get(
-        reverse("case:emails-label-link-modal", args=[matter.id])
+        reverse("mail:emails-label-link-modal", args=[matter.id])
     ).content.decode()
 
     assert "linked to Doe v Roe" in content
@@ -76,7 +76,7 @@ def test_clash_message_does_not_name_a_matter_the_user_is_not_on(
     restricted_client, matter, matter2, fake_gmail
 ):
     response = restricted_client.post(
-        reverse("case:emails-label-link", args=[matter.id]),
+        reverse("mail:emails-label-link", args=[matter.id]),
         {"label_name": matter2.gmail_label_name},
     )
 
@@ -90,7 +90,7 @@ def test_user_with_no_mailbox_is_not_shown_a_colleagues_labels(
 ):
     # fake_gmail's mailbox belongs to the other user; this one has none.
     content = restricted_client.get(
-        reverse("case:emails-label-link-modal", args=[matter.id])
+        reverse("mail:emails-label-link-modal", args=[matter.id])
     ).content.decode()
 
     assert 'name="label"' not in content
@@ -104,7 +104,7 @@ def test_user_with_own_mailbox_sees_its_labels(
     _connect(fake_gmail, restricted_user)
 
     content = restricted_client.get(
-        reverse("case:emails-label-link-modal", args=[matter.id])
+        reverse("mail:emails-label-link-modal", args=[matter.id])
     ).content.decode()
 
     assert 'name="label"' in content

@@ -4,7 +4,7 @@ configured."""
 
 import pytest
 
-from apps.case.ai import providers
+from apps.llm import providers
 from apps.settings import ai
 from apps.settings.models import Firm
 
@@ -46,7 +46,7 @@ class TestProviders:
     def test_gemini_first_when_both(self, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            "apps.case.ai.gemini_client.send_to_gemini_streaming",
+            "apps.llm.gemini_client.send_to_gemini_streaming",
             lambda *a, **k: calls.append(k["model"]) or ("ok", 1, 1),
         )
         assert providers.complete("s", [{"role": "user", "content": "x"}])[0] == "ok"
@@ -56,7 +56,7 @@ class TestProviders:
         settings.GEMINI_API_KEY = ""
         calls = []
         monkeypatch.setattr(
-            "apps.case.ai.anthropic_client.send_to_claude",
+            "apps.llm.anthropic_client.send_to_claude",
             lambda *a, **k: calls.append(k["model"]) or ("ok", 1, 1),
         )
         providers.complete("s", [], providers.DEEP)

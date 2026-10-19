@@ -41,7 +41,7 @@ def _inline_resync(monkeypatch):
 
 def test_emails_tab_renders_list(client, matter, fake_gmail):
     make_email(matter, "m1", sender="Alice Smith <alice@example.com>")
-    response = client.get(reverse("case:emails-index", args=[matter.id]))
+    response = client.get(reverse("mail:emails-index", args=[matter.id]))
     assert response.status_code == 200
     content = response.content.decode()
     assert "Discovery schedule" in content
@@ -52,7 +52,7 @@ def test_emails_tab_renders_list(client, matter, fake_gmail):
 
 def test_email_preview_pane(client, matter, fake_gmail):
     email = make_email(matter, "m1")
-    response = client.get(reverse("case:email-preview", args=[email.id]))
+    response = client.get(reverse("mail:email-preview", args=[email.id]))
     content = response.content.decode()
     assert "Proposed dates attached." in content
     assert "schedule.pdf" in content
@@ -63,7 +63,7 @@ def test_email_preview_pane(client, matter, fake_gmail):
 def test_email_preview_prefers_html(client, matter, fake_gmail):
     email = make_email(matter, "m1", body_html="<p>Rich <b>body</b></p>")
     content = client.get(
-        reverse("case:email-preview", args=[email.id])
+        reverse("mail:email-preview", args=[email.id])
     ).content.decode()
     assert "srcdoc" in content
     assert "Rich" in content
@@ -91,7 +91,7 @@ def test_email_promote_creates_document(
     )
 
     email = make_email(matter, "m1", body_html="<p>Promote me</p>")
-    response = client.post(reverse("case:email-promote", args=[email.id]))
+    response = client.post(reverse("mail:email-promote", args=[email.id]))
     assert response.status_code == 200
 
     email.refresh_from_db()
@@ -103,26 +103,26 @@ def test_email_promote_creates_document(
     assert doc.file.storage.exists(doc.file.name)
     assert ocr_queued == [doc.id]
     # Idempotent: a second promote reuses the same Document.
-    client.post(reverse("case:email-promote", args=[email.id]))
+    client.post(reverse("mail:email-promote", args=[email.id]))
     email.refresh_from_db()
     assert email.document == doc
     assert Document.objects.count() == 1
     # The pane now offers the Document instead of promotion.
     content = client.get(
-        reverse("case:email-preview", args=[email.id])
+        reverse("mail:email-preview", args=[email.id])
     ).content.decode()
     assert "View Document" in content
 
 
 def test_email_importance_update(client, matter, fake_gmail):
     email = make_email(matter, "m1")
-    response = client.post(reverse("case:email-importance", args=[email.id, 6]))
+    response = client.post(reverse("mail:email-importance", args=[email.id, 6]))
     assert response.status_code == 200
     email.refresh_from_db()
     assert email.importance == 6
 
     # Out-of-range values are ignored (URL only admits ints).
-    client.post(reverse("case:email-importance", args=[email.id, 9]))
+    client.post(reverse("mail:email-importance", args=[email.id, 9]))
     email.refresh_from_db()
     assert email.importance == 6
 
@@ -130,12 +130,12 @@ def test_email_importance_update(client, matter, fake_gmail):
 def test_emails_tab_prompts_when_unlinked(client, matter, fake_gmail):
     matter.gmail_label_name = None
     matter.save(update_fields=["gmail_label_name"])
-    response = client.get(reverse("case:emails-index", args=[matter.id]))
+    response = client.get(reverse("mail:emails-index", args=[matter.id]))
     assert "Link Gmail Label" in response.content.decode()
 
 
 def test_filter_modal_renders(client, matter, fake_gmail):
-    response = client.get(reverse("case:emails-filter", args=[matter.id]))
+    response = client.get(reverse("mail:emails-filter", args=[matter.id]))
     assert response.status_code == 200
     content = response.content.decode()
     assert "Filter Emails" in content
@@ -153,21 +153,21 @@ def test_filter_persists_and_narrows(client, matter, fake_gmail):
     )
 
     response = client.post(
-        reverse("case:emails-filter", args=[matter.id]), {"sender": "carol"}
+        reverse("mail:emails-filter", args=[matter.id]), {"sender": "carol"}
     )
     assert response.status_code == 204
     assert response.headers["HX-Trigger"] == "emailsChanged"
 
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
     assert "Settlement offer" in content
     assert "Discovery schedule" not in content
 
     # Clear Filters restores the full list.
-    client.post(reverse("case:emails-filter", args=[matter.id]), {"reset": "true"})
+    client.post(reverse("mail:emails-filter", args=[matter.id]), {"reset": "true"})
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
     assert "Discovery schedule" in content
 
@@ -177,7 +177,7 @@ def test_keyword_search_narrows_table(client, matter, fake_gmail):
     make_email(matter, "m2", thread_id="thread-2", subject="Settlement offer")
 
     response = client.get(
-        reverse("case:emails-filter-keyword", args=[matter.id]),
+        reverse("mail:emails-filter-keyword", args=[matter.id]),
         {"keyword": "settlement"},
     )
     content = response.content.decode()
@@ -193,9 +193,9 @@ def test_date_range_filter(client, matter, fake_gmail):
     make_email(matter, "m2", thread_id="thread-2", subject="Recent mail")
 
     cutoff = (timezone.now() - timedelta(days=7)).date().isoformat()
-    client.post(reverse("case:emails-filter", args=[matter.id]), {"date_after": cutoff})
+    client.post(reverse("mail:emails-filter", args=[matter.id]), {"date_after": cutoff})
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
     assert "Recent mail" in content
     assert "Old mail" not in content
@@ -206,20 +206,20 @@ def test_sort_toggles_direction(client, matter, fake_gmail):
     make_email(matter, "m2", thread_id="thread-2", sender="Zed <z@x.com>")
 
     response = client.get(
-        reverse("case:emails-sort", args=[matter.id, "sender"]), follow=True
+        reverse("mail:emails-sort", args=[matter.id, "sender"]), follow=True
     )
     content = response.content.decode()
     assert content.index("Alice") < content.index("Zed")
 
     response = client.get(
-        reverse("case:emails-sort", args=[matter.id, "sender"]), follow=True
+        reverse("mail:emails-sort", args=[matter.id, "sender"]), follow=True
     )
     content = response.content.decode()
     assert content.index("Zed") < content.index("Alice")
 
 
 def test_label_link_modal_marks_taken_labels(client, matter, matter2, fake_gmail):
-    response = client.get(reverse("case:emails-label-link-modal", args=[matter.id]))
+    response = client.get(reverse("mail:emails-label-link-modal", args=[matter.id]))
     content = response.content.decode()
     assert "Smith" in content
     # matter2 already owns Label_2, so it shows as taken.
@@ -230,7 +230,7 @@ def test_label_link_modal_marks_taken_labels(client, matter, matter2, fake_gmail
 
 def test_label_link_clash_returns_inline_error(client, matter, matter2, _inline_resync):
     response = client.post(
-        reverse("case:emails-label-link", args=[matter.id]),
+        reverse("mail:emails-label-link", args=[matter.id]),
         {"label_name": "Matters - Open/Doe"},
     )
     assert response.status_code == 200
@@ -242,7 +242,7 @@ def test_label_link_clash_returns_inline_error(client, matter, matter2, _inline_
 
 def test_label_link_sets_fields_and_queues_resync(client, matter, _inline_resync):
     response = client.post(
-        reverse("case:emails-label-link", args=[matter.id]),
+        reverse("mail:emails-label-link", args=[matter.id]),
         {"label_name": "Matters - Open/New Label"},
     )
     assert response.status_code == 204
@@ -253,7 +253,7 @@ def test_label_link_sets_fields_and_queues_resync(client, matter, _inline_resync
 
 def test_label_unlink_clears_fields(client, matter, _inline_resync):
     make_email(matter, "m1")
-    response = client.post(reverse("case:emails-label-unlink", args=[matter.id]))
+    response = client.post(reverse("mail:emails-label-unlink", args=[matter.id]))
     assert response.status_code == 204
     matter.refresh_from_db()
     assert matter.gmail_label_name is None
@@ -303,7 +303,7 @@ def test_list_collapses_cross_mailbox_duplicates(client, matter, fake_gmail):
     )
 
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
     assert content.count("Discovery schedule") == 1
     assert "Settlement offer" in content
@@ -319,7 +319,7 @@ def test_sent_mail_lists_recipient(client, matter, fake_gmail):
         attachments=[],
     )
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
     assert "To: Bob Client" in content
 
@@ -334,28 +334,28 @@ def test_missing_label_indicator(client, matter, fake_gmail):
     fake_gmail.account.missing_labels = [matter.gmail_label_name]
     fake_gmail.account.save(update_fields=["missing_labels"])
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
     assert "No matching label" in content
 
     fake_gmail.account.missing_labels = []
     fake_gmail.account.save(update_fields=["missing_labels"])
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
     assert "No matching label" not in content
 
 
 def test_label_link_modal_offers_matter_named_label(client, matter, fake_gmail):
     content = client.get(
-        reverse("case:emails-label-link-modal", args=[matter.id])
+        reverse("mail:emails-label-link-modal", args=[matter.id])
     ).content.decode()
     assert "Matters - Open/Smith v Jones" in content  # suggested new label
 
 
 def test_label_link_create_from_matter_name(client, matter, fake_gmail, _inline_resync):
     response = client.post(
-        reverse("case:emails-label-link", args=[matter.id]),
+        reverse("mail:emails-label-link", args=[matter.id]),
         {"create_label_name": "Matters - Open/Smith v Jones", "label_name": ""},
     )
     assert response.status_code == 204
@@ -365,7 +365,7 @@ def test_label_link_create_from_matter_name(client, matter, fake_gmail, _inline_
 
 
 def test_toolbar_shows_refresh_when_linked(client, matter, fake_gmail):
-    response = client.get(reverse("case:emails-index", args=[matter.id]))
+    response = client.get(reverse("mail:emails-index", args=[matter.id]))
     assert "emails/refresh/" in response.content.decode()
 
 
@@ -399,7 +399,7 @@ def test_refresh_starts_thread_and_returns_polling_pill(
         status_cache as cache,
     )
 
-    response = client.post(reverse("case:emails-refresh", args=[matter.id]))
+    response = client.post(reverse("mail:emails-refresh", args=[matter.id]))
     assert "Syncing" in response.content.decode()
     assert cache.get(_refresh_cache_key(matter.id)) == "running"
     assert _stub_refresh_thread == [matter.id]
@@ -414,7 +414,7 @@ def test_refresh_reattaches_to_run_in_flight(
     )
 
     cache.set(_refresh_cache_key(matter.id), "running", 60)
-    response = client.post(reverse("case:emails-refresh", args=[matter.id]))
+    response = client.post(reverse("mail:emails-refresh", args=[matter.id]))
     assert "Syncing" in response.content.decode()
     assert _stub_refresh_thread == []  # no second thread
 
@@ -424,7 +424,7 @@ def test_refresh_without_label_starts_nothing(
 ):
     matter.gmail_label_name = None
     matter.save()
-    response = client.post(reverse("case:emails-refresh", args=[matter.id]))
+    response = client.post(reverse("mail:emails-refresh", args=[matter.id]))
     assert response.status_code == 204
     assert _stub_refresh_thread == []
 
@@ -436,7 +436,7 @@ def test_refresh_status_running_keeps_polling(client, matter, fake_gmail):
     )
 
     cache.set(_refresh_cache_key(matter.id), "running", 60)
-    url = reverse("case:emails-refresh-status", args=[matter.id])
+    url = reverse("mail:emails-refresh-status", args=[matter.id])
     response = client.get(url, {"polls": "3"})
     content = response.content.decode()
     assert "Syncing" in content
@@ -444,7 +444,7 @@ def test_refresh_status_running_keeps_polling(client, matter, fake_gmail):
 
 
 def test_refresh_status_done_restores_button_and_reloads(client, matter, fake_gmail):
-    url = reverse("case:emails-refresh-status", args=[matter.id])
+    url = reverse("mail:emails-refresh-status", args=[matter.id])
     response = client.get(url, {"polls": "3"})
     assert response.headers["HX-Trigger"] == "emailsChanged"
     assert "Refresh" in response.content.decode()
@@ -457,7 +457,7 @@ def test_refresh_status_poll_cap_gives_up(client, matter, fake_gmail):
     )
 
     cache.set(_refresh_cache_key(matter.id), "running", 60)
-    url = reverse("case:emails-refresh-status", args=[matter.id])
+    url = reverse("mail:emails-refresh-status", args=[matter.id])
     response = client.get(url, {"polls": "150"})
     assert response.headers["HX-Trigger"] == "emailsChanged"
     assert "Refresh" in response.content.decode()

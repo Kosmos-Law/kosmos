@@ -27,8 +27,8 @@ start.
 - The overnight daily plan: the `auto-daily-plan` schedule,
   `scheduled_refresh_daily_plans` and the `run_daily_plans` command.
 - `Conversation.agenda_user`, and the agenda branches in
-  `apps/case/ai/access.py` and `templates/case/ai/messages.html`.
-- `apps/case/ai/auto_summary.py`, the `auto-summary-nightly` and
+  `apps/ai/access.py` and `templates/ai/messages.html`.
+- `apps/ai/auto_summary.py`, the `auto-summary-nightly` and
   `auto-summary-weekly-rebuild` schedules, and the `run_auto_summaries`
   and `setup_auto_summary_schedule` commands.
 - The `--auto-summary-time` option of `setup_schedules` and
@@ -65,7 +65,7 @@ deleted rows.
   today.
 - `apps.tasks.services.create_task_from_ai_entry()`, which the Plan
   chat's `create-tasks` block called, is still used by the JSON API's
-  task creation (`api_create_task` in `apps/case/api.py`, behind the MCP
+  task creation (`api_create_task` in `apps/ai/api.py`, behind the MCP
   server's `add_task`).
 - The other fenced write blocks (facts, witnesses, notes, saved case
   law) and the intake chat are unchanged.

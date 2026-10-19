@@ -80,7 +80,7 @@ Recoverable from git history at the parent of commit `c70da1a05`.
 - Commit `c70da1a05`, "Remove the Research tab; saved case law becomes
   a view of the AI tab" (2026-10-06).
 - The comment heading migration `0094`.
-- `templates/case/ai/view-pills.html`, the Conversations | Case Law
+- `templates/ai/view-pills.html`, the Conversations | Case Law
   switch.
 
 ## Related

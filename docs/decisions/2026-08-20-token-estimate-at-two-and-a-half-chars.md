@@ -13,7 +13,7 @@ about 3. The estimate had been undercounting by close to half.
 
 ## Decision
 
-`CHARS_PER_TOKEN` is 2.5, in one place (`apps/case/ai/selector.py`), and
+`CHARS_PER_TOKEN` is 2.5, in one place (`apps/ai/selector.py`), and
 `estimate_tokens()` is the only estimate. The figure is deliberately
 below the measured prose rate so that on measured content the estimate
 stays within the 20% margin the guards keep (the selector fills to about
@@ -55,14 +55,14 @@ Materials" so the model can ask for one by name.
 
 ## Evidence
 
-- `apps/case/ai/selector.py`, the comment above `CHARS_PER_TOKEN`: "A
+- `apps/ai/selector.py`, the comment above `CHARS_PER_TOKEN`: "A
   prompt that estimated under 800K at chars/4 was rejected by Anthropic
   at 1.14M tokens. 2.5 keeps the estimate within the guards' 20% margin
   on measured content."
-- `apps/case/ai/tasks.py`: `fit_prompt_to_window()`, `EXACT_CEILING`,
-  `PromptTooLargeError`; `apps/case/ai/anthropic_client.py`,
+- `apps/ai/tasks.py`: `fit_prompt_to_window()`, `EXACT_CEILING`,
+  `PromptTooLargeError`; `apps/llm/anthropic_client.py`,
   `count_claude_tokens()`.
-- `apps/case/ai/context.py`: the tier shedding and the "Omitted
+- `apps/ai/context.py`: the tier shedding and the "Omitted
   Materials" list.
 - Commit: "fix(ai-chat): keep prompts inside the model window with exact
   Claude counts" (2026-08-20).

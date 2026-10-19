@@ -33,5 +33,5 @@ Times are in the firm's time zone, the `TIME_ZONE` variable in
 | `drive-sync-nightly-full` | `apps.drive.google.scheduled_sync_full` |
 | `gmail-sync` | `apps.mail.google.scheduled_sync` |
 | `gmail-sync-weekly-full` | `apps.mail.google.scheduled_sync_full` |
-| `chat-purge-weekly` | `apps.case.ai.purge.scheduled_purge_closed_chats` |
+| `chat-purge-weekly` | `apps.ai.purge.scheduled_purge_closed_chats` |
 | `payments-reconcile` | `apps.invoicing.pay.reconcile.poll_pending` |

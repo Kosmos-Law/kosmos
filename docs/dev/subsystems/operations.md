@@ -39,7 +39,7 @@ The AI status cache is the table `ai_status_cache`, a Django
 `manage.py createcachetable`, not by a migration, so a fresh database
 needs that command after `migrate` (the installer runs it). Its entries
 are `ai_status_<conversation id>` payloads written by the chat threads
-(`apps/case/ai/status.py`) and expire by TTL; nothing else uses it.
+(`apps/llm/status.py`) and expire by TTL; nothing else uses it.
 
 ## How it works
 
@@ -59,7 +59,7 @@ Work reaches it two ways. Code queues a task with
 `django_q.tasks.async_task("dotted.path.to.function", *args)`; the
 callers are the OCR pipeline (`apps/case/documents/tasks.py`, `signals.py`,
 `views.py`), the Drive and Gmail syncs, note and document summaries
-(`apps/notes/tasks.py`), semantic re-indexing (`apps/case/ai/semantic.py`),
+(`apps/notes/tasks.py`), semantic re-indexing (`apps/case/semantic.py`),
 saved case-law summaries (`apps/case/caselaws/tasks.py`), the inbound intake
 webhook (`apps/intakes/inbound.py`), payment webhooks
 (`apps/invoicing/pay/views.py`). Or a `Schedule` row fires on its cron and the cluster calls the schedule's `func`.

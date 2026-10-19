@@ -174,7 +174,7 @@ Never call the browser's `confirm()`. The styled prompt in
 For htmx requests, `hx-confirm` is intercepted by the `htmx:confirm`
 listener in `alpine-components.js`. The message is the attribute's value;
 `data-` attributes on the same element set the rest
-(`templates/case/emails/preview.html`):
+(`templates/mail/preview.html`):
 
 ```html
 hx-confirm="Promote this email to a PDF Document on the matter? ..."
@@ -274,8 +274,8 @@ element that is also an `hx-target`.
 `hx-swap="morph"` (with `hx-ext="morph"` on the element) patches the
 existing DOM instead of replacing it. It is used where replacement would
 visibly flicker or lose state: the AI status poller
-(`templates/case/ai/status.html`) and the chat status bar
-(`templates/case/ai/chat-statusbar.html`). The comments on those two
+(`templates/ai/status.html`) and the chat status bar
+(`templates/ai/chat-statusbar.html`). The comments on those two
 templates are required reading before touching them. Two rules fall out
 of them:
 
@@ -283,7 +283,7 @@ of them:
   fires again. The poller uses a standing `hx-trigger="every 1s"` with
   `hx-sync="this:drop"`, and the completion response changes the root
   element so the interval ends. The terminal poll also sends
-  `HX-Reswap: outerHTML` (`apps/case/ai/views.py`) so the last swap
+  `HX-Reswap: outerHTML` (`apps/ai/views.py`) so the last swap
   replaces rather than morphs.
 - A morph syncs attributes, so an out-of-band fragment must carry the
   same `class` and `hx-ext` as the standing element, or the next swap

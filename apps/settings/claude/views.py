@@ -5,7 +5,7 @@ the user's token, so setup needs no manual configuration): the page renders
 the exact claude_desktop_config.json block with the user's real token
 substituted, plus a download of the MCP script it points at.
 
-The token is the same CompanionToken the LibreOffice companion uses, so
+The token is the same ApiToken the LibreOffice companion uses, so
 rotating or revoking it here also re-keys that extension.
 """
 
@@ -18,7 +18,7 @@ from django.http import FileResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.drafts.models import CompanionToken
+from apps.accounts.models import ApiToken
 
 SCRIPT_PATH = Path(settings.BASE_DIR) / "tools" / "kosmos_notes_mcp.py"
 
@@ -48,7 +48,7 @@ def _config_block(request, token):
 
 @login_required
 def claude_index(request):
-    token = CompanionToken.objects.filter(user=request.user).first()
+    token = ApiToken.objects.filter(user=request.user).first()
     context = {
         "subapp": "claude",
         "token": token,
@@ -62,15 +62,15 @@ def claude_index(request):
 def claude_rotate(request):
     """Generate (or re-key) the user's token. Serves both buttons: the
     delete is a no-op when no token exists yet."""
-    CompanionToken.objects.filter(user=request.user).delete()
-    CompanionToken.for_user(request.user)
+    ApiToken.objects.filter(user=request.user).delete()
+    ApiToken.for_user(request.user)
     return redirect("settings:claude-index")
 
 
 @login_required
 @require_POST
 def claude_revoke(request):
-    CompanionToken.objects.filter(user=request.user).delete()
+    ApiToken.objects.filter(user=request.user).delete()
     return redirect("settings:claude-index")
 
 

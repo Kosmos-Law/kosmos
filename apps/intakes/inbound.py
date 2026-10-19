@@ -259,7 +259,7 @@ def _extract_intake_fields(subject, text):
     """One AI call mapping the message onto intake fields. Returns
     (data, error); any failure returns ({}, reason) so the caller can
     still create a fallback intake from the raw message."""
-    from apps.case.ai.providers import complete
+    from apps.llm.providers import complete
 
     area_names = ", ".join(
         PracticeArea.objects.filter(is_active=True).values_list("name", flat=True)

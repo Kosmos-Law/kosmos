@@ -20,8 +20,9 @@ import pytest
 from django.test import Client
 from django.utils import timezone
 
+from apps.accounts.models import ApiToken
 from apps.drafts import chat, companion
-from apps.drafts.models import CompanionRound, CompanionToken
+from apps.drafts.models import CompanionRound
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +34,7 @@ RESULTS = [{"op": "replace", "replacements": 1}]
 @pytest.fixture
 def api(user):
     api = Client()
-    api.defaults["HTTP_X_KOSMOS_TOKEN"] = CompanionToken.for_user(user).key
+    api.defaults["HTTP_X_KOSMOS_TOKEN"] = ApiToken.for_user(user).key
     return api
 
 

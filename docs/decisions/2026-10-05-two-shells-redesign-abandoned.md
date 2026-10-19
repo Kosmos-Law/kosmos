@@ -1,5 +1,10 @@
 # The "two shells" redesign is abandoned (2026-10-05)
 
+> Superseded on 2026-10-19 by [The case builder is a module with its own
+> navigation](2026-10-19-the-case-builder-is-a-module-with-its-own-navigation.md):
+> the case builder has sidebar entries of its own and the pills are gone.
+> What follows is the record as written.
+
 A matter is worked in a workspace with two modes: Detail, under
 `/matters/<id>/`, is the matter's record (Overview, Contacts, Rates,
 Activity, Events, Tasks, Proceedings, Settlement, Ledger), and Case,
@@ -63,3 +68,4 @@ dropped is not recorded.
 - [Matters, contacts and parties](../dev/subsystems/matters.md) and
   [Case building](../dev/subsystems/case-building.md): the two modes.
 - [Matter membership is enforced from the URL](2026-10-01-matter-membership-from-the-url.md).
+- [The case builder is a module with its own navigation (2026-10-19)](2026-10-19-the-case-builder-is-a-module-with-its-own-navigation.md), which supersedes this record.

@@ -119,7 +119,7 @@ def run_assessment(intake):
     """One AI call over everything on the intake. Updates assessment,
     assessed_at, and (when the AI takes a position) importance. Returns an
     error string on failure, leaving the stored assessment untouched."""
-    from apps.case.ai.providers import complete
+    from apps.llm.providers import complete
 
     area_names = ", ".join(
         PracticeArea.objects.filter(is_active=True).values_list("name", flat=True)

@@ -1,0 +1,109 @@
+{% load humanize %}
+<div class="toolbar ai-toolbar">
+  <div class="toolbar-left">
+    {% if selected_conversations %}
+      <div class="filter-tools">
+        <button type="button"
+                class="btn-icon toggle-active"
+                hx-post="{% url 'ai:clear-selection' matter.id %}"
+                hx-swap="none">
+          {{ selected_conversations|length }} <i class="icon-x bulk-clear-icon"></i>
+        </button>
+        <div class="dropdown" x-data="dropdown()">
+          <button type="button"
+                  class="btn-icon"
+                  x-ref="button"
+                  @click="toggle()"
+                  :aria-expanded="open">
+            <i class="icon-sparkles with-text"></i> AI <small><i class="icon-chevron-down"></i></small>
+          </button>
+          <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+            <li>
+              <a class="dropdown-item"
+                 href="#"
+                 hx-post="{% url 'ai:bulk-set-context' matter.id 'auto' %}"
+                 hx-swap="none">Auto</a>
+            </li>
+            <li>
+              <a class="dropdown-item"
+                 href="#"
+                 hx-post="{% url 'ai:bulk-set-context' matter.id 'always' %}"
+                 hx-swap="none">Always</a>
+            </li>
+            <li>
+              <a class="dropdown-item"
+                 href="#"
+                 hx-post="{% url 'ai:bulk-set-context' matter.id 'never' %}"
+                 hx-swap="none">Never</a>
+            </li>
+          </ul>
+        </div>
+        <button type="button"
+                class="btn-icon"
+                hx-post="{% url 'ai:bulk-delete' matter.id %}"
+                hx-confirm="Delete {{ selected_conversations|length }} selected conversation(s)? This cannot be undone."
+                hx-swap="none">
+          <i class="icon-trash-2"></i>
+        </button>
+      </div>
+    {% else %}
+      <div class="filter-tools">
+        <a href="#"
+           class="btn-icon"
+           hx-get="{% url 'ai:new-conversation-prompt' matter.id %}"
+           hx-target="#htmx-modal-container"
+           hx-trigger="click"
+           title="New conversation">
+          <i class="icon-plus"></i>
+        </a>
+        <div class="dropdown" x-data="dropdown()">
+          <button type="button"
+                  id="ai-participant-select"
+                  class="select-btn filter-dropdown-button {% if selected_participant %}toggle-active{% endif %}"
+                  x-ref="button"
+                  @click="toggle()"
+                  :aria-expanded="open">
+            <span>
+              {% if selected_participant %}
+                {{ selected_participant.get_full_name }}
+              {% else %}
+                All participants
+              {% endif %}
+            </span>
+            <small>
+              <i class="icon-chevron-down"></i>
+            </small>
+          </button>
+          <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+            <li>
+              <a class="dropdown-item {% if not selected_participant %}active{% endif %}"
+                 href="#"
+                 hx-get="{% url 'ai:filter' matter.id %}?participant="
+                 hx-target="#ai-conversations">All participants</a>
+            </li>
+            {% for participant in participant_choices %}
+              <li>
+                <a class="dropdown-item {% if selected_participant.id == participant.id %}active{% endif %}"
+                   href="#"
+                   hx-get="{% url 'ai:filter' matter.id %}?participant={{ participant.id }}"
+                   hx-target="#ai-conversations">{{ participant.get_full_name }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <input type="search"
+               name="q"
+               class="toolbar-search"
+               placeholder="Filter conversations . . ."
+               value="{{ filter_q }}"
+               autocomplete="off"
+               hx-get="{% url 'ai:filter' matter.id %}"
+               hx-vals='{"partial": "table"}'
+               hx-trigger="keyup changed delay:300ms, search"
+               hx-target="#ai-table">
+      </div>
+    {% endif %}
+  </div>
+  <div class="toolbar-right">{% include "ai/view-pills.html" with ai_view="conversations" %}</div>
+</div>
+{% include "ai/table.html" %}

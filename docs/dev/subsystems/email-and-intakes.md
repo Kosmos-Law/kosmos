@@ -17,7 +17,7 @@ The screens are in the user guide: [Email](../../guide/email.md) and
 | `apps/mail/models.py` | `GmailAccount`, `Email`, `EmailAttachment` |
 | `apps/mail/google.py`, `parser.py`, `tasks.py` | The sync (label resolution, bootstrap, history feed, per-matter resync); `parse_payload()`; attachment text extraction |
 | `apps/mail/promote.py`, `ai.py` | `promote_email()`; thread formatting for AI context |
-| `apps/mail/views.py`, `filters.py`, `templates/case/emails/` | The case Emails tab, routed from `apps/case/urls.py` under `case/<matter_id>/emails/` |
+| `apps/mail/views.py`, `filters.py`, `templates/mail/` | The case Emails tab, routed from `apps/case/urls.py` under `case/<matter_id>/emails/` |
 | `apps/mail/management/commands/` | `sync_gmail`, `link_gmail_labels`, `adopt_gmail_account`, `refresh_email_bodies`, `setup_gmail_sync_schedule` |
 | `apps/settings/integrations/views.py` | Connecting and disconnecting a mailbox; the Case Email panel |
 | `apps/intakes/models.py` | `Intake`, `Note`, `InboundEmail`, `IntakeEmailTemplate`, `UserIntakeView` |
@@ -167,7 +167,7 @@ marked `no_text_layer`, not OCR'd.
 
 ### The Emails tab
 
-`emails_index` renders `templates/case/emails/main.html`;
+`emails_index` renders `templates/mail/main.html`;
 `get_emails_data()` queries the matter's rows with `.dedup()`, defers the
 bodies (the list shows headers only; the preview pane fetches each email
 on click), and applies the session's `EmailFilter`. `email_preview`
@@ -185,7 +185,7 @@ and linked from `Email.document`; the email's `ai_context` flips to
 copy across the sync boundary: nothing on the Gmail side can touch it,
 which is what makes it safe to carry highlights. Emails otherwise enter
 the AI context as threads (`format_email_thread()` in `apps/mail/ai.py`,
-consumed by `apps/case/ai/context.py`); see
+consumed by `apps/ai/context.py`); see
 [The AI context system](ai/context.md).
 
 ### Inbound email to an intake

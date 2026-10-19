@@ -160,7 +160,7 @@ set:
 
 The models offered when a user starts a conversation are a fixed list in
 the code (`LLM_CHOICES` in
-[`apps/case/ai/models.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/ai/models.py)):
+[`apps/ai/models.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/ai/models.py)):
 three Claude models and two Gemini models. The list itself is not
 configurable, but the new-conversation dialog offers only the models
 whose provider has a key: with only a Gemini key, users see the Gemini
@@ -180,7 +180,7 @@ budget below that.
 
 The chat window shows an estimated cost for each exchange and for the
 conversation. The estimate comes from a price table in the code
-([`apps/case/ai/pricing.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/ai/pricing.py)).
+([`apps/llm/pricing.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/llm/pricing.py)).
 It is for orientation only: it can lag behind the providers' prices and
 is not what you are billed. Use the providers' own consoles for spending
 limits and alerts.
@@ -316,7 +316,7 @@ retention policy before relying on the default, and restart the worker.
 
 Standing instructions for the AI (how to cite, how to weigh the record,
 tone, drafting conventions) live in one file:
-[`apps/case/ai/prompts/legal.md`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/ai/prompts/legal.md).
+[`apps/ai/prompts/legal.md`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/ai/prompts/legal.md).
 It is read each time a request is built, so an edit takes effect on the
 next message without a restart.
 

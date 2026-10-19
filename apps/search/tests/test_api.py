@@ -4,14 +4,14 @@ MCP server's search_kosmos tool."""
 import pytest
 from django.test import Client
 
-from apps.drafts.models import CompanionToken
+from apps.accounts.models import ApiToken
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
 def api(user):
-    return Client(HTTP_X_KOSMOS_TOKEN=CompanionToken.for_user(user).key)
+    return Client(HTTP_X_KOSMOS_TOKEN=ApiToken.for_user(user).key)
 
 
 def search(api, **params):

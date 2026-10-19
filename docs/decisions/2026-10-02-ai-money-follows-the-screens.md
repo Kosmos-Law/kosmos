@@ -60,14 +60,14 @@ exactly where the user could see it on a screen:
 
 ## Evidence
 
-- `apps/case/ai/access.py`, module docstring: "the context and the agent
+- `apps/ai/access.py`, module docstring: "the context and the agent
   tools are built for the user who is asking, so money and case-law
   research reach only the users who could open those screens."
-- `apps/case/ai/context.py`, `format_time_entries()` docstring: "The
+- `apps/ai/context.py`, `format_time_entries()` docstring: "The
   Activity screens show those to every user who can see the matter, so
   every requesting user gets them; only a run for no user (the nightly
   auto-summary) leaves them out."
-- `apps/case/api.py`, `FINANCIAL_SECTIONS` and the comment above it:
+- `apps/ai/api.py`, `FINANCIAL_SECTIONS` and the comment above it:
   "Activity is not among them: the Activity screens show rate and fee to
   every user."
 - Commits, both 2026-10-02: "fix(security): the AI's context and agent

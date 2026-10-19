@@ -8,7 +8,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.case.facts.access import label_for_matter
-from apps.case.facts.sorting import filterset_sort_keys, with_valid_sort
 from apps.case.models import Document, Highlight, Label, Witness
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.management.pagination import CustomPaginator
@@ -20,6 +19,7 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
+from apps.management.sorting import filterset_sort_keys, with_valid_sort
 
 from .filters import HighlightsFilter
 from .forms import HighlightForm
@@ -163,7 +163,7 @@ def highlights_index(request, matter_id):
     set_last_tab(request, matter_id, "highlights")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "highlights",
         "matter": matter,
         "matters": matters,
@@ -178,7 +178,7 @@ def highlights_list(request, matter_id):
     matter, matters = get_matter_from_url(request, matter_id)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "highlights",
         "matter": matter,
         "matters": matters,

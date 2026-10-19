@@ -29,8 +29,8 @@ the machinery behind it and does not repeat the gates.
 | `templates/sidebar.html` | The account menu (who is signed in, Settings, Log out) in the Settings item's place |
 | `apps/settings/permissions/` | The read-only permissions matrix page |
 | `apps/settings/claude/views.py` | Issue, rotate and revoke the API token |
-| `apps/drafts/models.py` | `CompanionToken` |
-| `apps/drafts/api_auth.py`, `apps/drafts/companion.py` | `kosmos_api_auth` and `companion_auth`, the token decorators |
+| `apps/drafts/models.py` | `ApiToken` |
+| `apps/accounts/api_auth.py`, `apps/drafts/companion.py` | `kosmos_api_auth` and `companion_auth`, the token decorators |
 | `templates/registration/` | `login.html`, `verify_code.html`, `verify_authenticator.html` |
 
 ## Data model
@@ -94,7 +94,7 @@ sign-in, as typed and lowercased, whether or not it belongs to a user:
 a day. It is a table, not a cache entry, so the count is the same in
 every worker process.
 
-**`CompanionToken`** is a `OneToOneField` to the user with a `key` from
+**`ApiToken`** is a `OneToOneField` to the user with a `key` from
 `secrets.token_urlsafe(32)` (`unique=True`, no expiry). `for_user()` is a
 `get_or_create`, so a user has at most one token and the LibreOffice
 companion and Claude Desktop share it.
@@ -245,7 +245,9 @@ its own id with no matter in the URL. For those,
 `PermissionMiddleware.process_view` runs after resolution (the only
 `process_view` in the stack) and calls
 `user_may_use_route(user, view_kwargs)`. That function
-maps each URL keyword in `MATTER_LOOKUPS` to the model that owns it and
+maps each URL keyword in `MATTER_LOOKUPS` (filled at start-up by
+`register_matter_lookup`, from `apps/case/registrations.py` and the AI
+and mail AppConfigs) to the model that owns it and
 the field path to its matter (`"message_id"` leads through
 `conversation__matter_id`, `"highlight_id"` through either a document or
 a saved case), collects every matter the route touches, and refuses unless
@@ -276,7 +278,7 @@ by matter has an `access.py` with the same two shapes:
 
 The modules are `apps/activity/access.py`, `apps/tasks/access.py`,
 `apps/calendar/access.py`, `apps/contacts/access.py`,
-`apps/intakes/access.py`, `apps/notes/access.py`, `apps/case/ai/access.py`,
+`apps/intakes/access.py`, `apps/notes/access.py`, `apps/ai/access.py`,
 `apps/case/facts/access.py` and `apps/case/documents/access.py`. Each
 module's docstring states its rule; three are worth knowing before you
 add a view:
@@ -287,7 +289,7 @@ add a view:
 - The refusal is `PermissionDenied` (403) everywhere except
   `apps/notes/access.py`, which raises `Http404` so a refusal does not
   confirm the note exists; `matter_conversation_for_user` in
-  `apps/case/ai/access.py` folds the matter into the lookup for the same
+  `apps/ai/access.py` folds the matter into the lookup for the same
   reason.
 - Each module also owns the **matter choices** its forms offer
   (`matters_for_task_form`, `matters_for_events`, `matters_for_entry_form`,
@@ -304,9 +306,9 @@ attached to.
 
 ### Tokens
 
-`kosmos_api_auth` (`apps/drafts/api_auth.py`) and `companion_auth`
+`kosmos_api_auth` (`apps/accounts/api_auth.py`) and `companion_auth`
 (`apps/drafts/companion.py`) read `X-Kosmos-Token`, look up the
-`CompanionToken` with `select_related("user")`, and answer `401` when the
+`ApiToken` with `select_related("user")`, and answer `401` when the
 key is unknown or `token.user.is_active` is false. Deactivating a user
 therefore revokes the token without touching it. The two decorators are
 kept separate so the API's 401 body can tell the user where to get a new
@@ -318,7 +320,7 @@ would. Which routes use which decorator, and what each exposes, is in
 the APIs themselves are in [MCP server and JSON APIs](mcp.md).
 
 The Settings → Claude Desktop page issues the token on first visit through
-`CompanionToken.for_user()`. `claude_rotate` deletes and recreates the row;
+`ApiToken.for_user()`. `claude_rotate` deletes and recreates the row;
 `claude_revoke` deletes it. Rotating re-keys the LibreOffice companion as
 well, since it is the same row.
 
@@ -363,9 +365,9 @@ belong here because they are easy to get wrong when adding a feature:
 ## Things that bite
 
 - **A `/case/` route that gains a new kind of id is unprotected until
-  `MATTER_LOOKUPS` has a line for it.** The comment above the table says
-  so. The lookup only knows the keywords listed there; an unknown keyword
-  contributes no matter, and the route passes.
+  a `register_matter_lookup` call covers it.** The comment above the
+  table says so. The lookup only knows the registered keywords; an
+  unknown keyword contributes no matter, and the route passes.
 - **Membership is checked from the URL only.** An id in a query string
   or a POST body bypasses `process_view`. Use the application's
   `access.py` fetchers (`matter_conversation_for_user`, `source_for_fact`,

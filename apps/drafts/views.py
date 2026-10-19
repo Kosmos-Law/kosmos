@@ -13,10 +13,10 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 
-from apps.case.ai.models import Conversation
+from apps.accounts.models import ApiToken
+from apps.ai.models import Conversation
 from apps.drafts import services
 from apps.drafts.companion import EXTENSION_VERSION
-from apps.drafts.models import CompanionToken
 from apps.drive import google
 from utils.toasts import toast_error
 
@@ -43,7 +43,7 @@ def _link_refused(message):
 def _chip_response(request, conversation):
     response = render(
         request,
-        "case/ai/draft-chip.html",
+        "ai/draft-chip.html",
         {"conversation": conversation, "matter": conversation.matter},
     )
     response["HX-Trigger"] = "draftLinkChanged"
@@ -58,7 +58,7 @@ def draft_picker(request, conv_id):
     drive_ready = bool(matter and matter.drive_folder) and google.check_credentials()
     return render(
         request,
-        "case/ai/draft-picker.html",
+        "ai/draft-picker.html",
         {
             "conversation": conversation,
             "matter": matter,
@@ -102,7 +102,7 @@ def draft_chip(request, conv_id):
     conversation = _get_conversation(conv_id)
     return render(
         request,
-        "case/ai/draft-chip.html",
+        "ai/draft-chip.html",
         {"conversation": conversation, "matter": conversation.matter},
     )
 
@@ -112,9 +112,9 @@ def draft_companion_setup(request):
     """Modal with the personalized extension download and install steps."""
     return render(
         request,
-        "case/ai/companion-setup.html",
+        "ai/companion-setup.html",
         {
-            "token": CompanionToken.for_user(request.user),
+            "token": ApiToken.for_user(request.user),
             "extension_version": EXTENSION_VERSION,
         },
     )

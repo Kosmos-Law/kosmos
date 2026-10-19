@@ -132,7 +132,7 @@ one matter. One per user per matter is enforced in `RateForm.clean_user()`
 
 **`SettlementEntry`** is a dated amount with `medium`, `type` and `notes`,
 listed on the Settlement tab and fed to the AI context
-(`apps/case/ai/context.py`); nothing financial reads it.
+(`apps/ai/context.py`); nothing financial reads it.
 
 **`Contact`** (`apps/contacts/models.py`, table `app_contact`) is the
 firm-wide address book row: name, company, address, three labelled phones,
@@ -263,7 +263,7 @@ rules are in `Matter.save()` and run on every save whose status is in
   records it.
 
 A `Closed` matter also starts the chat retention clock.
-`apps/case/ai/purge.py` deletes a matter's AI conversations, messages and
+`apps/ai/purge.py` deletes a matter's AI conversations, messages and
 their history rows once the matter has been Closed for
 `CHAT_RETENTION_DAYS` (180 by default; 0 keeps them). `closed_at()` walks
 the matter's simple-history rows newest-first and takes the start of the
@@ -308,7 +308,7 @@ Deleting a folder optionally deletes its contacts; those with
 
 ## Background work
 
-- `chat-purge-weekly` (`apps.case.ai.purge.scheduled_purge_closed_chats`,
+- `chat-purge-weekly` (`apps.ai.purge.scheduled_purge_closed_chats`,
   Sunday 03:00): the purge above, also runnable as the
   `purge_closed_chats` command with `--dry-run`. It logs one line per
   matter; an exception aborts the run, and the next Sunday recomputes

@@ -72,11 +72,11 @@ lands in the note's history under the requesting user.
 
 ## Evidence
 
-- `apps/case/ai/tasks.py`, `armed_write_protocols()` docstring: "Each
+- `apps/ai/tasks.py`, `armed_write_protocols()` docstring: "Each
   protocol is included only when the recent user messages actually point
   at that kind of work, so unrelated conversations carry no standing
   write instructions."
-- `apps/case/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`,
+- `apps/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`,
   `caselaw_blocks.py`; `apps/dash/agenda.py`, `_apply_task_blocks()`.
 - `apps/notes/models.py`, the comment on `ai_write_until`: "The in-app
   AI's note writes are not gated by this." `apps/notes/api.py`,

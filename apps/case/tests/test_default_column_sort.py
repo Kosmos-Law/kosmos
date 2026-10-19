@@ -7,8 +7,8 @@ the second click."""
 
 import pytest
 
-from apps.case.facts.sorting import toggled_sort_key
 from apps.case.models import Fact, Witness
+from apps.management.sorting import toggled_sort_key
 
 pytestmark = pytest.mark.django_db
 

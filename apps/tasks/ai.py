@@ -57,7 +57,7 @@ def _matter_lines(user):
 
 def interpret_quick_add(text, user, recent_matter=None, model="gemini-flash"):
     """One quick-add line to a create-entry dict; None when unusable."""
-    from apps.case.ai.context import build_request_info
+    from apps.ai.context import build_request_info
 
     hint = ""
     if recent_matter:
@@ -77,7 +77,7 @@ def interpret_quick_add(text, user, recent_matter=None, model="gemini-flash"):
         ]
     )
     messages = [{"role": "user", "content": text}]
-    from apps.case.ai.providers import ANTHROPIC, GEMINI, complete
+    from apps.llm.providers import ANTHROPIC, GEMINI, complete
 
     # The firm's model choice is a preference: with only the other
     # provider configured, quick-add runs there instead.

@@ -51,6 +51,8 @@ it.
 | Order | Rule (list in the source) | Path | Who passes |
 |---|---|---|---|
 | 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
+| 0 | Pattern (`CASE_FILE_PATTERN`, less `CASE_FILE_EXEMPT`) | Everything under `/case/` except the MCP matter API under `/case/api/` and the matter-scoped note routes (`/case/<id>/notes/…`, `/case/notes/…`) | Everyone while the firm's case file is on (Settings > Features); nobody (404) when an administrator has switched it off |
+| 0 | Pattern (`LIBRARY_PATTERN`) | The notes under `/notes/`, the Notes tab (`/case/<id>/notes/…`, `/case/<id>/tab/notes/`) and `/case/notes/…` | Everyone while the firm's library is on (Settings > Features); nobody (404) when it is off |
 | 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/permissions/` | Admin role only |
@@ -58,6 +60,7 @@ it.
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/contacts/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/matters/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/tasks/` | Admin role only |
+| 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/features/` | Admin role only |
 | 3 | Prefix (`PERMISSION_PATHS`) | `/invoicing/` | Admin, or `perm_financial` |
 | 3 | Prefix (`PERMISSION_PATHS`) | `/intakes/` | Admin, or `perm_intakes` |
 | 3 | Prefix (`PERMISSION_PATHS`) | `/settings/intake-emails/` | Admin, or `perm_intakes` |
@@ -94,6 +97,7 @@ What sits under each path:
 | `/settings/contacts/` | Contact roles, groups and relationship types. |
 | `/settings/matters/` | Practice areas. |
 | `/settings/tasks/` | Task settings. |
+| `/settings/features/` | The firm's feature switches: the case file and the library. |
 | `/invoicing/` | Invoices, unbilled work, payments, credits, collection, payment requests, and the trust ledger (`/invoicing/trust/`). |
 | `/intakes/` | Intakes, their notes and chat, and the intake form builder (`/intakes/forms/`). |
 | `/settings/intake-emails/` | Intake email templates. |
@@ -116,7 +120,7 @@ matter's `members`.
 |---|---|---|---|
 | `PermissionMiddleware.process_view`, `user_may_use_route` | Every route under `/case/`, by the ids in its URL (table below) | `apps/accounts/middleware.py`; [`apps/accounts/access.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/accounts/access.py) | 403 |
 | `matter_access_required` | Views under `/matters/<id>/…` that take the matter id: overview, edit, tab content, contacts, events, tasks, activity, timeline, proceedings, categories, settlement, rates, ledger, work status | `apps/accounts/access.py`; decorators in `apps/matters/**/views.py` | 403 |
-| `matter_access_required` | `/case/select-matter/<id>/`, `/case/<id>/mode-content/` (also covered by the middleware) | `apps/case/views.py` | 403 |
+| `matter_access_required` | `/case/select-matter/<id>/` (also covered by the middleware) | `apps/case/views.py` | 403 |
 | `filter_matters_for_user` | Matter list, quick search, open-matter switcher JSON, open-matter dropdown and steppers on the matter detail page | `apps/matters/get_matter_list.py`; `apps/matters/views.py`; `apps/matters/templatetags/matter_tags.py` | Matter not listed |
 | `filter_matters_for_user` | Matter switcher in the case workspace | `apps/case/views.py`; `apps/case/documents/get_document_data.py` | Matter not listed |
 | `filter_matters_for_user` | Matter choices in the task, time, expense, flat-fee, document and case-note forms | `apps/tasks/forms.py`; `apps/activity/time/forms.py`; `apps/activity/expenses/forms.py`; `apps/activity/flat_fees/forms.py`; `apps/case/documents/forms.py`; `apps/case/notes/forms.py` | Matter not offered |
@@ -194,14 +198,14 @@ Not checked against matter membership (sign-in only):
 | Bulk "change matter" and "comp" on expenses | `apps/activity/expenses/views.py` | 403 |
 | Bulk "change matter" and "comp" on flat fees | `apps/activity/flat_fees/views.py` | 403 |
 | Bulk comp on an invoice's time entries (already under `/invoicing/`) | `apps/invoicing/invoices/views.py` | 403 |
-| Token API: `ledger` and `trust` sections, invoice read | `apps/case/api.py` | 403, JSON error |
+| Token API: `ledger` and `trust` sections, invoice read | `apps/ai/api.py` | 403, JSON error |
 
 Not checked against `perm_financial`:
 
 | Area | Paths | Location |
 |---|---|---|
 | Time, expense and flat-fee lists (the Rate and Fee columns of the time list, the Amount column of the other two) | `/activity/…` | `templates/activity/time/list.html`; `apps/activity/` |
-| Token API sections `rates`, `activity`, `settlement` | `/case/api/matter/<id>/<section>/` | `apps/case/api.py` (`FINANCIAL_SECTIONS`) |
+| Token API sections `rates`, `activity`, `settlement` | `/case/api/matter/<id>/<section>/` | `apps/ai/api.py` (`FINANCIAL_SECTIONS`) |
 
 ### Intakes (`perm_intakes`)
 
@@ -223,13 +227,13 @@ Not checked against `perm_financial`:
 | Gate | Location | Blocked |
 |---|---|---|
 | Middleware: `/case/caselaws/…`, `/case/<matter_id>/caselaws/…`, `/case/<matter_id>/tab/caselaws/`, `/case/<matter_id>/viewer/cluster/…` | `apps/accounts/middleware.py` | 403 |
-| The Agentic chat's CourtListener tools and the `save-caselaw` protocol (`has_research_access()`) | `apps/case/ai/access.py` | Tools not offered; the agent works from the cases already saved |
+| The Agentic chat's CourtListener tools and the `save-caselaw` protocol (`has_research_access()`) | `apps/ai/access.py` | Tools not offered; the agent works from the cases already saved |
 
 ### Admin role
 
 | Gate | Location | Blocked |
 |---|---|---|
-| Middleware: the six `/settings/…` paths in `ADMIN_ONLY_PATHS` | `apps/accounts/middleware.py` | 403 |
+| Middleware: the seven `/settings/…` paths in `ADMIN_ONLY_PATHS` | `apps/accounts/middleware.py` | 403 |
 | Reset another user's authenticator app | `apps/settings/users/views.py` | 403 |
 | Toggle a permission, open or change matter assignments, checked again in the view | `apps/settings/users/views.py` | 403 |
 | Delete a matter | `apps/matters/views.py` | 403 |
@@ -261,7 +265,7 @@ whether the server also refuses the request.
 | Sidebar: Invoicing | Admin or `perm_financial` | `templates/sidebar.html` | Yes (middleware) |
 | Sidebar: Intakes | Admin or `perm_intakes` | `templates/sidebar.html` | Yes (middleware) |
 | Sidebar: Reports | Admin or `perm_reports` | `templates/sidebar.html` | Yes (middleware) |
-| AI tab: Conversations / Case Law switch | Admin or `perm_research` | `templates/case/ai/view-pills.html` | Yes (middleware) |
+| AI tab: Conversations / Case Law switch | Admin or `perm_research` | `templates/ai/view-pills.html` | Yes (middleware) |
 | Matter navigation: Rates tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware, and the tab switch in the view) |
 | Matter navigation: Ledger tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware and view) |
 | Matter form: Delete button | Admin | `templates/matters/form.html` | Yes (view) |
@@ -331,12 +335,12 @@ limit.
 
 | Fact | Value |
 |---|---|
-| Token model | `CompanionToken`, one per user (`apps/drafts/models.py`) |
+| Token model | `ApiToken`, one per user (`apps/drafts/models.py`) |
 | Format | `secrets.token_urlsafe(32)`, stored as-is in the database |
 | Expiry | None |
 | Issued | By the user: Settings → Claude Desktop, or the first time they open the LibreOffice companion setup |
 | Rotated or revoked | By the user only, in Settings → Claude Desktop |
-| Missing, unknown, or user inactive | 401 with a JSON error (`apps/drafts/api_auth.py`, `apps/drafts/companion.py`) |
+| Missing, unknown, or user inactive | 401 with a JSON error (`apps/accounts/api_auth.py`, `apps/drafts/companion.py`) |
 
 | URL prefix | Decorator | Methods | Scope |
 |---|---|---|---|

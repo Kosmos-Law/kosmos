@@ -1,0 +1,58 @@
+<div class="modal-dialog modal-md">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h1 class="modal-title">LibreOffice Companion</h1>
+      <div>
+        <button type="button" @click="$dispatch('close-modal')">
+          <i class="icon-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="detail-text">
+        The companion extension connects your local LibreOffice Writer to
+        Kosmos. With a draft linked to a conversation and the same document
+        open in Writer, edits the AI makes in the chat appear in the document
+        at once as tracked changes (accept or reject them in Writer), and the
+        AI reads the document as you have it (your hand edits included).
+      </p>
+      <p>
+        <a href="{% url 'drafts:companion-oxt' %}" class="btn btn-primary">
+          <i class="icon-download"></i>
+          Download kosmos-companion.oxt
+        </a>
+      </p>
+      <p class="detail-text">
+        Current version: {{ extension_version }}. In Writer, Kosmos, Status
+        shows the version you have installed (a copy that shows none is
+        older). To update, download the file again and install it over the
+        old one, then restart LibreOffice.
+      </p>
+      <ol class="companion-steps">
+        <li>
+          Install the downloaded file in LibreOffice: Tools, Extension
+          Manager, Add (or double-click the file). Then restart LibreOffice.
+          On Ubuntu or Debian, if the install fails with an error, run
+          <code>sudo apt-get install libreoffice-script-provider-python python3-uno</code>
+          and try again.
+        </li>
+        <li>
+          Link a draft to an AI conversation (the pen button beside the
+          message box), and open the same ODT from the matter's Drive
+          folder on your computer.
+        </li>
+        <li>
+          In Writer, choose Kosmos, then Connect to drafting session. The
+          document pairs with its link by file name. If you have linked
+          more than one file of that name, Writer asks which matter and
+          conversation this document belongs to.
+        </li>
+      </ol>
+      <p class="detail-text companion-note">
+        The download is personal: it carries your server address and access
+        token, so it works with no configuration. Do not share the file.
+        Each user should download their own copy from this dialog.
+      </p>
+    </div>
+  </div>
+</div>

@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from apps.case.ai.models import Conversation, Message
-from apps.case.ai.status import status_cache as cache
+from apps.ai.models import Conversation, Message
 from apps.intakes.models import Note
+from apps.llm.status import status_cache as cache
 
 pytestmark = pytest.mark.django_db
 
@@ -39,7 +39,7 @@ def mock_gemini(monkeypatch):
             return "We concluded the fence claim is viable.", 10, 5
 
         monkeypatch.setattr(
-            "apps.case.ai.gemini_client.send_to_gemini_streaming", fake_streaming
+            "apps.llm.gemini_client.send_to_gemini_streaming", fake_streaming
         )
 
     return _set
@@ -87,7 +87,7 @@ def test_second_send_reuses_conversation(client, intake, mock_gemini):
 
 
 def test_status_completes_intake_conversation(client, intake, mock_gemini):
-    """The shared case:ai-status endpoint accepts a matterless conversation
+    """The shared ai:status endpoint accepts a matterless conversation
     and does not spawn the matter-only summary thread (threads run inline
     here, so a spawned summary would overwrite conversation.summary)."""
     mock_gemini()
@@ -157,7 +157,7 @@ def test_update_block_changes_fields(
     client, intake, practice_area, mock_gemini, monkeypatch
 ):
     monkeypatch.setattr(
-        "apps.case.ai.gemini_client.send_to_gemini_streaming",
+        "apps.llm.gemini_client.send_to_gemini_streaming",
         lambda *a, **k: (
             update_block({"value": 75000, "practice_area": "general", "importance": 9}),
             10,
@@ -181,7 +181,7 @@ def test_update_block_changes_fields(
 def test_update_block_rejects_bad_values(client, intake, mock_gemini, monkeypatch):
     original_status = intake.status
     monkeypatch.setattr(
-        "apps.case.ai.gemini_client.send_to_gemini_streaming",
+        "apps.llm.gemini_client.send_to_gemini_streaming",
         lambda *a, **k: (
             update_block({"status": "Vaporized", "source": "Carrier Pigeon"}),
             10,
@@ -201,7 +201,7 @@ def test_update_block_rejects_bad_values(client, intake, mock_gemini, monkeypatc
 def test_update_block_invalid_json_left_alone(client, intake, monkeypatch):
     text = "```update-intake\nnot json\n```"
     monkeypatch.setattr(
-        "apps.case.ai.gemini_client.send_to_gemini_streaming",
+        "apps.llm.gemini_client.send_to_gemini_streaming",
         lambda *a, **k: (text, 10, 5),
     )
     original_name = intake.name

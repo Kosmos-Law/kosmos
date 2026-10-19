@@ -558,11 +558,26 @@ def sync(dry_run=False, full=False):
     return {**stats, "unmatched": sorted(unmatched)}
 
 
+def _case_file_off():
+    """The mirror pauses while the firm has the case file switched off
+    (Settings > Features): nothing would show the documents it ingests."""
+    from apps.settings.features import case_file_enabled
+
+    if case_file_enabled():
+        return False
+    logger.info("Drive sync skipped: the case file is switched off")
+    return True
+
+
 def scheduled_sync():
+    if _case_file_off():
+        return {"skipped": "case file off"}
     return sync()
 
 
 def scheduled_sync_full():
+    if _case_file_off():
+        return {"skipped": "case file off"}
     return sync(full=True)
 
 

@@ -91,32 +91,10 @@
     </div>
   </div>
 {% endif %}
-{% if notes %}
-  <div class="search-section">
-    <div class="search-section-header">
-      <span class="search-section-title">Notes</span>
-      <span class="app-badge badge-gray">{{ notes|length }}</span>
-    </div>
-    <div class="search-cards">
-      {% for note in notes %}
-        <a href="{% url 'notes:note-view' note.id %}"
-           class="search-card"
-           target="_blank">
-          <span class="app-badge app-badge-lg badge-gray"><i class="icon-sticky-note"></i></span>
-          <div class="search-card-content">
-            <div class="search-card-title">{{ note.title }}</div>
-            <div class="search-card-meta">
-              {% if note.matter %}{{ note.matter.name }} &bull;{% endif %}
-              {% if note.topic %}{{ note.topic }} &bull;{% endif %}
-              {{ note.get_category_display }}
-            </div>
-          </div>
-        </a>
-      {% endfor %}
-    </div>
-  </div>
-{% endif %}
-{% if not matters and not proceedings and not contacts and not intakes and not notes %}
+{% for section in extra_sections %}
+  {% include section.kind.template with rows=section.rows %}
+{% endfor %}
+{% if not has_results %}
   <div class="search-empty">
     <i class="icon-search"></i>
     <p>No results found</p>

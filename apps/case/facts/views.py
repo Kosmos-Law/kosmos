@@ -16,6 +16,12 @@ from apps.management.selection import (
     selection_response,
     toggle_id,
 )
+from apps.management.sorting import (
+    filterset_sort_keys,
+    stored_sort_key,
+    toggled_sort_key,
+    with_valid_sort,
+)
 
 from .access import label_for_matter, source_for_fact
 from .filters import (
@@ -27,12 +33,6 @@ from .filters import (
 )
 from .forms import FactForm
 from .generate_pdf import generate_facts_pdf
-from .sorting import (
-    filterset_sort_keys,
-    stored_sort_key,
-    toggled_sort_key,
-    with_valid_sort,
-)
 
 SORT_KEYS = filterset_sort_keys(FactsFilter)
 DEFAULT_SORT = "date"
@@ -168,7 +168,7 @@ def facts_index(request, matter_id):
     set_last_tab(request, matter_id, "facts")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "facts",
         "matter": matter,
         "matters": matters,
@@ -183,7 +183,7 @@ def facts_list(request, matter_id):
     matter, matters = get_matter_from_url(request, matter_id)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "facts",
         "matter": matter,
         "matters": matters,
@@ -210,7 +210,7 @@ def facts_add(request, matter_id):
         form = FactForm(use_required_attribute=False)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "facts",
         "matter": matter,
         "form": form,
@@ -238,7 +238,7 @@ def facts_edit(request, fact_id):
         form = FactForm(instance=fact, use_required_attribute=False)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "facts",
         "matter": matter,
         "fact": fact,

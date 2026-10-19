@@ -1,6 +1,6 @@
 # AI chat and context
 
-The AI machinery under `apps/case/ai/` turns a matter's record into a
+The AI machinery under `apps/ai/` turns a matter's record into a
 system prompt, runs a model call on a background thread, reports progress
 to a polling view, and applies the writes the model was directed to make.
 Two surfaces share it: the case chat (the matter's **AI** tab) and the
@@ -13,22 +13,22 @@ key configured, none of it is reachable (see
 
 | Module | Holds |
 |---|---|
-| `apps/case/ai/models.py` | `Conversation`, `Message`, `MaterialChunk` |
-| `apps/case/ai/views.py` | The case chat views: list, send, status poll, cancel, Compose Prompt, context preview |
-| `apps/case/ai/tasks.py` | `process_ai_request()` (the classic turn), `finalize_response()`, `armed_write_protocols()`, the model dispatch tables, the window-fit guard |
-| `apps/case/ai/context.py` | The context builders: section formatters, `collect_context_items()`, `assemble_matter_context_with_selection()`, `build_request_info()`, `build_chat_history()` |
-| `apps/case/ai/selector.py` | The context selector (fast tier): `build_manifest()`, `select_context()`, token estimates and model limits |
-| `apps/case/ai/prompts/legal.md` | The legal system prompt |
-| `apps/case/ai/status.py`, `access.py` | The cross-process status store and heartbeat; who may use a conversation and the Financial and Research gates |
-| `apps/case/ai/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
-| `apps/case/ai/providers.py` | `complete()`, the one call for AI work that is not a matter chat; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
+| `apps/ai/models.py` | `Conversation`, `Message` (`MaterialChunk`, the semantic index's rows, stayed with the content in `apps/case/models.py`) |
+| `apps/ai/views.py` | The case chat views: list, send, status poll, cancel, Compose Prompt, context preview |
+| `apps/ai/tasks.py` | `process_ai_request()` (the classic turn), `finalize_response()`, `armed_write_protocols()`, the model dispatch tables, the window-fit guard |
+| `apps/ai/context.py` | The context builders: section formatters, `collect_context_items()`, `assemble_matter_context_with_selection()`, `build_request_info()`, `build_chat_history()` |
+| `apps/ai/selector.py` | The context selector (fast tier): `build_manifest()`, `select_context()`, token estimates and model limits |
+| `apps/ai/prompts/legal.md` | The legal system prompt |
+| `apps/llm/status.py`, `access.py` | The cross-process status store and heartbeat; who may use a conversation and the Financial and Research gates |
+| `apps/llm/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
+| `apps/llm/providers.py` | `complete()`, the one call for AI work that is not a matter chat; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
 | `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
 | `config/context.py` | The `integrations` context processor: `ai_enabled` and `caselaw_available` for templates |
-| `apps/case/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
-| `apps/case/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links or note chips; citation extraction and CourtListener verification; the fast-tier vetting job |
-| `apps/case/ai/purge.py` | The closed-matter chat purge |
-| `apps/case/ai/semantic.py`, `embeddings.py`, `pricing.py` | The pgvector index behind the agent's `search_materials`; estimated cost for the status bar |
-| `templates/case/ai/` | The chat window, `status.html` (the poller), `prompt-editor-modal.html`, message partials |
+| `apps/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
+| `apps/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links or note chips; citation extraction and CourtListener verification; the fast-tier vetting job |
+| `apps/ai/purge.py` | The closed-matter chat purge |
+| `apps/case/semantic.py`, `embeddings.py`, `pricing.py` | The pgvector index behind the agent's `search_materials`; estimated cost for the status bar |
+| `templates/ai/` | The chat window, `status.html` (the poller), `prompt-editor-modal.html`, message partials |
 | `apps/intakes/chat.py` | The intake chat, built on the same models and status protocol |
 
 ## Data model
@@ -89,7 +89,7 @@ qcluster and `manage.py build_semantic_index` backfills.
    threads, and deletes the key.
 
 **Compose Prompt** (`views.prompt_editor_modal()`,
-`templates/case/ai/prompt-editor-modal.html`) is a rich-text editor whose
+`templates/ai/prompt-editor-modal.html`) is a rich-text editor whose
 markdown is posted to the same `ai-send` route; its hidden `kind` field
 carries the mode the window was opened in, because the first message
 creates the conversation. The draft lives in `localStorage` per conversation.
@@ -168,7 +168,7 @@ short-circuit or the fallback: they enter only when the selector names them.
 
 ### The system prompt file
 
-`apps/case/ai/prompts/legal.md` is read fresh on every call by
+`apps/ai/prompts/legal.md` is read fresh on every call by
 `context.load_legal_prompt()` (an edit takes effect without a restart)
 and its `[JURISDICTION]` placeholders are replaced with the matter's
 jurisdiction, else the firm's, else "United States common law". The same
@@ -233,7 +233,7 @@ Four layers keep a server without a key free of AI:
 - **Templates.** The `config.context.integrations` context processor puts
   lazy `ai_enabled` and `caselaw_available` in every template context
   (evaluated only when a template reads them). They hide the AI tab and
-  its Case Law switch (`case-nav.html`, `case/ai/view-pills.html`), the
+  its Case Law switch (`case-nav.html`, `ai/view-pills.html`), the
   intake Assessment pill and its Assess and Chat buttons, the AI column
   and bulk menu on Documents and Case Law, and the Settings > Tasks menu
   entry.
@@ -284,7 +284,7 @@ the process died, and the view writes the "interrupted" assistant message
 itself; `complete` and `error` are stored as messages; `cancelled` is left
 in place so the thread's `is_cancelled()` keeps seeing it.
 
-`templates/case/ai/status.html` polls every second with `hx-swap="morph"`
+`templates/ai/status.html` polls every second with `hx-swap="morph"`
 (idiomorph) so the box is patched, not replaced; a page that hosts it
 must load idiomorph. The interval ends when a terminal reply swaps in a
 different root element, and `views._terminal()` adds `HX-Reswap: outerHTML`

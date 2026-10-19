@@ -37,7 +37,7 @@ def index(request, matter_id):
     set_last_tab(request, matter_id, "documents")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "documents",
     } | documents_data
 
@@ -49,7 +49,7 @@ def documents_list(request, matter_id):
     documents_data = get_document_data(request, matter_id)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "documents",
     } | documents_data
 
@@ -219,7 +219,7 @@ def document_date(request, document_id):
 def _documents_list_response(request, matter_id):
     """The Documents tab list, as the row menus' POSTs swap it into #documents."""
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "documents",
     } | get_document_data(request, matter_id)
     return render(request, "case/documents/list.html", context)

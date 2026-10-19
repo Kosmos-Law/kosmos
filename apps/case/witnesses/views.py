@@ -4,12 +4,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
-from apps.case.facts.sorting import (
-    filterset_sort_keys,
-    stored_sort_key,
-    toggled_sort_key,
-    with_valid_sort,
-)
 from apps.case.highlights.importance import parse_importance
 from apps.case.models import Highlight, Witness
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
@@ -20,6 +14,12 @@ from apps.management.selection import (
     select_all_ids,
     selection_response,
     toggle_id,
+)
+from apps.management.sorting import (
+    filterset_sort_keys,
+    stored_sort_key,
+    toggled_sort_key,
+    with_valid_sort,
 )
 
 from .filters import WitnessesFilter
@@ -97,7 +97,7 @@ def witnesses_index(request, matter_id):
     set_last_tab(request, matter_id, "witnesses")
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "witnesses",
         "matter": matter,
         "matters": matters,
@@ -112,7 +112,7 @@ def witnesses_list(request, matter_id):
     matter, matters = get_matter_from_url(request, matter_id)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "witnesses",
         "matter": matter,
         "matters": matters,
@@ -139,7 +139,7 @@ def witnesses_add(request, matter_id):
         form = WitnessForm(use_required_attribute=False)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "witnesses",
         "matter": matter,
         "form": form,
@@ -167,7 +167,7 @@ def witnesses_edit(request, witness_id):
         form = WitnessForm(instance=witness, use_required_attribute=False)
 
     context = {
-        "app": "matters",
+        "app": "case",
         "subapp": "witnesses",
         "matter": matter,
         "witness": witness,

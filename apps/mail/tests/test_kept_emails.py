@@ -39,7 +39,7 @@ def closed_matter(matter):
 
 def test_link_with_nothing_chosen_is_refused(client, closed_matter, fake_gmail, queued):
     response = client.post(
-        reverse("case:emails-label-link", args=[closed_matter.id]), {"label_name": ""}
+        reverse("mail:emails-label-link", args=[closed_matter.id]), {"label_name": ""}
     )
 
     assert response.status_code == 200
@@ -51,7 +51,7 @@ def test_link_with_nothing_chosen_is_refused(client, closed_matter, fake_gmail, 
 def test_link_with_nothing_chosen_keeps_the_current_label(
     client, matter, fake_gmail, queued
 ):
-    response = client.post(reverse("case:emails-label-link", args=[matter.id]), {})
+    response = client.post(reverse("mail:emails-label-link", args=[matter.id]), {})
 
     assert response.status_code == 200
     matter.refresh_from_db()
@@ -76,7 +76,7 @@ def test_emails_tab_lists_kept_emails_without_a_label(
     client, closed_matter, fake_gmail
 ):
     content = client.get(
-        reverse("case:emails-index", args=[closed_matter.id])
+        reverse("mail:emails-index", args=[closed_matter.id])
     ).content.decode()
 
     assert "Kept after closing" in content
@@ -91,7 +91,7 @@ def test_emails_tab_with_no_label_and_no_emails_prompts_to_link(
     matter.save(update_fields=["gmail_label_name"])
 
     content = client.get(
-        reverse("case:emails-index", args=[matter.id])
+        reverse("mail:emails-index", args=[matter.id])
     ).content.decode()
 
     assert "No Gmail label is linked to this matter yet" in content

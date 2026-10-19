@@ -58,6 +58,9 @@ jobs:
       - name: Lint code
         run: uv run pre-commit run --all-files
 
+      - name: Check module boundaries
+        run: uv run lint-imports
+
   test:
     name: Test (Group ${{ matrix.group }})
     runs-on: ubuntu-latest

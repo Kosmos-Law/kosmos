@@ -19,7 +19,7 @@ def mock_ai(monkeypatch):
     def _set(payload):
         text = payload if isinstance(payload, str) else json.dumps(payload)
         monkeypatch.setattr(
-            "apps.case.ai.gemini_client.send_to_gemini_streaming",
+            "apps.llm.gemini_client.send_to_gemini_streaming",
             lambda *args, **kwargs: (text, 10, 5),
         )
 

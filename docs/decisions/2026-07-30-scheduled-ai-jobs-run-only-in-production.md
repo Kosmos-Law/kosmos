@@ -54,7 +54,7 @@ there is no switch that turns the jobs off while leaving `ENV=prod`.
 
 ## Evidence
 
-- `apps/case/ai/auto_summary.py`, `scheduled_refresh_auto_summaries()`
+- `apps/ai/auto_summary.py`, `scheduled_refresh_auto_summaries()`
   docstring: "The dev database is overwritten from prod nightly, so dev
   inherits prod's Schedule rows and would duplicate the whole spend.
   On-demand runs (the run_auto_summaries command) bypass this guard."

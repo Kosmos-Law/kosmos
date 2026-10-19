@@ -6,8 +6,9 @@ editor. Drafts are different: a draft is a `.odt` file in the matter's
 Google Drive folder, opened in LibreOffice Writer, that a case AI
 conversation is pinned to so the AI can read it and propose tracked
 changes through a companion extension. Notes span `apps/notes` and
-`apps/case/notes`; drafts are `apps/drafts` over `apps/drive` and the case
-AI chat.
+`apps/case/notes` and belong to the case builder (the practice side never
+uses the Note model; see [Module boundaries](../architecture.md#module-boundaries));
+drafts are `apps/drafts` over `apps/drive` and the case AI chat.
 
 ## Where the code is
 
@@ -26,12 +27,12 @@ AI chat.
 | `static/js/notes-library.js` | Drag-and-drop and context menus on the Library tab |
 | `static/js/vendor/tiptap.bundle.js` | The TipTap bundle (see below) |
 | `apps/notes/tests/js/` | Node tests for the editor modules |
-| `apps/drafts/models.py` | `DraftLink`, `CompanionToken`, `CompanionRound` |
+| `apps/drafts/models.py` | `DraftLink`, `ApiToken`, `CompanionRound` |
 | `apps/drafts/services.py` | Drive listing, link creation, the stale refresh |
 | `apps/drafts/chat.py` | The draft section of the AI context and the edit rounds |
 | `apps/drafts/companion.py` | The API the extension polls, and the `.oxt` build |
 | `apps/drafts/companion_src/` | The LibreOffice extension (`kosmos_companion.py`, `description.xml`, `Addons.xcu`) |
-| `apps/drafts/views.py`, `templates/case/ai/draft-*.html` | The picker, the chip and the setup modal in the chat window |
+| `apps/drafts/views.py`, `templates/ai/draft-*.html` | The picker, the chip and the setup modal in the chat window |
 | `apps/drive/convert.py` | ODT to Markdown through pandoc |
 | `apps/drive/redline.py`, `apps/drive/uno_driver.py` | The headless redline driver, dormant (see below) |
 
@@ -57,7 +58,7 @@ AI chat.
   reads), `doc_text_at`, `companion_seen`. `sibling_links()` are the
   links to the same file by the same user; `companion_active` is true
   when any sibling was polled in the last 15 seconds.
-- **`CompanionToken`**: one per user, the `X-Kosmos-Token` key the
+- **`ApiToken`**: one per user, the `X-Kosmos-Token` key the
   extension and the MCP server both send.
 - **`CompanionRound`**: one AI edit round, `edits` (wire dicts from
   `apps.drive.redline.edit_to_dict`), `status` (pending, applied, failed,
@@ -175,7 +176,7 @@ or replaces a note's Markdown only while `Note.ai_write_until` is in the
 future; the editor's sparkles button (`note_ai_write`) grants 24 hours
 and a second click clears it. The grant is per note and note-wide, since
 token auth has no browser session to consult. The in-app AI's note
-writes (`apps/case/ai/note_blocks.py`, fenced `create-note` and
+writes (`apps/ai/note_blocks.py`, fenced `create-note` and
 `edit-note` blocks) are not gated by it. The API and the MCP server are
 described in [MCP](mcp.md).
 
@@ -235,7 +236,7 @@ not confirmed".
 The extension is served as a personalized `.oxt` by `companion_oxt`:
 `companion_src/` zipped as is, plus a generated `config.json` carrying
 `PUBLIC_BASE_URL` (or the request's host) and the user's
-`CompanionToken`. `EXTENSION_VERSION` in `companion.py` and
+`ApiToken`. `EXTENSION_VERSION` in `companion.py` and
 `description.xml` must agree; `test_companion` checks it. Setup for
 users and servers is in [Drafting with
 LibreOffice](../../admin/integrations/libreoffice.md).

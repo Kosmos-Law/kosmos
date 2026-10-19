@@ -30,7 +30,7 @@ routes edit rounds here (chat._apply_via_companion). Document pushes are ODT
 bytes, converted server-side to a Markdown facsimile (the accepted view,
 tables included), which becomes the AI's draft context.
 
-Auth is a per-user key in the X-Kosmos-Token header (CompanionToken). These
+Auth is a per-user key in the X-Kosmos-Token header (ApiToken). These
 endpoints are CSRF-exempt: the client is urllib inside LibreOffice, not a
 browser with cookies. An unlinked draft answers 404, which tells the
 extension to stop polling; a link whose matter the user can no longer open
@@ -54,8 +54,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from apps.case.ai.access import accessible_matters
-from apps.drafts.models import CompanionRound, CompanionToken, DraftLink
+from apps.accounts.models import ApiToken
+from apps.ai.access import accessible_matters
+from apps.drafts.models import CompanionRound, DraftLink
 from apps.drive import convert
 
 logger = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ def companion_auth(view):
     def wrapper(request, *args, **kwargs):
         key = request.headers.get("X-Kosmos-Token", "")
         token = (
-            CompanionToken.objects.select_related("user").filter(key=key).first()
+            ApiToken.objects.select_related("user").filter(key=key).first()
             if key
             else None
         )
@@ -288,7 +289,7 @@ def companion_oxt(request):
     config.json carrying this server's URL and the requesting user's token.
     Building on demand keeps the download in lockstep with deployed code.
     """
-    token = CompanionToken.for_user(request.user)
+    token = ApiToken.for_user(request.user)
     server = settings.PUBLIC_BASE_URL or request.build_absolute_uri("/").rstrip("/")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:

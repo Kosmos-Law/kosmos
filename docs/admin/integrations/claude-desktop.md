@@ -7,7 +7,7 @@ proceedings, settlement, documents, highlights, timeline, witnesses,
 synced emails). Writes are narrow and deliberate: append/replace on
 notes whose editor AI-write toggle is on, and create-only timeline
 facts, witnesses, and tasks. Access is per-user: it authenticates with
-the same `CompanionToken` the LibreOffice companion uses (header
+the same `ApiToken` the LibreOffice companion uses (header
 `X-Kosmos-Token`), so a user's Claude sees exactly what that user can
 see, and deactivating the user kills the token.
 

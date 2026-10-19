@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="{% static_v 'css/icons.css' %}" />
     <link rel="stylesheet" href="{% static_v 'css/forms.css' %}" />
     <link rel="stylesheet" href="{% static_v 'css/modals.css' %}" />
-    <link rel="stylesheet" href="{% static_v 'css/apps/case/ai.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/apps/ai.css' %}" />
     <script>
     /* Match the app's theme (set on <html> before paint to avoid a flash).
        Mirrors the IIFE in base.html; this standalone page has its own <head>. */
@@ -97,7 +97,7 @@
                class="ai-messages"
                hx-get="{% url 'intakes:chat-messages' intake.id %}"
                hx-trigger="messagesUpdated from:body"
-               hx-swap="innerHTML">{% include "case/ai/messages.html" %}</div>
+               hx-swap="innerHTML">{% include "ai/messages.html" %}</div>
         </div>
         <div class="ai-input-container">
           <div class="ai-input-row">
@@ -148,7 +148,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     {% comment %}
     idiomorph: the AI status poller swaps itself with hx-swap="morph"
-    (case/ai/status.html). Without the extension htmx falls back to
+    (ai/status.html). Without the extension htmx falls back to
     innerHTML and the poller never ends.
     {% endcomment %}
     <script src="https://unpkg.com/idiomorph@0.3.0/dist/idiomorph-ext.min.js"></script>

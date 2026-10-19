@@ -37,7 +37,7 @@ AI is on when at least one provider has a key, and off otherwise.
   raw message without counting it a failure. AI quick-add needs both
   the firm toggle and a key.
 - **Either provider runs everything.** Every AI feature other than the
-  matter chat goes through `apps/case/ai/providers.py`'s `complete()`
+  matter chat goes through `apps/llm/providers.py`'s `complete()`
   with a tier (`fast` or `deep`) rather than a model, and runs on
   whichever provider is configured, Gemini first when both are. Intake
   chats record their provider and stay on it. The matter chat's picker
@@ -95,7 +95,7 @@ AI is on when at least one provider has a key, and off otherwise.
 
 - Commit `10f4fd610`, "feat: AI is optional, on when a provider key is
   set" (2026-10-06).
-- `apps/settings/ai.py`, `apps/case/ai/providers.py`,
+- `apps/settings/ai.py`, `apps/llm/providers.py`,
   `config/context.py`, and `AI_PATTERN` and `CASELAW_PATTERN` in
   `apps/accounts/middleware.py`.
 - `apps/case/tests/test_ai_optional.py` and

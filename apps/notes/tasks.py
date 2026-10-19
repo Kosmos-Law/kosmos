@@ -37,7 +37,7 @@ def generate_note_summary(note_id):
     """
     if not ai_enabled():
         return
-    from apps.case.ai.providers import complete
+    from apps.llm.providers import complete
     from apps.notes.models import Note
 
     try:

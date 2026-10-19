@@ -19,7 +19,7 @@ and substitutes the list's default order for anything else, because a
 session can already hold a key from before the check existed, or one
 posted through the filter dialog rather than the header.
 
-`apps/case/facts/sorting.py` is the shared check: `sort_keys(fields)`
+`apps/management/sorting.py` is the shared check: `sort_keys(fields)`
 builds the set from a tuple, `filterset_sort_keys(FilterSet)` from the
 FilterSet's own `order_by` filter, and `stored_sort_key()` does the read
 side. The trust summary carries its own `_SORT_KEYS` set with the same
@@ -57,7 +57,7 @@ shape, and the matter events list adopted the helpers on 2026-10-05.
   a bad key already in a session, or one posted through a filter dialog,
   is ignored: the list shows in its default order and the rest of the
   filter still applies."
-- `apps/case/facts/sorting.py`, module docstring: "The same check is
+- `apps/management/sorting.py`, module docstring: "The same check is
   made when the stored key is read: a session can already hold a key
   from before the check existed, or one posted through the filter
   dialog."

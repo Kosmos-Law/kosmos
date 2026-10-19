@@ -186,7 +186,7 @@ must not be shared or left on a shared drive.
 
 - The token is created automatically the first time a user opens the
   companion dialog or downloads the extension.
-- It is the same token (`CompanionToken`) that gives the user's Claude
+- It is the same token (`ApiToken`) that gives the user's Claude
   Desktop access to Kosmos, described in
   [Claude Desktop](claude-desktop.md). There is one per user. Anyone
   holding it can use those interfaces as that user.
