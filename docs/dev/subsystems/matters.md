@@ -5,9 +5,10 @@ tasks, events and chats all carry a foreign key to it. This page covers
 `apps/matters/` (the matter itself, its proceedings, parties, rates,
 settlement entries and ledger tab), `apps/contacts/` (the firm's address
 book and the client relationship) and `apps/folders/` (the sidebar folders
-contacts are filed in). The Case shell at `/case/<id>/` is in
-[Case building](case-building.md) and the two shells that share a matter
-are in [Architecture](../architecture.md).
+contacts are filed in). The case file at `/case/<id>/`, the case builder's
+side of the same matter, is in [Case building](case-building.md); how the
+matter record and the case file sit in the one sidebar is in
+[Architecture](../architecture.md).
 
 ## Where the code is
 

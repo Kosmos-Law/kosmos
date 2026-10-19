@@ -19,15 +19,17 @@ key configured, none of it is reachable (see
 | `apps/ai/context.py` | The context builders: section formatters, `collect_context_items()`, `assemble_matter_context_with_selection()`, `build_request_info()`, `build_chat_history()` |
 | `apps/ai/selector.py` | The context selector (fast tier): `build_manifest()`, `select_context()`, token estimates and model limits |
 | `apps/ai/prompts/legal.md` | The legal system prompt |
-| `apps/llm/status.py`, `access.py` | The cross-process status store and heartbeat; who may use a conversation and the Financial and Research gates |
+| `apps/llm/status.py` | The cross-process status store and heartbeat |
+| `apps/ai/access.py` | Who may use a conversation and the Financial and Research gates |
 | `apps/llm/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
 | `apps/llm/providers.py` | `complete()`, the one call for AI work that is not a matter chat; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
 | `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
-| `config/context.py` | The `integrations` context processor: `ai_enabled` and `caselaw_available` for templates |
+| `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `library_enabled` for templates |
 | `apps/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
 | `apps/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links or note chips; citation extraction and CourtListener verification; the fast-tier vetting job |
 | `apps/ai/purge.py` | The closed-matter chat purge |
-| `apps/case/semantic.py`, `embeddings.py`, `pricing.py` | The pgvector index behind the agent's `search_materials`; estimated cost for the status bar |
+| `apps/case/semantic.py`, `apps/llm/embeddings.py` | The pgvector index behind the agent's `search_materials` (the index lives with the content, the embedding call with the providers) |
+| `apps/llm/pricing.py` | Estimated cost for the status bar |
 | `templates/ai/` | The chat window, `status.html` (the poller), `prompt-editor-modal.html`, message partials |
 | `apps/intakes/chat.py` | The intake chat, built on the same models and status protocol |
 

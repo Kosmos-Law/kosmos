@@ -17,7 +17,7 @@ The screens are in the user guide: [Email](../../guide/email.md) and
 | `apps/mail/models.py` | `GmailAccount`, `Email`, `EmailAttachment` |
 | `apps/mail/google.py`, `parser.py`, `tasks.py` | The sync (label resolution, bootstrap, history feed, per-matter resync); `parse_payload()`; attachment text extraction |
 | `apps/mail/promote.py`, `ai.py` | `promote_email()`; thread formatting for AI context |
-| `apps/mail/views.py`, `filters.py`, `templates/mail/` | The case Emails tab, routed from `apps/case/urls.py` under `case/<matter_id>/emails/` |
+| `apps/mail/views.py`, `urls.py`, `filters.py`, `templates/mail/` | The case Emails tab: its routes (the `mail` namespace, under `case/<matter_id>/emails/`) and the tab's registration in the case shell from `apps/mail/apps.py` |
 | `apps/mail/management/commands/` | `sync_gmail`, `link_gmail_labels`, `adopt_gmail_account`, `refresh_email_bodies`, `setup_gmail_sync_schedule` |
 | `apps/settings/integrations/views.py` | Connecting and disconnecting a mailbox; the Case Email panel |
 | `apps/intakes/models.py` | `Intake`, `Note`, `InboundEmail`, `IntakeEmailTemplate`, `UserIntakeView` |

@@ -129,7 +129,11 @@ project entries. On the way in they run in this order:
    companion, intake assessment and chat) without an AI key,
    `CASELAW_PATTERN` (saved case law and the cluster viewer) without a
    CourtListener token; see
-   [AI is optional](ai/context.md#ai-is-optional). Then, for a
+   [AI is optional](ai/context.md#ai-is-optional). For a signed-in
+   user it then answers 404 on a feature the firm's administrator has
+   switched off under Settings > Features: `CASE_FILE_PATTERN` (all of
+   `/case/` less the MCP API and the matter-scoped note routes) and
+   `LIBRARY_PATTERN` (the notes). Then, for a
    signed-in user who is not an admin, it refuses with 403:
    the `ADMIN_ONLY_PATHS` (the Users, Permissions, Firm, Contacts, Matters
    and Tasks settings pages); any path in `PERMISSION_PATHS` whose flag

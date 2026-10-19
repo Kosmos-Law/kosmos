@@ -335,7 +335,7 @@ limit.
 
 | Fact | Value |
 |---|---|
-| Token model | `ApiToken`, one per user (`apps/drafts/models.py`) |
+| Token model | `ApiToken`, one per user (`apps/accounts/models.py`) |
 | Format | `secrets.token_urlsafe(32)`, stored as-is in the database |
 | Expiry | None |
 | Issued | By the user: Settings → Claude Desktop, or the first time they open the LibreOffice companion setup |
