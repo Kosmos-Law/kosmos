@@ -149,12 +149,21 @@ void main() {
     // The main curtain, tall and bright, over the right, and a bright pair
     // in the middle, with their hems low in the window: on the landing
     // page the cards cover that ground, and the hems peek out from behind
-    // them. The left of the sky is left to the stars. Each curtain drifts
-    // a little across the sky.
+    // them. Each curtain drifts a little across the sky.
     c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3)
         * smoothstep(-0.1, 0.2, th + 0.08 * sin(t * 0.017 + 2.0));
     float m = th + 0.06 * sin(t * 0.025 + 4.0);
     c += curtain(th, r, t, 3.0, 2.05, 0.8, -0.1, 0.1) * exp(-m * m * 60.0);
+    // Later, a short curtain over the left whose hem hangs in plain view,
+    // above the bottom third of the window. It comes in after half a
+    // minute or so and then comes and goes, so it is an event in the
+    // display rather than a fixture beside it. Its rays are short, and
+    // stay clear of the logo in the corner.
+    float lx = uv.x + 0.03 * sin(t * 0.023 + 1.0);
+    float late = smoothstep(25.0, 40.0, t)
+        * smoothstep(-0.2, 0.5, sin(t * 0.045 - 1.4));
+    c += curtain(th, r, t, 4.0, 1.42, 0.36, -0.5, 0.4)
+        * 1.1 * late * smoothstep(0.03, 0.13, lx) * smoothstep(0.42, 0.26, lx);
     c *= env * u_fade;
     // Tone-mapped on the brightest channel, and the colour scaled with
     // it, so a bright core stays green rather than burning to white.
