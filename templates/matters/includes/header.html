@@ -4,23 +4,14 @@ The matter title bar, shared by the matter record (mode "detail") and the
 case file (mode "case"). The previous and next open matter for the [ and ]
 keys ride on the matter switcher, which tab and mode switches keep current.
 The record and the case file are separate places in the sidebar; the link
-after the switcher crosses from one to the other for the same matter. Edit
-Matter follows the add-time and add-expense buttons.
+after the add-time and add-expense buttons crosses from one to the other for
+the same matter, so its width never shifts those buttons. Edit Matter leads
+the add-time and add-expense buttons.
 {% endcomment %}
 <div class="detail-header">
   <div class="toolbar matter-toolbar">
     <div class="toolbar-left">
       {% include "matters/includes/switcher.html" %}
-      {% if mode == "case" %}
-        <a class="matter-crosslink"
-           href="{% url 'matters:detail' id=matter.id %}"
-           title="Open the matter record"><i class="icon-table"></i> Matter</a>
-      {% elif case_file_enabled %}
-        <a class="matter-crosslink"
-           href="{% url 'case:select-matter' matter.id %}"
-           title="Open the case file"><i class="icon-folder-open"></i> Case</a>
-      {% endif %}
-      {% include "matters/includes/action_buttons.html" %}
       <button type="button"
               class="matter-edit"
               title="Edit matter"
@@ -29,6 +20,16 @@ Matter follows the add-time and add-expense buttons.
               hx-target="#htmx-modal-container">
         <i class="icon-square-pen"></i>
       </button>
+      {% include "matters/includes/action_buttons.html" %}
+      {% if mode == "case" %}
+        <a class="matter-crosslink"
+           href="{% url 'matters:detail' id=matter.id %}"
+           title="Open the matter record"><i class="icon-briefcase-business"></i> Matter</a>
+      {% elif case_file_enabled %}
+        <a class="matter-crosslink"
+           href="{% url 'case:select-matter' matter.id %}"
+           title="Open the case file"><i class="icon-notebook-tabs"></i> Case</a>
+      {% endif %}
     </div>
   </div>
 </div>

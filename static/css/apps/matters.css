@@ -285,7 +285,8 @@ Mode Pills (Detail/Case toggle)
 }
 
 /* The link from the matter record to its case file and back, in the
-   matter toolbar after the switcher: a pill of its own. */
+   matter toolbar after the add-time and add-expense buttons: a pill of its
+   own, so its width never shifts them. */
 .matter-toolbar .matter-crosslink {
   background: var(--background-control);
   border: 1px solid var(--border-medium);
