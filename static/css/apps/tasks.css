@@ -361,14 +361,6 @@ tr > td.importance.complete .button-link {
   white-space: nowrap;
 }
 
-.task-detail-assigned-by {
-  color: var(--color-muted);
-}
-
-.task-detail-assigned-by .icon-send {
-  margin-right: 0.5rem;
-}
-
 /* Multi-select status checkboxes in the Filter modal */
 .filter #id_status {
   display: flex;

@@ -315,11 +315,13 @@ def test_the_assignee_sees_text_and_the_assignor_a_picker(
     assert "task-date-link" in mine
 
 
-def test_the_detail_dialog_names_the_assignor(colleague_client, handed_off):
+def test_the_detail_dialog_leaves_the_assignor_to_the_list(
+    colleague_client, handed_off
+):
     html = colleague_client.get(
         reverse("tasks:detail", args=[handed_off.id])
     ).content.decode()
-    assert "Assigned by Ollie, who alone can move the date" in html
+    assert "who alone can move the date" not in html
 
 
 # -----------------------------------------------------
