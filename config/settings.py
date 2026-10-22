@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "apps.trust",
     "apps.invoicing",
     "apps.reports",
+    "apps.books",
     "apps.management",
     "apps.notes",
     "apps.drive",

@@ -21,6 +21,14 @@ Which of these an operator needs, and when, is covered in
 |---|---|
 | `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in Drive and Gmail. Scheduled weekly by setup_schedules. |
 
+## books
+
+| Command | What it does |
+|---|---|
+| `compare_quickbooks` | Compare the ledger's trial balance with a QuickBooks Trial Balance export. |
+| `import_quickbooks` | Import the chart of accounts and the journal from QuickBooks Online exports. |
+| `seed_chart` | Add the default chart of accounts for a law firm. Accounts whose code already exists are left alone, so the command is safe to repeat. |
+
 ## calendar
 
 | Command | What it does |

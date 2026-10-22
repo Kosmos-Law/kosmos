@@ -1,6 +1,7 @@
 from django.urls import path
 
 import apps.settings.appearance.views as appearance_urls
+import apps.settings.books.views as books_urls
 import apps.settings.claude.views as claude_urls
 import apps.settings.contacts.views as contact_urls
 import apps.settings.features.views as features_urls
@@ -77,6 +78,7 @@ urlpatterns = [
     # Firm
     path("settings/firm/", firm_urls.firm_index, name="firm-index"),
     path("settings/features/", features_urls.features_index, name="features-index"),
+    path("settings/books/", books_urls.books_index, name="books-index"),
     path("settings/tasks/", tasks_urls.tasks_index, name="tasks-index"),
     path(
         "settings/firm/logo/<slug:slot>/upload/",

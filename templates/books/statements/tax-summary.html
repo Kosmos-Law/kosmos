@@ -1,0 +1,59 @@
+{% extends "books/statements/main.html" %}
+{% block statement %}
+  {% load humanize %}
+  <h3>Tax Summary: {{ tax_form_label }}</h3>
+  <p class="detail-text">
+    {{ start|date:"F j, Y" }} to {{ end|date:"F j, Y" }} · income and expenses
+    folded onto the lines of the return. The form is set under Settings &gt; Books.
+  </p>
+  <table class="table statement-table">
+    <thead>
+      <tr>
+        <th class="code">Line</th>
+        <th>On the return</th>
+        <th>From</th>
+        <th class="numeric">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+        <tr>
+          <td class="code">{{ line.line }}</td>
+          <td>{{ line.label }}</td>
+          <td class="books-lines">
+            {% for row in line.rows %}<span>{{ row.account.name }}</span>{% endfor %}
+          </td>
+          <td class="numeric">{{ line.total|floatformat:2|intcomma }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4" class="empty-entries">Nothing posted in this period.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-total">
+        <td colspan="3">Net income per the books</td>
+        <td class="numeric">{{ net_income|floatformat:2|intcomma }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  {% if unmapped %}
+    <h4>Not on this return</h4>
+    <p class="detail-text">
+      Accounts with activity and no line on {{ tax_form_label }}. Owner
+      wages and charitable gifts are expected here; anything else wants a
+      line on the account.
+    </p>
+    <table class="table statement-table">
+      <tbody>
+        {% for row in unmapped %}
+          <tr>
+            <td>{{ row.account }}</td>
+            <td class="numeric">{{ row.amount|floatformat:2|intcomma }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock statement %}

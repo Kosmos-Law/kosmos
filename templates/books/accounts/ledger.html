@@ -1,0 +1,61 @@
+{% extends "books/main.html" %}
+{% block subcontent %}
+  {% load humanize %}
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <h2>{{ account }}</h2>
+    </div>
+    <div class="toolbar-right">
+      {% url 'books:account-ledger' account.id as period_url %}
+      {% include "books/period.html" %}
+    </div>
+  </div>
+  <div class="table-container">
+    <table class="table general-ledger">
+      <thead>
+        <tr>
+          <th class="date">Date</th>
+          <th>Entry</th>
+          <th>Memo</th>
+          <th class="numeric">Debit</th>
+          <th class="numeric">Credit</th>
+          <th class="numeric">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="books-group">
+          <td colspan="5">Balance brought forward</td>
+          <td class="numeric">{{ opening|floatformat:2|intcomma }}</td>
+        </tr>
+        {% for row in rows %}
+          <tr>
+            <td class="date">{{ row.line.entry.date|date:"Y-m-d" }}</td>
+            <td>
+              <a href="#"
+                 hx-get="{% url 'books:entry-detail' row.line.entry.id %}"
+                 hx-target="#htmx-modal-container">{{ row.line.entry.memo }}</a>
+            </td>
+            <td>{{ row.line.memo }}</td>
+            <td class="numeric">
+              {% if row.line.debit %}{{ row.line.debit|floatformat:2|intcomma }}{% endif %}
+            </td>
+            <td class="numeric">
+              {% if row.line.credit %}{{ row.line.credit|floatformat:2|intcomma }}{% endif %}
+            </td>
+            <td class="numeric">{{ row.balance|floatformat:2|intcomma }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="empty-message">No activity in this period.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="table-total">
+          <td colspan="5">Closing balance</td>
+          <td class="numeric">{{ closing|floatformat:2|intcomma }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+{% endblock subcontent %}

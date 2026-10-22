@@ -48,12 +48,18 @@ def integrations(request):
 
         return library_enabled()
 
+    def _books():
+        from apps.settings.features import books_enabled
+
+        return books_enabled()
+
     return {
         "ai_enabled": SimpleLazyObject(_ai),
         "caselaw_available": SimpleLazyObject(_caselaw),
         # The firm's feature switches (apps/settings/features.py).
         "case_file_enabled": SimpleLazyObject(_case_file),
         "library_enabled": SimpleLazyObject(_library),
+        "books_enabled": SimpleLazyObject(_books),
     }
 
 

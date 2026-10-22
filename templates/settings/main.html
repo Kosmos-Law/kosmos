@@ -21,6 +21,11 @@
             <li {% if subapp == "features" %}class="active"{% endif %}>
               <a href="{% url 'settings:features-index' %}">Features</a>
             </li>
+            {% if books_enabled %}
+              <li {% if subapp == "books" %}class="active"{% endif %}>
+                <a href="{% url 'settings:books-index' %}">Books</a>
+              </li>
+            {% endif %}
           {% endif %}
           <li {% if subapp == "notifications" %}class="active"{% endif %}>
             <a href="{% url 'settings:notifications-index' %}">Notifications</a>

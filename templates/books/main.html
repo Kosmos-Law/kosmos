@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{# djlint:off #}{% block body_class %}has-subnav{% endblock body_class %}{# djlint:on #}
+{% block content %}
+  <div id="content" class="container content">
+    <div class="detail">
+      <nav class="subnav">
+        <ul>
+          <li {% if subapp == "accounts" %}class="active"{% endif %}>
+            <a href="{% url 'books:accounts-index' %}">Accounts</a>
+          </li>
+          <li {% if subapp == "journal" %}class="active"{% endif %}>
+            <a href="{% url 'books:journal-index' %}">Journal</a>
+          </li>
+          <li {% if subapp == "statements" %}class="active"{% endif %}>
+            <a href="{% url 'books:statements-index' %}">Statements</a>
+          </li>
+        </ul>
+      </nav>
+      <div class="detail-body">
+        {% block subcontent %}
+        {% endblock subcontent %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}

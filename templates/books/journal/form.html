@@ -1,0 +1,63 @@
+<div class="modal-dialog modal-lg">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h1 class="modal-title">
+        {% if entry %}
+          Edit Entry {{ entry.id }}
+        {% else %}
+          Add Journal Entry
+        {% endif %}
+      </h1>
+      <div>
+        <button type="button" @click="$dispatch('close-modal')">
+          <i class="icon-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <form id="entry-form"
+            hx-post="{% if entry %}{% url 'books:entry-edit' entry.id %}{% else %}{% url 'books:entry-add' %}{% endif %}"
+            hx-target="#htmx-modal-container"
+            role="form"
+            class="form-compact col2">
+        {% csrf_token %} {{ form }}
+        {{ formset.management_form }}
+        {{ formset.non_form_errors }}
+        <table class="table entry-lines-form">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th class="numeric">Debit</th>
+              <th class="numeric">Credit</th>
+              <th>Memo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line_form in formset %}
+              <tr>
+                {{ line_form.id }}
+                <td>
+                  {{ line_form.account }}
+                  {{ line_form.account.errors }}
+                </td>
+                <td class="numeric">
+                  {{ line_form.debit }}
+                  {{ line_form.debit.errors }}
+                </td>
+                <td class="numeric">
+                  {{ line_form.credit }}
+                  {{ line_form.credit.errors }}
+                </td>
+                <td>{{ line_form.memo }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </form>
+      <p class="detail-text">Debits must equal credits. Leave the lines you do not need blank.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="submit" form="entry-form" class="btn btn-success">Post</button>
+    </div>
+  </div>
+</div>

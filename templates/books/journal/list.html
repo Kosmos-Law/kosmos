@@ -1,0 +1,98 @@
+{% load humanize %}
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="filter-tools">
+      <button type="button"
+              class="btn-icon"
+              title="Add entry"
+              hx-get="{% url 'books:entry-add' %}"
+              hx-target="#htmx-modal-container">
+        <i class="icon-plus"></i>
+      </button>
+    </div>
+  </div>
+  <div class="toolbar-right">
+    {% url 'books:journal-index' as period_url %}
+    {% include "books/period.html" %}
+  </div>
+</div>
+<div class="table-container">
+  <table class="table journal">
+    <thead>
+      <tr>
+        <th class="id">ID</th>
+        <th class="date">Date</th>
+        <th>Memo</th>
+        <th>Source</th>
+        <th>Accounts</th>
+        <th class="numeric">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+        <tr id="entry-{{ entry.id }}"
+            {% if entry.reversed_by %}class="reversed"{% endif %}>
+          <td class="id dropdown-cell">
+            <div class="dropdown" x-data="dropdown()">
+              <button class="button-link"
+                      type="button"
+                      x-ref="button"
+                      @click="toggle()"
+                      :aria-expanded="open">{{ entry.id }}</button>
+              <ul class="dropdown-menu" x-ref="menu" x-show="open">
+                <li>
+                  <a class="dropdown-item"
+                     href="#"
+                     hx-get="{% url 'books:entry-detail' entry.id %}"
+                     hx-target="#htmx-modal-container"><i class="icon-list"></i> Lines</a>
+                </li>
+                {% if entry.is_manual %}
+                  <li>
+                    <a class="dropdown-item"
+                       href="#"
+                       hx-get="{% url 'books:entry-edit' entry.id %}"
+                       hx-target="#htmx-modal-container"><i class="icon-pencil"></i> Edit</a>
+                  </li>
+                  {% if not entry.reversed_by %}
+                    <li>
+                      <a class="dropdown-item"
+                         href="#!"
+                         hx-confirm="Delete this entry?"
+                         hx-post="{% url 'books:entry-delete' entry.id %}"
+                         hx-swap="none"><i class="icon-circle-x"></i> Delete</a>
+                    </li>
+                  {% endif %}
+                {% endif %}
+                {% if not entry.reversed_by %}
+                  <li>
+                    <a class="dropdown-item"
+                       href="#!"
+                       hx-confirm="Post a reversing entry dated today?"
+                       hx-post="{% url 'books:entry-reverse' entry.id %}"
+                       hx-swap="none"><i class="icon-undo-2"></i> Reverse</a>
+                  </li>
+                {% endif %}
+              </ul>
+            </div>
+          </td>
+          <td class="date">{{ entry.date|date:"Y-m-d" }}</td>
+          <td>
+            {{ entry.memo }}
+            {% if entry.reversed_by %}<span class="app-badge badge-gray">Reversed</span>{% endif %}
+          </td>
+          <td>{{ entry.get_source_display }}</td>
+          <td class="books-lines">
+            {% for line in entry.lines.all %}
+              <span class="{% if line.credit %}credit{% endif %}">{{ line.account.name }}</span>
+            {% endfor %}
+          </td>
+          <td class="numeric">{{ entry.total|floatformat:2|intcomma }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6" class="empty-message">No entries in this period.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

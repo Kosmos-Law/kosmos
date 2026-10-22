@@ -1,0 +1,20 @@
+<div id="books-settings-fields" class="form-responsive form-spacious">
+  {% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    <div>
+      {{ field }}
+      {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+      {{ field.errors }}
+    </div>
+  {% endfor %}
+  <br />
+  <div class="flex-center-space">
+    <div>
+      <button type="button"
+              class="btn btn-success"
+              hx-post="{% url 'settings:books-index' %}"
+              hx-target="#books-settings"
+              hx-include="#books-settings-fields">Save Books Settings</button>
+    </div>
+  </div>
+</div>

@@ -58,6 +58,8 @@ urlpatterns = [
     path("", include("apps.intakes.client_forms.public_urls")),
     # Reports App
     path("", include("apps.reports.urls")),
+    # Books App
+    path("", include("apps.books.urls")),
     # Management App
     path("", include("apps.management.urls")),
 ]
