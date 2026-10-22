@@ -89,7 +89,7 @@
               <a href="#"
                  type="button"
                  class="btn-icon"
-                 hx-get="/events/{{ event.id }}/edit"
+                 hx-get="{% url 'calendar:detail' id=event.id %}"
                  hx-target="#htmx-modal-container"
                  hx-trigger="click">{{ event.description }}</a>
               {% if event.detached_from_google %}<span class="event-detached">Not on Google Calendar</span>{% endif %}

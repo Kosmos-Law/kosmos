@@ -134,7 +134,7 @@
             <td class="overview-cell-text">
               <a href="#"
                  class="overview-link"
-                 hx-get="{% url 'calendar:edit-origin' id=event.id origin='matters' %}"
+                 hx-get="{% url 'calendar:detail-origin' id=event.id origin='matters' %}"
                  hx-target="#htmx-modal-container">{{ event.description }}</a>
               {% if event.party %}<span class="overview-cell-meta">· {{ event.party }}</span>{% endif %}
             </td>

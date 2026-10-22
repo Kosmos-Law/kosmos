@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 import apps.calendar.google as google
 import apps.calendar.sync as sync
 from apps.accounts.access import matter_access_required
-from apps.calendar import holidays, invitations
+from apps.calendar import holidays, invitations, meetings
 from apps.calendar.access import event_for_user, matters_for_events
 from apps.calendar.feed import event_entry, feed_date, task_entry
 from apps.calendar.filter import EventFilter, assignee_tokens
@@ -324,6 +324,29 @@ def events_add(request, matter_id=None, origin="events"):
 
 
 @login_required
+def events_detail(request, id, origin="events"):
+    """The event as Google Calendar opens one: its details to read, the
+    meeting link and any link in its details to follow, and Edit to change
+    it. The origin is kept for Edit and Delete, as the edit dialog keeps
+    it, so a change made from a matter's tab refreshes that tab."""
+    request.session["origin"] = origin
+    event = event_for_user(id, request.user)
+
+    context = {
+        "event": event,
+        "origin": origin,
+        "edit_url": reverse("calendar:edit-origin", args=[event.id, origin]),
+        "details_html": meetings.details_html(event.details),
+        "map_url": meetings.map_url(event.location) if event.location else "",
+        "meeting_host": meetings.meeting_host(event.meeting_url),
+        "assignees": event.assignee_names,
+        "guests": list(event.guests.all()),
+        "reminders": list(event.reminders.filter(user=request.user)),
+    }
+    return render(request, "calendar/detail.html", context)
+
+
+@login_required
 def events_edit(request, id, origin="events"):
     # identify the origin of the request (events or agenda)
     if request.method == "GET":
@@ -383,6 +406,7 @@ def events_edit(request, id, origin="events"):
             "results": None,
             "action": f"/events/{id}/edit",
             "event": event,
+            "detail_url": reverse("calendar:detail-origin", args=[id, origin]),
             "google_problem": google_problem,
             "form": form,
             "origin": origin,

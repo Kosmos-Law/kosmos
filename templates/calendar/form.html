@@ -8,7 +8,16 @@
           Edit Event
         {% endif %}
       </h1>
-      <div>
+      <div class="modal-header-actions">
+        {% if edit %}
+          <button type="button"
+                  hx-get="{{ detail_url }}"
+                  hx-target="#htmx-modal-container"
+                  title="Back to the event"
+                  aria-label="Back to the event">
+            <i class="icon-arrow-left"></i>
+          </button>
+        {% endif %}
         <button type="button" @click="$dispatch('close-modal')">
           <i class="icon-x"></i>
         </button>

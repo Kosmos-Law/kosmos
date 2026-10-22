@@ -1,0 +1,159 @@
+{% comment %}
+An event to read, as Google Calendar opens one: when, the matter, who,
+where, the meeting link to join, and the details with their links live.
+Edit switches to the form (calendar/form.html), whose back arrow returns
+here. Context from apps.calendar.views.events_detail.
+{% endcomment %}
+<div class="modal-dialog modal-md event-detail-dialog">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h1 class="modal-title">{{ event.description|default:"Untitled" }}</h1>
+      <div>
+        <button type="button" @click="$dispatch('close-modal')" aria-label="Close">
+          <i class="icon-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body event-detail">
+      <div class="event-detail-row">
+        <i class="icon-clock" aria-hidden="true"></i>
+        <div>
+          {% if event.date %}
+            {{ event.date|date:"l, F j, Y" }}
+            {% if event.end_date %}– {{ event.end_date|date:"l, F j, Y" }}{% endif %}
+          {% else %}
+            No date
+          {% endif %}
+          <div class="event-detail-muted">
+            {% if event.start_time %}
+              {{ event.start_time|time:"g:i A" }}
+              {% if event.end_time %}– {{ event.end_time|time:"g:i A" }}{% endif %}
+            {% else %}
+              All day
+            {% endif %}
+            {% if event.status %}· {{ event.status }}{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if event.matter %}
+        <div class="event-detail-row">
+          <i class="icon-briefcase" aria-hidden="true"></i>
+          <div>
+            <a href="{% url 'matters:events-index' id=event.matter.id %}">{{ event.matter.name }}</a>
+            {% if event.party %}<div class="event-detail-muted">Party: {{ event.party }}</div>{% endif %}
+          </div>
+        </div>
+      {% elif event.party %}
+        <div class="event-detail-row">
+          <i class="icon-briefcase" aria-hidden="true"></i>
+          <div>Party: {{ event.party }}</div>
+        </div>
+      {% endif %}
+      <div class="event-detail-row">
+        <i class="icon-users" aria-hidden="true"></i>
+        <div>
+          {% if assignees %}
+            {{ assignees|join:", " }}
+          {% else %}
+            Firm
+          {% endif %}
+        </div>
+      </div>
+      {% if event.meeting_url %}
+        <div class="event-detail-row">
+          <i class="icon-video" aria-hidden="true"></i>
+          <div class="event-detail-meeting">
+            <a href="{{ event.meeting_url }}"
+               class="btn btn-success"
+               target="_blank"
+               rel="noopener noreferrer">Join {{ event.event_type|default:"meeting" }}</a>
+            <a href="{{ event.meeting_url }}"
+               class="event-detail-link"
+               target="_blank"
+               rel="noopener noreferrer"
+               title="{{ event.meeting_url }}">{{ meeting_host|default:event.meeting_url }}</a>
+          </div>
+        </div>
+      {% elif event.event_type %}
+        <div class="event-detail-row">
+          <i class="icon-video" aria-hidden="true"></i>
+          <div>{{ event.event_type }}</div>
+        </div>
+      {% endif %}
+      {% if event.location %}
+        <div class="event-detail-row">
+          <i class="icon-map-pin" aria-hidden="true"></i>
+          <div>
+            <a href="{{ map_url }}" target="_blank" rel="noopener noreferrer">{{ event.location }}</a>
+          </div>
+        </div>
+      {% endif %}
+      {% if event.details %}
+        <div class="event-detail-row">
+          <i class="icon-text" aria-hidden="true"></i>
+          <div class="event-detail-text">{{ details_html }}</div>
+        </div>
+      {% endif %}
+      {% if event.organizer_email %}
+        <div class="event-detail-row">
+          <i class="icon-user" aria-hidden="true"></i>
+          <div>
+            {% if event.organizer_name %}
+              {{ event.organizer_name }}
+              <div class="event-detail-muted">Organizer · {{ event.organizer_email }}</div>
+            {% else %}
+              {{ event.organizer_email }}
+              <div class="event-detail-muted">Organizer</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+      {% if guests %}
+        <div class="event-detail-row">
+          <i class="icon-mail" aria-hidden="true"></i>
+          <ul class="event-detail-list">
+            {% for guest in guests %}
+              <li>
+                {{ guest.name|default:guest.email }}
+                <span class="guest-status guest-{{ guest.status }}">{{ guest.get_status_display }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      {% if reminders %}
+        <div class="event-detail-row">
+          <i class="icon-bell" aria-hidden="true"></i>
+          <ul class="event-detail-list">
+            {% for reminder in reminders %}
+              <li>
+                {{ reminder.describe }}
+                <span class="event-detail-muted">by {{ reminder.get_channel_display }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      {% if event.detached_from_google %}
+        <p class="event-detached-note">
+          Not on Google Calendar. This event was deleted there and kept here, so it will not be posted to Google again.
+        </p>
+      {% endif %}
+    </div>
+    <div class="modal-footer">
+      <button type="button"
+              class="btn btn-danger"
+              hx-confirm="Are you sure you want to delete this record?"
+              hx-delete="{% url 'calendar:delete-origin' id=event.id origin=origin %}"
+              hx-target="#htmx-modal-container">Delete</button>
+      <div class="modal-footer-right">
+        <button type="button"
+                class="btn btn-secondary"
+                hx-get="{{ edit_url }}"
+                hx-target="#htmx-modal-container">
+          <i class="icon-pencil with-text"></i>Edit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

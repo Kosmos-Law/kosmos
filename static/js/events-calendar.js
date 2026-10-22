@@ -157,8 +157,27 @@ function fitMonthChip(info) {
   }
 }
 
+// A Zoom meeting wears a camera where its dot would be (the month grid,
+// the year, the dash's week, the agenda), in the dot's colour. Week and
+// Day draw no dot, so they are left as they are.
+function addMeetingIcon(info) {
+  if (!(info.event.extendedProps || {}).zoom) {
+    return;
+  }
+  const dot = info.el.querySelector(".fc-daygrid-event-dot, .fc-list-event-dot");
+  if (!dot) {
+    return;
+  }
+  const icon = document.createElement("i");
+  icon.className = "icon-video fc-meeting-icon";
+  icon.setAttribute("aria-label", "Zoom meeting");
+  icon.title = "Zoom meeting";
+  dot.replaceWith(icon);
+}
+
 function onEventMount(info) {
   addTaskBox(info);
+  addMeetingIcon(info);
   fitMonthChip(info);
 }
 
@@ -476,7 +495,7 @@ document.addEventListener("alpine:init", () => {
       info.jsEvent.preventDefault();
       info.jsEvent.stopPropagation();
 
-      // Open the edit modal using HTMX; alpine-components.js opens the
+      // Open the event's dialog using HTMX; alpine-components.js opens the
       // modal when the content lands in the container.
       const props = info.event.extendedProps || {};
       // A holiday is a date, not a record: nothing to open
@@ -502,10 +521,12 @@ document.addEventListener("alpine:init", () => {
         });
         return;
       }
+      // An event opens to read, as in Google Calendar; its Edit button
+      // switches the dialog to the form
       const eventId = info.event.id;
-      const editUrl =
-        `/events/${eventId}/edit` + (this.editOrigin ? `/${this.editOrigin}` : "");
-      htmx.ajax("GET", editUrl, {
+      const detailUrl =
+        `/events/${eventId}/view` + (this.editOrigin ? `/${this.editOrigin}` : "");
+      htmx.ajax("GET", detailUrl, {
         target: "#htmx-modal-container",
         swap: "innerHTML",
       });

@@ -3,6 +3,8 @@ the dash's Calendar Week hand the grid."""
 
 from datetime import datetime, timedelta
 
+from apps.calendar import meetings
+
 
 def feed_date(value):
     """The date in one of a feed's ISO date or date-time parameters."""
@@ -25,6 +27,9 @@ def event_entry(event):
             "meeting_url": event.meeting_url,
             "party": event.party or "",
             "status": event.status or "",
+            # A Zoom meeting wears a camera in its dot's place on the grid
+            "zoom": event.event_type == "Zoom"
+            or meetings.meeting_type(event.meeting_url) == "Zoom",
         },
     }
     if event.start_time and event.end_time:

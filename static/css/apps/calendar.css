@@ -99,6 +99,92 @@
   width: 100%;
 }
 
+/* The event's dialog to read (calendar/detail.html): a row per fact,
+   each led by its icon, as Google Calendar sets an event out */
+/* A little wider than a medium dialog, so a meeting's long links fit on
+   a line; a phone keeps the dialog to its own width */
+.modal-dialog.event-detail-dialog {
+  max-width: min(640px, calc(100% - 1rem));
+}
+
+.event-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.event-detail-row {
+  align-items: baseline;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+}
+
+.event-detail-row > i {
+  color: var(--color-muted);
+  font-size: 1.125rem;
+  text-align: center;
+}
+
+.event-detail-muted {
+  color: var(--color-muted);
+}
+
+.event-detail-meeting {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.event-detail-link {
+  overflow-wrap: anywhere;
+}
+
+/* The details as the invitation set them out: its lines kept, and a
+   long link wrapped rather than run past the dialog's edge */
+.event-detail-text {
+  overflow-wrap: anywhere;
+}
+
+/* A link in the details stays on one line, cut with an ellipsis (a
+   Teams link runs to hundreds of characters); its tooltip has the rest */
+.event-detail-text a {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.event-detail-text p {
+  margin: 0 0 0.5rem;
+}
+
+.event-detail-text p:last-child {
+  margin-bottom: 0;
+}
+
+.event-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.event-detail-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+}
+
+.event-detail .event-detached-note {
+  margin: 0;
+}
+
 .deadline-calculator-link a {
   background: var(--background-control);
   border: solid 1px var(--border-medium);
@@ -370,6 +456,19 @@
   top: 1px;
 }
 
+/* A Zoom meeting's camera in its dot's place (events-calendar.js), in
+   the dot's colour and the chip's text size */
+.fc-meeting-icon {
+  color: var(--event-dot);
+  flex: none;
+  font-size: 1em;
+  line-height: 1;
+}
+
+.fc-daygrid-event .fc-meeting-icon {
+  margin: 0.125rem 0.25rem 0 0;
+}
+
 /* In the month grid a timed entry runs its time and title together as
    one line of text, with the dot set in the left padding, so a long
    title wraps under its time rather than under its own first word. (The
@@ -391,6 +490,13 @@
   margin: 0;
   position: absolute;
   top: 0.5rem;
+}
+
+:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-meeting-icon {
+  left: 0.3125rem;
+  margin: 0;
+  position: absolute;
+  top: 0.3125rem;
 }
 
 .fc-daygrid-event .fc-event-title {
@@ -796,6 +902,14 @@
 .fc .fc-list-event.fc-event-all-day .fc-list-event-dot,
 .fc .fc-list-event:not(.fc-event-start, .fc-event-end) .fc-list-event-dot {
   border-color: var(--allday-dot);
+}
+
+.fc .fc-list-event .fc-meeting-icon {
+  font-size: 1rem;
+}
+
+.fc .fc-list-event.fc-event-all-day .fc-meeting-icon {
+  color: var(--allday-dot);
 }
 
 .fc .fc-list-event.fc-event-task .fc-list-event-dot {

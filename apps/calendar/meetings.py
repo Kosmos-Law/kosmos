@@ -3,7 +3,10 @@ or Webex invitation carries, and telling which service it is."""
 
 import html
 import re
-from urllib.parse import urlsplit
+from urllib.parse import quote_plus, urlsplit
+
+from django.utils.html import linebreaks, urlize
+from django.utils.safestring import mark_safe
 
 URL = re.compile(r"https?://[^\s<>\"'\[\]()]+", re.IGNORECASE)
 
@@ -91,6 +94,34 @@ def plain_text(text):
     text = re.sub(r"<[^>]+>", "", text)
     text = html.unescape(text)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def details_html(text):
+    """An event's details as the detail dialog shows them: escaped, the
+    line breaks kept, and each link made one that opens in a new tab, so
+    a passcode's dial-in or a second meeting link can be followed. The
+    dialog cuts a long link to one line; its tooltip has the whole of it."""
+    marked = urlize(text or "", autoescape=True)
+    # A long link is cut short on screen, so its whole address is the
+    # link's tooltip (the href is escaped already)
+    marked = re.sub(
+        r'<a href="([^"]*)"',
+        r'<a target="_blank" rel="noopener noreferrer" title="\1" href="\1"',
+        marked,
+    )
+    return mark_safe(linebreaks(marked, autoescape=False))
+
+
+def map_url(location):
+    """A map's search for the location, as Google Calendar links it."""
+    return "https://www.google.com/maps/search/?api=1&query=" + quote_plus(location)
+
+
+def meeting_host(url):
+    """The host a meeting link names, shorn of "www.", to show beside the
+    Join button: "zoom.us", "teams.microsoft.com"."""
+    host = _host(url)
+    return host[4:] if host.startswith("www.") else host
 
 
 def meeting_text(event):
