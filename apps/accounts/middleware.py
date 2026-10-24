@@ -83,6 +83,7 @@ class PermissionMiddleware:
         "/settings/tasks/",
         "/settings/features/",
         "/settings/books/",
+        "/settings/quickbooks/",
     ]
 
     # The case builder's features, switched off for the whole firm by an
@@ -94,7 +95,7 @@ class PermissionMiddleware:
     CASE_FILE_EXEMPT = re.compile(r"^/case/api/|^/case/\d+/notes/|^/case/notes/")
     LIBRARY_PATTERN = re.compile(r"^/notes/|^/case/\d+/(tab/)?notes/|^/case/notes/")
     # Books (apps/books), off unless the administrator turned it on.
-    BOOKS_PATTERN = re.compile(r"^/books/|^/settings/books/")
+    BOOKS_PATTERN = re.compile(r"^/books/|^/settings/books/|^/settings/quickbooks/")
 
     def __init__(self, get_response):
         self.get_response = get_response

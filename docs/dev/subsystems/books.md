@@ -12,6 +12,7 @@ the ledger behind invoicing and trust](../../decisions/2026-10-22-books-is-the-l
 |---|---|---|
 | `Account` | `app_books_account` | One account in the chart: a code, a type (asset, liability, equity, income, expense), a subtype that places it on the statements and on Schedule L, an optional parent (a sub-account shares its parent's kind; `full_name` is the path), an optional role the posting rules look up (one account per role), and a tax line for each return (`schedule_c_line`, `form_1120s_line`; blank on balance-sheet accounts). Inactive accounts keep their history and take no new lines. |
 | `JournalEntry` | `app_books_entry` | A dated, balanced set of lines with a memo. `source` says what produced it: manual, or a practice record (invoice, payment, credit, trust, expense), a bank transaction, or a reversal. `(source, source_id)` is unique, so a record posts once. `reverses` points at the entry a reversal undoes. |
+| `QuickBooksConnection` | `app_books_quickbooks` | The firm's QuickBooks Online company while Books mirrors it (one row): the realm id, the company's name, the environment (sandbox or production) the tokens were issued for, the tokens sealed at rest (`utils/crypto.py`; `access` and `refresh` read them), their expiries, who connected it, and the last sync's time and error. |
 | `JournalLine` | `app_books_line` | One debit or one credit to one account (a check constraint forbids both and negatives), with an optional contact and matter as the sub-ledgers: the client whose trust money moved, the matter whose cost was advanced. |
 
 There is no stored balance. `Account.balance(as_of, since)` sums the
@@ -99,6 +100,44 @@ exported to Excel and two commands drive it:
 The firm's own exports stay outside the repository; the tests
 (`test_quickbooks.py`) build small workbooks of the same shape.
 
+## The QuickBooks connection
+
+Until cut-over Books mirrors QuickBooks Online (the amendment of
+2026-10-24 to the decision record): the chart and every entry come from
+its API, entries with source `quickbooks` are replaced or removed as the
+bookkeeper changes them, the interface is read-only, and no practice-app
+event posts. `apps/books/intuit.py` is the connection:
+
+- `configured()` reads `QUICKBOOKS_CLIENT_ID` and `QUICKBOOKS_CLIENT_SECRET`
+  from config/.env; `environment()` reads `QUICKBOOKS_ENVIRONMENT`
+  (`sandbox` or `production`), which decides only new connections.
+- `authorize_url(redirect, state)` starts Intuit's OAuth 2.0 with the
+  accounting scope; `connect(code, realm_id, redirect, user)` trades the
+  code for tokens, keeps them as the one `QuickBooksConnection` (an
+  earlier one is deleted) and asks the company its name.
+- `refresh(conn, refused=False)` posts the refresh token under a row
+  lock, since Intuit issues a new refresh token on each refresh and
+  revokes the connection if an old one is reused; `invalid_grant` raises
+  `ConnectionLost`, which means an administrator must connect again.
+- `Client(conn)` calls the company's API on the host for its
+  environment, refreshing an access token within five minutes of expiry
+  and once more after a 401: `company_info()`, `query(statement)` and
+  `report(name, **params)` (the standard reports, as Intuit's column/row
+  JSON). Anything but a 200 raises `QuickBooksError`.
+- `disconnect()` revokes at Intuit (a failure is logged, not raised) and
+  deletes the row.
+
+The views are `apps/settings/integrations/quickbooks.py` (connect, the
+`/settings/quickbooks/store` callback, which must match the redirect URI
+registered on the developer portal, and disconnect), admin-only and 404
+while Books is off (`BOOKS_PATTERN` in the middleware); the Integrations
+page includes `settings/integrations/quickbooks.html` for an
+administrator while Books is on. Tests: `test_intuit.py` (against a stub
+of `requests`) and `apps/settings/tests/test_quickbooks.py`.
+
+The sync that fills the chart and the journal from the connection is the
+next slice; the export-file import above stays as the fallback.
+
 ## Settings and gates
 
 - `Firm.books_enabled` (Settings > Features), read through
@@ -108,6 +147,8 @@ The firm's own exports stay outside the repository; the tests
   `PERMISSION_PATHS` refuses `/books/` without it.
 - `Firm.tax_form` and `Firm.accounting_basis` (Settings > Books, admin
   only).
+- `/settings/quickbooks/` is admin-only and, like `/books/`, 404 while
+  Books is off.
 
 ## Templates and styles
 

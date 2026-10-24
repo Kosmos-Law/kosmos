@@ -28,6 +28,7 @@ nav = [
       { "Online payments" = "admin/integrations/payments.md" },
       { "Google Workspace" = "admin/integrations/google.md" },
       { "Gmail sync" = "admin/integrations/gmail.md" },
+      { "QuickBooks Online" = "admin/integrations/quickbooks.md" },
       { "Intakes from email" = "admin/integrations/inbound-email.md" },
       { "Drafting with LibreOffice" = "admin/integrations/libreoffice.md" },
       { "Claude Desktop" = "admin/integrations/claude-desktop.md" },

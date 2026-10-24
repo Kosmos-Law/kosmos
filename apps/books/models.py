@@ -9,13 +9,17 @@ account's balance is the sum of its lines, so there is no stored balance
 to drift.
 """
 
+from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
+from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
+from utils.crypto import seal, unseal
 from utils.models import AuditMixin
 
 ZERO = Decimal("0.00")
@@ -322,3 +326,75 @@ class JournalLine(models.Model):
     @property
     def amount(self):
         return self.debit or self.credit
+
+
+class QuickBooksConnection(models.Model):
+    """The firm's QuickBooks Online company, while the books are kept
+    there and Books mirrors them (the amendment of 2026-10-24 to the Books
+    decision record). One row: an administrator connects the company
+    under Settings > Integrations, the sync pulls the chart and the
+    transactions with its tokens, and Disconnect removes it.
+
+    The tokens are sealed at rest (utils/crypto.py); `access` and
+    `refresh` read them. Intuit's access token lasts an hour and the
+    refresh token about a hundred days, and every refresh issues a new
+    refresh token, so `refresh_expires_at` moves forward with each sync.
+    `environment` is the QuickBooks the tokens were issued for; a sandbox
+    connection is never used against the production host, whatever
+    config/.env says today."""
+
+    SANDBOX = "sandbox"
+    PRODUCTION = "production"
+    ENVIRONMENT_CHOICES = ((SANDBOX, "Sandbox"), (PRODUCTION, "Production"))
+    SEAL_PURPOSE = "kosmos-quickbooks"
+
+    realm_id = models.CharField(max_length=40)
+    company_name = models.CharField(max_length=255, blank=True)
+    environment = models.CharField(
+        max_length=12, choices=ENVIRONMENT_CHOICES, default=PRODUCTION
+    )
+    access_token = models.TextField(blank=True, editable=False)
+    refresh_token = models.TextField(blank=True, editable=False)
+    access_expires_at = models.DateTimeField(null=True, blank=True)
+    refresh_expires_at = models.DateTimeField(null=True, blank=True)
+    connected_at = models.DateTimeField(default=timezone.now)
+    connected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    # Blank after a sync that worked; the reason after one that did not.
+    last_sync_error = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "app_books_quickbooks"
+
+    def __str__(self):
+        return self.company_name or f"QuickBooks company {self.realm_id}"
+
+    @property
+    def is_sandbox(self):
+        return self.environment == self.SANDBOX
+
+    def set_tokens(self, access, refresh):
+        self.access_token = seal(access, self.SEAL_PURPOSE)
+        self.refresh_token = seal(refresh, self.SEAL_PURPOSE)
+
+    @property
+    def access(self):
+        """The access token, or None when it cannot be read."""
+        return unseal(self.access_token, self.SEAL_PURPOSE) or None
+
+    @property
+    def refresh(self):
+        return unseal(self.refresh_token, self.SEAL_PURPOSE) or None
+
+    def access_is_fresh(self, margin=None):
+        """True while the access token has longer than ``margin`` to live."""
+        if not self.access_expires_at:
+            return False
+        margin = margin if margin is not None else timedelta(minutes=5)
+        return timezone.now() + margin < self.access_expires_at
