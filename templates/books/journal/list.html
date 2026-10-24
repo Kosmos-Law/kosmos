@@ -88,7 +88,7 @@
               <span class="{% if line.credit %}credit{% endif %}">{{ line.account.name }}</span>
             {% endfor %}
           </td>
-          <td class="numeric">{{ entry.total|floatformat:2|intcomma }}</td>
+          <td class="numeric">{{ entry.amount|floatformat:2|intcomma }}</td>
         </tr>
       {% empty %}
         <tr>
@@ -98,3 +98,4 @@
     </tbody>
   </table>
 </div>
+{% include "pagination.html" %}

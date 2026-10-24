@@ -12,6 +12,7 @@ from collections import OrderedDict
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Sum
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -27,6 +28,7 @@ from apps.books.forms import (
 )
 from apps.books.models import ZERO, Account, JournalEntry
 from apps.books.tax_lines import TAX_LINES, line_label
+from apps.management.pagination import CustomPaginator
 from apps.settings.models import Firm
 from utils.toasts import toast_error, toast_success
 
@@ -275,16 +277,39 @@ def account_ledger(request, pk):
 # ------------------------------------------------------------------- journal
 
 
+JOURNAL_PAGE_KEY = "books_journal_pagination"
+JOURNAL_PER_PAGE = 100
+
+
 def _journal_context(request):
+    """The period's entries, a page at a time. A firm's year is thousands
+    of entries, so the page is the app's paginator (the page number in
+    the session, moved by management:change-page, which fires
+    booksChanged to reload the list), and each entry's amount comes with
+    the query rather than a sum per row."""
     period_form = PeriodForm(request.GET or None)
     start, end = period_form.period()
+    if "start" in request.GET or "end" in request.GET:
+        # A new period starts at its first page.
+        request.session[JOURNAL_PAGE_KEY] = 1
     entries = (
         JournalEntry.objects.filter(date__gte=start, date__lte=end)
+        .annotate(amount=Sum("lines__debit"))
         .prefetch_related("lines__account")
-        .select_related("reverses")
+        .select_related("reverses", "reversed_by")
+        .order_by("-date", "-id")
+    )
+    pagination = CustomPaginator(
+        entries,
+        per_page=JOURNAL_PER_PAGE,
+        request=request,
+        session_key=JOURNAL_PAGE_KEY,
     )
     return {
-        "entries": entries,
+        "entries": pagination.get_object_list(),
+        "pagination": pagination,
+        "session_key": JOURNAL_PAGE_KEY,
+        "trigger_key": BOOKS_TRIGGER,
         "period_form": period_form,
         "start": start,
         "end": end,
