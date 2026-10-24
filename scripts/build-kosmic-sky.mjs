@@ -32,11 +32,11 @@ const work = mkdtempSync(join(tmpdir(), "kosmic-sky-"));
 const module = join(work, "sky.ts");
 writeFileSync(
   module,
-  frontmatter + "\nexport { sheets, tileUrl, stars, constellations, nodeTwinkle };\n",
+  frontmatter +
+    "\nexport { sheets, tileUrl, stars, constellations, nodeTwinkle, glint, glintDefs, skyDust };\n",
 );
-const { sheets, tileUrl, stars, constellations, nodeTwinkle } = await import(
-  pathToFileURL(module).href
-);
+const { sheets, tileUrl, stars, constellations, nodeTwinkle, glint, glintDefs, skyDust } =
+  await import(pathToFileURL(module).href);
 rmSync(work, { recursive: true });
 
 // svgUrl() wraps an encoded SVG in url("data:…"); unwrap it to a file.
@@ -79,17 +79,45 @@ const appConstellations = [
   },
 ];
 
+// A star is drawn as a glint: a halo in its colour, a core near white,
+// and on the brightest four faint spikes. Each colour's gradients are
+// defined once. The ids are the component's own ("h" or "s" and the
+// hex); in the app they share a page with everything else, so they take
+// the kosmic- prefix.
+const prefixIds = (svg) => svg.replace(/(id="|url\(#)([hs][0-9a-f]{6})/g, "$1kosmic-$2");
+const allConstellations = [...constellations, ...appConstellations];
+const defs = prefixIds(
+  glintDefs([
+    ...stars.map((s) => s.fill),
+    ...allConstellations.flatMap((c) => c.points.map((_, i) => c.nodeColors?.[i] ?? c.color)),
+  ]),
+);
+
 // Stars carry their opacity as an SVG attribute; their twinkles go to a
 // generated stylesheet, one class each, since the templates take no
-// inline styles.
+// inline styles. A glint is placed by percentages in a nested svg, as
+// the landing page does: a nested svg can be, where a transform cannot.
 const lines = [];
 const rules = [];
 const twinkling = (animation) => {
   const name = `kosmic-twinkle-${rules.length + 1}`;
   rules.push(`.${name} {\n  animation: ${animation};\n}`);
-  return ` class="${name}"`;
+  return ` ${name}`;
 };
-for (const c of [...constellations, ...appConstellations]) {
+const placed = (cx, cy, r, fill, opacity, twinkle) =>
+  `      <svg class="kosmic-star${twinkle ? twinkling(twinkle) : ""}" x="${cx}%" y="${cy}%" overflow="visible" opacity="${opacity}">` +
+  prefixIds(glint(r, fill)) +
+  `</svg>`;
+
+lines.push(`      ${defs}`);
+lines.push(`      <g class="kosmic-dust">`);
+for (const d of skyDust) {
+  lines.push(
+    `      <circle cx="${d.x}%" cy="${d.y}%" r="${d.r}" fill="${d.fill}" opacity="${d.o}" />`,
+  );
+}
+lines.push("      </g>");
+for (const c of allConstellations) {
   lines.push(`      <g class="kosmic-${c.name}">`);
   for (const [a, b] of c.edges) {
     const [x1, y1] = c.points[a];
@@ -99,21 +127,15 @@ for (const c of [...constellations, ...appConstellations]) {
     );
   }
   c.points.forEach(([cx, cy], i) => {
-    const r = c.nodeRadii?.[i] ?? c.nodeR;
-    const fill = c.nodeColors?.[i] ?? c.color;
     lines.push(
-      `      <circle${twinkling(nodeTwinkle(i))} cx="${cx}%" cy="${cy}%" r="${r}" fill="${fill}" opacity="0.85" />`,
+      placed(cx, cy, c.nodeRadii?.[i] ?? c.nodeR, c.nodeColors?.[i] ?? c.color, 0.85, nodeTwinkle(i)),
     );
   });
   lines.push("      </g>");
 }
 for (const s of stars) {
-  const cls = s.twinkle
-    ? twinkling(`twinkle ${s.twinkle[0]}s ease-in-out ${s.twinkle[1]}s infinite`)
-    : "";
-  lines.push(
-    `      <circle${cls} cx="${s.cx}%" cy="${s.cy}%" r="${s.r}" fill="${s.fill}" opacity="${s.opacity}" />`,
-  );
+  const twinkle = s.twinkle && `twinkle ${s.twinkle[0]}s ease-in-out ${s.twinkle[1]}s infinite`;
+  lines.push(placed(s.cx, s.cy, s.r, s.fill, s.opacity, twinkle));
 }
 
 writeFileSync(
@@ -164,6 +186,7 @@ ${sheets.map((_, i) => `    <span class="kosmic-sheet-${i + 1}"></span>`).join("
   <div class="kosmic-field"></div>
   <div class="kosmic-stars">
     <div class="kosmic-glow"></div>
+    <div class="kosmic-galaxy"></div>
     <svg class="kosmic-starfield" width="100%" height="100%">
 ${lines.join("\n")}
     </svg>

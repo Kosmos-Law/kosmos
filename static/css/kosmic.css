@@ -2,8 +2,10 @@
    Kosmic — the landing page's night sky behind the app.
 
    Ported from kosmos.law's Sky.astro: the aurora, the star field, the
-   twinkling stars and constellations, and the two shooting stars. The
-   markup, images and the live aurora (js/kosmic-aurora.js, a WebGL
+   twinkling stars and constellations, the Milky Way's dust and glow, and
+   the two shooting stars. Each star is drawn as a glint: a halo in its
+   colour, a core near white, and spikes on the brightest. The markup,
+   images and the live aurora (js/kosmic-aurora.js, a WebGL
    shader on the canvas) are generated from that component
    (scripts/build-kosmic-sky.mjs); the rest of the animation is here. The
    drawn sheets are the aurora's fallback, for browsers without WebGL and
@@ -84,6 +86,29 @@
       color-mix(in oklch, var(--nord15) 16%, transparent),
       transparent 70%
     );
+}
+
+/* The Milky Way's own faint light, along the band the dust gathers on:
+   a long, soft streak from Orion's shoulder up past Cassiopeia. The
+   ellipses are drawn upright, stretched, and turned onto the band, about
+   26 degrees above level on a desktop window. */
+.kosmic-galaxy {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 9% 52% at 50% 50%,
+      color-mix(in oklch, var(--nord4) 5%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 4% 40% at 50% 50%,
+      color-mix(in oklch, var(--nord4) 3.5%, transparent),
+      transparent
+    );
+  translate: 3% -18%;
+  rotate: 64deg;
+  scale: 1 1.5;
 }
 
 .kosmic-starfield {
@@ -177,52 +202,110 @@
   }
 }
 
+/* A shooting star is drawn like the stars: a head that burns near white
+   with its colour in the glow around it, and a tail that narrows to
+   nothing behind it, all in a faint haze. The span carries the haze (a
+   drop shadow, which takes in the tail and head both), ::before the
+   tail, and ::after the head. */
 .kosmic-shooting-star {
   position: absolute;
-  border-radius: 99px;
+  height: 7px;
   opacity: 0;
 }
 
-.kosmic-shooting-star.ltr {
-  top: 11%;
-  left: -6%;
-  width: 110px;
-  height: 1.5px;
+.kosmic-shooting-star::before,
+.kosmic-shooting-star::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+}
+
+.kosmic-shooting-star::before {
+  left: 0;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
+}
+
+.kosmic-shooting-star::after {
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+}
+
+/* Left to right: the tail on the left, the head leading at the right. */
+.kosmic-shooting-star:is(.ltr, .low)::before {
   background: linear-gradient(
     90deg,
-    color-mix(in oklch, var(--nord4) 0%, transparent),
-    color-mix(in oklch, var(--nord4) 90%, transparent)
+    color-mix(in oklch, var(--star) 0%, transparent),
+    color-mix(in oklch, var(--star) 45%, transparent) 65%,
+    color-mix(in oklch, var(--star-hot) 95%, transparent)
   );
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+}
+
+.kosmic-shooting-star:is(.ltr, .low)::after {
+  right: -3.5px;
+}
+
+.kosmic-shooting-star::after {
+  background: radial-gradient(
+    circle,
+    var(--star-core) 0 18%,
+    color-mix(in oklch, var(--star) 70%, transparent) 36%,
+    color-mix(in oklch, var(--star) 0%, transparent) 70%
+  );
+}
+
+.kosmic-shooting-star.ltr {
+  --star: var(--nord4);
+  --star-hot: var(--nord6);
+  --star-core: white;
+  top: 11%;
+  left: -6%;
+  width: 130px;
+  filter: drop-shadow(0 0 2px color-mix(in oklch, var(--nord4) 55%, transparent));
   /* 80s cycle: the streak itself takes 2.1s, the rest is the gap. */
   animation: kosmic-shoot 80s linear 2s infinite;
 }
 
+/* Right to left: the head leads at the left. */
 .kosmic-shooting-star.rtl {
+  --star: var(--nord13);
+  --star-core: color-mix(in oklch, var(--nord13) 12%, white);
   top: 14%;
   right: -6%;
-  width: 85px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in oklch, var(--nord13) 80%, transparent),
-    color-mix(in oklch, var(--nord13) 0%, transparent)
-  );
+  width: 100px;
+  filter: drop-shadow(0 0 2px color-mix(in oklch, var(--nord13) 50%, transparent));
   /* Half a cycle off the other, so the two never arrive in pairs. */
   animation: kosmic-shoot-rtl 80s linear 42s infinite;
+}
+
+.kosmic-shooting-star.rtl::before {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, color-mix(in oklch, var(--nord13) 50%, white) 90%, transparent),
+    color-mix(in oklch, var(--nord13) 40%, transparent) 35%,
+    color-mix(in oklch, var(--nord13) 0%, transparent)
+  );
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.kosmic-shooting-star.rtl::after {
+  left: -3.5px;
 }
 
 /* The app's own, across the lower half, where the landing page has none:
    rarer than the other two, and timed to fall between them. */
 .kosmic-shooting-star.low {
+  --star: var(--nord8);
+  --star-hot: color-mix(in oklch, var(--nord8) 50%, white);
+  --star-core: white;
   top: 74%;
   left: -6%;
-  width: 95px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in oklch, var(--nord8) 0%, transparent),
-    color-mix(in oklch, var(--nord8) 85%, transparent)
-  );
+  width: 110px;
+  filter: drop-shadow(0 0 2px color-mix(in oklch, var(--nord8) 50%, transparent));
   /* 120s cycle; the streak takes 2.1s, as the others do. */
   animation: kosmic-shoot-low 120s linear 22s infinite;
 }
@@ -357,6 +440,15 @@
   }
 }
 
+/* No aurora on phones and tablets: their GPUs cannot draw it smoothly,
+   and the sky does well enough without it. Hidden, the display has no
+   size, so js/kosmic-aurora.js never makes it. */
+@media (pointer: coarse) {
+  .kosmic-aurora {
+    display: none;
+  }
+}
+
 /* A still sky: for reduced motion, and for anyone who turns the
    animation off under Settings → Appearance (theme.js sets
    data-sky-motion, per device like the theme). The stars stay, lit and
@@ -367,7 +459,7 @@
     animation: none;
   }
 
-  .kosmic-starfield circle {
+  .kosmic-starfield .kosmic-star {
     animation: none !important;
   }
 
@@ -381,7 +473,7 @@
   animation: none;
 }
 
-[data-sky-motion="off"] .kosmic-starfield circle {
+[data-sky-motion="off"] .kosmic-starfield .kosmic-star {
   animation: none !important;
 }
 
