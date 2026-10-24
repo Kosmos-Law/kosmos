@@ -33,9 +33,31 @@ from apps.books.models import QuickBooksConnection
 
 logger = logging.getLogger(__name__)
 
+# The OAuth endpoints come from Intuit's discovery document, one per
+# environment, which is how Intuit announces a change; these are the
+# current ones, used while the document cannot be fetched.
 AUTHORIZE_URL = "https://appcenter.intuit.com/connect/oauth2"
 TOKEN_URL = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
 REVOKE_URL = "https://developer.api.intuit.com/v2/oauth2/tokens/revoke"
+DEFAULT_ENDPOINTS = {
+    "authorize": AUTHORIZE_URL,
+    "token": TOKEN_URL,
+    "revoke": REVOKE_URL,
+}
+DISCOVERY_URLS = {
+    QuickBooksConnection.SANDBOX: (
+        "https://developer.api.intuit.com/.well-known/openid_sandbox_configuration"
+    ),
+    QuickBooksConnection.PRODUCTION: (
+        "https://developer.api.intuit.com/.well-known/openid_configuration"
+    ),
+}
+DISCOVERY_FIELDS = {
+    "authorize": "authorization_endpoint",
+    "token": "token_endpoint",
+    "revoke": "revocation_endpoint",
+}
+DISCOVERY_TTL = timedelta(days=1)
 SCOPE = "com.intuit.quickbooks.accounting"
 API_HOSTS = {
     QuickBooksConnection.SANDBOX: "https://sandbox-quickbooks.api.intuit.com",
@@ -101,6 +123,39 @@ def new_state():
     return secrets.token_urlsafe(32)
 
 
+# environment -> (fetched at, endpoints)
+_discovered = {}
+
+
+def endpoints(env=None):
+    """The OAuth endpoints for ``env`` (this server's by default), from
+    Intuit's discovery document, fetched at most once a day. A document
+    that cannot be fetched or read leaves the known endpoints in place
+    until the next try."""
+    env = env or environment()
+    cached = _discovered.get(env)
+    if cached and timezone.now() - cached[0] < DISCOVERY_TTL:
+        return cached[1]
+    found = dict(DEFAULT_ENDPOINTS)
+    try:
+        response = requests.get(
+            DISCOVERY_URLS[env], headers={"Accept": "application/json"}, timeout=TIMEOUT
+        )
+        if response.status_code == 200:
+            document = response.json()
+            for key, field in DISCOVERY_FIELDS.items():
+                if isinstance(document.get(field), str) and document[field]:
+                    found[key] = document[field]
+        else:
+            logger.warning(
+                "Intuit's discovery document answered HTTP %s", response.status_code
+            )
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning("Intuit's discovery document could not be read: %s", exc)
+    _discovered[env] = (timezone.now(), found)
+    return found
+
+
 def authorize_url(redirect, state):
     query = urlencode(
         {
@@ -111,7 +166,7 @@ def authorize_url(redirect, state):
             "state": state,
         }
     )
-    return f"{AUTHORIZE_URL}?{query}"
+    return f"{endpoints()['authorize']}?{query}"
 
 
 def connection():
@@ -138,10 +193,10 @@ def _describe(response):
     return f"HTTP {response.status_code}"
 
 
-def _token_request(data):
+def _token_request(data, env=None):
     try:
         response = requests.post(
-            TOKEN_URL,
+            endpoints(env)["token"],
             data=data,
             auth=_auth(),
             headers={"Accept": "application/json"},
@@ -216,7 +271,8 @@ def refresh(conn, refused=False):
             )
         try:
             tokens = _token_request(
-                {"grant_type": "refresh_token", "refresh_token": token}
+                {"grant_type": "refresh_token", "refresh_token": token},
+                locked.environment,
             )
         except QuickBooksError as exc:
             if "invalid_grant" in str(exc):
@@ -245,7 +301,7 @@ def revoke(conn):
         return
     try:
         response = requests.post(
-            REVOKE_URL,
+            endpoints(conn.environment)["revoke"],
             json={"token": token},
             auth=_auth(),
             headers={"Accept": "application/json"},
