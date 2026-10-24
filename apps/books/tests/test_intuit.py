@@ -22,9 +22,10 @@ TOKENS = {
 
 
 class FakeResponse:
-    def __init__(self, status_code=200, body=None):
+    def __init__(self, status_code=200, body=None, headers=None):
         self.status_code = status_code
         self._body = body
+        self.headers = headers or {}
 
     def json(self):
         if self._body is None:
@@ -311,6 +312,18 @@ class TestClient:
         fake.get_queue = [FakeResponse(500, {"Fault": {}})]
         with pytest.raises(intuit.QuickBooksError, match="HTTP 500"):
             intuit.Client(connected).company_info()
+
+    def test_errors_carry_intuits_transaction_id_and_message(self, connected, fake):
+        fake.get_queue = [
+            FakeResponse(
+                400,
+                {"Fault": {"Error": [{"Message": "Invalid query", "code": "4000"}]}},
+                headers={"intuit_tid": "1-2-3-abc"},
+            )
+        ]
+        with pytest.raises(intuit.QuickBooksError) as caught:
+            intuit.Client(connected).query("select nonsense")
+        assert "Invalid query (400), intuit_tid 1-2-3-abc" in str(caught.value)
 
     def test_the_production_host(self, connected, fake, settings):
         settings.QUICKBOOKS_ENVIRONMENT = "production"

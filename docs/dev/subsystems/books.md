@@ -126,7 +126,10 @@ event posts. `apps/books/intuit.py` is the connection:
   environment, refreshing an access token within five minutes of expiry
   and once more after a 401: `company_info()`, `query(statement)` and
   `report(name, **params)` (the standard reports, as Intuit's column/row
-  JSON). Anything but a 200 raises `QuickBooksError`.
+  JSON). Anything but a 200 raises `QuickBooksError`, whose message
+  carries Intuit's reason and the `intuit_tid` response header its
+  support looks a problem up by; the sync records it on the connection
+  and logs it.
 - `disconnect()` revokes at Intuit (a failure is logged, not raised) and
   deletes the row.
 
