@@ -99,17 +99,70 @@ statements computed from the lines.
   on), one account per role, so a firm may rename or renumber its chart.
 - A sourced entry (`JournalEntry.source` other than manual) is corrected
   by a reversing entry, never edited or deleted; the `(source,
-  source_id)` pair is unique, so a record posts once.
-- The next slices, in order: posting from payments, trust and expense
-  entries; the bank feed ported from the finance project (Plaid, CSV,
-  payee rules, transfer matching) and bank reconciliation; bills and
+  source_id)` pair is unique, so a record posts once. (Entries the
+  QuickBooks mirror owns are the exception; see the amendment below.)
+- The next slices, as first ordered: posting from payments, trust and
+  expense entries; the bank feed ported from the finance project (Plaid,
+  CSV, payee rules, transfer matching) and bank reconciliation; bills and
   vendors with the 1099 summary; the year-end package and the TXF
-  export; the trust three-way reconciliation.
+  export; the trust three-way reconciliation. The amendment of
+  2026-10-24 puts a QuickBooks mirror ahead of all of these and defers
+  the posting rules to the cut-over.
+
+## Amendment (2026-10-24): QuickBooks is the source of truth until cut-over
+
+The first build was set aside. The bottleneck was not the code but the
+owner's understanding of the firm's accounting, which a bookkeeper has
+kept in QuickBooks Online. The way through is to see the books as the
+bookkeeper keeps them, in Kosmos, and build the visibility slowly;
+coding transactions here comes months later, once the chart and the
+coding are understood. Two rules follow.
+
+**The mirror rule.** While the firm's books are kept in QuickBooks,
+Books mirrors QuickBooks Online through its API: the chart is
+QuickBooks's Account List and every entry is a QuickBooks transaction,
+pulled on a schedule and on demand. The bookkeeper keeps working in
+QuickBooks and nothing is entered in Kosmos.
+
+- An entry with source `quickbooks` belongs to the sync. When the
+  bookkeeper edits a transaction in QuickBooks the sync replaces the
+  entry's lines; when they delete one the sync deletes the entry. The
+  mirror's job is to show QuickBooks as it is, so the reversal-only rule
+  does not apply to it. That rule still holds for every entry Kosmos
+  itself produces (manual now; practice records after cut-over).
+- Books is read-only in the interface while the mirror is on: no manual
+  entries, no editing or reversing, no seeding of the default chart, no
+  editing of accounts beyond what the sync writes. The sync's pages
+  (connection, last run, any difference from QuickBooks's own trial
+  balance) are the only things that write.
+- The connection is firm-wide, under Settings > Integrations beside the
+  Google connections, admin-only, with a Sync Now and a Disconnect.
+  `compare_quickbooks` becomes the check the sync runs after itself.
+
+**The double-posting rule.** While QuickBooks is the source, no
+practice-app event posts to Books. A payment the bookkeeper records in
+QuickBooks already arrives through the mirror; a posting rule in Kosmos
+would record it twice. The posting rules slice therefore waits for
+cut-over.
+
+- Cut-over is one deliberate switch, a firm setting, on one date: the
+  sync stops, the QuickBooks entries stay as history, and from that
+  date the practice apps post and staff enter the rest. Mirror and
+  posting rules are never on together.
+- The ledger, the chart model, the statements and the gates do not
+  change for the mirror. What changes is where entries come from, and
+  the slices' order: the connection; the sync (chart, then the general
+  ledger, checked against the trial balance); the read-only interface;
+  then the visibility work on Accounts, Journal and Statements against
+  real data; then cut-over and the slices as first ordered.
 
 ## Evidence
 
 - The owner's requests of 2026-10-22: the project, the placement, the
   tax handoff, the LLC and the possible S-corporation election.
+- The owner's request of 2026-10-24: the first build set aside as
+  overwhelming; a read-only mirror of QuickBooks first, and the coding of
+  transactions in Kosmos months later.
 - `apps/books/models.py`, `chart.py`, `ledger.py`, `tax_lines.py`.
 - `apps/settings/features/__init__.py` (`books_enabled`),
   `apps/accounts/middleware.py` (`BOOKS_PATTERN`, the `/books/`
