@@ -64,7 +64,82 @@ def keys(settings):
 def fake(monkeypatch):
     fake = FakeRequests()
     monkeypatch.setattr(intuit, "requests", fake)
+    # The discovery document is fetched once a day; these tests are about
+    # what follows it, so it is already known.
+    monkeypatch.setattr(
+        intuit,
+        "_discovered",
+        {
+            env: (timezone.now(), dict(intuit.DEFAULT_ENDPOINTS))
+            for env in intuit.DISCOVERY_URLS
+        },
+    )
     return fake
+
+
+@pytest.fixture
+def undiscovered(monkeypatch):
+    monkeypatch.setattr(intuit, "_discovered", {})
+
+
+DISCOVERY = {
+    "issuer": "https://oauth.platform.intuit.com/op/v1",
+    "authorization_endpoint": "https://appcenter.intuit.com/connect/oauth2",
+    "token_endpoint": "https://oauth.platform.intuit.com/oauth2/v2/tokens/bearer",
+    "revocation_endpoint": "https://developer.api.intuit.com/v2/oauth2/tokens/revoke",
+}
+
+
+class TestDiscovery:
+    def test_reads_the_endpoints_for_the_environment(self, keys, fake, undiscovered):
+        fake.get_queue = [FakeResponse(200, DISCOVERY)]
+
+        found = intuit.endpoints()
+
+        assert fake.gets[0][0] == intuit.DISCOVERY_URLS["sandbox"]
+        assert (
+            found["token"]
+            == "https://oauth.platform.intuit.com/oauth2/v2/tokens/bearer"
+        )
+        assert found["authorize"] == intuit.AUTHORIZE_URL
+        assert found["revoke"] == intuit.REVOKE_URL
+
+    def test_fetched_once_a_day(self, keys, fake, undiscovered):
+        fake.get_queue = [FakeResponse(200, DISCOVERY)]
+        intuit.endpoints()
+        intuit.endpoints()
+        intuit.endpoints("production")
+        assert [url for url, _ in fake.gets] == [
+            intuit.DISCOVERY_URLS["sandbox"],
+            intuit.DISCOVERY_URLS["production"],
+        ]
+
+    def test_falls_back_when_the_document_cannot_be_read(
+        self, keys, fake, undiscovered
+    ):
+        fake.get_queue = [FakeResponse(503, None)]
+        assert intuit.endpoints() == intuit.DEFAULT_ENDPOINTS
+        fake.get_queue = [FakeResponse(200, {"token_endpoint": 7})]
+        intuit._discovered.clear()
+        assert intuit.endpoints() == intuit.DEFAULT_ENDPOINTS
+
+    def test_the_token_request_uses_the_discovered_endpoint(
+        self, keys, fake, undiscovered
+    ):
+        fake.get_queue = [FakeResponse(200, DISCOVERY)]
+        fake.post_queue = [FakeResponse(200, TOKENS)]
+        intuit.connect("c", "1", "https://k/store")
+        assert fake.posts[0][0] == DISCOVERY["token_endpoint"]
+
+    def test_authorize_url_uses_the_discovered_endpoint(self, keys, fake, undiscovered):
+        fake.get_queue = [
+            FakeResponse(
+                200, {**DISCOVERY, "authorization_endpoint": "https://x.intuit.com/a"}
+            )
+        ]
+        assert intuit.authorize_url("https://k/store", "s").startswith(
+            "https://x.intuit.com/a?"
+        )
 
 
 @pytest.fixture

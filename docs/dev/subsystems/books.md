@@ -111,6 +111,9 @@ event posts. `apps/books/intuit.py` is the connection:
 - `configured()` reads `QUICKBOOKS_CLIENT_ID` and `QUICKBOOKS_CLIENT_SECRET`
   from config/.env; `environment()` reads `QUICKBOOKS_ENVIRONMENT`
   (`sandbox` or `production`), which decides only new connections.
+- `endpoints(env)` reads the OAuth endpoints (authorize, token, revoke)
+  from Intuit's discovery document for the environment, once a day, and
+  keeps the known ones while the document cannot be read.
 - `authorize_url(redirect, state)` starts Intuit's OAuth 2.0 with the
   accounting scope; `connect(code, realm_id, redirect, user)` trades the
   code for tokens, keeps them as the one `QuickBooksConnection` (an
