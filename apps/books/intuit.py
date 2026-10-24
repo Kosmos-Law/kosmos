@@ -182,15 +182,23 @@ def _auth():
 
 
 def _describe(response):
+    """What went wrong, with the intuit_tid Intuit stamps on every
+    response, which its support looks a problem up by."""
     try:
         body = response.json()
     except ValueError:
         body = {}
+    reason = f"HTTP {response.status_code}"
     if isinstance(body, dict):
-        reason = body.get("error_description") or body.get("error")
-        if reason:
-            return f"{reason} ({response.status_code})"
-    return f"HTTP {response.status_code}"
+        said = body.get("error_description") or body.get("error")
+        if not said and isinstance(body.get("Fault"), dict):
+            errors = body["Fault"].get("Error") or []
+            if errors and isinstance(errors[0], dict):
+                said = errors[0].get("Message") or errors[0].get("Detail")
+        if said:
+            reason = f"{said} ({response.status_code})"
+    tid = (getattr(response, "headers", None) or {}).get("intuit_tid")
+    return f"{reason}, intuit_tid {tid}" if tid else reason
 
 
 def _token_request(data, env=None):
