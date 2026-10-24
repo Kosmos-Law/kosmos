@@ -110,6 +110,10 @@ nav = [
       { "Operations" = "dev/subsystems/operations.md" },
     ] },
   ] },
+  { "Legal" = [
+    { "Terms of use" = "legal/terms.md" },
+    { "Privacy policy" = "legal/privacy.md" },
+  ] },
   { "Reference" = [
     "reference/index.md",
     { "Environment variables" = "reference/environment.md" },
