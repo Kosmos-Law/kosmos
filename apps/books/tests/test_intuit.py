@@ -237,11 +237,22 @@ class TestClient:
         with pytest.raises(intuit.QuickBooksError, match="HTTP 500"):
             intuit.Client(connected).company_info()
 
-    def test_the_production_host(self, connected, fake):
+    def test_the_production_host(self, connected, fake, settings):
+        settings.QUICKBOOKS_ENVIRONMENT = "production"
         connected.environment = "production"
         connected.save()
         intuit.Client(connected).company_info()
         assert fake.gets[0][0].startswith("https://quickbooks.api.intuit.com/")
+
+    def test_a_connection_from_the_other_environment_is_refused(self, connected, fake):
+        """A dev server loaded with production's database: sandbox keys,
+        a production connection. Nothing is sent to Intuit."""
+        connected.environment = "production"
+        connected.access_expires_at = timezone.now()
+        connected.save()
+        with pytest.raises(intuit.WrongEnvironment, match="production QuickBooks"):
+            intuit.Client(connected)
+        assert fake.posts == [] and fake.gets == []
 
 
 class TestDisconnect:

@@ -64,6 +64,15 @@ class ConnectionLost(QuickBooksError):
     revoked, or reused): an administrator must connect again."""
 
 
+class WrongEnvironment(QuickBooksError):
+    """The connection was made against the other QuickBooks (production
+    or sandbox) than this server's keys reach. A development server
+    loaded with a copy of production's database holds production's
+    connection; its sandbox keys cannot refresh those tokens, and must
+    not try, since a refresh that went through would rotate the token
+    under production."""
+
+
 # ------------------------------------------------------------- configuration
 
 
@@ -268,6 +277,13 @@ class Client:
     def __init__(self, conn):
         if conn is None:
             raise NotConnected("QuickBooks is not connected.")
+        if conn.environment != environment():
+            raise WrongEnvironment(
+                f"This connection is to the {conn.get_environment_display().lower()} "
+                f"QuickBooks and this server's keys are for the "
+                f"{environment()}; nothing was synced. Connect again here, or "
+                "leave it: a copy of production's data needs no sync."
+            )
         self.conn = conn
         self.host = API_HOSTS[conn.environment]
 

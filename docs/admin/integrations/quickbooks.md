@@ -103,6 +103,17 @@ editing, deleting or reversing of entries, and no adding of accounts.
 Make the change in QuickBooks and it arrives with the next sync.
 Accounts can still be edited, for their roles and tax lines.
 
+## A development server with a copy of production's data
+
+A development server loaded from a copy of production's database holds
+production's connection, which its sandbox keys cannot use. The sync
+there refuses, saying so on **Settings → Integrations**, and sends
+nothing to Intuit: a refresh that went through would rotate the token
+under production. The mirrored chart and journal are in the copy and
+need no sync to be read. To sync against a sandbox company on that
+server, click **Connect** there; it replaces the copied connection until
+the next reload.
+
 ## Disconnecting
 
 **Disconnect** tells Intuit the connection is over and forgets the
