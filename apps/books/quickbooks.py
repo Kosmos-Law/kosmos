@@ -109,6 +109,8 @@ class QBLine:
     credit: Decimal
     description: str
     name: str
+    # The account's QuickBooks id, when the line came through the API.
+    account_id: str = ""
 
 
 @dataclass
@@ -118,6 +120,9 @@ class QBTransaction:
     kind: str
     num: str
     lines: list = field(default_factory=list)
+    # "Invoice:91": the type and id, the key the mirror stores as
+    # JournalEntry.source_ref. Blank for the export, which has only the id.
+    ref: str = ""
 
     @property
     def memo(self):
@@ -265,6 +270,12 @@ DETAIL_TAX_LINES = {
     "Discounts/Refunds Given": ("2", "1b"),
     "Other Miscellaneous Income": ("6", "5"),
     "Interest Earned": ("6", "K4"),
+    "Other Primary Income": ("1", "1a"),
+    "Unapplied Cash Payment Income": ("1", "1a"),
+    "Unapplied Cash Bill Payment Expense": ("27a", "19"),
+    "Penalties & Settlements": ("", "K16c"),
+    "Supplies & Materials - COS": ("38", "2"),
+    "Cost of Labor - COS": ("37", "2"),
 }
 
 # Name patterns that refine the tax line, checked before the detail type.
@@ -493,6 +504,7 @@ class _Lookup:
         accounts = list(Account.objects.select_related("parent__parent__parent"))
         self.by_code = {a.code: a for a in accounts}
         self.by_path = {tuple(a.full_name.split(": ")): a for a in accounts}
+        self.by_qb_id = {a.quickbooks_id: a for a in accounts if a.quickbooks_id}
         for decision in planned:
             stand_in = Account(
                 code=decision["code"], name=decision["name"], is_active=True
@@ -501,6 +513,8 @@ class _Lookup:
             self.by_path.setdefault(tuple(decision["qb"].path), stand_in)
 
     def find(self, line):
+        if line.account_id:
+            return self.by_qb_id.get(line.account_id)
         account = self.by_code.get(line.code) if line.code else None
         if account is None:
             account = self.by_path.get(tuple(line.path))

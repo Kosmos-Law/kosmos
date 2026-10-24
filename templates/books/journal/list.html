@@ -2,13 +2,15 @@
 <div class="toolbar">
   <div class="toolbar-left">
     <div class="filter-tools">
-      <button type="button"
-              class="btn-icon"
-              title="Add entry"
-              hx-get="{% url 'books:entry-add' %}"
-              hx-target="#htmx-modal-container">
-        <i class="icon-plus"></i>
-      </button>
+      {% if not books_mirror %}
+        <button type="button"
+                class="btn-icon"
+                title="Add entry"
+                hx-get="{% url 'books:entry-add' %}"
+                hx-target="#htmx-modal-container">
+          <i class="icon-plus"></i>
+        </button>
+      {% endif %}
     </div>
   </div>
   <div class="toolbar-right">
@@ -63,7 +65,7 @@
                     </li>
                   {% endif %}
                 {% endif %}
-                {% if not entry.reversed_by %}
+                {% if not entry.reversed_by and not books_mirror %}
                   <li>
                     <a class="dropdown-item"
                        href="#!"

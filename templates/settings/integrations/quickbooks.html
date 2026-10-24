@@ -29,13 +29,19 @@
             {{ connection.company_name|default:"QuickBooks company" }}
             {% if connection.is_sandbox %}(sandbox){% endif %}
           </span>
-          <button type="button"
-                  class="btn btn-secondary confirm"
-                  data-href="{% url 'settings:quickbooks-disconnect' %}"
-                  data-method="post"
-                  data-confirm-title="Disconnect QuickBooks"
-                  data-confirm-message="Disconnect QuickBooks Online for the whole firm? Books stops syncing with it until an administrator connects it again. What has already been mirrored stays."
-                  data-confirm-text="Disconnect">Disconnect</button>
+          <span>
+            <form method="post" action="{% url 'books:sync' %}" class="inline-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success">Sync now</button>
+            </form>
+            <button type="button"
+                    class="btn btn-secondary confirm"
+                    data-href="{% url 'settings:quickbooks-disconnect' %}"
+                    data-method="post"
+                    data-confirm-title="Disconnect QuickBooks"
+                    data-confirm-message="Disconnect QuickBooks Online for the whole firm? Books stops syncing with it until an administrator connects it again. What has already been mirrored stays."
+                    data-confirm-text="Disconnect">Disconnect</button>
+          </span>
         {% else %}
           <span>
             QuickBooks Online
@@ -66,6 +72,9 @@
             The sign-in is good until {{ connection.refresh_expires_at|date:"M j, Y" }} and renews with every sync.
           {% endif %}
         </p>
+        {% if connection.last_sync_summary %}
+          <p class="detail-text drive-sync-note">{{ connection.last_sync_summary }}</p>
+        {% endif %}
         {% if connection.last_sync_error %}
           <p class="detail-text drive-sync-note ai-key-error">{{ connection.last_sync_error }}</p>
         {% endif %}

@@ -11,7 +11,7 @@ the ledger behind invoicing and trust](../../decisions/2026-10-22-books-is-the-l
 | Model | Table | What it is |
 |---|---|---|
 | `Account` | `app_books_account` | One account in the chart: a code, a type (asset, liability, equity, income, expense), a subtype that places it on the statements and on Schedule L, an optional parent (a sub-account shares its parent's kind; `full_name` is the path), an optional role the posting rules look up (one account per role), and a tax line for each return (`schedule_c_line`, `form_1120s_line`; blank on balance-sheet accounts). Inactive accounts keep their history and take no new lines. |
-| `JournalEntry` | `app_books_entry` | A dated, balanced set of lines with a memo. `source` says what produced it: manual, or a practice record (invoice, payment, credit, trust, expense), a bank transaction, or a reversal. `(source, source_id)` is unique, so a record posts once. `reverses` points at the entry a reversal undoes. |
+| `JournalEntry` | `app_books_entry` | A dated, balanced set of lines with a memo. `source` says what produced it: manual, or a practice record (invoice, payment, credit, trust, expense), a bank transaction, QuickBooks, or a reversal. `(source, source_id)` is unique, so a record posts once; `source_ref` is the key when it is not a row id (a QuickBooks transaction's type and id), unique the same way. `reverses` points at the entry a reversal undoes. |
 | `QuickBooksConnection` | `app_books_quickbooks` | The firm's QuickBooks Online company while Books mirrors it (one row): the realm id, the company's name, the environment (sandbox or production) the tokens were issued for, the tokens sealed at rest (`utils/crypto.py`; `access` and `refresh` read them), their expiries, who connected it, and the last sync's time and error. |
 | `JournalLine` | `app_books_line` | One debit or one credit to one account (a check constraint forbids both and negatives), with an optional contact and matter as the sub-ledgers: the client whose trust money moved, the matter whose cost was advanced. |
 
@@ -135,8 +135,59 @@ page includes `settings/integrations/quickbooks.html` for an
 administrator while Books is on. Tests: `test_intuit.py` (against a stub
 of `requests`) and `apps/settings/tests/test_quickbooks.py`.
 
-The sync that fills the chart and the journal from the connection is the
-next slice; the export-file import above stays as the fallback.
+## The sync
+
+`apps/books/sync.py` keeps Books the same as the company, in three steps
+`run(conn)` takes in order and records on the connection (`last_sync_at`,
+`last_sync_summary`, `last_sync_error`):
+
+- `sync_chart(items)`: every account of the company, inactive ones
+  included (`fetch_accounts` asks for them), is an account here, found by
+  `Account.quickbooks_id`. A new one gets its kind from the API's account
+  type (`API_TYPE_LABEL` maps it onto the export's names, then
+  `quickbooks.subtype_for`), its tax lines from the detail type
+  (`DETAIL_LABELS`, then `quickbooks.tax_lines_for`), QuickBooks's
+  account number as its code or, without one, the next free number in
+  its type's range (`CODE_BASE`: assets 1000, liabilities 2000, equity
+  3000, income 4000, expenses 5000), and its parent from `ParentRef`,
+  whose kind it shares. An existing one follows its name, parent, kind,
+  description and active flag; its code, tax lines and role are left
+  alone. `_assign_roles` then gives every role no account holds to the
+  mirrored account that fits it (`quickbooks.ROLE_RULES`), so a role
+  moved on the Accounts page sticks and one cleared comes back.
+- `sync_journal(transactions)`: the Journal report
+  (`read_journal_report`, every row of every transaction, a totals row
+  between transactions) becomes entries with source `quickbooks` and
+  `source_ref` "<type>:<id>" ("Invoice:91"; QuickBooks numbers each type
+  from one). A new transaction is posted (`ledger.post` with
+  `allow_inactive`, since history on a since-closed account is still
+  history); one whose date, memo or lines changed has them replaced in
+  place; one the report no longer has is deleted. These entries are the
+  sync's, not the reversal-only kind. A transaction naming an account
+  the chart lacks, or whose lines do not balance, is reported and left
+  as it was, and nothing else is affected.
+- `compare_trial_balance`: the ledger's trial balance for the fiscal
+  year (`QuickBooksConnection.fiscal_year_start`, from the company's
+  `FiscalYearStartMonth`) to today, with earlier years folded into the
+  retained earnings account, beside QuickBooks's Trial Balance report
+  for the same period (`read_trial_balance`), by QuickBooks account id.
+  The summary names the first account that differs.
+
+`scheduled_sync` runs it every thirty minutes (`quickbooks-sync` in
+`apps/management/schedules.py`) and does nothing without a connection;
+`books:sync` (`views.books_sync`) runs it on demand from the line under
+the Books sub-navigation (htmx: the lists reload and a toast carries the
+summary) and from Settings > Integrations (a form: the page comes back
+with the summary in a toast).
+
+While the connection exists Books is read-only: `views._mirrored` refuses
+the seed, add, edit, delete and reverse views with a 400, and the
+templates leave the buttons out (`books_mirror`, the connection, is in
+every template's context from `config/context.py`). Accounts may still
+be edited, for their roles and tax lines. The export-file import above
+is the fallback for a firm with no API connection; it must not be
+combined with the mirror, whose first sync would remove its entries
+(they carry no `source_ref`).
 
 ## Settings and gates
 

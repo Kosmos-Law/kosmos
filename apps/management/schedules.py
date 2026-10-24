@@ -99,6 +99,17 @@ def schedule_specs():
             ),
         ),
         ScheduleSpec(
+            "quickbooks-sync",
+            "apps.books.sync.scheduled_sync",
+            "*/30 * * * *",
+            description=(
+                "Mirrors the firm's QuickBooks Online company into Books: the "
+                "chart of accounts, every transaction, and a check against "
+                "QuickBooks's own trial balance. Does nothing until QuickBooks "
+                "is connected under Settings > Integrations."
+            ),
+        ),
+        ScheduleSpec(
             "payments-reconcile",
             "apps.invoicing.pay.reconcile.poll_pending",
             "15 * * * *",

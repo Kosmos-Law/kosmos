@@ -6,6 +6,7 @@ app_name = "books"
 
 urlpatterns = [
     path("books/", views.books_index, name="index"),
+    path("books/sync/", views.books_sync, name="sync"),
     # Chart of accounts
     path("books/accounts/", views.accounts_index, name="accounts-index"),
     path("books/accounts/list/", views.accounts_list, name="accounts-list"),

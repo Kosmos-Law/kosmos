@@ -17,7 +17,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.books import ledger
+from apps.books import intuit, ledger, sync
 from apps.books.chart import seed_default_chart
 from apps.books.forms import (
     AccountForm,
@@ -42,6 +42,42 @@ def _changed(extra=None):
 
 def _firm():
     return Firm.objects.first()
+
+
+MIRROR_MSG = (
+    "Books mirrors QuickBooks Online while the firm's books are kept there; "
+    "make the change in QuickBooks and it arrives with the next sync."
+)
+
+
+def _mirrored():
+    """A refusal for a write while the mirror is on, else None."""
+    if intuit.connection() is not None:
+        return HttpResponseBadRequest(MIRROR_MSG)
+    return None
+
+
+@login_required
+@require_POST
+def books_sync(request):
+    """Mirror the company now. From Books (htmx) the lists reload and a
+    toast says what happened; from Settings > Integrations (a form) the
+    page comes back with the same in a toast."""
+    try:
+        summary = sync.run().summary
+        kind, message = "success", summary
+    except intuit.NotConnected:
+        kind, message = "error", "QuickBooks is not connected."
+    except (intuit.QuickBooksError, ValidationError, KeyError, ValueError) as exc:
+        kind, message = "error", f"QuickBooks sync failed: {exc}"
+    if request.headers.get("HX-Request"):
+        response = _changed()
+        (toast_success if kind == "success" else toast_error)(response, message)
+        return response
+    from apps.settings.integrations import PENDING_TOAST_KEY
+
+    request.session[PENDING_TOAST_KEY] = {"type": kind, "message": message}
+    return redirect("settings:integrations-index")
 
 
 @login_required
@@ -187,6 +223,8 @@ def tree_show_inactive(request):
 @login_required
 @require_POST
 def accounts_seed(request):
+    if refused := _mirrored():
+        return refused
     added = seed_default_chart()
     response = _changed()
     toast_success(response, f"{added} accounts added")
@@ -195,6 +233,8 @@ def accounts_seed(request):
 
 @login_required
 def account_add(request):
+    if refused := _mirrored():
+        return refused
     form = AccountForm(request.POST or None, use_required_attribute=False)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -306,11 +346,15 @@ def _entry_form(request, entry=None):
 
 @login_required
 def entry_add(request):
+    if refused := _mirrored():
+        return refused
     return _entry_form(request)
 
 
 @login_required
 def entry_edit(request, pk):
+    if refused := _mirrored():
+        return refused
     entry = get_object_or_404(JournalEntry, pk=pk)
     if not entry.is_manual:
         return HttpResponseBadRequest("Only a manual entry can be edited.")
@@ -320,6 +364,8 @@ def entry_edit(request, pk):
 @login_required
 @require_POST
 def entry_delete(request, pk):
+    if refused := _mirrored():
+        return refused
     entry = get_object_or_404(JournalEntry, pk=pk)
     if not entry.is_manual or hasattr(entry, "reversed_by"):
         return HttpResponseBadRequest("Reverse this entry instead of deleting it.")
@@ -330,6 +376,8 @@ def entry_delete(request, pk):
 @login_required
 @require_POST
 def entry_reverse(request, pk):
+    if refused := _mirrored():
+        return refused
     entry = get_object_or_404(JournalEntry, pk=pk)
     try:
         ledger.reverse(entry, timezone.localdate())

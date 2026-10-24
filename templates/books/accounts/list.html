@@ -2,13 +2,15 @@
 <div class="toolbar">
   <div class="toolbar-left">
     <div class="filter-tools">
-      <button type="button"
-              class="btn-icon"
-              title="Add account"
-              hx-get="{% url 'books:account-add' %}"
-              hx-target="#htmx-modal-container">
-        <i class="icon-plus"></i>
-      </button>
+      {% if not books_mirror %}
+        <button type="button"
+                class="btn-icon"
+                title="Add account"
+                hx-get="{% url 'books:account-add' %}"
+                hx-target="#htmx-modal-container">
+          <i class="icon-plus"></i>
+        </button>
+      {% endif %}
       {% if not empty %}
         {% if any_collapsed %}
           <button type="button"
@@ -35,7 +37,18 @@
     </div>
   </div>
 </div>
-{% if empty %}
+{% if empty and books_mirror %}
+  <div class="books-empty">
+    <p>
+      The chart of accounts is empty. It fills from QuickBooks Online with
+      the first sync.
+    </p>
+    <button type="button"
+            class="btn btn-success"
+            hx-post="{% url 'books:sync' %}"
+            hx-swap="none">Sync with QuickBooks</button>
+  </div>
+{% elif empty %}
   <div class="books-empty">
     <p>
       The chart of accounts is empty. Start from the default chart for a law

@@ -33,12 +33,28 @@ def require_account(role):
 
 
 @transaction.atomic
-def post(date, memo, lines, source=JournalEntry.MANUAL, source_id=None, reverses=None):
+def post(
+    date,
+    memo,
+    lines,
+    source=JournalEntry.MANUAL,
+    source_id=None,
+    reverses=None,
+    source_ref="",
+    allow_inactive=False,
+):
     """Write a balanced entry. `lines` are dicts or JournalLine instances
     with account, debit or credit, and optionally memo, contact and
-    matter. Returns the saved entry."""
+    matter. An inactive account refuses new lines unless `allow_inactive`,
+    which the QuickBooks mirror needs: history on an account closed since.
+    Returns the saved entry."""
     entry = JournalEntry(
-        date=date, memo=memo, source=source, source_id=source_id, reverses=reverses
+        date=date,
+        memo=memo,
+        source=source,
+        source_id=source_id,
+        source_ref=source_ref,
+        reverses=reverses,
     )
     built = []
     for line in lines:
@@ -57,7 +73,7 @@ def post(date, memo, lines, source=JournalEntry.MANUAL, source_id=None, reverses
         built.append(line)
     entry.check_balanced(built)
     inactive = [line.account for line in built if not line.account.is_active]
-    if inactive:
+    if inactive and not allow_inactive:
         raise ValidationError(f"{inactive[0]} is inactive.")
     entry.save()
     for line in built:

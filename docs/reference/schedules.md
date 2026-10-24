@@ -20,6 +20,7 @@ Times are in the firm's time zone, the `TIME_ZONE` variable in
 | `gmail-sync` | Every 2 minutes (`*/2 * * * *`) | Syncs labelled Gmail messages onto their mapped matters, across every connected mailbox. Does nothing until a mailbox is connected and a label is linked to a matter. |
 | `gmail-sync-weekly-full` | Monday at 03:15 (`15 3 * * 1`) | Full Gmail re-sync of every linked label. |
 | `chat-purge-weekly` | Sunday at 03:00 (`0 3 * * 0`) | Deletes AI chat history for matters that have been closed for longer than CHAT_RETENTION_DAYS (180 by default; 0 keeps chats indefinitely). |
+| `quickbooks-sync` | Every 30 minutes (`*/30 * * * *`) | Mirrors the firm's QuickBooks Online company into Books: the chart of accounts, every transaction, and a check against QuickBooks's own trial balance. Does nothing until QuickBooks is connected under Settings > Integrations. |
 | `payments-reconcile` | Hourly at 15 minutes past (`15 * * * *`) | Asks the payment processor for the current state of every online payment and trust deposit still in flight, and settles, confirms or reverses it. The backstop for a webhook that never arrived. |
 
 ## What each job runs
@@ -34,4 +35,5 @@ Times are in the firm's time zone, the `TIME_ZONE` variable in
 | `gmail-sync` | `apps.mail.google.scheduled_sync` |
 | `gmail-sync-weekly-full` | `apps.mail.google.scheduled_sync_full` |
 | `chat-purge-weekly` | `apps.ai.purge.scheduled_purge_closed_chats` |
+| `quickbooks-sync` | `apps.books.sync.scheduled_sync` |
 | `payments-reconcile` | `apps.invoicing.pay.reconcile.poll_pending` |

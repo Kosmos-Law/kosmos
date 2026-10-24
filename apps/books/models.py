@@ -118,6 +118,12 @@ class Account(AuditMixin):
     description = models.CharField(max_length=255, blank=True, default="")
     # An inactive account keeps its history and takes no new lines.
     is_active = models.BooleanField(default=True)
+    # The account's id in QuickBooks Online while Books mirrors it
+    # (apps/books/sync.py): the sync finds the account by it, so a rename
+    # there is a rename here, not a second account.
+    quickbooks_id = models.CharField(
+        max_length=20, blank=True, default="", db_index=True
+    )
     history = HistoricalRecords()
 
     class Meta:
@@ -227,6 +233,10 @@ class JournalEntry(AuditMixin):
     memo = models.CharField(max_length=255)
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default=MANUAL)
     source_id = models.PositiveIntegerField(null=True, blank=True)
+    # The record's key when it is not a Kosmos row id: a QuickBooks
+    # transaction is its type and id ("Invoice:91"), since QuickBooks
+    # numbers each type from one. Unique with the source, like source_id.
+    source_ref = models.CharField(max_length=80, blank=True, default="")
     # The entry this one undoes, when it is a reversal.
     reverses = models.OneToOneField(
         "self",
@@ -246,6 +256,11 @@ class JournalEntry(AuditMixin):
                 fields=["source", "source_id"],
                 condition=Q(source_id__isnull=False),
                 name="books_entry_source_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["source", "source_ref"],
+                condition=~Q(source_ref=""),
+                name="books_entry_source_ref_unique",
             ),
         ]
 
@@ -366,8 +381,13 @@ class QuickBooksConnection(models.Model):
         related_name="+",
     )
     last_sync_at = models.DateTimeField(null=True, blank=True)
+    # What the last sync did, in a sentence or two, and whether the ledger
+    # agrees with QuickBooks's own trial balance.
+    last_sync_summary = models.TextField(blank=True, default="")
     # Blank after a sync that worked; the reason after one that did not.
     last_sync_error = models.TextField(blank=True, default="")
+    # The month the company's fiscal year starts, 1 to 12, from QuickBooks.
+    fiscal_year_start_month = models.PositiveSmallIntegerField(default=1)
 
     class Meta:
         db_table = "app_books_quickbooks"
@@ -391,6 +411,12 @@ class QuickBooksConnection(models.Model):
     @property
     def refresh(self):
         return unseal(self.refresh_token, self.SEAL_PURPOSE) or None
+
+    def fiscal_year_start(self, day):
+        """The first day of the fiscal year ``day`` falls in."""
+        month = self.fiscal_year_start_month or 1
+        year = day.year if day.month >= month else day.year - 1
+        return day.replace(year=year, month=month, day=1)
 
     def access_is_fresh(self, margin=None):
         """True while the access token has longer than ``margin`` to live."""

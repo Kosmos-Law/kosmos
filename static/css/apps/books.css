@@ -16,6 +16,17 @@
   color: var(--color-muted);
 }
 
+/* The mirror's line under the sub-navigation: where the books come from,
+   when they were last copied, and a way to copy them now. */
+.books-mirror {
+  align-items: center;
+  color: var(--color-muted);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.5rem 0 0;
+}
+
 .books-empty {
   margin: 2rem auto;
   max-width: 36rem;

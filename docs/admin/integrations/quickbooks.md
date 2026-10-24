@@ -73,6 +73,36 @@ The tokens are stored in the database, sealed with a key derived from
 `SECRET_KEY`. Rotating `SECRET_KEY` makes them unreadable: connect
 again.
 
+## What the mirror does
+
+Every thirty minutes, and whenever someone clicks **Sync now** (under
+the Books sub-navigation, or beside the connection on **Settings →
+Integrations**), Kosmos copies the company into Books:
+
+- **The chart of accounts.** Every account in QuickBooks, inactive ones
+  included, is an account in Books, with QuickBooks's account number as
+  its code when it has one. A rename, a move under another parent or a
+  deactivation in QuickBooks is the same change in Books. Books adds two
+  things of its own, which the sync does not touch afterwards: the tax
+  line each income and expense account lands on (Schedule C and Form
+  1120-S), and the role an account plays (operating bank, trust bank,
+  client trust liability and so on). Both are guessed from QuickBooks's
+  account types and names and corrected on the Accounts page.
+- **Every transaction**, as a journal entry with its QuickBooks type and
+  id. A transaction edited in QuickBooks is updated in Books; one
+  deleted there is deleted here.
+- **A check.** The sync then compares Books's trial balance for the
+  fiscal year with QuickBooks's own, account by account, and the
+  connection's line on **Settings → Integrations** says whether they
+  agree, and if not, on which account first. A transaction the sync
+  could not copy (an account Books lacks, lines that do not balance) is
+  named there too.
+
+While the company is connected, Books is read-only: there is no adding,
+editing, deleting or reversing of entries, and no adding of accounts.
+Make the change in QuickBooks and it arrives with the next sync.
+Accounts can still be edited, for their roles and tax lines.
+
 ## Disconnecting
 
 **Disconnect** tells Intuit the connection is over and forgets the
