@@ -104,6 +104,9 @@ class CustomUser(AbstractUser):
     # firm's revenue, whatever matters or other permissions a user has.
     perm_reports = models.BooleanField(default=False)
     perm_research = models.BooleanField(default=True)
+    # Off until an administrator turns it on: Books shows the whole firm's
+    # bank accounts and statements.
+    perm_books = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     objects = CustomUserManager()
@@ -114,6 +117,7 @@ class CustomUser(AbstractUser):
         "perm_intakes",
         "perm_reports",
         "perm_research",
+        "perm_books",
     )
 
     class Meta(AbstractUser.Meta):

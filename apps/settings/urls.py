@@ -1,11 +1,13 @@
 from django.urls import path
 
 import apps.settings.appearance.views as appearance_urls
+import apps.settings.books.views as books_urls
 import apps.settings.claude.views as claude_urls
 import apps.settings.contacts.views as contact_urls
 import apps.settings.features.views as features_urls
 import apps.settings.firm.views as firm_urls
 import apps.settings.intake_emails.views as intake_email_urls
+import apps.settings.integrations.quickbooks as quickbooks_urls
 import apps.settings.integrations.views as integration_urls
 import apps.settings.matters.views as matter_urls
 import apps.settings.notifications.views as notification_urls
@@ -75,8 +77,22 @@ urlpatterns = [
         name="google-logout",
     ),
     # Firm
+    # The QuickBooks callback has no trailing slash: Intuit matches the
+    # registered redirect URI character for character.
+    path(
+        "settings/quickbooks/connect/",
+        quickbooks_urls.connect,
+        name="quickbooks-connect",
+    ),
+    path("settings/quickbooks/store", quickbooks_urls.store, name="quickbooks-store"),
+    path(
+        "settings/quickbooks/disconnect/",
+        quickbooks_urls.disconnect,
+        name="quickbooks-disconnect",
+    ),
     path("settings/firm/", firm_urls.firm_index, name="firm-index"),
     path("settings/features/", features_urls.features_index, name="features-index"),
+    path("settings/books/", books_urls.books_index, name="books-index"),
     path("settings/tasks/", tasks_urls.tasks_index, name="tasks-index"),
     path(
         "settings/firm/logo/<slug:slot>/upload/",

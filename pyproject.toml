@@ -131,7 +131,7 @@ forbidden_modules = [
     "apps.ai", "apps.drafts", "apps.mail",
     "apps.intakes", "apps.invoicing", "apps.trust", "apps.activity",
     "apps.tasks", "apps.calendar", "apps.dash", "apps.reports",
-    "apps.checklists",
+    "apps.checklists", "apps.books",
 ]
 ignore_imports = [
     "apps.*.tests.** -> apps.**",
@@ -147,6 +147,7 @@ source_modules = [
     "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
     "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",
     "apps.dash", "apps.reports", "apps.intakes", "apps.search",
+    "apps.books",
 ]
 forbidden_modules = ["apps.case", "apps.drive", "apps.notes"]
 ignore_imports = [
@@ -167,6 +168,7 @@ source_modules = [
     "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
     "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",
     "apps.dash", "apps.reports", "apps.intakes", "apps.search",
+    "apps.books",
 ]
 forbidden_modules = [
     "apps.case.documents", "apps.case.facts", "apps.case.highlights",
@@ -194,5 +196,6 @@ forbidden_modules = [
     "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
     "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",
     "apps.dash", "apps.reports", "apps.intakes", "apps.search",
+    "apps.books",
 ]
 ignore_imports = ["apps.*.tests.** -> apps.**"]

@@ -94,6 +94,14 @@ variable belongs to stays off or falls back until it is set.
 | `COURTLISTENER_API_KEY` | empty | CourtListener API token, for case law search and citation checking. While it is blank, the AI is not offered the case law search tools. |
 | `CHAT_RETENTION_DAYS` | `180` | Days after a matter closes before the weekly purge deletes its AI chats. 0 keeps them indefinitely. (integer) |
 
+## QuickBooks Online
+
+| Variable | Default | Description |
+|---|---|---|
+| `QUICKBOOKS_CLIENT_ID` | empty | The app's client id. While blank, Settings > Integrations offers no QuickBooks connection. |
+| `QUICKBOOKS_CLIENT_SECRET` | empty | The app's client secret. |
+| `QUICKBOOKS_ENVIRONMENT` | `production` | Which QuickBooks the keys belong to: production (a real company) or sandbox (a test company from the developer portal, with development keys). |
+
 ## Intakes
 
 | Variable | Default | Description |

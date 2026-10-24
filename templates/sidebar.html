@@ -99,7 +99,9 @@
         is a feature the firm's administrator can switch off (Settings >
         Features).
       {% endcomment %}
-      {% if case_file_enabled or library_enabled %}<li class="sidebar-divider" aria-hidden="true"></li>{% endif %}
+      {% if case_file_enabled or library_enabled or books_enabled and user.is_admin or books_enabled and user.perm_books %}
+        <li class="sidebar-divider" aria-hidden="true"></li>
+      {% endif %}
       {% if case_file_enabled %}
         <li {% if app == 'case' %}class="active"{% endif %}>
           <a id="nav-case" href="{% url 'case:case-index' %}" data-tooltip="Cases">
@@ -113,6 +115,19 @@
           <a id="nav-notes" href="{% url 'notes:index' %}" data-tooltip="Library">
             <i class="icon-library"></i>
             <span class="sidebar-label">Library</span>
+          </a>
+        </li>
+      {% endif %}
+      {% comment %}
+        Books: the ledger behind invoicing and trust. A module like the
+        case builder (Settings > Features), and gated by the Books
+        permission, so most staff never see it.
+      {% endcomment %}
+      {% if books_enabled and user.is_admin or books_enabled and user.perm_books %}
+        <li {% if app == 'books' %}class="active"{% endif %}>
+          <a id="nav-books" href="{% url 'books:index' %}" data-tooltip="Books">
+            <i class="icon-book-open"></i>
+            <span class="sidebar-label">Books</span>
           </a>
         </li>
       {% endif %}

@@ -1,0 +1,108 @@
+{% load humanize %}
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="filter-tools">
+      {% if not books_mirror %}
+        <button type="button"
+                class="btn-icon"
+                title="Add account"
+                hx-get="{% url 'books:account-add' %}"
+                hx-target="#htmx-modal-container">
+          <i class="icon-plus"></i>
+        </button>
+      {% endif %}
+      {% if not empty %}
+        {% if any_collapsed %}
+          <button type="button"
+                  class="btn-icon"
+                  title="Expand all"
+                  hx-post="{% url 'books:tree-fold' 'expand' %}"
+                  hx-target="#accounts">
+            <i class="icon-list-chevrons-up-down with-text"></i>Expand
+          </button>
+        {% else %}
+          <button type="button"
+                  class="btn-icon"
+                  title="Collapse all"
+                  hx-post="{% url 'books:tree-fold' 'collapse' %}"
+                  hx-target="#accounts">
+            <i class="icon-list-chevrons-down-up with-text"></i>Collapse
+          </button>
+        {% endif %}
+        <button type="button"
+                class="btn-icon{% if show_inactive %} toggle-active{% endif %}"
+                hx-post="{% url 'books:tree-inactive' %}"
+                hx-target="#accounts">Show Inactive</button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% if empty and books_mirror %}
+  <div class="books-empty">
+    <p>
+      The chart of accounts is empty. It fills from QuickBooks Online with
+      the first sync.
+    </p>
+    <button type="button"
+            class="btn btn-success"
+            hx-post="{% url 'books:sync' %}"
+            hx-swap="none">Sync with QuickBooks</button>
+  </div>
+{% elif empty %}
+  <div class="books-empty">
+    <p>
+      The chart of accounts is empty. Start from the default chart for a law
+      practice: operating and trust bank accounts, advanced client costs, the
+      client trust liability, and income and expense accounts mapped to
+      Schedule C and Form 1120-S.
+    </p>
+    <button type="button"
+            class="btn btn-success"
+            hx-post="{% url 'books:accounts-seed' %}"
+            hx-swap="none">Set up the default chart</button>
+  </div>
+{% else %}
+  <div class="tree">
+    <div class="tree-row tree-head">
+      <span class="tree-name">Account</span>
+      <span class="tree-amount">Balance</span>
+    </div>
+    {% for type in types %}
+      <div class="tree-section"
+           x-data="{ collapsed: {{ type.collapsed|yesno:'true,false' }} }">
+        <div class="tree-row tree-type"
+             role="button"
+             tabindex="0"
+             @click="collapsed = !collapsed; htmx.ajax('POST', '{% url 'books:tree-toggle' %}', {values: {node: '{{ type.key }}'}, swap: 'none'})"
+             @keydown.enter.prevent="$el.click()">
+          <i class="icon-chevron-down tree-chevron"
+             :class="{ collapsed: collapsed }"></i>
+          <span class="tree-name">{{ type.label }}</span>
+          <span class="tree-amount">{{ type.total|floatformat:2|intcomma }}</span>
+        </div>
+        <div x-show="!collapsed">
+          {% for kind in type.kinds %}
+            <div class="tree-section"
+                 x-data="{ collapsed: {{ kind.collapsed|yesno:'true,false' }} }">
+              <div class="tree-row tree-kind"
+                   role="button"
+                   tabindex="0"
+                   @click="collapsed = !collapsed; htmx.ajax('POST', '{% url 'books:tree-toggle' %}', {values: {node: '{{ kind.key }}'}, swap: 'none'})"
+                   @keydown.enter.prevent="$el.click()">
+                <i class="icon-chevron-down tree-chevron"
+                   :class="{ collapsed: collapsed }"></i>
+                <span class="tree-name">{{ kind.label }}</span>
+                <span class="tree-amount">{{ kind.total|floatformat:2|intcomma }}</span>
+              </div>
+              <div x-show="!collapsed">
+                {% for node in kind.nodes %}
+                  {% include "books/accounts/tree-account.html" with node=node %}
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

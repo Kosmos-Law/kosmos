@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "apps.trust",
     "apps.invoicing",
     "apps.reports",
+    "apps.books",
     "apps.management",
     "apps.notes",
     "apps.drive",
@@ -464,6 +465,14 @@ GOOGLE_DRIVE_TOKEN_PATH = GOOGLE_DATA_DIR / "drive_tokens.json"
 GOOGLE_EMAIL_TOKEN_PATH = GOOGLE_DATA_DIR / "email_tokens.json"
 CALENDAR_ID = env("CALENDAR_ID", default="")
 LAW_FIRM_ID = env("LAW_FIRM_ID", default="")
+
+# QuickBooks Online (apps/books/intuit.py): the OAuth client of the app
+# registered on developer.intuit.com. Development keys reach only sandbox
+# companies and production keys only real ones, so the environment says
+# which host the keys belong to.
+QUICKBOOKS_CLIENT_ID = env("QUICKBOOKS_CLIENT_ID", default="")
+QUICKBOOKS_CLIENT_SECRET = env("QUICKBOOKS_CLIENT_SECRET", default="")
+QUICKBOOKS_ENVIRONMENT = env("QUICKBOOKS_ENVIRONMENT", default="production")
 
 # CourtListener API Configuration (for citation verification)
 COURTLISTENER_API_TOKEN = env("COURTLISTENER_API_KEY", default="")

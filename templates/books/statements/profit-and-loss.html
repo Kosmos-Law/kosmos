@@ -1,0 +1,51 @@
+{% extends "books/statements/main.html" %}
+{% block statement %}
+  {% load humanize %}
+  <h3>Profit and Loss</h3>
+  <p class="detail-text">
+    {{ start|date:"F j, Y" }} to {{ end|date:"F j, Y" }} ·
+    {{ firm.get_accounting_basis_display|default:"Cash" }} basis
+  </p>
+  <table class="table statement-table">
+    <tbody>
+      <tr class="books-group">
+        <td colspan="2">Income</td>
+      </tr>
+      {% for row in income %}
+        <tr>
+          <td class="indent">{{ row.account.name }}</td>
+          <td class="numeric">{{ row.amount|floatformat:2|intcomma }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td class="indent empty-entries" colspan="2">No income in this period.</td>
+        </tr>
+      {% endfor %}
+      <tr class="table-total">
+        <td>Total income</td>
+        <td class="numeric">{{ total_income|floatformat:2|intcomma }}</td>
+      </tr>
+      <tr class="books-group">
+        <td colspan="2">Expenses</td>
+      </tr>
+      {% for row in expenses %}
+        <tr>
+          <td class="indent">{{ row.account.name }}</td>
+          <td class="numeric">{{ row.amount|floatformat:2|intcomma }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td class="indent empty-entries" colspan="2">No expenses in this period.</td>
+        </tr>
+      {% endfor %}
+      <tr class="table-total">
+        <td>Total expenses</td>
+        <td class="numeric">{{ total_expenses|floatformat:2|intcomma }}</td>
+      </tr>
+      <tr class="table-total statement-net">
+        <td>Net income</td>
+        <td class="numeric">{{ net_income|floatformat:2|intcomma }}</td>
+      </tr>
+    </tbody>
+  </table>
+{% endblock statement %}

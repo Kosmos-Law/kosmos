@@ -9,6 +9,7 @@ PERM_COLUMNS = (
     ("perm_intakes", "Intakes"),
     ("perm_reports", "Reports"),
     ("perm_research", "Research"),
+    ("perm_books", "Books"),
 )
 
 

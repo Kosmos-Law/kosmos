@@ -1,0 +1,27 @@
+{% extends "books/main.html" %}
+{% block subcontent %}
+  {% load humanize %}
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="filter-tools">
+        <a class="btn-icon {% if statement == 'profit-and-loss' %}toggle-active{% endif %}"
+           href="{% url 'books:profit-and-loss' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">Profit and Loss</a>
+        <a class="btn-icon {% if statement == 'balance-sheet' %}toggle-active{% endif %}"
+           href="{% url 'books:balance-sheet' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">Balance Sheet</a>
+        <a class="btn-icon {% if statement == 'trial-balance' %}toggle-active{% endif %}"
+           href="{% url 'books:trial-balance' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">Trial Balance</a>
+        <a class="btn-icon {% if statement == 'tax-summary' %}toggle-active{% endif %}"
+           href="{% url 'books:tax-summary' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">Tax Summary</a>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      {% url 'books:'|add:statement as period_url %}
+      {% include "books/period.html" %}
+    </div>
+  </div>
+  <div class="statement">
+    <h2>{{ firm.name|default:"The firm" }}</h2>
+    {% block statement %}
+    {% endblock statement %}
+  </div>
+{% endblock subcontent %}

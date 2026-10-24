@@ -116,6 +116,9 @@
         meaning needs a Gemini key.
       </p>
       {% include "settings/integrations/ai.html" %}
+      {% if quickbooks %}
+        {% include "settings/integrations/quickbooks.html" %}
+      {% endif %}
     {% endif %}
     <h2 class="settings-section">Case Email</h2>
     <hr />

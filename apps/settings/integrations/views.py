@@ -12,6 +12,8 @@ from googleapiclient.discovery import build
 import apps.drive.google as drive_google
 import apps.mail.google as mail_google
 from apps.mail.models import GmailAccount
+from apps.settings.features import books_enabled
+from apps.settings.integrations import PENDING_TOAST_KEY, quickbooks
 from apps.settings.integrations.oauth import google_oauth_configured
 from utils.prepare_path import prepare_path
 from utils.toasts import toast_success
@@ -31,10 +33,6 @@ TOKEN_PATHS = {
     "drive": DRIVE_TOKEN_PATH,
     "email": EMAIL_TOKEN_PATH,
 }
-
-# A toast for the next load of the Integrations page, left by a view that
-# redirected there (a full-page redirect carries no HX toast header).
-PENDING_TOAST_KEY = "integrations_pending_toast"
 
 GOOGLE_OAUTH_MISSING_MSG = (
     "Google sign-in isn't set up on this server yet, so Google can't be "
@@ -131,6 +129,8 @@ def index(request):
     }
     if request.user.is_admin:
         context.update(_ai_context())
+        if books_enabled():
+            context.update(quickbooks.context())
 
     return render(request, "settings/integrations/index.html", context)
 

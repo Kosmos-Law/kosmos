@@ -9,12 +9,11 @@ Keys entered in Settings are stored encrypted with a key derived from
 SECRET_KEY, so rotating SECRET_KEY makes them unreadable: re-enter them.
 """
 
-import base64
-import hashlib
 import logging
 
-from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
+
+from utils.crypto import seal, unseal
 
 logger = logging.getLogger(__name__)
 
@@ -27,23 +26,21 @@ _ENV_SETTINGS = {GEMINI: "GEMINI_API_KEY", ANTHROPIC: "ANTHROPIC_API_KEY"}
 _FIRM_FIELDS = {GEMINI: "gemini_api_key", ANTHROPIC: "anthropic_api_key"}
 
 
-def _fernet():
-    digest = hashlib.sha256(f"kosmos-ai-keys:{settings.SECRET_KEY}".encode()).digest()
-    return Fernet(base64.urlsafe_b64encode(digest))
+# The purpose the keys are sealed under (utils/crypto.py); changing it
+# would make every stored key unreadable.
+_PURPOSE = "kosmos-ai-keys"
 
 
 def encrypt_key(value):
-    return _fernet().encrypt(value.encode()).decode() if value else ""
+    return seal(value, _PURPOSE)
 
 
 def decrypt_key(token):
-    if not token:
-        return ""
-    try:
-        return _fernet().decrypt(token.encode()).decode()
-    except InvalidToken:
+    value = unseal(token, _PURPOSE)
+    if value is None:
         logger.warning("A stored AI key cannot be decrypted (SECRET_KEY changed?)")
         return ""
+    return value
 
 
 def _firm():

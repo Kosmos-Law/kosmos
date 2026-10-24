@@ -48,12 +48,26 @@ def integrations(request):
 
         return library_enabled()
 
+    def _books():
+        from apps.settings.features import books_enabled
+
+        return books_enabled()
+
+    def _books_mirror():
+        # The QuickBooks connection while Books mirrors it (apps/books/sync.py),
+        # or None. Read only by the Books pages and the Integrations page.
+        from apps.books import intuit
+
+        return intuit.connection()
+
     return {
         "ai_enabled": SimpleLazyObject(_ai),
         "caselaw_available": SimpleLazyObject(_caselaw),
         # The firm's feature switches (apps/settings/features.py).
         "case_file_enabled": SimpleLazyObject(_case_file),
         "library_enabled": SimpleLazyObject(_library),
+        "books_enabled": SimpleLazyObject(_books),
+        "books_mirror": SimpleLazyObject(_books_mirror),
     }
 
 

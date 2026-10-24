@@ -66,6 +66,7 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [Fee-agreement wording lives on the Firm record, not in templates (2026-10-02)](2026-10-02-firm-wording-lives-in-settings.md)
 - [A payment's side effects are changed through the payment, never by cascade (2026-10-02)](2026-10-02-trust-payment-and-withdrawal-one-movement.md)
 - [Retainer plans are abandoned; the billing arrangement stays per matter (2026-10-05)](2026-10-05-retainer-plans-abandoned.md)
+- [Books is the ledger behind invoicing and trust (2026-10-22)](2026-10-22-books-is-the-ledger-behind-invoicing-and-trust.md)
 
 ## AI and research
 

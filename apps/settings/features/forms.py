@@ -33,9 +33,19 @@ class FeaturesForm(forms.ModelForm):
         "firm-wide search; the notes stay.",
     )
 
+    books_enabled = _switch(
+        "Books",
+        "The firm's ledger: the chart of accounts, journal entries and the "
+        "financial statements behind invoicing and trust. On adds Books to "
+        "the sidebar for users with the Books permission.",
+    )
+
     class Meta:
         model = Firm
-        fields = ["case_file_enabled", "library_enabled"]
+        fields = ["case_file_enabled", "library_enabled", "books_enabled"]
+
+    def clean_books_enabled(self):
+        return self.cleaned_data.get("books_enabled") or False
 
     def clean_case_file_enabled(self):
         return self.cleaned_data.get("case_file_enabled") or False

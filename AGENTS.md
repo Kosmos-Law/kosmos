@@ -106,7 +106,7 @@ in `docs/dev/setup.md`. Never run `collectstatic` in development.
 
 | Area | What | Read |
 |---|---|---|
-| `apps/` | One Django app per domain (`matters`, `contacts`, `tasks`, `calendar`, `activity`, `invoicing`, `trust`, `case`, `notes`, `drafts`, `drive`, `mail`, `intakes`, `search`, `settings`, `accounts`, `management`, `reports`, `dash`, `checklists`, `folders`) | `docs/dev/architecture.md`, `docs/dev/subsystems/` |
+| `apps/` | One Django app per domain (`matters`, `contacts`, `tasks`, `calendar`, `activity`, `invoicing`, `trust`, `case`, `notes`, `drafts`, `drive`, `mail`, `intakes`, `search`, `settings`, `accounts`, `management`, `reports`, `books`, `dash`, `checklists`, `folders`) | `docs/dev/architecture.md`, `docs/dev/subsystems/` |
 | `config/` | `settings.py` (reads `config/.env`), `urls.py`, health endpoints, project-level tests | `docs/dev/subsystems/platform-and-config.md` |
 | `templates/` | Django templates by app; `components/` and `base.html` shared | `docs/dev/conventions/htmx-alpine.md` |
 | `static/css/`, `static/js/` | Hand-written CSS and JS; `pdfjs/` is vendored by `scripts/update_pdfjs.py` | `docs/dev/frontend/theming.md` |

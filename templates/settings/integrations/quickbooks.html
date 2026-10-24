@@ -1,0 +1,84 @@
+{% comment %}
+  QuickBooks Online, for administrators while Books is on. One connection
+  for the firm: the company Books mirrors. Without the app's keys in
+  config/.env there is nothing to connect with, so no button, and a note
+  saying so.
+{% endcomment %}
+<h2 class="settings-section">QuickBooks Online</h2>
+<hr />
+<p class="detail-text">
+  Books mirrors the firm's QuickBooks Online company: the chart of accounts
+  and every transaction, as the bookkeeper keeps them. Connect the company
+  once; the sync keeps the mirror current, and nothing here writes back to
+  QuickBooks.
+</p>
+{% if not quickbooks.configured %}
+  <p class="detail-text">
+    QuickBooks sign-in isn't set up on this server yet, so nothing here can
+    be connected. Set <code>QUICKBOOKS_CLIENT_ID</code> and
+    <code>QUICKBOOKS_CLIENT_SECRET</code> in <code>config/.env</code>, as
+    described in the administrator guide (<code>docs/admin/integrations/quickbooks.md</code>).
+  </p>
+{% endif %}
+<div class="integrations-list">
+  <div class="integrations-item integrations-item-stacked">
+    <div class="integrations-item-row">
+      {% with connection=quickbooks.connection %}
+        {% if connection %}
+          <span>
+            {{ connection.company_name|default:"QuickBooks company" }}
+            {% if connection.is_sandbox %}(sandbox){% endif %}
+          </span>
+          <span>
+            <form method="post" action="{% url 'books:sync' %}" class="inline-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success">Sync now</button>
+            </form>
+            <button type="button"
+                    class="btn btn-secondary confirm"
+                    data-href="{% url 'settings:quickbooks-disconnect' %}"
+                    data-method="post"
+                    data-confirm-title="Disconnect QuickBooks"
+                    data-confirm-message="Disconnect QuickBooks Online for the whole firm? Books stops syncing with it until an administrator connects it again. What has already been mirrored stays."
+                    data-confirm-text="Disconnect">Disconnect</button>
+          </span>
+        {% else %}
+          <span>
+            QuickBooks Online
+            {% if quickbooks.sandbox %}(sandbox){% endif %}
+          </span>
+          {% if quickbooks.configured %}
+            <a class="btn btn-success"
+               href="{% url 'settings:quickbooks-connect' %}">Connect</a>
+          {% endif %}
+        {% endif %}
+      {% endwith %}
+    </div>
+    {% with connection=quickbooks.connection %}
+      {% if connection %}
+        <p class="detail-text drive-sync-note">
+          Connected {{ connection.connected_at|date:"M j, Y" }}
+          {% if connection.connected_by %}
+            by {{ connection.connected_by.get_full_name|default:connection.connected_by.username }}
+          {% endif %}
+          .
+          Company id {{ connection.realm_id }}.
+          {% if connection.last_sync_at %}
+            Last synced {{ connection.last_sync_at|date:"M j, g:i A" }}.
+          {% else %}
+            Not synced yet.
+          {% endif %}
+          {% if connection.refresh_expires_at %}
+            The sign-in is good until {{ connection.refresh_expires_at|date:"M j, Y" }} and renews with every sync.
+          {% endif %}
+        </p>
+        {% if connection.last_sync_summary %}
+          <p class="detail-text drive-sync-note">{{ connection.last_sync_summary }}</p>
+        {% endif %}
+        {% if connection.last_sync_error %}
+          <p class="detail-text drive-sync-note ai-key-error">{{ connection.last_sync_error }}</p>
+        {% endif %}
+      {% endif %}
+    {% endwith %}
+  </div>
+</div>

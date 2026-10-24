@@ -5,6 +5,13 @@ from django.urls import reverse
 
 from utils.models import AuditMixin
 
+# The returns the chart of accounts carries a tax-line mapping for.
+TAX_FORM_CHOICES = (
+    ("schedule_c", "Schedule C (Form 1040)"),
+    ("1120s", "Form 1120-S"),
+)
+BASIS_CHOICES = (("cash", "Cash"), ("accrual", "Accrual"))
+
 # Models offered for AI quick task entry - the cheap tier of each provider
 # the app integrates. The picked model only matters when quick_task_ai is on;
 # a missing API key just fails the call and the fuzzy matcher takes over.
@@ -71,6 +78,19 @@ class Firm(AuditMixin):
     # Features, admins only). Read through apps/settings/features.py.
     case_file_enabled = models.BooleanField(default=True)
     library_enabled = models.BooleanField(default=True)
+    # Books, the ledger behind invoicing and trust (apps/books). Off until
+    # an administrator turns it on: a firm that keeps its books elsewhere
+    # never sees it.
+    books_enabled = models.BooleanField(default=False)
+    # The return the firm files and the basis it keeps its books on. The
+    # chart's tax lines are read by form (apps/books/tax_lines.py); the
+    # basis decides when invoicing posts revenue.
+    tax_form = models.CharField(
+        max_length=12, choices=TAX_FORM_CHOICES, default="schedule_c"
+    )
+    accounting_basis = models.CharField(
+        max_length=8, choices=BASIS_CHOICES, default="cash"
+    )
 
     class Meta:
         verbose_name_plural = "firms"

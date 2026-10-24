@@ -1,6 +1,6 @@
 # Architecture
 
-Kosmos is one Django project (`config/`) over twenty-one apps under
+Kosmos is one Django project (`config/`) over twenty-two apps under
 `apps/`, rendered server-side and driven in the browser by HTMX and
 Alpine. One PostgreSQL database holds the records, the search indexes, the
 task queue and the AI status cache. A second process, the Django-Q worker,
@@ -22,6 +22,7 @@ subsystem pages group them.
 | [Tasks and calendar](subsystems/tasks-and-calendar.md) | `apps/tasks`, `apps/checklists`, `apps/calendar`, `apps/dash` | Tasks and the daily digest; checklist templates; events and the Google Calendar sync; the dashboard. |
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
+| [Books](subsystems/books.md) | `apps/books` | The general ledger: the chart of accounts with its tax lines, journal entries, the statements and the tax summary. A module, off by default, gated by the Books permission. |
 | [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab, the saved case law and the semantic index; the Google Drive mirror; the notes and the library. |
 | [AI](subsystems/ai/context.md) | `apps/ai`, `apps/llm` | The context builders, the chat surfaces, the agent tool loop (with its CourtListener research tools) and the Claude Desktop API over a matter; the model-provider layer (the Anthropic and Gemini clients, embeddings, pricing, the status store). |
 | [Notes and drafts](subsystems/notes-and-drafts.md) | `apps/notes`, `apps/drafts` | The notes editor, folders and library (part of the case builder); draft links and the LibreOffice companion (`companion_src/`). |

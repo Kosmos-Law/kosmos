@@ -1,0 +1,45 @@
+{% load humanize %}
+<div class="modal-dialog modal-md">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h1 class="modal-title">Entry {{ entry.id }}</h1>
+      <div>
+        <button type="button" @click="$dispatch('close-modal')">
+          <i class="icon-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="detail-text">
+        {{ entry.date|date:"Y-m-d" }} · {{ entry.get_source_display }}
+        {% if entry.reverses %}· reverses entry {{ entry.reverses.id }}{% endif %}
+        {% if entry.reversed_by %}· reversed by entry {{ entry.reversed_by.id }}{% endif %}
+      </p>
+      <p>{{ entry.memo }}</p>
+      <table class="table entry-lines">
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Memo</th>
+            <th class="numeric">Debit</th>
+            <th class="numeric">Credit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in entry.lines.all %}
+            <tr>
+              <td {% if line.credit %}class="indent"{% endif %}>{{ line.account }}</td>
+              <td>{{ line.memo }}</td>
+              <td class="numeric">
+                {% if line.debit %}{{ line.debit|floatformat:2|intcomma }}{% endif %}
+              </td>
+              <td class="numeric">
+                {% if line.credit %}{{ line.credit|floatformat:2|intcomma }}{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
