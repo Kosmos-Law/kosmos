@@ -143,17 +143,24 @@ void main() {
     float r = length(d);
     float th = atan(d.x, d.y);
     float t = u_time;
+    if (u_fade <= 0.0) {
+        gl_FragColor = vec4(0.0);
+        return;
+    }
     // The display swells and subsides over minutes, and never quite goes.
     float env = 0.5 + 0.5 * smoothstep(0.25, 0.8, fbm(vec2(t * 0.02, 7.7)));
     vec3 c = vec3(0.0);
+    // Each curtain is worked out only where it shows: a curtain is most
+    // of the cost of a pixel, and most pixels see one or two of them.
     // The main curtain, tall and bright, over the right, and a bright pair
     // in the middle, with their hems low in the window: on the landing
     // page the cards cover that ground, and the hems peek out from behind
     // them. Each curtain drifts a little across the sky.
-    c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3)
-        * smoothstep(-0.1, 0.2, th + 0.08 * sin(t * 0.017 + 2.0));
+    float wMain = smoothstep(-0.1, 0.2, th + 0.08 * sin(t * 0.017 + 2.0));
+    if (wMain > 0.0) c += curtain(th, r, t, 2.0, 2.1, 0.75, 0.1, 0.3) * wMain;
     float m = th + 0.06 * sin(t * 0.025 + 4.0);
-    c += curtain(th, r, t, 3.0, 2.05, 0.8, -0.1, 0.1) * exp(-m * m * 60.0);
+    float wMid = exp(-m * m * 60.0);
+    if (wMid > 0.003) c += curtain(th, r, t, 3.0, 2.05, 0.8, -0.1, 0.1) * wMid;
     // Later, a short curtain over the left whose hem hangs in plain view,
     // above the bottom third of the window. It comes in after half a
     // minute or so and then comes and goes, so it is an event in the
@@ -162,8 +169,8 @@ void main() {
     float lx = uv.x + 0.03 * sin(t * 0.023 + 1.0);
     float late = smoothstep(25.0, 40.0, t)
         * smoothstep(-0.2, 0.5, sin(t * 0.045 - 1.4));
-    c += curtain(th, r, t, 4.0, 1.42, 0.36, -0.5, 0.4)
-        * 1.1 * late * smoothstep(0.03, 0.13, lx) * smoothstep(0.42, 0.26, lx);
+    float wLeft = late * smoothstep(0.03, 0.13, lx) * smoothstep(0.42, 0.26, lx);
+    if (wLeft > 0.0) c += curtain(th, r, t, 4.0, 1.42, 0.36, -0.5, 0.4) * 1.1 * wLeft;
     c *= env * u_fade;
     // Tone-mapped on the brightest channel, and the colour scaled with
     // it, so a bright core stays green rather than burning to white.
@@ -235,38 +242,76 @@ void main() {
 
             /* The display is soft, so it is drawn at about half the
                window's pixels, and never more than 960 across, and the
-               browser scales it up. */
+               browser scales it up. quality comes down from 1 if the
+               device cannot keep up (see frame). */
+            let quality = 1;
             const size = () => {
                 const w = root.clientWidth;
                 const h = root.clientHeight;
-                const scale = Math.min(
-                    0.5 * Math.min(devicePixelRatio || 1, 2),
-                    960 / w,
-                );
-                canvas.width = Math.max(1, Math.round(w * scale));
-                canvas.height = Math.max(1, Math.round(h * scale));
-                gl.viewport(0, 0, canvas.width, canvas.height);
-                gl.uniform2f(uRes, canvas.width, canvas.height);
+                const scale =
+                    quality *
+                    Math.min(0.5 * Math.min(devicePixelRatio || 1, 2), 960 / w);
+                const cw = Math.max(1, Math.round(w * scale));
+                const ch = Math.max(1, Math.round(h * scale));
+                // Setting a canvas's size clears it, so leave it be
+                // unless it has changed.
+                if (cw === canvas.width && ch === canvas.height) return;
+                canvas.width = cw;
+                canvas.height = ch;
+                gl.viewport(0, 0, cw, ch);
+                gl.uniform2f(uRes, cw, ch);
             };
 
             /* Thirty frames a second is plenty for something this slow,
-               and half the work of sixty. The display comes up once the
-               title has settled (its focus animation is done by 1s, the
-               stars by 1.4s), over a few seconds. */
-            const start = performance.now();
+               and half the work of sixty. The frames keep to a steady
+               beat, so that on a 60Hz or 120Hz screen every one lasts
+               the same number of refreshes. The clock reads as though
+               it started SET_UP_AT before the display was made: on the
+               landing page that is the page's load, and the display
+               comes up once the title has settled (its focus animation
+               is done by 1s, the stars by 1.4s), over a few seconds;
+               until then nothing is drawn. In the app, where the sky
+               may first be seen long after load, it still fades in.
+
+               If the frames keep coming late, the device is not keeping
+               up: the display is drawn smaller, a step at a time, and
+               if that is not enough it gives way to the drawn sheets,
+               which cost next to nothing. */
+            const STEP = 1000 / 30;
+            const FADE_IN = 2.5;
+            const start = performance.now() - SET_UP_AT;
             let last = -1e9;
             let running = false;
             let handle = 0;
+            let drawn = 0;
+            let late = 0;
             const frame = (now        ) => {
                 if (!running) return;
                 handle = requestAnimationFrame(frame);
-                if (now - last < 1000 / 30 - 1) return;
-                last = now;
+                if (now - last < STEP - 2) return;
+                const gap = now - last;
+                // Back on the beat, unless a long gap (a frame dropped,
+                // or the tab away) means starting it afresh.
+                last = gap > 2 * STEP ? now : last + STEP;
                 const t = (now - start) / 1000;
-                const fade = Math.min(1, Math.max(0, (t - 2.5) / 3.5));
+                if (t < FADE_IN) return;
+                const fade = Math.min(1, (t - FADE_IN) / 3.5);
                 gl.uniform1f(uTime, t % 100000);
                 gl.uniform1f(uFade, fade * fade * (3 - 2 * fade));
                 gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+                if (gap > 1.6 * STEP && gap < 500) late++;
+                if (++drawn < 60) return;
+                if (late > 9) {
+                    if (quality > 0.5) {
+                        quality *= 0.8;
+                        size();
+                    } else {
+                        run(false);
+                        display = false;
+                    }
+                }
+                drawn = late = 0;
             };
             const run = (on         ) => {
                 if (on === running) return;
@@ -275,6 +320,12 @@ void main() {
                 if (on) handle = requestAnimationFrame(frame);
                 else cancelAnimationFrame(handle);
             };
+
+            // One frame, at once and out of sight, so that the GPU has
+            // the shader ready before the display has to move.
+            size();
+            gl.uniform1f(uFade, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
 
             canvas.addEventListener("webglcontextlost", (e) => {
                 // Back to the drawn sheets rather than a blank sky.
@@ -285,13 +336,32 @@ void main() {
             return { size, run };
         };
 
-        new ResizeObserver(() => {
+        /* Making the display, which compiles the shader, waits until the
+           title's own animations are done, so as not to cost them a
+           frame. */
+        const SET_UP_AT = 1500;
+        let waiting = false;
+        const sync = () => {
             const shown = root.clientWidth > 0 && root.clientHeight > 0;
-            if (shown && display === null) display = setUp();
+            if (shown && display === null) {
+                const wait = SET_UP_AT - performance.now();
+                if (wait > 0) {
+                    if (!waiting) {
+                        waiting = true;
+                        setTimeout(() => {
+                            waiting = false;
+                            sync();
+                        }, wait);
+                    }
+                    return;
+                }
+                display = setUp();
+            }
             if (!display) return;
             if (shown) display.size();
             display.run(shown);
-        }).observe(root);
+        };
+        new ResizeObserver(sync).observe(root);
     }
 
 })();
