@@ -6,12 +6,12 @@ mismatch between the database and the stored files.
 
 ## What is stored
 
-Kosmos stores three kinds of file. Everything else, including notes, synced
-email text and extracted document text, lives in the database.
+Kosmos stores three kinds of file. Everything else, including synced email
+text and extracted document text, lives in the database.
 
 | Files | Path inside storage |
 |---|---|
-| Matter documents (uploaded PDFs, PDFs mirrored from Google Drive, emails promoted to documents) | `documents/<matter id>/<document id>.<extension>` |
+| Matter documents (uploaded PDFs, emails promoted to documents) | `documents/<matter id>/<document id>.<extension>` |
 | Invoice PDFs | `invoices/<matter id>/<invoice id>.pdf` |
 | The firm logos, and the print copy Kosmos makes of a one-colour logo | `company/<file name>` |
 
@@ -182,32 +182,9 @@ other one, and has to be copied across by hand.
 
 ## Repair commands
 
-All three are listed in the
+Both are listed in the
 [management command reference](../../reference/commands.md). Take a
 database backup before running any of them without its dry-run option.
-
-### restore_drive_documents
-
-For documents that were mirrored from Google Drive and whose file is
-missing from storage. The regular Drive sync does not repair these: it
-compares modification times and treats an unchanged Drive file as already
-done.
-
-```bash
-python manage.py restore_drive_documents           # report only
-python manage.py restore_drive_documents --apply   # download again
-python manage.py restore_drive_documents --apply --ids 101 102
-```
-
-It reports by default and writes only with `--apply`. Each missing file
-is downloaded from Drive again and saved under the record's existing
-path. Finished text extraction is kept, and a document whose extraction
-was pending or had failed is queued again. Google Drive must be connected
-(see [Google Workspace](google.md)).
-
-Use it after files were lost or written to the wrong backend. It cannot
-help with documents that users uploaded by hand: Kosmos held the only
-copy of those.
 
 ### cleanup_orphan_documents
 
@@ -219,10 +196,9 @@ python manage.py cleanup_orphan_documents           # list only
 python manage.py cleanup_orphan_documents --apply   # delete
 ```
 
-Like the command above, it reports by default and changes nothing without
-`--apply`. Deleting is the last step, not the first: use it only when the files are
-certainly gone, after restoring what can be restored from backups and
-from Drive. Run against the wrong backend, it would list every document
+It reports by default and changes nothing without `--apply`. Deleting is
+the last step, not the first: use it only when the files are certainly
+gone, after restoring what can be restored from backups. Run against the wrong backend, it would list every document
 as an orphan, so always read the list before applying.
 
 ### fix_document_paths

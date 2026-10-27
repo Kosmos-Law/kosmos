@@ -4,7 +4,6 @@
   const overlay = document.getElementById("sidebar-overlay");
 
   const STORAGE_KEY = "sidebar-collapsed";
-  const APP_ALIASES = { case: "matters", events: "events" };
   const envClass = document.body.classList.contains("env-dev") ? "env-dev" : "";
 
   function openMobile() {
@@ -17,21 +16,25 @@
     overlay.classList.remove("visible");
   }
 
-  function updateSidebarActive() {
-    const segment = window.location.pathname.split("/")[1];
-
-    const app = APP_ALIASES[segment] || segment;
+  // After a boosted swap only #main-content is replaced, so the sidebar
+  // keeps its old highlight. The response is the full page, and the
+  // server already chose the active item there (the view's `app`), so
+  // copy that choice rather than guessing from the URL. A partial
+  // response with no sidebar leaves the highlight alone.
+  function updateSidebarActive(html) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const fresh = doc.getElementById("sidebar");
+    if (!fresh) return;
+    const freshLink = fresh.querySelector(".sidebar-nav li.active > a[id]");
     sidebar.querySelectorAll(".sidebar-nav li").forEach(function (li) {
       li.classList.remove("active");
     });
-
-    const activeLink = sidebar.querySelector("#nav-" + app);
-    if (activeLink) activeLink.closest("li").classList.add("active");
+    const link = freshLink && sidebar.querySelector("#" + freshLink.id);
+    if (link) link.closest("li").classList.add("active");
   }
 
-  // Point the toggle's icon at the action it will perform, matching the
-  // notes editor's panel: an open sidebar shows the "close" glyph, a
-  // collapsed one the "open" glyph. The markup ships the close cut; this
+  // Point the toggle's icon at the action it will perform: an open
+  // sidebar shows the "close" glyph, a collapsed one the "open" glyph. The markup ships the close cut; this
   // corrects it on load when the stored state is collapsed.
   function syncToggleIcon() {
     const icon = toggle.querySelector("i");
@@ -89,7 +92,7 @@
   // Sync body class and sidebar active state after HTMX content swap
   document.body.addEventListener("htmx:afterSwap", function (e) {
     if (e.detail.target && e.detail.target.id === "main-content") {
-      updateSidebarActive();
+      updateSidebarActive(e.detail.xhr.response);
 
       const match = e.detail.xhr.response.match(/<body[^>]*class="([^"]*)"/);
       const newClasses = match ? match[1] : "";

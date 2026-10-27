@@ -218,8 +218,8 @@ check applies to every request: a path matching `AI_PATTERN` while no AI
 provider is configured, or `CASELAW_PATTERN` while there is no
 CourtListener token, gets `404` (the feature does not exist on this
 server; see [AI is optional](ai/context.md#ai-is-optional)). A signed-in
-user also gets `404` on `CASE_FILE_PATTERN` or `LIBRARY_PATTERN` while
-the firm's administrator has that feature switched off (Settings >
+user also gets `404` on `CASE_FILE_PATTERN` while the firm's
+administrator has the case file switched off (Settings >
 Features; `apps/settings/features/__init__.py`). The rest
 runs for signed-in non-admins only and answers `403` with an empty body.
 It checks, in order: `ADMIN_ONLY_PATHS` (the settings pages that change the
@@ -257,13 +257,13 @@ a saved case), collects every matter the route touches, and refuses unless
 the user is a member of all of them. `OBJECT_TYPE_KEYS` covers the pickers
 that pass `(object_type, object_id)` instead. Users who see every matter
 are never looked up. An id that matches nothing, or a row with no matter
-(a library note, an intake chat), contributes nothing and is left to the
+(an intake chat), contributes nothing and is left to the
 view. This replaced, in October 2026, a design where those routes checked
 only for a session: see the commit "fix(access): enforce matter membership
 and permission flags at the URL".
 
-Only `/case/` is in `MATTER_SCOPED_PREFIXES`. `/matters/` and `/notes/`
-carry their own checks, as do ids that arrive in a query string or a POST
+Only `/case/` is in `MATTER_SCOPED_PREFIXES`. `/matters/` carries its
+own checks, as do ids that arrive in a query string or a POST
 body anywhere: the middleware never sees those.
 
 ### The per-application access modules
@@ -274,29 +274,28 @@ by matter has an `access.py` with the same two shapes:
 - a **queryset narrower** for lists and exports, built on
   `filter_matters_for_user()` or `user.assigned_matters`: `tasks_for_user`,
   `events_for_user`, `entries_for_user`, `relationships_for_user`,
-  `documents_for_user`, `visible_notes_q`;
+  `documents_for_user`;
 - a **by-id fetch** for a direct hit that does `get_object_or_404` and then
   raises on the matter: `task_for_user`, `event_for_user`, `entry_for_user`,
-  `relationship_for_user`, `conversation_for_user`, `note_for_user`.
+  `relationship_for_user`, `conversation_for_user`.
 
 The modules are `apps/activity/access.py`, `apps/tasks/access.py`,
 `apps/calendar/access.py`, `apps/contacts/access.py`,
-`apps/intakes/access.py`, `apps/notes/access.py`, `apps/ai/access.py`,
+`apps/intakes/access.py`, `apps/ai/access.py`,
 `apps/case/facts/access.py` and `apps/case/documents/access.py`. Each
 module's docstring states its rule; three are worth knowing before you
 add a view:
 
-- A task, event or note on **no matter** is the firm's, and every signed-in
+- A task or event on **no matter** is the firm's, and every signed-in
   user may reach it. The narrowers express this as
   `Q(matter__isnull=True) | Q(matter__in=…)`.
 - The refusal is `PermissionDenied` (403) everywhere except
-  `apps/notes/access.py`, which raises `Http404` so a refusal does not
-  confirm the note exists; `matter_conversation_for_user` in
-  `apps/ai/access.py` folds the matter into the lookup for the same
-  reason.
+  `matter_conversation_for_user` in `apps/ai/access.py`, which folds the
+  matter into the lookup and answers `404`, so a refusal does not confirm
+  the conversation exists.
 - Each module also owns the **matter choices** its forms offer
   (`matters_for_task_form`, `matters_for_events`, `matters_for_entry_form`,
-  `open_matters_for_user`, `matters_for_note_form`). They differ in which
+  `open_matters_for_user`). They differ in which
   statuses they list, and each takes `include_id` to keep the record's
   current matter in the list whatever its status;
   `apps/case/documents/access.py` explains what goes wrong without it (the

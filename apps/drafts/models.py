@@ -1,14 +1,14 @@
-"""Draft links: a case AI conversation pinned to one Drive ODT.
+"""Draft links: a case AI conversation pinned to one ODT.
 
 The drafting workflow is companion-first: the user opens the document in
-LibreOffice (the local Drive copy, synced by Insync or similar), installs
-the Kosmos companion extension, and links the conversation to the file from
-the chat window. AI-proposed edits are queued as CompanionRounds and applied
+LibreOffice, installs the Kosmos companion extension, and connects it to
+the conversation's link. (Linking a new draft is off since Google Drive was
+removed: the link picked a file from the matter's Drive folder. Links made
+before keep working.) AI-proposed edits are queued as CompanionRounds and applied
 to the live document as tracked changes; the extension pushes the document
 back so doc_text stays current. There is no server-side working copy, no
 version chain, and no publish step: the document in Writer is the working
-copy, Ctrl+Z is version control, and saving the file (which syncs to Drive)
-is publishing.
+copy, Ctrl+Z is version control, and saving the file is publishing.
 
 Conversation is imported for the class (not a string label): it lives in
 apps/ai/models.py, which is NOT loaded by apps.case's models.py, so a
@@ -36,10 +36,11 @@ def draft_file_path(instance, filename):  # pragma: no cover
 
 
 class DraftLink(models.Model):
-    """Pins one conversation to one Drive ODT ("the draft").
+    """Pins one conversation to one ODT ("the draft").
 
-    doc_text is the Markdown facsimile the AI reads: snapshotted from Drive
-    at link time, then overwritten by every companion push, so it tracks the
+    drive_file_id is the file's identity (it was the Google Drive file id;
+    the companion API calls it "file"). doc_text is the Markdown facsimile
+    the AI reads: snapshotted at link time, then overwritten by every companion push, so it tracks the
     document as the user last had it (hand edits included).
     """
 
@@ -64,7 +65,7 @@ class DraftLink(models.Model):
         return self.conversation.matter
 
     def sibling_links(self):
-        """All links to this Drive file by this user, self included.
+        """All links to this file by this user, self included.
 
         The companion connection is per-document, not per-conversation: the
         extension polls whichever link it paired with, but its heartbeat,
@@ -111,7 +112,7 @@ class CompanionRound(models.Model):
     ]
 
     link = models.ForeignKey(DraftLink, on_delete=models.CASCADE, related_name="rounds")
-    # Wire-form edit dicts (see apps.drive.redline.edit_to_dict).
+    # Wire-form edit dicts (see apps.drafts.redline.edit_to_dict).
     edits = models.JSONField(default=list)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
     delivered_at = models.DateTimeField(null=True, blank=True)

@@ -1,7 +1,7 @@
 """Sunset AI chat history for long-closed matters.
 
 Chats are working notes, not part of the client file: documents live in
-Drive, correspondence in Gmail, notes in the file. Once a matter has been
+the firm's file store, correspondence in Gmail, notes in the file. Once a matter has been
 closed past the retention window the conversations (and their message
 history rows, which are the real bulk) are deleted.
 

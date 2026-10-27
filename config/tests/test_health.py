@@ -55,7 +55,7 @@ def test_worker_is_unavailable_once_a_schedule_is_left_overdue(client):
     from django_q.models import Schedule
 
     call_command("setup_schedules", verbosity=0)
-    Schedule.objects.filter(name="drive-sync").update(
+    Schedule.objects.filter(name="event-reminders").update(
         next_run=timezone.now() - timedelta(minutes=30)
     )
 

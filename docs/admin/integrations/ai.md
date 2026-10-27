@@ -26,11 +26,11 @@ All variables named here are described in the
 One AI key is enough: either provider runs every AI feature. Besides the
 matter chat, these are:
 
-- choosing which documents, notes and emails to load into a Classic chat
+- choosing which documents and emails to load into a Classic chat
   on a large matter (if this call fails, Kosmos falls back to picking by
   importance rating);
 - the short summaries written for each document after text extraction,
-  for each chat, for each library note and for each saved case;
+  for each chat and for each saved case;
 - the per-citation check of whether a cited case supports what the AI
   said about it;
 - the intake assistant: the intake chat, the assessment, and reading
@@ -129,7 +129,7 @@ the intake assessment and chat answer 404 for everyone, administrators
 included, so a bookmark or an old link does not reach them. A user whose
 last tab on a matter was **AI** is taken to **Documents**.
 
-Nothing is queued in the background: no document, note, chat or case
+Nothing is queued in the background: no document, chat or case
 summaries, and no semantic indexing. Forwarded intake email still works.
 The intake is created from the message as it arrived, named after the
 subject, with no fields filled in, no AI summary in the note and no
@@ -147,7 +147,6 @@ Material added while no key was set has no summary, and the Classic
 chat's selector reads summaries to choose what to load. Once a key is
 set:
 
-- library notes: run `python manage.py backfill_note_summaries`;
 - semantic search: run `build_semantic_index` (see
   [Semantic search](#semantic-search));
 - documents: opening a matter's AI tab queues summaries for up to 20 of
@@ -189,8 +188,7 @@ limits and alerts.
 
 Semantic search finds material by meaning as well as by keyword. It is
 used by matter search and by the search tool of the Agentic chat. Kosmos
-splits documents, notes, library notes, emails, highlights and timeline
-facts into chunks, asks Gemini for an embedding of each chunk, and stores
+splits documents, emails, highlights and timeline facts into chunks, asks Gemini for an embedding of each chunk, and stores
 the vectors in PostgreSQL.
 
 You need:
@@ -213,13 +211,12 @@ To turn it on:
     python manage.py build_semantic_index
     ```
 
-    This embeds every open matter's material and the firm library. It
+    This embeds every open matter's material. It
     prints progress and a final count. It skips anything whose content is
     unchanged since it was last indexed, so running it again is cheap.
-    `--matter <id>` limits it to one matter and `--library` to the
-    library notes.
+    `--matter <id>` limits it to one matter.
 
-From then on, saving a document, note, email, highlight or fact queues a
+From then on, saving a document, email, highlight or fact queues a
 task that re-embeds it. Deleting one removes its chunks.
 
 Things to know:
@@ -356,14 +353,13 @@ options of the plan you buy.
   proceedings, tasks, upcoming events, time entries and settlement
   information;
 - every highlight and timeline fact on the matter;
-- the extracted text of documents, the text of notes, synced email
+- the extracted text of documents, synced email
   threads with the text extracted from their attachments, saved case law,
   and earlier AI conversations marked for reference. On a small matter
   all of it is sent. On a large one a selection is sent, chosen by a
   first call that sees a list of every item with its name, description
   and summary;
 - invoices, when the question is about billing;
-- firm library notes that bear on the question;
 - the linked draft document, when a draft is linked to the chat (see
   [Drafting with LibreOffice](libreoffice.md));
 - the conversation so far.
@@ -374,12 +370,12 @@ can be read during the conversation.
 
 **To the background provider (Google when a Gemini key is set, otherwise
 Anthropic), by the background features:** intake details and the full
-text of forwarded emails for the intake assistant; document, chat and
-note text for summaries, and the opinion text of each saved case for
+text of forwarded emails for the intake assistant; document and chat
+text for summaries, and the opinion text of each saved case for
 its summary; the manifest of a matter's materials for the Classic chat's
 selector; and the text of quick task entries.
 
-**To Google only, by semantic search:** chunks of documents, notes,
+**To Google only, by semantic search:** chunks of documents,
 emails, highlights and facts for the embeddings, and the words of each
 matter search. Without a Gemini key none of this is sent.
 

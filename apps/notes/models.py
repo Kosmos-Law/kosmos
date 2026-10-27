@@ -1,3 +1,6 @@
+"""The retired notes feature's models, kept dormant with their data
+(see apps.py)."""
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
@@ -91,16 +94,6 @@ class NoteFolder(AuditMixin, models.Model):
             child.depth = self.depth + 1
             child.save(update_fields=["depth"])
             child.update_descendant_depths()
-
-
-def get_library_notes():
-    """Every standalone note: the whole Library tree feeds the AI.
-
-    Notes carry no AI knobs — library notes are all selectable, matter
-    notes are all selectable for their matter, and force-inclusion is
-    copy-paste into the chat.
-    """
-    return Note.objects.filter(matter__isnull=True)
 
 
 class Note(AuditMixin, models.Model):

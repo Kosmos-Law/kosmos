@@ -118,63 +118,6 @@ Good to know:
   file you uploaded. Keep the original if you may need it.
 - OCR reads English.
 
-## Documents from Google Drive
-
-If your firm keeps matter files in Google Drive and an administrator has
-connected it under **Settings → Integrations**, you can link a matter to
-its Drive folder. Kosmos then copies the PDFs in the subfolders you
-choose into the matter's documents and reads them like any upload.
-Kosmos never changes anything in Drive. Administrators: see
-[Google Workspace](../admin/integrations/google.md).
-
-The **Link Drive Folder** button appears only once Drive is connected.
-A matter that was linked before Drive was disconnected keeps its **Drive
-Folder** button, so you can still see the link and remove it.
-
-1. On the **Documents** tab, click **Link Drive Folder** at the right of
-   the toolbar. The **Drive Folder** dialog opens.
-2. Under **1. Matter folder**, click the matter's folder. A folder that is
-   greyed out is already linked to the matter named beside it, or to
-   "another matter" if it is one you cannot see.
-3. Under **2. Folder mapping**, each subfolder of the matter folder has a
-   row. Choose a **Category** for every subfolder you want copied and
-   leave the rest on **Not synced**. A **Record** folder needs a
-   **Proceeding**. A **Discovery** folder can have one.
-4. Click **Save**.
-
-The page reloads, the button now reads **Drive Folder**, and the PDFs in
-the mapped folders start to appear in the list. A **suggested** badge on a
-row means Kosmos guessed the category from the folder's name, for example
-"Corr" or "Record - Appeal". Check it before you save. **not in Drive**
-marks a mapped folder that Kosmos can no longer find. After that, Kosmos
-checks Drive every minute.
-
-| In Drive | In Kosmos |
-|---|---|
-| A PDF is added to a mapped folder, or to any folder inside it | A document appears with that folder's category and proceeding. Its name and date come from the file name, as for an upload. With no date in the file name, the date is the day the file was created in Drive. |
-| A file's contents are changed | The file is replaced and its text is read again. The name, date, description, labels, importance, **AI** setting and highlights are kept. |
-| A file is renamed | Nothing changes. The document keeps its name. |
-| A file is moved to another mapped folder | The category and proceeding change to the new folder's. If that folder belongs to another matter, the document moves to that matter. |
-| A file is moved out, put in the trash or deleted | Nothing changes. The document stays. |
-| A new subfolder is created | The button reads **Drive Folder · 1 to map**. Open the dialog and map it, or leave it on **Not synced**. |
-| A file that is not a PDF is added | It is ignored. |
-
-To change a mapping, open **Drive Folder** again, change the row and click
-**Save**: documents that came from that folder take the new category and
-proceeding. **Change** picks a different matter folder. **Unlink** removes
-the link: the documents already copied stay, and nothing new arrives.
-
-Good to know:
-
-- The file of a document from Drive cannot be replaced in Kosmos. Replace
-  it in Drive.
-- If you delete a document that came from Drive, the file stays in Drive
-  and is not copied in again.
-- A document from Drive belongs to the matter its folder is linked to,
-  and cannot be moved to another matter in Kosmos. Move the file in
-  Drive. See
-  [Change, move or delete a document](#change-move-or-delete-a-document).
-
 ## Documents from emails
 
 On the **Emails** tab, open an email and click **Promote to Document**.
@@ -222,19 +165,11 @@ the same fields as **Add Document**.
   its status, and the **Open** matters you can see.
 - **Delete it.** Click **Delete** and confirm.
 
-A document that came from Google Drive cannot be moved this way. Its
-**Matter** field is locked, with the line "This document follows its
-folder in Google Drive. To move it to another matter, move the file in
-Drive." See [Documents from Google Drive](#documents-from-google-drive).
-
 To act on several documents at once, tick their checkboxes. The toolbar
 changes to a count (click it to clear the selection) and the bulk actions:
 **AI** (when your firm has set up AI), **Category**, **Matter**,
 **Importance** and a trash button.
-**Matter** asks you to confirm the move. It leaves documents from Drive
-where they are and says how many, for example "1 document from Google Drive was not moved. It follows its
-folder in Google Drive. To move it to another matter, move the file in
-Drive."
+**Matter** asks you to confirm the move.
 
 Deleting is permanent. The file and the document's highlights are deleted
 with it. Timeline facts that cited the document stay, without the link.
@@ -258,8 +193,8 @@ Good to know:
 ## Labels
 
 A label is a coloured tag you make up yourself, for example "Damages" or
-"Hot". Labels go on documents, highlights, timeline facts, notes and
-saved case law, so one label can gather everything on a theme.
+"Hot". Labels go on documents, highlights, timeline facts and saved
+case law, so one label can gather everything on a theme.
 
 The **Labels** tab has two cards. **This Matter** holds labels that exist
 only on this matter. **All Matters** holds labels every matter can use.
@@ -290,17 +225,17 @@ it was on, and for a label under **All Matters** that means every matter.
 ## Search inside a matter
 
 The **Search** tab on the **Case** side searches one matter's working
-file: the full text of its documents, its highlights, its timeline facts
-and its notes. It does not search emails. (The **Emails** tab has its own
+file: the full text of its documents, its highlights and its timeline
+facts. It does not search emails. (The **Emails** tab has its own
 keyword box.)
 
 1. Click **Search** in the row of **Case** tabs.
 2. Type in **Search...**. Results appear as you type.
-3. Untick **Documents**, **Highlights**, **Facts** or **Notes** to leave
+3. Untick **Documents**, **Highlights** or **Facts** to leave
    that kind out.
 4. Click a result. A document opens in the viewer at its first page: use
    the viewer's **Search...** box to find the words. A highlight opens
-   the viewer at the highlight. A fact opens for editing. A note opens.
+   the viewer at the highlight. A fact opens for editing.
 
 Kosmos searches two ways at once. Results that contain your words come
 first: every word you type must appear, and a word also matches longer
@@ -319,18 +254,10 @@ it, or **Reset**, to clear the search and the filters.
 
 Good to know:
 
-- **Document Type** leaves facts and notes out of the results, and
-  **Specific Document** leaves notes out.
+- **Document Type** leaves facts out of the results.
 - **Search** in the sidebar is a different tool. It finds matters,
-  proceedings, contacts, intakes and notes across the firm, and does not
+  proceedings, contacts and intakes across the firm, and does not
   read documents. See [Getting started](getting-started.md#search).
-
-## When the matter is closed
-
-Setting a matter to **Complete** or **Closed** removes its link to Google
-Drive, so no new files arrive. Every document already in Kosmos stays,
-with its text, labels and highlights. See
-[Close a matter](matters.md#close-a-matter).
 
 ## Who can see a matter's documents
 

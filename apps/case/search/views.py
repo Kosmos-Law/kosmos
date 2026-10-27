@@ -7,12 +7,11 @@ from watson import search as watson
 from apps.case.models import Document, Fact, Highlight, Label
 from apps.case.semantic import semantic_entries
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
-from apps.notes.models import Note
 
 from .filters import SearchFilter
 
 # Default scopes for case search
-DEFAULT_SCOPES = ["documents", "highlights", "facts", "notes"]
+DEFAULT_SCOPES = ["documents", "highlights", "facts"]
 
 
 def get_active_scopes(request, matter_id):
@@ -76,17 +75,6 @@ def get_search_data(request, matter, matter_id):
                     "rank": getattr(result, "watson_rank", 0),
                     "date": obj.date,
                 }
-            elif (
-                isinstance(obj, Note)
-                and obj.matter_id == matter.id
-                and "notes" in active_scopes
-            ):
-                result_item = {
-                    "type": "note",
-                    "object": obj,
-                    "rank": getattr(result, "watson_rank", 0),
-                    "date": obj.created_at.date() if obj.created_at else None,
-                }
 
             if result_item:
                 results.append(result_item)
@@ -100,7 +88,6 @@ def get_search_data(request, matter, matter_id):
                 ("documents", "document"),
                 ("highlights", "highlight"),
                 ("facts", "fact"),
-                ("notes", "note"),
             )
             if scope in active_scopes
         ]
@@ -115,7 +102,6 @@ def get_search_data(request, matter, matter_id):
                 pk__in=ids
             ).select_related("document"),
             "fact": lambda ids: Fact.objects.filter(pk__in=ids, matter=matter),
-            "note": lambda ids: Note.objects.filter(pk__in=ids, matter=matter),
         }
         by_kind = {}
         for row in rows:
@@ -138,8 +124,6 @@ def get_search_data(request, matter, matter_id):
                 date = obj.document.date
             elif kind == "fact":
                 date = obj.date
-            elif kind == "note":
-                date = obj.created_at.date() if obj.created_at else None
             results.append(
                 {
                     "type": kind,
@@ -242,7 +226,6 @@ def get_search_data(request, matter, matter_id):
         Highlight.objects.filter(document__matter=matter).count() if matter else 0
     )
     fact_count = Fact.objects.filter(matter=matter).count() if matter else 0
-    note_count = Note.objects.filter(matter=matter).count() if matter else 0
 
     return {
         "results": results,
@@ -255,7 +238,6 @@ def get_search_data(request, matter, matter_id):
         "doc_count": doc_count,
         "highlight_count": highlight_count,
         "fact_count": fact_count,
-        "note_count": note_count,
     }
 
 
@@ -313,12 +295,11 @@ def search_query(request, matter_id):
     scope_documents = request.POST.get("scope_documents") == "on"
     scope_highlights = request.POST.get("scope_highlights") == "on"
     scope_facts = request.POST.get("scope_facts") == "on"
-    scope_notes = request.POST.get("scope_notes") == "on"
 
     # If any scope checkbox was sent, update scopes; otherwise keep existing
     if any(key.startswith("scope_") for key in request.POST.keys() if key != "query"):
         # If no scopes selected, enable all
-        if not any([scope_documents, scope_highlights, scope_facts, scope_notes]):
+        if not any([scope_documents, scope_highlights, scope_facts]):
             active_scopes = DEFAULT_SCOPES
         else:
             active_scopes = []
@@ -328,8 +309,6 @@ def search_query(request, matter_id):
                 active_scopes.append("highlights")
             if scope_facts:
                 active_scopes.append("facts")
-            if scope_notes:
-                active_scopes.append("notes")
 
         scope_session_key = get_session_key("search_scopes", matter_id)
         request.session[scope_session_key] = active_scopes

@@ -1,7 +1,7 @@
 /* ==========================================================================
    Formatting toolbar — shared rich-text buttons for TipTap editors
    (components/format-toolbar.html + js/format-toolbar.js). One look for
-   every editing surface: notes editor bar, AI compose-prompt modal.
+   the AI compose-prompt modal.
    Surface-specific chrome (background, borders, alignment) stays with the
    surface's own stylesheet.
 

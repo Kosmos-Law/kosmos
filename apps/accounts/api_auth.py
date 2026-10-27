@@ -1,6 +1,6 @@
 """Shared token auth for the Kosmos JSON APIs behind the Claude Desktop
-MCP server (the notes API in apps/notes/api.py, the matter API in
-apps/ai/api.py, the calendar and search APIs). Lives with ApiToken so every
+MCP server (the matter API in apps/ai/api.py, the calendar and search
+APIs). Lives with ApiToken so every
 consumer can import it without pulling in another app's view machinery.
 """
 

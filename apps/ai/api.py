@@ -1,7 +1,7 @@
 """Token-authed JSON API over one matter's working record.
 
-Consumed by the Claude Desktop MCP server (tools/kosmos_notes_mcp.py),
-alongside the notes API in apps/notes/api.py. Reads serve every section
+Consumed by the Claude Desktop MCP server (tools/kosmos_notes_mcp.py).
+Reads serve every section
 of a matter as AI-ready text, reusing the in-app chat's formatters where
 they exist so the two surfaces cannot drift; writes are create-only
 (timeline facts, witnesses, tasks) through the same validated entry
@@ -544,6 +544,19 @@ def _section_response(matter, section):
             "text": SECTIONS[section](matter),
         }
     )
+
+
+@kosmos_api_auth
+@require_GET
+def api_matters(request):
+    """Accessible open matters, name-ordered; ?q= filters by name."""
+    matters = filter_matters_for_user(
+        Matter.objects.filter(status="Open"), request.api_user
+    ).order_by("name")
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        matters = matters.filter(name__icontains=q)
+    return JsonResponse({"matters": [{"id": m.id, "name": m.name} for m in matters]})
 
 
 @kosmos_api_auth

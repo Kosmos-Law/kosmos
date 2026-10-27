@@ -94,12 +94,11 @@
       {% endif %}
       {% comment %}
         The case builder: the matter's working file (documents, highlights,
-        timeline, witnesses, notes, emails, search, AI) and the notes
-        library. Case reopens the last matter on its last tab. Each entry
-        is a feature the firm's administrator can switch off (Settings >
-        Features).
+        timeline, witnesses, emails, search, AI). Case reopens the last
+        matter on its last tab. The firm's administrator can switch it off
+        (Settings > Features).
       {% endcomment %}
-      {% if case_file_enabled or library_enabled or books_enabled and user.is_admin or books_enabled and user.perm_books %}
+      {% if case_file_enabled or books_enabled and user.is_admin or books_enabled and user.perm_books %}
         <li class="sidebar-divider" aria-hidden="true"></li>
       {% endif %}
       {% if case_file_enabled %}
@@ -107,14 +106,6 @@
           <a id="nav-case" href="{% url 'case:case-index' %}" data-tooltip="Cases">
             <i class="icon-folder-open"></i>
             <span class="sidebar-label">Cases</span>
-          </a>
-        </li>
-      {% endif %}
-      {% if library_enabled %}
-        <li {% if app == 'notes' %}class="active"{% endif %}>
-          <a id="nav-notes" href="{% url 'notes:index' %}" data-tooltip="Library">
-            <i class="icon-library"></i>
-            <span class="sidebar-label">Library</span>
           </a>
         </li>
       {% endif %}

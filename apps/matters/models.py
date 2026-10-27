@@ -27,14 +27,6 @@ class Matter(AuditMixin, models.Model):
 
     clio_matter_id = models.CharField(max_length=500, null=True, blank=True)
     client_reference_id = models.CharField(max_length=50, blank=True, null=True)
-    # This matter's Google Drive folder under DRIVE_NOTES_ROOT: the folder
-    # id is the link (renames in Drive keep working), the name is kept for
-    # display and the drafts picker. Set via the Documents tab's Drive
-    # Folder modal (or the link_drive_folders command); its mapped
-    # subfolders (apps.drive.models.DriveFolderMapping) feed the document
-    # mirror.
-    drive_folder = models.CharField(max_length=255, null=True, blank=True)
-    drive_folder_id = models.CharField(max_length=255, null=True, blank=True)
     # Gmail label mapped to this matter for case-email sync. The label NAME
     # is the contract: every connected mailbox (GmailAccount) resolves it to
     # its own label id at sync time, so one link serves all mailboxes.
@@ -108,7 +100,7 @@ class Matter(AuditMixin, models.Model):
     STATUSES = ("Pending", "Open", "Complete", "Closed")
     STATUS_CHOICES = tuple((status, status) for status in STATUSES)
     # Statuses under which work is no longer tracked: the file has moved out
-    # of the "Matters - Open" Drive/Gmail roots, so its mirrors are unlinked.
+    # of the "Matters - Open" Gmail root, so its label is unlinked.
     # "Complete" is the closing-out phase (usually waiting on a trust
     # reimbursement); "Closed" is final and additionally starts the chat
     # retention clock (apps/ai/purge.py).
@@ -142,21 +134,13 @@ class Matter(AuditMixin, models.Model):
                         status="Dismissed"
                     ).update(status="Concluded")
 
-            # Drop the matter's Drive and Gmail links. Closed-out files move
-            # out of the "Matters - Open" Drive/Gmail roots, so stale links
-            # only produce missing-folder and missing-label drift warnings
-            # (and automatic label setup would recreate the matter's Gmail
-            # labels). The Drive mirror drops its folder mappings on the
-            # signal (apps/drive/signals.py); synced rows all survive the
-            # unlink: record Documents are append-only and Email rows are
-            # only removed by label events on a still-mapped matter.
+            # Drop the matter's Gmail link. Closed-out mail moves out of the
+            # "Matters - Open" Gmail root, so a stale link only produces
+            # missing-label drift warnings (and automatic label setup would
+            # recreate the matter's labels). Synced Email rows survive the
+            # unlink: they are only removed by label events on a still-mapped
+            # matter.
             self.gmail_label_name = None
-            self.drive_folder = None
-            self.drive_folder_id = None
-            if self.pk and not was_inactive:
-                from apps.matters.signals import matter_closed
-
-                matter_closed.send(sender=Matter, matter=self)
 
         elif was_inactive:
             # Reopened: the matter no longer has a closing date.

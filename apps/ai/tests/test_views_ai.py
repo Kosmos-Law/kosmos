@@ -576,15 +576,6 @@ class TestAgentKind:
         response = client.get(reverse("ai:new-conversation-prompt", args=[matter.id]))
         assert response.status_code == 404
 
-    def test_create_conversation_honors_kind(self, client, matter):
-        from django.urls import reverse
-
-        response = client.post(
-            reverse("ai:create-conversation", args=[matter.id]),
-            {"llm": "claude-opus", "title": "T", "kind": "agent"},
-        )
-        assert Conversation.objects.get(pk=response.json()["id"]).kind == "agent"
-
     def test_complete_persists_agent_run(self, client, matter, user, monkeypatch):
         from django.urls import reverse
 

@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from apps.drafts import chat
 from apps.drafts.models import CompanionRound
-from apps.drive.redline import DeleteParagraph, InsertParagraphs, RedlineEdit
+from apps.drafts.redline import DeleteParagraph, InsertParagraphs, RedlineEdit
 
 pytestmark = pytest.mark.django_db
 
@@ -129,8 +129,7 @@ def test_parse_edit_block_objects():
     ]
 
 
-def test_draft_section_contains_protocol_and_text(link, monkeypatch):
-    monkeypatch.setattr("apps.drafts.services.refresh_if_stale", lambda link_: None)
+def test_draft_section_contains_protocol_and_text(link):
     section = chat.build_draft_section(link)
     assert "PROPOSING EDITS" in section
     assert 'THE DRAFT: "motion.odt"' in section

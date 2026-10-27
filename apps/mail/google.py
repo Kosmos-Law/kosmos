@@ -143,7 +143,7 @@ def list_matter_labels(account):
     """User labels offered in the matter-link picker, read from ``account``.
 
     Scoped to children of settings.GMAIL_LABEL_ROOT (the label hierarchy's
-    "Matters - Open" analog of DRIVE_NOTES_ROOT), each carrying a
+    "Matters - Open" parent), each carrying a
     ``short_name`` with the root prefix stripped for display. A blank root
     offers every user label. What the picker stores is the label NAME —
     other mailboxes resolve it to their own label id at sync time.

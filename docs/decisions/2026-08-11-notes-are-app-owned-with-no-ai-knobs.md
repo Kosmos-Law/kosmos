@@ -1,5 +1,9 @@
 # Notes are app-owned and carry no AI knobs (2026-08-11)
 
+> Superseded on 2026-10-27 by [Notes are retired](2026-10-27-notes-retired.md):
+> the notes feature is gone and its tables are dormant. What follows is
+> the record as written.
+
 Notes reached the application two ways in mid-2026. Since June a Drive
 mirror pulled files from a `Notes/` folder under each matter's Drive
 folder into `Note` rows, read-only in the editor because Drive was the
@@ -88,8 +92,8 @@ opens a note) and the sidebar filters the table.
 
 ## Related
 
-- [Notes and drafts](../dev/subsystems/notes-and-drafts.md), "Trees,
-  the Library and the matter tab" and "Retired designs".
+- [Notes are retired (2026-10-27)](2026-10-27-notes-retired.md), which
+  supersedes this record.
 - [AI chat and context](../dev/subsystems/ai/context.md), "What goes
   into the context".
 - [AI writes are fenced blocks, applied at

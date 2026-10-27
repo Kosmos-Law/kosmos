@@ -51,7 +51,7 @@ class AgentBudget:
 
 DEFAULT_BUDGET = AgentBudget()
 
-SEARCH_KINDS = ("document", "note", "library", "email", "highlight", "fact")
+SEARCH_KINDS = ("document", "email", "highlight", "fact")
 SEARCH_DEFAULT_LIMIT = 15
 SEARCH_MAX_LIMIT = 40
 SEARCH_MAX_QUERIES = 5
@@ -193,8 +193,7 @@ def build_agent_tools(
             "name": "search_materials",
             "description": (
                 "Hybrid search across this matter's materials: documents "
-                "(OCR text), matter notes, firm library notes, synced emails, "
-                "highlights and timeline facts. Matches by meaning as well as "
+                "(OCR text), synced emails, highlights and timeline facts. Matches by meaning as well as "
                 "by words (semantic neighbors are merged with the keyword "
                 "hits). Keyword side: words are stemmed and ANDed; "
                 'use "quoted phrases" for exact wording, OR between '
@@ -204,7 +203,7 @@ def build_agent_tools(
                 "hits, and flags which variants matched. When nothing "
                 "matches, near-miss titles come back as fuzzy hits. Each hit "
                 "carries a snippet and the handle to read the full item; "
-                "document and library hits also carry an AI summary when one "
+                "document hits also carry an AI summary when one "
                 "exists, useful for triage before reading."
             ),
             "input_schema": {
@@ -271,20 +270,6 @@ def build_agent_tools(
                     }
                 ),
                 "required": ["thread_id"],
-            },
-        },
-        {
-            "name": "read_note",
-            "description": (
-                "A matter note ([note:ID]) or a firm library note ([lib:ID]) "
-                "in full, as markdown."
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": _read_params(
-                    {"note_id": {"type": "integer", "description": "Note id."}}
-                ),
-                "required": ["note_id"],
             },
         },
         {
@@ -682,7 +667,6 @@ PENDING_LABELS = {
     "search_materials": 'Searching "{query}"...',
     "read_document": "Reading document {doc_id}...",
     "read_email_thread": "Reading email thread {thread_id}...",
-    "read_note": "Reading note {note_id}...",
     "read_caselaw": "Reading saved case {caselaw_id}...",
     "read_conversation": "Reading conversation {conversation_id}...",
     "read_invoice": "Reading invoice {invoice_id}...",
@@ -763,11 +747,9 @@ def make_agent_executor(
     from apps.case.models import CaseLaw, Document, Fact, Highlight
     from apps.invoicing.invoices.models import Invoice
     from apps.mail.ai import format_email_thread, thread_subject
-    from apps.notes.models import Note, get_library_notes
 
     from .access import has_financial_access, has_research_access
     from .models import Conversation
-    from .selector import library_folder_path
 
     include_financial = has_financial_access(user)
     include_research = has_research_access(user)
@@ -851,11 +833,6 @@ def make_agent_executor(
                 ContentType.objects.get_for_model(Fact),
                 Fact.objects.filter(matter=matter),
             )
-        note_ct = ContentType.objects.get_for_model(Note)
-        if "note" in kinds:
-            scopes["note"] = (note_ct, Note.objects.filter(matter=matter).values("pk"))
-        if "library" in kinds:
-            scopes["library"] = (note_ct, get_library_notes().values("pk"))
         if "email" in kinds:
             scopes["email"] = (
                 ContentType.objects.get_for_model(Email),
@@ -941,7 +918,6 @@ def make_agent_executor(
                 "document", "caselaw"
             ),
             Fact: lambda ids: Fact.objects.filter(pk__in=ids),
-            Note: lambda ids: Note.objects.filter(pk__in=ids).select_related("folder"),
             Email: lambda ids: Email.objects.filter(pk__in=ids),
         }
         cts = {ct.id: ct for ct, _ in scopes.values()}
@@ -1006,25 +982,6 @@ def make_agent_executor(
                         "rank": rank,
                     }
                 )
-            elif isinstance(obj, Note):
-                library = obj.matter_id is None
-                hit = {
-                    "kind": "library" if library else "note",
-                    "id": obj.id,
-                    "handle": f"{'lib' if library else 'note'}:{obj.id}",
-                    "name": obj.title,
-                    "category": (
-                        f"Library: {library_folder_path(obj.folder)}"
-                        if library
-                        else obj.get_category_display()
-                    ),
-                    "date": (str(obj.updated_at.date()) if obj.updated_at else None),
-                    "snippet": _snippet(obj.content or "", query),
-                    "rank": rank,
-                }
-                if library and obj.summary:
-                    hit["summary"] = obj.summary
-                hits.append(hit)
             else:  # Email -> one hit per thread
                 key = obj.thread_id or obj.gmail_id
                 hits.append(
@@ -1048,10 +1005,6 @@ def make_agent_executor(
         loaders = {
             "document": lambda ids: Document.objects.filter(pk__in=ids).defer(
                 "ocr_text", "search_vector"
-            ),
-            "note": lambda ids: Note.objects.filter(pk__in=ids),
-            "library": lambda ids: Note.objects.filter(pk__in=ids).select_related(
-                "folder"
             ),
             "email": lambda ids: Email.objects.filter(pk__in=ids),
             "highlight": lambda ids: Highlight.objects.filter(
@@ -1089,22 +1042,6 @@ def make_agent_executor(
                     date=str(obj.date) if obj.date else None,
                 )
                 if obj.summary:
-                    base["summary"] = obj.summary
-            elif kind in ("note", "library"):
-                library = obj.matter_id is None
-                base["kind"] = "library" if library else "note"
-                base.update(
-                    id=obj.id,
-                    handle=f"{'lib' if library else 'note'}:{obj.id}",
-                    name=obj.title,
-                    category=(
-                        f"Library: {library_folder_path(obj.folder)}"
-                        if library
-                        else obj.get_category_display()
-                    ),
-                    date=str(obj.updated_at.date()) if obj.updated_at else None,
-                )
-                if library and obj.summary:
                     base["summary"] = obj.summary
             elif kind == "email":
                 key = obj.thread_id or obj.gmail_id
@@ -1332,52 +1269,6 @@ def make_agent_executor(
             "kind": "email",
             "id": thread_id,
             "name": subject,
-            "chars": chars,
-            "total_chars": fields["total_chars"],
-        }
-
-    def _read_note(tool_input):
-        note = (
-            Note.objects.filter(pk=tool_input.get("note_id") or 0)
-            .select_related("folder")
-            .first()
-        )
-        library = False
-        if note is not None and note.matter_id == matter.id:
-            pass
-        elif (
-            note is not None
-            and note.matter_id is None
-            and get_library_notes().filter(pk=note.pk).exists()
-        ):
-            library = True
-        else:
-            note = None
-        if note is None:
-            return {"error": "No such note on this matter or in the library."}, {}
-        fields, chars = _slice(note.content or "", tool_input)
-        payload = {
-            "note_id": note.id,
-            "title": note.title,
-            "library": library,
-            "folder": library_folder_path(note.folder) if library else "",
-            "category": note.get_category_display(),
-            "topic": note.topic or "",
-            **fields,
-        }
-        return payload, {
-            "label": _part_label(
-                "Read library note" if library else "Read note", note.title, fields
-            ),
-            "title": (
-                f"Read library note *{note.title}*"
-                if library
-                else f"Read note *{note.title}*"
-            ),
-            "detail": _part_detail(fields),
-            "kind": "library" if library else "note",
-            "id": note.id,
-            "name": note.title,
             "chars": chars,
             "total_chars": fields["total_chars"],
         }
@@ -1786,7 +1677,6 @@ def make_agent_executor(
         "search_materials": _search,
         "read_document": _read_document,
         "read_email_thread": _read_email_thread,
-        "read_note": _read_note,
         "read_caselaw": _read_caselaw,
         "read_conversation": _read_conversation,
         "read_invoice": _read_invoice,

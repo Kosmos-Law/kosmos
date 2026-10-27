@@ -342,7 +342,7 @@ pick has no key, Kosmos uses the other provider's model.
 ## Integrations
 
 **Settings → Integrations** connects Kosmos to Google and to the AI
-providers. An administrator sees **Google Account**, three connections
+providers. An administrator sees **Google Account**, two connections
 that serve the whole firm through one Google account, **AI** and **Case
 Email**. Everyone else sees only **Case Email**.
 
@@ -350,7 +350,6 @@ Email**. Everyone else sees only **Case Email**.
 |---|---|
 | **Google Contacts** | A contact added in Kosmos is added to the Google account, and removed from it when the contact is deleted in Kosmos. |
 | **Google Calendar** | Events are kept in step, in both directions, with one Google calendar. The person who runs your server chooses which. |
-| **Google Drive (Documents)** | PDFs in a matter's linked Drive folder are copied into the matter's documents. Kosmos never changes anything in Drive. The lines under the button count the matters linked, folders mapped and documents synced, and warn when a mapped folder is missing. |
 
 To connect one, click **Connect**, choose the Google account and approve
 the request. You return to **Integrations** and the button now reads
@@ -365,7 +364,7 @@ sees "Google sign-in isn't set up yet. Ask an administrator."
 
 To disconnect one, click **Disconnect**, then **Disconnect** again in the
 prompt. Kosmos stops syncing with it for the whole firm until an
-administrator connects it again. Documents and events already in Kosmos
+administrator connects it again. Contacts and events already in Kosmos
 stay in place.
 
 Under **Case Email**, each user connects their own Gmail mailbox: click
@@ -384,7 +383,7 @@ are kept.
 Good to know:
 
 - Whichever **Connect** you click, Google asks for access to calendar,
-  contacts, Drive and Gmail together. Kosmos uses only the connection you
+  contacts and Gmail together. Kosmos uses only the connection you
   clicked.
 - Connecting with a different Google account replaces the earlier
   connection.
@@ -439,7 +438,9 @@ configuration into Claude Desktop. The configuration contains your
 personal token, so do not share it. **Rotate token** replaces the token,
 and Claude Desktop stops working until you paste the new configuration.
 **Revoke token** removes it. Both also cut off the LibreOffice companion
-extension, which uses the same token. More detail is in
+extension, which uses the same token. If Claude's Kosmos tools fail after
+Kosmos is updated, download the connector file again, save it over the
+old one and restart Claude Desktop. More detail is in
 [Claude Desktop access](../admin/integrations/claude-desktop.md).
 
 ## Intake Forms

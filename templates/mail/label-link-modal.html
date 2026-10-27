@@ -44,9 +44,9 @@
               hx-target="#label-link-error"
               hx-swap="innerHTML">
           {% csrf_token %}
-          <div class="drive-folder-list">
+          <div class="folder-picker-list">
             {% for label in labels %}
-              <label class="drive-folder-option{% if label.taken %} disabled{% endif %}">
+              <label class="folder-picker-option{% if label.taken %} disabled{% endif %}">
                 <input type="radio"
                        name="label"
                        value="{{ label.id }}"
@@ -54,13 +54,13 @@
                        {% if label.name == current %}checked{% endif %}
                        {% if label.taken %}disabled{% endif %}
                        onchange="document.getElementById('label-link-name').value = this.dataset.labelName">
-                <span class="drive-folder-name">{{ label.short_name }}</span>
+                <span class="folder-picker-name">{{ label.short_name }}</span>
                 {% comment %}
                   A label held by a matter the user is not on is still
                   unavailable, but that matter is not named.
                 {% endcomment %}
                 {% if label.taken %}
-                  <span class="drive-folder-taken">linked to {{ label.taken_by|default:"another matter" }}</span>
+                  <span class="folder-picker-taken">linked to {{ label.taken_by|default:"another matter" }}</span>
                 {% endif %}
               </label>
             {% endfor %}

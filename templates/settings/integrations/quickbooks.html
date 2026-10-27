@@ -61,7 +61,7 @@
     </div>
     {% with connection=quickbooks.connection %}
       {% if connection %}
-        <p class="detail-text drive-sync-note">
+        <p class="detail-text sync-note">
           Connected {{ connection.connected_at|date:"M j, Y" }}
           {% if connection.connected_by %}
             by {{ connection.connected_by.get_full_name|default:connection.connected_by.username }}
@@ -78,10 +78,10 @@
           {% endif %}
         </p>
         {% if connection.last_sync_summary %}
-          <p class="detail-text drive-sync-note">{{ connection.last_sync_summary }}</p>
+          <p class="detail-text sync-note">{{ connection.last_sync_summary }}</p>
         {% endif %}
         {% if connection.last_sync_error %}
-          <p class="detail-text drive-sync-note ai-key-error">{{ connection.last_sync_error }}</p>
+          <p class="detail-text sync-note ai-key-error">{{ connection.last_sync_error }}</p>
         {% endif %}
       {% endif %}
     {% endwith %}

@@ -28,9 +28,7 @@ def client(user):
 
 @pytest.fixture
 def matter(db):
-    return Matter.objects.create(
-        name="Smith v Jones", status="Open", drive_folder="Smith v. Jones"
-    )
+    return Matter.objects.create(name="Smith v Jones", status="Open")
 
 
 @pytest.fixture

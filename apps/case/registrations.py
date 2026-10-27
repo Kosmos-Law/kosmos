@@ -16,13 +16,10 @@ def register():
     from apps.case.highlights.views import get_highlights_data
     from apps.case.labels.views import get_label_data
     from apps.case.models import CaseLaw, Document, Fact, Highlight, Label, Witness
-    from apps.case.notes.views import get_notes_data
     from apps.case.search.views import get_search_data
     from apps.case.witnesses.views import get_witnesses_data
-    from apps.notes.models import Note, get_library_notes
     from apps.settings.ai import ai_enabled
     from apps.settings.courtlistener import caselaw_available
-    from apps.settings.features import library_enabled
 
     def tab(name, label, order, data, **options):
         tabs.register(
@@ -42,19 +39,6 @@ def register():
     tab("highlights", "Highlights", 20, lambda r, m: get_highlights_data(r, m, m.id))
     tab("facts", "Timeline", 30, lambda r, m: get_facts_data(r, m, m.id))
     tab("witnesses", "Witnesses", 40, lambda r, m: get_witnesses_data(r, m, m.id))
-    tab(
-        "notes",
-        "Notes",
-        50,
-        lambda r, m: get_notes_data(r, m, m.id),
-        available=lambda user, matter_id: library_enabled(),
-        # The list also refreshes when the tab comes back into view: notes
-        # are edited in their own window.
-        refresh_trigger=(
-            "notesChanged from:body, "
-            "visibilitychange[document.visibilityState === 'visible'] from:document"
-        ),
-    )
     # 60 is the Emails tab (apps.mail), 90 the AI tab (apps.ai).
     tab("labels", "Labels", 70, lambda r, m: get_label_data(r, m.id))
     tab("search", "Search", 80, lambda r, m: get_search_data(r, m, m.id))
@@ -80,7 +64,6 @@ def register():
     register_matter_lookup("fact_id", Fact, ("matter_id",), "fact")
     register_matter_lookup("witness_id", Witness, ("matter_id",), "witness")
     register_matter_lookup("label_id", Label, ("matter_id",))
-    register_matter_lookup("note_id", Note, ("matter_id",), "note")
 
     # Semantic index kinds. Email is registered by apps.mail.
     def document_source(doc):
@@ -94,12 +77,6 @@ def register():
             f"{doc.name}\n{doc.description or ''}\n{doc.ocr_text or ''}",
         )
 
-    def note_source(note):
-        return note.matter_id, f"{note.title}\n{note.content or ''}"
-
-    def note_kind(note):
-        return "library" if note.matter_id is None else "note"
-
     def highlight_source(highlight):
         source = highlight.document or highlight.caselaw
         matter_id = source.matter_id if source else None
@@ -110,23 +87,6 @@ def register():
         Document,
         document_source,
         backfill=lambda matter: Document.objects.filter(matter=matter),
-    )
-    semantic.register_kind(
-        "note",
-        Note,
-        note_source,
-        kind_of=note_kind,
-        siblings=("library",),
-        backfill=lambda matter: Note.objects.filter(matter=matter),
-    )
-    semantic.register_kind(
-        "library",
-        Note,
-        note_source,
-        kind_of=note_kind,
-        siblings=("note",),
-        signals=False,  # the "note" kind's hooks cover every Note row
-        backfill_library=get_library_notes,
     )
     semantic.register_kind(
         "highlight",

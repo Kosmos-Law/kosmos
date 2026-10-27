@@ -1,5 +1,10 @@
 # Drive folder mappings replace the per-proceeding folder link (2026-08-21)
 
+> Superseded on 2026-10-27 by [Google Drive is
+> removed](2026-10-27-google-drive-removed.md):
+> the Drive Folder modal, `DriveFolderMapping` and `Matter.drive_folder_id`
+> are gone. What follows is the record as written.
+
 The Drive mirror turns PDFs in a matter's Google Drive folder into
 Documents. Before August 2026 it found them three ways: the matter's own
 folder was named on the matter, each proceeding carried a

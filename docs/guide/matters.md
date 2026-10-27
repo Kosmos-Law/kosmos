@@ -11,7 +11,7 @@ A matter is one piece of work for one client, for example "Rivera v.
 Northside Logistics" for the client Elena Rivera. Everything about that
 work hangs off the matter: the people involved, court proceedings, events,
 tasks, time and expenses, invoices and payments, and the case file
-(documents, notes, emails and AI chats). Each matter has one client, one
+(documents, emails and AI chats). Each matter has one client, one
 status and one billing type.
 
 ## Find a matter
@@ -99,7 +99,7 @@ open matter), **Detail** and **Case**, and two buttons to add time and add
 an expense (see [Time and expenses](time-and-expenses.md)). The pencil
 button after them opens **Edit Matter**. This page covers the
 **Detail** side. **Case** holds the case file: documents, the
-timeline, witnesses, notes, emails, AI chat and research.
+timeline, witnesses, emails, AI chat and research.
 
 ### Overview
 
@@ -231,11 +231,11 @@ confirmation:
   as **Closed**.
 - Marks the matter's proceedings **Concluded**, except any that are
   **Dismissed**.
-- Removes the matter's links to its Gmail label and its Google Drive
-  folder, so no new emails or documents arrive on the matter.
+- Removes the matter's link to its Gmail label, so no new emails arrive
+  on the matter.
 
-Everything already on the matter stays: documents, emails, notes, time,
-invoices and the ledger. Nothing in Gmail or Google Drive is changed.
+Everything already on the matter stays: documents, emails, time,
+invoices and the ledger. Nothing in Gmail is changed.
 
 !!! note
 
@@ -247,8 +247,8 @@ invoices and the ledger. Nothing in Gmail or Google Drive is changed.
 Good to know:
 
 - Reopening a matter clears its closing date and restores nothing else.
-  Its proceedings stay **Concluded**, and the Gmail label and Drive
-  folder must be linked again.
+  Its proceedings stay **Concluded**, and the Gmail label must be linked
+  again.
 
 ## Delete a matter
 
@@ -256,11 +256,11 @@ Only an administrator can delete a matter. Deleting is permanent.
 
 1. Open **Edit Matter** from the matter's title bar and click
    **Delete**. The dialog counts the time entries, expense entries, tasks,
-   documents, notes, events and invoices on the matter.
+   documents, events and invoices on the matter.
 2. Type DELETE in the box and click **Delete Matter**.
 
 You return to the matters list and the matter is gone. Deleted with it:
-its time, expense and flat fee entries, tasks, events, documents, notes,
+its time, expense and flat fee entries, tasks, events, documents,
 emails, timeline, witnesses, AI chats, research, proceedings, settlement
 entries, rates, invoices, payments and credits, and its list of contacts
 (the contacts themselves are kept).

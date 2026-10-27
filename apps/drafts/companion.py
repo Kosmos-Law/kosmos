@@ -21,6 +21,8 @@ a user's installed copy only changes when they download it again:
     0.4.1  the same protocol; stops polling with a plain message when the
            server answers 403 (the user lost access to the matter), and
            its messages no longer speak of edits being "approved".
+    0.4.2  the same protocol; its messages no longer speak of Google
+           Drive (removed on 2026-10-27).
 
 The protocol therefore only ever grows: no path, method or key that 0.3.0
 uses may change, and anything new must be optional for the client.
@@ -57,14 +59,14 @@ from django.views.decorators.http import require_http_methods
 from apps.accounts.models import ApiToken
 from apps.ai.access import accessible_matters
 from apps.drafts.models import CompanionRound, DraftLink
-from apps.drive import convert
+from utils import convert
 
 logger = logging.getLogger(__name__)
 
 COMPANION_SRC = Path(__file__).resolve().parent / "companion_src"
 # Also declared in companion_src/description.xml (LibreOffice reads the
 # version from there); test_companion checks the two agree.
-EXTENSION_VERSION = "0.4.1"
+EXTENSION_VERSION = "0.4.2"
 
 
 def companion_auth(view):

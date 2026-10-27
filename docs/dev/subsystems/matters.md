@@ -56,9 +56,7 @@ matter record and the case file sit in the one sidebar is in
 - `practice_area` is a nullable `ForeignKey` to `PracticeArea` with
   `SET_NULL`, so retiring or deleting an area leaves the matter without
   one.
-- `drive_folder` and `drive_folder_id` name the matter's Google Drive
-  folder; the id is the link and the name is for display.
-  `gmail_label_name` is the Gmail contract. All three are cleared when the
+- `gmail_label_name` is the Gmail contract. It is cleared when the
   matter leaves active work (below).
 - `date_start` and `date_end`: the opening date comes from the form; the
   closing date is written by `save()`.
@@ -100,9 +98,7 @@ forum case under a matter, `CASCADE` on the matter. `status` is again a
 free field whose values (`Ongoing`, `Concluded`, `Stayed`, `Dismissed`)
 are `Proceeding.STATUSES`. `primary` is enforced in `save()`: setting it clears
 the flag on the matter's other proceedings. `display_name` prefers
-`nickname` over `forum`. Drive record folders that feed a proceeding are
-`DriveFolderMapping` rows in `apps/drive/`, not fields here; the
-`drive_folder` field on the proceeding was removed in migration `0052`.
+`nickname` over `forum`.
 
 **`Group`**, **`Role`** and **`Relationship`** are the parties list. A
 `Relationship` row is one contact on one matter in one group with one
@@ -252,14 +248,12 @@ rules are in `Matter.save()` and run on every save whose status is in
   `Concluded`. This runs once, so a proceeding corrected afterwards stays
   corrected. Migration `0054` filled `date_end` for matters closed before
   the date was recorded, from their history.
-- On every save while inactive: the Drive folder, its id, the Gmail label
-  fields, and the matter's `DriveFolderMapping` and `DriveMatterState`
-  rows are cleared. The comment gives the reason: closed files move out of
-  the "Matters - Open" Drive and Gmail roots, so stale links only produce
-  drift warnings, and automatic label setup would recreate the labels.
-  Synced documents and emails all survive.
+- On every save while inactive: the Gmail label fields are cleared. The
+  comment gives the reason: closed files move out of the "Matters - Open"
+  Gmail root, so a stale link only produces drift warnings, and automatic
+  label setup would recreate the label. Synced emails survive.
 - Moving back to `Pending` or `Open` clears `date_end`. Nothing relinks
-  the mirrors; the user maps the folder again. `date_end` is added to
+  the label; the user links it again. `date_end` is added to
   `update_fields` when a caller passed them, so a partial save still
   records it.
 
@@ -275,10 +269,11 @@ from the second closing. `Complete` does not start the clock.
 
 `delete` in `apps/matters/views.py` is admin-only. `GET` renders a
 confirmation with counts of the time entries, expenses, tasks, documents,
-notes, events and invoices that will go; `DELETE` runs in one transaction.
-Every model that points at a matter cascades (documents, notes, emails,
+events and invoices that will go; `DELETE` runs in one transaction.
+Every model that points at a matter cascades (documents, emails,
 tasks, events, entries, payments, credits, proceedings, settlement
-entries, rates, parties, chats, research, drive mappings), with one
+entries, rates, parties, chats, research, and the
+dormant `Note` and `NoteFolder` rows of `apps/notes`), with one
 exception: `Invoice.matter` is `SET_NULL`. The view deletes the matter's
 invoices explicitly first, because the dialog counts them and the
 database would otherwise leave invoices with no matter, no entries and no
@@ -316,9 +311,8 @@ Deleting a folder optionally deletes its contacts; those with
   from scratch, since nothing is marked. Installed by
   `setup_chat_purge_schedule`; see [Schedules](../../reference/schedules.md).
 
-The matters, contacts and folders apps run no other tasks. The Drive and
-Gmail mirrors that a matter's `drive_folder_id` and `gmail_label_name`
-feed are in [Case building](case-building.md) and
+The matters, contacts and folders apps run no other tasks. The Gmail
+mirror that a matter's `gmail_label_name` feeds is in
 [Email and intakes](email-and-intakes.md).
 
 ## Access
@@ -383,8 +377,7 @@ the mechanism is [Identity and access](identity-and-access.md).
   screens; [Users and permissions](../../admin/users.md) covers assigning
   matters to a user limited to them.
 - [Identity and access](identity-and-access.md): the membership checks.
-- [Case building](case-building.md): the Case shell, documents and the
-  Drive mirror that `drive_folder_id` feeds.
+- [Case building](case-building.md): the Case shell and documents.
 - [Time and billing](time-and-billing.md): entries, invoices and the
   billing fields on the matter.
 - [Trust and payments](trust-and-payments.md): the trust ledger that

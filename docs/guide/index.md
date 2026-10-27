@@ -36,7 +36,6 @@ Working a case:
 - [Timeline, witnesses and highlights](facts.md): pulling the facts out of
   the documents and organising them.
 - [Email](email.md): filing correspondence on a matter from Gmail.
-- [Notes](notes.md): the firm's library and the notes kept on a matter.
 - [Drafts](drafts.md): drafting in LibreOffice with the AI's edits as
   tracked changes.
 - [Case law](research.md): finding case law with the AI and keeping it on a matter.

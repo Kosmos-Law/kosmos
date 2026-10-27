@@ -24,9 +24,9 @@ key configured, none of it is reachable (see
 | `apps/llm/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
 | `apps/llm/providers.py` | `complete()`, the one call for AI work that is not a matter chat; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
 | `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
-| `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `library_enabled` for templates |
-| `apps/ai/fact_blocks.py`, `witness_blocks.py`, `note_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
-| `apps/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links or note chips; citation extraction and CourtListener verification; the fast-tier vetting job |
+| `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `books_enabled` for templates |
+| `apps/ai/fact_blocks.py`, `witness_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
+| `apps/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links; citation extraction and CourtListener verification; the fast-tier vetting job |
 | `apps/ai/purge.py` | The closed-matter chat purge |
 | `apps/case/semantic.py`, `apps/llm/embeddings.py` | The pgvector index behind the agent's `search_materials` (the index lives with the content, the embedding call with the providers) |
 | `apps/llm/pricing.py` | Estimated cost for the status bar |
@@ -50,7 +50,7 @@ token counts, and JSON fields the renderers read: `verified_citations`,
 turns) and `research_trail` (old research-kind answers). Both models keep
 `HistoricalRecords`.
 
-`MaterialChunk` is one embedded chunk of a document, note, library note,
+`MaterialChunk` is one embedded chunk of a document,
 email, highlight or fact, unique on `(kind, object_id, chunk_index)`, with
 an HNSW index on its vector; `semantic.py` writes it on save through
 qcluster and `manage.py build_semantic_index` backfills.
@@ -109,8 +109,7 @@ what it left out, so the model can name an item and ask for it.
 
 `collect_context_items()` gathers the always-included items: documents,
 saved cases and email threads with `ai_context="always"`, every highlight
-and fact, and other conversations on the matter set to **Always**. Notes
-have had no AI setting since 2026-08-11 and are all selector material.
+and fact, and other conversations on the matter set to **Always**.
 Items set to **Never** are excluded everywhere.
 
 `format_time_entries(matter, include_billing=...)` lists the work done;
@@ -121,11 +120,6 @@ Invoices are different: `build_manifest(include_invoices=...)` offers them
 to the selector only when `access.has_financial_access(user)` is true. A
 run with no user sees neither money on time entries nor any invoice.
 
-Library notes (standalone notes in folders flagged as AI library,
-`apps.notes.models.get_library_notes()`) are offered on every matter when
-`include_library` is true; the selector prompt tells the model to pick at
-most five and only when the topic bears on the question.
-
 **Reuse.** The assembled context is cached under `ai_ctx_<conversation id>`
 in the cross-process `ai_status` cache (zlib-compressed, since it is the
 whole system prompt) for `CONTEXT_REUSE_SECONDS` (600) together with a
@@ -133,7 +127,7 @@ fingerprint from `_context_fingerprint()`: count and latest `updated_at`
 per source table, the model, the user and their Financial flag. A follow-up inside ten
 minutes with an unchanged fingerprint skips the selector entirely, which
 also keeps the provider prompt caches warm. Any write to the material,
-including the AI's own note, fact or witness writes, changes the
+including the AI's own fact or witness writes, changes the
 fingerprint. Tasks, events and time entries are deliberately not
 fingerprinted.
 
@@ -152,21 +146,21 @@ the folk figure of 4 let a prompt through that the provider rejected.
 (type, id, name, category, date, a description, word count, importance)
 with a `content_map` of the full text, resolved lazily for invoices and
 case law (the opinion is fetched from CourtListener on selection). The
-manifest covers `auto` documents with finished OCR, all matter notes,
+manifest covers `auto` documents with finished OCR,
 `auto` saved cases, other `auto` conversations (described by their
-`summary`), `auto` email threads as one item per thread, invoices when
-permitted, and library notes. With `include_always=True` (the agent's
+`summary`), `auto` email threads as one item per thread, and invoices when
+permitted. With `include_always=True` (the agent's
 index) the `always` items are listed too, flagged `pinned`, each with the
 `handle` the agent tools read by.
 
 `select_context()` skips the model call when the matter items total under
-`SMALL_MATTER_THRESHOLD` (30,000 words) and there are no invoices or
-library items: everything goes in. Otherwise `SELECTOR_SYSTEM_PROMPT` and
+`SMALL_MATTER_THRESHOLD` (30,000 words) and there are no invoices:
+everything goes in. Otherwise `SELECTOR_SYSTEM_PROMPT` and
 the formatted manifest go to `providers.complete()` at the fast tier,
 which returns a JSON list
 of `{type, id}`; if the call or the parse fails, `_fallback_by_importance()`
-fills the budget by importance. Invoices and library notes never ride the
-short-circuit or the fallback: they enter only when the selector names them.
+fills the budget by importance. Invoices never ride the short-circuit or the
+fallback: they enter only when the selector names them.
 
 ### The system prompt file
 
@@ -197,7 +191,7 @@ a cancel stops the bill. Fable keys carry Anthropic's server-side refusal
 fallback to Opus 5 (`anthropic_client.FALLBACK_MODELS`).
 
 Everything else goes through `providers.complete(system, messages,
-tier)`: the selector, conversation, document, note and case summaries,
+tier)`: the selector, conversation, document and case summaries,
 citation vetting, intake extraction and assessment, the intake chat and
 AI quick-add. A tier maps to one model per provider (`MODELS`: `fast` is
 `gemini-2.5-flash` or `claude-sonnet-4-6`, `deep` is `gemini-pro-latest`
@@ -297,9 +291,8 @@ poller ran on forever and wrote an "interrupted" message every second
 ### Fenced write blocks
 
 The model writes to the record only through fenced blocks in its reply:
-`create-facts` and `create-witnesses` (lists), `create-note` and
-`edit-note` (one object each) and `save-caselaw` (agent conversations
-only). The intake chat has its own `update-intake` block. A protocol is added to the system prompt
+`create-facts` and `create-witnesses` (lists) and `save-caselaw` (agent
+conversations only). The intake chat has its own `update-intake` block. A protocol is added to the system prompt
 only when the last few user messages (the current one and the three
 before it) match its trigger pattern (`FACTS_TRIGGER_RE` and the like),
 so an ordinary chat carries no standing write instructions to misfire
@@ -307,7 +300,7 @@ on, and a follow-up ("also add the crash date") keeps the protocol armed.
 
 `finalize_response()` applies each block with a regex substitution over
 the reply (`apply_fact_blocks()`, `apply_witness_blocks()`,
-`apply_caselaw_blocks()`, `apply_note_blocks()`), replacing the block with
+`apply_caselaw_blocks()`), replacing the block with
 confirmation lines so the user and the model's later turns both see what
 happened. Nothing is confirmed first: the row exists by the time the
 answer renders. A block that is not valid JSON is left as text and writes
@@ -318,17 +311,6 @@ nothing; a same-named witness is reused; a case already saved gets the
 proposition appended to its notes rather than a duplicate row
 (`(matter, cluster_id)` is unique). Each creator is also what the MCP
 server's write tools call (see [MCP](../mcp.md)).
-
-Note writes apply on the chat's worker thread, synchronously, and are
-never refused: the per-note `Note.ai_write_until` grant gates only the
-MCP server's `write_note`, not the in-app AI. Creation is limited to the
-matter's notes; edits reach the matter's notes and library notes, and
-every edit lands in the note's history under the requesting user, so a
-bad one is recoverable. Because a model that has seen real confirmations
-sometimes imitates the line instead of emitting the block,
-`strip_fake_note_confirmations()` runs on the raw reply before the blocks
-are applied and turns a lookalike into an honest "no note was changed"
-notice.
 
 ## Background work
 
@@ -369,9 +351,7 @@ protocol. The matrix is in the
   the daemon thread dies with it, and the user gets the "interrupted"
   reply. Agent runs are minutes long.
 - **Order inside `finalize_response()` is fixed.** Draft edits first;
-  `strip_fake_note_confirmations()` before `apply_note_blocks()` (after,
-  a real confirmation would match); handles after the blocks that consume
-  them; citations last.
+  handles after the blocks that consume them; citations last.
 - **The model tables must stay in step.** A new picker key needs
   `LLM_CHOICES` (and a migration for the choices), `CLAUDE_MODELS` or
   `GEMINI_MODELS`, `MODEL_CONTEXT_LIMITS`, `MODEL_HARD_LIMITS` and the
@@ -391,5 +371,5 @@ protocol. The matrix is in the
 - Neighbouring pages: [Agentic chat](agent-chat.md),
   [MCP server and JSON APIs](../mcp.md),
   [Case building](../case-building.md),
-  [Notes and drafts](../notes-and-drafts.md),
+  [Drafts](../drafts.md),
   [Email and intakes](../email-and-intakes.md).

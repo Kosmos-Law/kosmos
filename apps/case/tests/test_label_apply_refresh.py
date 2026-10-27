@@ -9,7 +9,6 @@ import pytest
 from django.urls import reverse
 
 from apps.case.models import CaseLaw
-from apps.notes.models import Note
 
 pytestmark = pytest.mark.django_db
 
@@ -39,13 +38,13 @@ def test_fact_row_is_refreshed_through_the_list(client, fact, label):
     assert "<tr" not in response.content.decode()
 
 
-def test_note_row_is_refreshed_through_the_list(client, user, matter, label):
-    note = Note.objects.create(matter=matter, title="Call notes", author=user)
+def test_notes_take_no_labels(client, label):
+    response = client.post(
+        reverse("case:labels-apply-modal-action", args=["note", 1]),
+        {"label_id": label.id, "action": "add"},
+    )
 
-    response = _apply(client, "note", note, label)
-
-    assert response["HX-Trigger"] == "notesChanged"
-    assert "<tr" not in response.content.decode()
+    assert response.status_code == 400
 
 
 def test_case_law_row_is_refreshed_through_the_list(client, matter, label):

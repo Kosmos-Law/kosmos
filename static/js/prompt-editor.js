@@ -1,6 +1,6 @@
 /**
  * Prompt Editor - Lightweight TipTap editor for AI prompts
- * A simplified version of notes-editor.js focused on prompt composition
+ * A rich-text editor for composing prompts
  */
 
 // TipTap imports from local bundle (built with: npm run build)
@@ -30,8 +30,8 @@ import {
   NoteTableCell,
   NoteTableHeader,
   TableAutoRender,
-} from "./notes/tables.js";
-import { htmlToMarkdown } from "./notes/markdown.js";
+} from "./editor/tables.js";
+import { htmlToMarkdown } from "./editor/markdown.js";
 
 let promptEditor = null;
 
@@ -60,7 +60,7 @@ export function initPromptEditor(container) {
       HardBreak,
       History,
       HighlightMark.configure({ multicolor: true }),
-      // Same table anatomy as the notes editor: no resizing or merging
+      // No resizing or merging
       // (pipe markdown can't express either), column alignment rides the
       // extended cell types, and pasted pipe tables auto-render. The
       // serialized prompt reaches the model as a GFM pipe table.
@@ -82,8 +82,7 @@ export function initPromptEditor(container) {
   );
   connectFormatToolbar(toolbar, promptEditor);
 
-  // No table sub-toolbar here (that bar is the notes editor's); the table
-  // button inserts directly. Tab walks the cells and grows the table at
+  // No table sub-toolbar here; the table button inserts directly. Tab walks the cells and grows the table at
   // the end (TipTap's Table keymap), which covers prompt-sized tables.
   const tableBtn = toolbar && toolbar.querySelector("[data-table-toggle]");
   if (tableBtn) {

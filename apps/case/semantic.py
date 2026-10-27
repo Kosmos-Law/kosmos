@@ -1,7 +1,6 @@
 """
-Semantic index over matter materials: documents, notes, library notes,
-highlights and timeline facts (registered by the case app) and emails
-(registered by apps.mail).
+Semantic index over matter materials: documents, highlights and timeline
+facts (registered by the case app) and emails (registered by apps.mail).
 
 Text is chunked (~6k chars, paragraph-aware, overlapping), embedded
 (embeddings.py) and stored as MaterialChunk rows with a pgvector column;
@@ -79,14 +78,7 @@ class SemanticKind:
     model: type
     source: Callable  # obj -> (matter_id, text); empty text means do not index
     signals: bool = True  # index on save, drop chunks on delete
-    # The kind an object actually indexes under, when one model feeds
-    # several kinds (a note with no matter is a library note) ...
-    kind_of: Callable | None = None
-    # ... and the kinds that share the model, whose stale chunks clear
-    # together so a note moving in or out of the library leaves none.
-    siblings: tuple = ()
     backfill: Callable | None = None  # matter -> queryset, for the backfill
-    backfill_library: Callable | None = None  # () -> queryset of matterless rows
 
 
 _KINDS: dict[str, SemanticKind] = {}
@@ -108,10 +100,6 @@ def kind_names():
     return tuple(_KINDS)
 
 
-def _family(kind):
-    return (kind,) + _KINDS[kind].siblings
-
-
 # ---------------------------------------------------------------------------
 # Indexing
 # ---------------------------------------------------------------------------
@@ -120,16 +108,12 @@ def _family(kind):
 def index_object(kind, obj):
     """(Re)index one object; returns the number of chunks written.
 
-    Skips the embedding call when the content hash is unchanged. Notes
-    clear both note and library rows so a note moving in or out of the
-    library never leaves stale chunks behind.
+    Skips the embedding call when the content hash is unchanged.
     """
     from apps.case.models import MaterialChunk
 
     entry = _KINDS[kind]
-    if entry.kind_of:
-        kind = entry.kind_of(obj)
-    stale = MaterialChunk.objects.filter(kind__in=_family(kind), object_id=obj.pk)
+    stale = MaterialChunk.objects.filter(kind=kind, object_id=obj.pk)
 
     matter_id, text = entry.source(obj)
     text = (text or "").strip()
@@ -138,9 +122,8 @@ def index_object(kind, obj):
         return 0
 
     content_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
-    current = stale.filter(kind=kind)
     if (
-        current.filter(content_hash=content_hash).exists()
+        stale.filter(content_hash=content_hash).exists()
         and not stale.exclude(content_hash=content_hash).exists()
     ):
         return 0
@@ -197,7 +180,7 @@ def _enqueue(kind, pk):
 def _drop_chunks(kind, pk):
     from apps.case.models import MaterialChunk
 
-    MaterialChunk.objects.filter(kind__in=_family(kind), object_id=pk).delete()
+    MaterialChunk.objects.filter(kind=kind, object_id=pk).delete()
 
 
 def _connect(entry):
@@ -245,12 +228,9 @@ def semantic_entries(queries, matter, kinds, limit):
         logger.exception("Query embedding failed; semantic pass skipped")
         return []
 
-    scope = Q(pk__in=[])
-    matter_kinds = [k for k in kinds if k != "library"]
-    if matter_kinds and matter is not None:
-        scope |= Q(matter=matter, kind__in=matter_kinds)
-    if "library" in kinds:
-        scope |= Q(kind="library", matter__isnull=True)
+    if matter is None:
+        return [[] for _ in queries]
+    scope = Q(matter=matter, kind__in=kinds)
 
     results = []
     for query, vector in zip(queries, query_vectors):

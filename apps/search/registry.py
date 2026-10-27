@@ -11,7 +11,7 @@ from typing import Callable
 
 @dataclass(frozen=True)
 class SearchKind:
-    key: str  # the scope name, e.g. "notes"
+    key: str  # the scope name, e.g. "contacts"
     label: str
     model: type  # a watson-registered model
     order: int

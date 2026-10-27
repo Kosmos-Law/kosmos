@@ -358,7 +358,7 @@ The role and permission switches are described in
 | Path | Holds | What the installer does | What to do |
 |---|---|---|---|
 | `config/.env` | `SECRET_KEY`, the database password, every API key | Writes it with mode 600 | If you created it by hand: `chmod 600 config/.env` |
-| `google/` (or `GOOGLE_DATA_DIR`) | The Google OAuth client secret and the Calendar, Contacts and Drive tokens | Creates the directory with default permissions. The application writes the token files with default permissions too | `chmod 700 google` and `chmod 600 google/*.json` |
+| `google/` (or `GOOGLE_DATA_DIR`) | The Google OAuth client secret and the Calendar and Contacts tokens | Creates the directory with default permissions. The application writes the token files with default permissions too | `chmod 700 google` and `chmod 600 google/*.json` |
 | `media/` | Client documents, when storage is local | Creates the directory with default permissions | `chmod 700 media` |
 | `logs/` | Application, gunicorn access and error logs. Access logs record full request paths, which include payment-link and form-link tokens | Creates the directory with default permissions. Installs `/etc/logrotate.d/kosmos`, which rotates the files weekly and keeps twelve copies (see [Log rotation](monitoring.md#log-rotation)) | `chmod 700 logs` |
 | The database | Everything else, including each user's Gmail token, each user's API token and unexpired sign-in codes, all stored unencrypted | Creates a role with a random password in production | Restrict who can read the database and its backups |
@@ -379,7 +379,7 @@ Tracked: users, contacts, matters and their proceedings, rates and
 settlements, tasks, calendar events, checklists, time, expense and flat-fee
 entries, invoices, payments, credits and their applications, payment
 requests, trust transactions, intakes and intake forms, documents and the
-other case records, notes, and AI conversations. Firm settings and synced
+other case records, and AI conversations. Firm settings and synced
 email are not tracked.
 
 Limits:
@@ -409,14 +409,14 @@ The first form reports what would be deleted and changes nothing.
 Each of these is off until its keys are set.
 
 - **AI providers** (Anthropic, Google Gemini): the matter material a chat
-  or summary draws on (document text, notes, emails, timeline), text sent
+  or summary draws on (document text, emails, timeline), text sent
   for semantic indexing, forwarded intake email, the firm's user names and
   titles, and the name and email address of the user who asked. Keys are in
   the [environment reference](../reference/environment.md#ai-and-research)
   or, encrypted in the database, under **Settings → Integrations**. With
   no AI key, nothing is sent and every AI feature is hidden.
 - **Google Workspace**: calendar events and contacts are synchronized in
-  both directions. Drive files and Gmail messages are read into Kosmos.
+  both directions. Gmail messages are read into Kosmos.
   See [Google Workspace](integrations/google.md).
 - **Payment processor** (LawPay, Stripe or Confido): the amount, a
   reference such as the invoice number, and, depending on the processor,

@@ -211,7 +211,7 @@ monitoring you already run.
 | The site answers | An uptime monitor on `/health/ready/`. | Covers nginx, gunicorn and the database together. |
 | The worker is running | An uptime monitor on `/health/worker/`, or `systemctl is-active qcluster.service`. | A stopped worker does not affect `/health/ready/`. Documents stop being processed and syncs stop, silently. |
 | Failed tasks | `manage.py qinfo`, or search `logs/django.log` for `django-q: Failed`. | The only sign that OCR, a sync or an AI job is failing. |
-| Disk space: uploads | `du -sh media/` with local storage. | Every uploaded and mirrored document is stored here. |
+| Disk space: uploads | `du -sh media/` with local storage. | Every document is stored here. |
 | Disk space: logs | `du -sh logs/` | Rotated weekly by the installed logrotate file. Unbounded on a hand-built install until you add it. |
 | Disk space: database | `sudo -u postgres psql -c '\l+'` | Extracted document text, synced email, AI conversations and the change history of every record all live in the database. |
 | TLS certificate | `sudo certbot certificates` | Certbot renews automatically. Check that it is doing so. |

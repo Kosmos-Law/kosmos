@@ -3,7 +3,7 @@ index, synonym expansion, and case-number matching as the in-app search
 page), for the Claude Desktop MCP server.
 
 Results are manifest lines with handles for follow-up tools. Matters,
-proceedings, and matter notes are limited to the user's accessible
+and proceedings are limited to the user's accessible
 matters (any status, since this is navigational); intakes require the
 intakes permission.
 """

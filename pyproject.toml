@@ -29,7 +29,7 @@ dependencies = [
     # Markdown processing
     "Markdown==3.8.1",
     "pymdown-extensions==10.21.3",
-    # Spreadsheet parsing (Drive notes -> Markdown tables)
+    # Spreadsheet parsing (mail attachments -> Markdown tables)
     "openpyxl==3.1.5",
     "odfpy==1.4.1",
     # PDF generation and processing
@@ -110,7 +110,8 @@ show_missing = true
 # ---------------------------------------------------------------------------
 # Module boundaries, checked by `uv run lint-imports` (CI runs it).
 #
-# The case builder (apps.case, apps.drive, apps.notes) is a module with a
+# The case builder (apps.case, plus the retired apps.drive and apps.notes,
+# which now hold only migrations and dormant models) is a module with a
 # known surface, so it could one day be extracted: it depends only on the
 # core (accounts, settings, management, matters, contacts, folders) and
 # the model-provider layer (apps.llm); the core never imports it; and the
@@ -153,9 +154,6 @@ forbidden_modules = ["apps.case", "apps.drive", "apps.notes"]
 ignore_imports = [
     "apps.*.tests.** -> apps.**",
     "apps.*.migrations.** -> apps.**",
-    # The one sanctioned seam: Settings > Integrations is where Google is
-    # connected, for the Drive mirror as for Gmail.
-    "apps.settings.integrations.** -> apps.drive.google",
 ]
 
 [[tool.importlinter.contracts]]
@@ -173,7 +171,7 @@ source_modules = [
 forbidden_modules = [
     "apps.case.documents", "apps.case.facts", "apps.case.highlights",
     "apps.case.labels", "apps.case.witnesses", "apps.case.caselaws",
-    "apps.case.search", "apps.case.notes", "apps.case.views",
+    "apps.case.search", "apps.case.views",
     "apps.case.semantic", "apps.case.search_config", "apps.case.tabs",
     "apps.case.registrations", "apps.case.abbreviate",
     "apps.case.courtlistener_throttle",

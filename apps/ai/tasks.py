@@ -180,7 +180,7 @@ def _too_large_message(tokens, hard_limit):
     return (
         f"The case file is too large for this model (about {tokens:,} tokens "
         f"against a {hard_limit:,} limit). Lower the AI context setting on "
-        "some always-included documents, case law or notes, or start a new "
+        "some always-included documents or case law, or start a new "
         "conversation."
     )
 
@@ -188,7 +188,7 @@ def _too_large_message(tokens, hard_limit):
 def armed_write_protocols(conversation, user_message, include_caselaw=True):
     """The write protocols the recent user messages call for.
 
-    The AI can record timeline facts, witnesses and notes when directed;
+    The AI can record timeline facts and witnesses when directed;
     the fenced blocks it emits are applied after the response arrives.
     Each protocol is included only when the recent user messages actually
     point at that kind of work, so unrelated conversations carry no
@@ -201,7 +201,6 @@ def armed_write_protocols(conversation, user_message, include_caselaw=True):
     """
     from .caselaw_blocks import CASELAW_PROTOCOL, CASELAW_TRIGGER_RE
     from .fact_blocks import FACTS_PROTOCOL, FACTS_TRIGGER_RE
-    from .note_blocks import NOTES_PROTOCOL, NOTES_TRIGGER_RE
     from .witness_blocks import WITNESS_TRIGGER_RE, WITNESSES_PROTOCOL
 
     # The last four user messages, so follow-up directives ("also add
@@ -225,9 +224,6 @@ def armed_write_protocols(conversation, user_message, include_caselaw=True):
     if WITNESS_TRIGGER_RE.search(recent_user_text):
         text += "\n\n" + WITNESSES_PROTOCOL
         names.append("witnesses")
-    if NOTES_TRIGGER_RE.search(recent_user_text):
-        text += "\n\n" + NOTES_PROTOCOL
-        names.append("notes")
     # Only the agent turn has the research tools that produce cluster
     # ids, so the save protocol stays out of classic conversations.
     if (
@@ -254,11 +250,6 @@ def finalize_response(
     from .caselaw_blocks import CASELAW_BLOCK_RE, apply_caselaw_blocks
     from .fact_blocks import FACT_BLOCK_RE, apply_fact_blocks
     from .handles import HANDLE_RE, resolve_handles_for_chat
-    from .note_blocks import (
-        NOTE_BLOCKS_RE,
-        apply_note_blocks,
-        strip_fake_note_confirmations,
-    )
     from .witness_blocks import WITNESS_BLOCK_RE, apply_witness_blocks
 
     # Apply draft edits before citation verification, so the stored
@@ -286,17 +277,7 @@ def finalize_response(
         update_status("applying", "Saving authorities to case law...")
         response_text = apply_caselaw_blocks(response_text, matter, user)
         log_activity("Authorities saved to case law")
-    # Order matters: imitation confirmations are scrubbed from the raw
-    # response first (only model-written lines can match at this
-    # point), then real blocks are applied and produce the genuine
-    # confirmation lines.
-    response_text = strip_fake_note_confirmations(response_text)
-    if NOTE_BLOCKS_RE.search(response_text):
-        update_status("applying", "Writing notes...")
-        response_text = apply_note_blocks(response_text, matter, user)
-        log_activity("Notes written")
-
-    # Any raw [doc:]/[hl:]/[note:] handles the model leaked into prose
+    # Any raw [doc:]/[hl:] handles the model leaked into prose
     # become human-readable markdown links (hallucinated ids are
     # omitted). Runs after the write blocks so their content has
     # already been consumed.

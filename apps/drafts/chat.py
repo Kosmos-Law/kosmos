@@ -22,7 +22,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from apps.drafts.models import CompanionRound
-from apps.drive.redline import (
+from apps.drafts.redline import (
     DeleteParagraph,
     InsertParagraphs,
     RedlineEdit,
@@ -109,15 +109,8 @@ Rules:
 
 
 def build_draft_section(link):
-    """The draft context appended to the case system prompt when linked.
-
-    Refreshes the stored text from Drive first when it has gone stale with
-    no companion connected (the user may have edited and synced the file
-    since the last push).
-    """
-    from apps.drafts import services
-
-    services.refresh_if_stale(link)
+    """The draft context appended to the case system prompt when linked:
+    the text the companion last pushed."""
     return "\n".join(
         [
             "\n---\n",

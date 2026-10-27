@@ -1,5 +1,0 @@
-{% load humanize %}
-{% if note.updated_at %}
-  Updated {{ note.updated_at|naturaltime }}
-  {% if note.updated_by %}by {{ note.updated_by.get_full_name|default:note.updated_by.username }}{% endif %}
-{% endif %}

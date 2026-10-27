@@ -5,8 +5,8 @@ run against a real PostgreSQL database. Most tests drive a view through
 Django's test client and assert on the status, the headers and the rows,
 because most of the application's behaviour is a view writing rows and
 answering 204 + `HX-Trigger` (see [HTMX, Alpine and idiomorph](htmx-alpine.md)).
-A small set of JavaScript tests covers the notes editor's Markdown
-round trip. For the environment itself (database, `.env`, `uv`) read
+A small set of JavaScript tests covers the AI prompt editor's Markdown
+round trip and its keyboard shortcuts. For the environment itself (database, `.env`, `uv`) read
 [Setup](../setup.md) first.
 
 ## Where the tests are
@@ -17,8 +17,8 @@ round trip. For the environment itself (database, `.env`, `uv`) read
 | `conftest.py` (repository root) | the database setup and two autouse fixtures every test gets |
 | `apps/<app>/tests/` | the app's tests and its `conftest.py` with the fixtures below; invoicing splits further into `apps/invoicing/tests/<area>/` |
 | `config/tests/` | health endpoints, media security, rate limiting, safe Markdown, and the docs drift test |
-| `apps/notes/tests/js/*.test.mjs` | Node tests for `static/js/notes/`, with `dom_shim.mjs` as the stand-in DOM |
-| `apps/drive/tests/conftest.py` | `FakeDriveService` |
+| `apps/ai/tests/js/*.test.mjs` | Node tests for the prompt editor's modules in `static/js/`, with `dom_shim.mjs` as the stand-in DOM; `apps/ai/tests/test_editor_js.py` runs them inside pytest |
+| `apps/mail/tests/conftest.py` | `FakeGmailService` |
 | `apps/invoicing/processors/fake.py` | `FakeProcessor`, the payment processor the suite runs on |
 | `.github/workflows/lint-test.yaml` | what CI runs |
 
@@ -61,12 +61,14 @@ then splits the suite four ways with pytest-split and runs each group
 with xdist against a `pgvector/pgvector:pg16` service, because migration
 `case.0087` needs the `vector` extension that the plain postgres image
 lacks. There is no stored durations file, so the split is by count, not
-by time. CI does not run the JavaScript tests.
+by time.
 
-The JavaScript tests need Node 22.7 or later and no install:
+The JavaScript tests need Node 22.7 or later and no install. pytest runs
+them through `apps/ai/tests/test_editor_js.py` and skips them when no
+such Node is on the `PATH`; to run them alone:
 
 ```bash
-node --test apps/notes/tests/js/
+node --test "apps/ai/tests/js/*.test.mjs"
 ```
 
 The docs drift test is part of the Python suite and can run alone:
@@ -104,13 +106,10 @@ The test database is **not empty**. Data migrations seed rows that a
 test must not assume absent: practice areas
 (`apps/matters/migrations/0023_...` and `0048_seed_website_practice_areas.py`),
 the time-entry abbreviation codes
-(`apps/activity/migrations/0003_populate_abbreviation_codes.py`), the
-starter relationship types (`apps/contacts/migrations/0009_...`), and
-the general note folders (`apps/notes/migrations/0011_...` and
-`0012_...`). A test that counts or lists one of these starts by
+(`apps/activity/migrations/0003_populate_abbreviation_codes.py`) and the
+starter relationship types (`apps/contacts/migrations/0009_...`). A test that counts or lists one of these starts by
 clearing the table or asserts with `<=`, as
-`apps/intakes/tests/test_website_practice_area.py` and the folder tests
-in `apps/notes/tests/test_views.py` do. `PracticeArea.name` is not
+`apps/intakes/tests/test_website_practice_area.py` does. `PracticeArea.name` is not
 unique: the `practice_area` fixture in `apps/matters/tests/conftest.py`
 reuses the seeded "General" row (`get_or_create`), but the same fixture
 in other apps' `conftest.py` files still creates a second one, so a test
@@ -159,7 +158,7 @@ get a 302 to `/dash/` from its first `get()` and the test would assert
 on the wrong page. htmx requests (`HX-Request` header) are exempt, which
 is why only full-page tests notice.
 
-`client_with_matter` (`apps/case/tests/conftest.py`, also in notes)
+`client_with_matter` (`apps/case/tests/conftest.py`)
 stores `documents_selected_matter` and `last_viewed_matter` in the
 session, which the case workspace reads, and sets `client.matter` for
 convenience. `apps/case/tests/conftest.py` and `apps/mail/tests/conftest.py`
@@ -260,23 +259,22 @@ user's matter is 403. Logged out is a 302 to the login page.
 Nothing in the suite reaches the network. Two fakes are the models to
 copy.
 
-**Google Drive.** `FakeDriveService` in `apps/drive/tests/conftest.py`
-is an in-memory file tree with a one-page changes feed, shaped like the
-slice of the Drive API the code calls (`files().list()`, `files().get()`,
-`changes().list()`). The `fake_drive` fixture builds a standard tree and
-monkeypatches the three seams in `apps/drive/google.py`:
+**Gmail.** `FakeGmailService` in `apps/mail/tests/conftest.py` is a
+canned mailbox (labels, messages keyed by id, one page of history),
+shaped like the slice of the Gmail API the code calls. The `fake_gmail`
+fixture creates the user's `GmailAccount` and monkeypatches the one seam
+in `apps/mail/google.py`, `build_service`, to a per-account registry, so
+a test can connect a second mailbox:
 
 ```python
-monkeypatch.setattr("apps.drive.google.build_service", lambda: service)
-monkeypatch.setattr("apps.drive.google.check_credentials", lambda: True)
 monkeypatch.setattr(
-    "apps.drive.google._download",
-    lambda svc, meta: svc.files_by_id[meta["id"]].get("content", b""),
+    "apps.mail.google.build_service",
+    lambda account: registry.get(getattr(account, "pk", None), False),
 )
 ```
 
-A test then adds files and changes to the fake and runs the sync. The
-pattern to note: the production module exposes a small number of
+A test then adds messages and history to the fake and runs the sync.
+The pattern to note: the production module exposes a small number of
 functions that are the only way out to the service, and the fake
 replaces exactly those.
 
@@ -332,7 +330,7 @@ setting a test depends on; never read the developer's environment.
   touches the same row. `refresh_from_db()` before asserting on it, and
   `update()` rather than `save()` when changing it (above).
 - **Seeded rows** (practice areas, abbreviation codes, relationship
-  types, note folders) exist before the test starts.
+  types) exist before the test starts.
 - **Autouse fixtures are per directory.** The `company` fixture in
   `apps/case/tests/` does not exist in `apps/tasks/tests/`; a test that
   needs a `Firm` row elsewhere creates one.

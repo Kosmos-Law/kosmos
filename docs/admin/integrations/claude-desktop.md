@@ -1,12 +1,12 @@
 # Claude Desktop access to Kosmos
 
 Claude Desktop on a user's own machine can work with Kosmos directly:
-read the notes Library and, for any open matter the user can access, the
-full record (notes, contacts, rates, activity, events, tasks,
-proceedings, settlement, documents, highlights, timeline, witnesses,
-synced emails). Writes are narrow and deliberate: append/replace on
-notes whose editor AI-write toggle is on, and create-only timeline
-facts, witnesses, and tasks. Access is per-user: it authenticates with
+for any open matter the user can access, it reads the full record
+(contacts, rates, activity, events, tasks, proceedings, settlement,
+documents, highlights, timeline, witnesses, synced emails, AI
+conversations, invoices), and it can search across the practice. Writes
+are narrow and deliberate: create-only timeline facts, witnesses, and
+tasks. Access is per-user: it authenticates with
 the same `ApiToken` the LibreOffice companion uses (header
 `X-Kosmos-Token`), so a user's Claude sees exactly what that user can
 see, and deactivating the user kills the token.
@@ -32,6 +32,11 @@ in the developer guide: [MCP server and JSON APIs](../../dev/subsystems/mcp.md).
 4. Restart Claude Desktop; the kosmos tools appear under the tools icon in
    the chat input.
 
+The script is part of Kosmos and changes with it. When an update to
+Kosmos changes the script's tools, each user downloads it again from
+Settings → Claude Desktop, saves it over the old copy and restarts Claude
+Desktop; an older copy calls endpoints that may no longer exist.
+
 The settings page also offers rotate and revoke. Rotating re-keys the
 LibreOffice companion too, because both use the same token.
 
@@ -44,20 +49,12 @@ it in its custom instructions, e.g.:
 
 > This project concerns the Kosmos matter "Rivera v. Northside Logistics".
 > Resolve it once with find_matter, then pass its matter_id to the
-> read_matter, search_notes, and add_fact tools.
-
-The Library is available in every conversation, which matches its purpose.
+> read_matter, search_matter, and add_fact tools.
 
 ## What Claude can write
 
-Three write surfaces, all create-or-append, none destructive:
+Two write surfaces, both create-only, neither destructive:
 
-- **Notes**: Claude can append to (default) or replace one note's
-  content, but only while that note's AI button in the editor toolbar
-  (the sparkles icon) is switched on. The grant lasts 24 hours, is
-  switched off by a second click, and applies to the note for any user's
-  Claude that can access it. Writes land in the note's history like any
-  other edit. Claude cannot create or delete notes.
 - **Timeline facts and witnesses**: Claude can add them to a matter, with
   the same validation the in-app chat applies.
 - **Tasks**: Claude can add tasks, assigned to the token's user.

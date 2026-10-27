@@ -51,8 +51,7 @@ it.
 | Order | Rule (list in the source) | Path | Who passes |
 |---|---|---|---|
 | 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
-| 0 | Pattern (`CASE_FILE_PATTERN`, less `CASE_FILE_EXEMPT`) | Everything under `/case/` except the MCP matter API under `/case/api/` and the matter-scoped note routes (`/case/<id>/notes/…`, `/case/notes/…`) | Everyone while the firm's case file is on (Settings > Features); nobody (404) when an administrator has switched it off |
-| 0 | Pattern (`LIBRARY_PATTERN`) | The notes under `/notes/`, the Notes tab (`/case/<id>/notes/…`, `/case/<id>/tab/notes/`) and `/case/notes/…` | Everyone while the firm's library is on (Settings > Features); nobody (404) when it is off |
+| 0 | Pattern (`CASE_FILE_PATTERN`, less `CASE_FILE_EXEMPT`) | Everything under `/case/` except the MCP matter API under `/case/api/` | Everyone while the firm's case file is on (Settings > Features); nobody (404) when an administrator has switched it off |
 | 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/permissions/` | Admin role only |
@@ -97,7 +96,7 @@ What sits under each path:
 | `/settings/contacts/` | Contact roles, groups and relationship types. |
 | `/settings/matters/` | Practice areas. |
 | `/settings/tasks/` | Task settings. |
-| `/settings/features/` | The firm's feature switches: the case file and the library. |
+| `/settings/features/` | The firm's feature switches: the case file and Books. |
 | `/invoicing/` | Invoices, unbilled work, payments, credits, collection, payment requests, and the trust ledger (`/invoicing/trust/`). |
 | `/intakes/` | Intakes, their notes and chat, and the intake form builder (`/intakes/forms/`). |
 | `/settings/intake-emails/` | Intake email templates. |
@@ -105,7 +104,7 @@ What sits under each path:
 | `/matters/<id>/rates…` | A matter's Rates page and its list, add, edit and delete routes. |
 | `/matters/<id>/ledger…` | A matter's Ledger tab, list and PDF. |
 | `/case/caselaws/…`, `/case/<id>/caselaws/…`, `/case/<id>/viewer/cluster/…` | The saved case law (the AI tab's Case Law view, or its own Case Law tab when no AI provider is set up), adding a case by citation, and the case viewer. |
-| `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, notes, emails, case search, AI chats and drafts. |
+| `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, emails, case search, AI chats and drafts. |
 
 ## Gates checked in views
 
@@ -123,12 +122,9 @@ matter's `members`.
 | `matter_access_required` | `/case/select-matter/<id>/` (also covered by the middleware) | `apps/case/views.py` | 403 |
 | `filter_matters_for_user` | Matter list, quick search, open-matter switcher JSON, open-matter dropdown and steppers on the matter detail page | `apps/matters/get_matter_list.py`; `apps/matters/views.py`; `apps/matters/templatetags/matter_tags.py` | Matter not listed |
 | `filter_matters_for_user` | Matter switcher in the case workspace | `apps/case/views.py`; `apps/case/documents/get_document_data.py` | Matter not listed |
-| `filter_matters_for_user` | Matter choices in the task, time, expense, flat-fee, document and case-note forms | `apps/tasks/forms.py`; `apps/activity/time/forms.py`; `apps/activity/expenses/forms.py`; `apps/activity/flat_fees/forms.py`; `apps/case/documents/forms.py`; `apps/case/notes/forms.py` | Matter not offered |
+| `filter_matters_for_user` | Matter choices in the task, time, expense, flat-fee and document forms | `apps/tasks/forms.py`; `apps/activity/time/forms.py`; `apps/activity/expenses/forms.py`; `apps/activity/flat_fees/forms.py`; `apps/case/documents/forms.py` | Matter not offered |
 | `assigned_matters` filter | Time, expense and flat-fee lists under `/activity/` | `apps/activity/time/get_time_data.py`; `apps/activity/expenses/get_expenses_data.py`; `apps/activity/flat_fees/get_flat_fees_data.py` | Entries not listed |
-| `has_matter_access` | Every `/notes/<id>/…` endpoint, for a note that belongs to a matter | `apps/notes/views.py` (`_get_note`) | 404 |
-| `filter_matters_for_user` | Notes editor tree, palette and search scopes | `apps/notes/views.py` | Notes not listed |
-| `has_matter_access` | Case note "Edit Details" modal (also covered by the middleware) | `apps/case/notes/views.py` | 404 |
-| `filter_matters_for_user` | Matters, proceedings and matter notes in in-app search results | `apps/search/views.py` | Not listed |
+| `filter_matters_for_user` | Matters and proceedings in in-app search results | `apps/search/views.py` | Not listed |
 | `entries_for_user` | Time, expense and flat-fee CSV exports, and the entries a bulk change touches | `apps/activity/access.py` | Entries left out |
 | `entry_for_user` | Opening, saving, deleting or toggling one time, expense or flat-fee entry by its id | `apps/activity/access.py` | 403 |
 | `has_matter_access` | The rate, trust-available and flat-fee-amount lookups behind the entry forms | `apps/activity/time/views.py`, `apps/activity/flat_fees/views.py` | 403 |
@@ -152,18 +148,17 @@ names a record, and the record leads to a matter (`MATTER_LOOKUPS` and
 | `fact_id` | Timeline fact | The fact |
 | `witness_id` | Witness | The witness |
 | `label_id` | Label | The label |
-| `note_id` | Note | The note |
 | `conv_id` | AI conversation | The conversation |
 | `message_id` | AI message | Its conversation |
 | `email_id` | Synced email | The email |
-| `object_type` with `object_id` | Label and witness pickers: a `document`, `highlight`, `fact`, `note`, `caselaw` or `witness` | As for that kind of record |
+| `object_type` with `object_id` | Label and witness pickers: a `document`, `highlight`, `fact`, `caselaw` or `witness` | As for that kind of record |
 
 | Case | Result |
 |---|---|
 | Admin, or `perm_all_matters` | Passes. Nothing is looked up. |
 | The URL names several records | The user must be a member of every matter found. |
 | An id matches no record | Not refused here. The view answers 404. |
-| The record has no matter (a library note, an intake chat) | Not refused here. |
+| The record has no matter (an intake chat) | Not refused here. |
 | The URL carries none of these keywords (`/case/`, `/case/no-matter/`) | Not refused here. |
 | A request with no session (including the token APIs under `/case/api/` and `/case/drafts/companion/api/`) | Not checked here. The view or its token check decides. |
 
@@ -176,7 +171,6 @@ through each application's own access module:
 | Calendar (`/events/…`, the matter Events tab, the calendar feed) | Events on their matters and events on no matter; another matter's event is refused (403) | `apps/calendar/access.py` |
 | A contact's matters, and assigning a contact to a matter | Only their matters are listed; assigning to or removing from another matter is refused (403) | `apps/contacts/access.py` |
 | Time, expense and flat-fee entries | Entries on their matters | `apps/activity/access.py` |
-| Notes | Notes on their matters, and library notes | `apps/notes/access.py` |
 
 Not checked against matter membership (sign-in only):
 
@@ -239,7 +233,7 @@ Not checked against `perm_financial`:
 | Delete a matter | `apps/matters/views.py` | 403 |
 | Delete a voided invoice | `apps/invoicing/invoices/views.py` | 403 |
 | Add, edit, delete a time-entry abbreviation code | `apps/activity/time/views.py` | 403 with a message |
-| Connect or disconnect Google Calendar, Contacts or Drive (Gmail is open to every user) | `apps/settings/integrations/views.py` | 403 |
+| Connect or disconnect Google Calendar or Contacts (Gmail is open to every user) | `apps/settings/integrations/views.py` | 403 |
 | "Collections" section on the dashboard | `apps/dash/views.py` | Section omitted |
 
 User-management routes under `/settings/users/`
@@ -344,10 +338,7 @@ limit.
 
 | URL prefix | Decorator | Methods | Scope |
 |---|---|---|---|
-| `/notes/api/matters/` | `kosmos_api_auth` | GET | Open matters the user can access |
-| `/notes/api/notes/`, `/notes/api/search/` | `kosmos_api_auth` | GET | Library notes (shared by everyone) plus notes of open matters the user can access |
-| `/notes/api/notes/<id>/` | `kosmos_api_auth` | GET | Any library note; a matter note only with matter access; otherwise 404 |
-| `/notes/api/notes/<id>/write/` | `kosmos_api_auth` | POST | Same access, and the note's AI-write grant must be current (`Note.ai_write_until`); otherwise 403 |
+| `/case/api/matters/` | `kosmos_api_auth` | GET | Open matters the user can access |
 | `/case/api/matter/<id>/<section>/` | `kosmos_api_auth` | GET | Open matter the user can access; otherwise 404 |
 | `/case/api/matter/<id>/facts/`, `/case/api/matter/<id>/witnesses/` | `kosmos_api_auth` | GET, POST | Same; POST creates one row |
 | `/case/api/matter/<id>/emails/<thread_id>/` | `kosmos_api_auth` | GET | Same |
@@ -356,7 +347,7 @@ limit.
 | `/case/api/documents/<id>/` | `kosmos_api_auth` | GET | Document on an open matter the user can access; otherwise 404 |
 | `/case/api/invoices/<id>/` | `kosmos_api_auth` | GET | Invoice on an open matter the user can access (404), and financial access (403) |
 | `/case/api/tasks/` | `kosmos_api_auth` | POST | Creates a task for the token's user; an optional matter must be open and accessible |
-| `/search/api/` | `kosmos_api_auth` | GET | Matters, proceedings and matter notes limited to accessible matters of any status; contacts unrestricted; intakes only with `perm_intakes` |
+| `/search/api/` | `kosmos_api_auth` | GET | Matters and proceedings limited to accessible matters of any status; contacts unrestricted; intakes only with `perm_intakes` |
 | `/case/drafts/companion/api/…` | `companion_auth` | GET, POST | Draft links whose conversation belongs to the token's user; otherwise 404 |
 
 Sections served by `/case/api/matter/<id>/<section>/` and what each

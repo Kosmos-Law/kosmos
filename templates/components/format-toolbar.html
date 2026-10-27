@@ -1,6 +1,5 @@
 {% comment %}
-Shared rich-text formatting buttons (TipTap) — used by the notes editor
-formatting bar and the AI compose-prompt modal. Include inside a container
+Rich-text formatting buttons (TipTap) for the AI compose-prompt modal. Include inside a container
 carrying the .format-toolbar class, then wire it to an editor instance with
 connectFormatToolbar() from js/format-toolbar.js (buttons match by data-cmd).
 {% endcomment %}
@@ -44,23 +43,11 @@ connectFormatToolbar() from js/format-toolbar.js (buttons match by data-cmd).
   <i class="icon-quote"></i>
 </button>
 {% comment %}
-Toggles the table sub-toolbar (wired by notes/table-bar.js). Hidden by
+Inserts a table (wired by the editor's page). Hidden by
 connectFormatToolbar() when the editor lacks the Table extension.
 {% endcomment %}
 <button type="button" class="btn-icon" data-table-toggle title="Table">
   <i class="icon-table"></i>
-</button>
-{% comment %}
-Opens the reference picker to insert a source chip (wired by the notes
-editor; connectFormatToolbar() hides it when the editor lacks the NoteRef
-node, i.e. the AI compose-prompt modal).
-{% endcomment %}
-<button type="button"
-        class="btn-icon"
-        id="insert-source-btn"
-        data-ref-insert
-        title="Insert source (Ctrl+Shift+;)">
-  <i class="icon-link"></i>
 </button>
 <span class="toolbar-divider"></span>
 {% comment %}

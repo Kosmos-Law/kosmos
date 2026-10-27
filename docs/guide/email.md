@@ -38,7 +38,7 @@ connections yet. Until it is, a matter's **Emails** tab is hidden unless
 the matter already holds emails.
 
 Google lists everything Kosmos asks for at once: reading your mail,
-creating labels, and also Calendar, Contacts and read-only Drive. The
+creating labels, and also Calendar and Contacts. The
 email copy uses only the first two. You have one mailbox at a time, and
 connecting again replaces it.
 

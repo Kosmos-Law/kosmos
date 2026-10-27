@@ -1,5 +1,10 @@
 # AI writes are fenced blocks, applied at once (2026-08-09)
 
+> In part superseded on 2026-10-27 by [Notes are
+> retired](2026-10-27-notes-retired.md): the `create-note` and `edit-note`
+> blocks are gone, and the rest of the record is unaffected by that
+> change. What follows is the record as written.
+
 A chat model that can only answer in prose leaves the attorney to copy
 its findings into the timeline, the witness list or a note by hand. The
 agenda chat had already let the model create tasks (2026-07-29) by
@@ -95,7 +100,6 @@ lands in the note's history under the requesting user.
 
 - [AI chat and context](../dev/subsystems/ai/context.md), "Fenced write
   blocks".
-- [Notes and drafts](../dev/subsystems/notes-and-drafts.md), "The JSON
-  API"; [MCP server and JSON APIs](../dev/subsystems/mcp.md).
+- [MCP server and JSON APIs](../dev/subsystems/mcp.md).
 - [Notes are app-owned and carry no AI
   knobs](2026-08-11-notes-are-app-owned-with-no-ai-knobs.md).

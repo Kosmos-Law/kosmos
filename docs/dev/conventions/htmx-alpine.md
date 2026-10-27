@@ -87,7 +87,7 @@ that changes that list. The names in use are `<noun>Changed` (`timeChanged`,
 a region can listen for several (`reportsChanged from:body, wipChanged
 from:body`), and a view can fire several, either comma-separated
 (`"invoiceDetailChanged, invoicesChanged"`) or as the JSON form
-(`json.dumps({"noteFoldersChanged": True, "closeModal": True})`).
+(`json.dumps({"paymentsChanged": "", "matterLedgerChanged": ""})`).
 
 Two other response headers are used, and both are htmx's own:
 
@@ -98,8 +98,7 @@ Two other response headers are used, and both are htmx's own:
   the current URL, and on `/contacts/<id>/details` that would re-pin the
   old contact.
 - **`HX-Refresh: true`** reloads the page. It is right when the whole
-  page is stale, as after a Drive folder mapping changes
-  (`apps/case/documents/drive.py`).
+  page is stale.
 
 The matter and case workspaces switch tabs the same way, with
 `hx-push-url` so the address bar follows

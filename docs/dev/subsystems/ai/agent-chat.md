@@ -47,7 +47,7 @@ send_message (kind on create only) -> daemon thread -> tasks.process_ai_request
                 | gemini_client.send_to_gemini_with_tools
        status   = agent_state.AgentStatusWriter -> ai_status_<id> (full state every write)
        finish   = tasks.finalize_response             draft edits, facts, witnesses,
-                                                      notes, caselaw, handle links, citations
+                                                      caselaw, handle links, citations
        payload  = complete {response, input_tokens, output_tokens, citations,
                             activity_log, agent_run}
 views.ai_status -> status.html (+ agent-status.html) -> Message(agent_run=...)
@@ -108,7 +108,7 @@ caselaw protocol only for a Research user), a linked draft.
 
 `build_manifest(include_always=True)` feeds the index: "always" items are
 listed too, flagged pinned; "never" items stay hidden. `ManifestItem`
-carries `handle` (`doc:12`, `thread:<id>`, `note:5`, `lib:9`, `case:3`,
+carries `handle` (`doc:12`, `thread:<id>`, `case:3`,
 `conv:8`, `inv:4`), `pinned` and `size_chars` for it.
 
 **Prior turns' tool calls are not replayed.** The history is the
@@ -129,10 +129,9 @@ offered only to a user with the Research permission
 
 | tool | reads |
 |---|---|
-| `search_materials` | hybrid search over documents, highlights, facts, matter notes, library notes and emails (scoped to the matter, `never` excluded; emails grouped by thread): watson `websearch_to_tsquery` keyword pass fused with a pgvector semantic pass (`semantic_entries`) by reciprocal rank, trigram fuzzy fallback when nothing matches; document and library hits carry the AI `summary` when set; hits already returned this turn are flagged `seen`, and a mostly-seen repeat gets a note |
+| `search_materials` | hybrid search over documents, highlights, facts and emails (scoped to the matter, `never` excluded; emails grouped by thread): watson `websearch_to_tsquery` keyword pass fused with a pgvector semantic pass (`semantic_entries`) by reciprocal rank, trigram fuzzy fallback when nothing matches; document hits carry the AI `summary` when set; hits already returned this turn are flagged `seen`, and a mostly-seen repeat gets a note |
 | `read_document` | `Document.ocr_text` when OCR finished, with `description` and AI `summary` when set; `never` refused |
 | `read_email_thread` | the thread via `format_email_thread`, `gmail_id` fallback |
-| `read_note` | a matter note or a library note (`get_library_notes`) |
 | `read_caselaw` | saved case notes, summary and the opinion (`_fetch_caselaw_opinion_text`, cached 1h) |
 | `read_conversation` | an earlier conversation's transcript |
 | `read_invoice` | `format_invoice` (Financial permission) |

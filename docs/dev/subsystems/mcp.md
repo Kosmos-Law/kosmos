@@ -2,7 +2,7 @@
 
 Claude Desktop reaches Kosmos through a small MCP server that each user
 runs on their own machine, talking to token-authenticated JSON APIs in
-`apps/notes`, `apps/case` and `apps/search`. User-facing setup is in the
+`apps/ai` (served under `case/api/`) and `apps/search`. User-facing setup is in the
 operator guide: [Claude Desktop access to Kosmos](../../admin/integrations/claude-desktop.md).
 
 Access is per user: requests authenticate with the same `ApiToken`
@@ -16,31 +16,23 @@ kills the token.
 |---|---|
 | `tools/kosmos_notes_mcp.py` | The stdio MCP server Claude Desktop launches; one tool per API call |
 | `apps/accounts/api_auth.py` | `kosmos_api_auth`, the token decorator that sets `request.api_user` |
-| `apps/notes/api.py` | Matter list, note manifests, note read and the gated note write, note search |
-| `apps/ai/api.py` | A matter's sections as AI-ready text, documents, email threads, conversations, invoices, hybrid search, the three write endpoints |
+| `apps/ai/api.py` | The matter list, a matter's sections as AI-ready text, documents, email threads, conversations, invoices, hybrid search, the three write endpoints |
 | `apps/search/api.py` | Practice-wide search, as the search page does it |
 | `apps/settings/claude/views.py` | Settings → Claude Desktop: the config block, script download, rotate and revoke |
 | `apps/ai/context.py` | The section formatters the matter API reuses |
 
 ## Data model
 
-`ApiToken` (`apps/drafts/models.py`) is one row per user
+`ApiToken` (`apps/accounts/models.py`) is one row per user
 (`OneToOneField`, `CASCADE`) with a unique `key`. There is no separate MCP
 token: rotating the key from the Claude Desktop page re-keys the
-LibreOffice companion too. `Note.ai_write_until` is the per-note write
-grant (below).
+LibreOffice companion too.
 
 ## The three pieces
 
 - **JSON APIs** (every view wrapped in `kosmos_api_auth`):
-  - `apps/notes/api.py`, under `notes/api/`: `matters/?q=`, `notes/?scope=`,
-    `notes/<id>/`, `search/?q=&scope=&limit=` (default 20 per band, max
-    100), and the one note write path `notes/<id>/write/` (POST append or
-    replace, gated per note by `Note.ai_write_until`). Scopes are
-    `all | library | matters | matter:<id>`, restricted to open matters.
-    Ranking and scope parsing are shared with the Ctrl+K palette so the
-    two surfaces cannot drift.
-  - `apps/ai/api.py`, under `case/api/`: `matter/<id>/<section>/` serves
+  - `apps/ai/api.py`, under `case/api/`: `matters/?q=` lists the user's
+    accessible open matters; `matter/<id>/<section>/` serves
     the sixteen `SECTIONS` as AI-ready text (overview, contacts, rates,
     activity, events, tasks, proceedings, settlement, documents,
     highlights, timeline, witnesses, emails, conversations, ledger,
@@ -53,13 +45,11 @@ grant (below).
     create rows through the same validated entry creators the in-app AI's
     fenced blocks use.
   - `apps/search/api.py`, under `search/api/`: the practice-wide search
-    (matters of any status, proceedings, contacts, intakes, notes) as
+    (matters of any status, proceedings, contacts, intakes) as
     manifest lines with handles.
 - **MCP server** (`tools/kosmos_notes_mcp.py`): a single-file stdio
   translator on the mcp SDK's `MCPServer` that Claude Desktop launches
-  itself. Tools: `find_matter`, `list_library`, `list_matter_notes`,
-  `search_notes`, `read_note`, `write_note`, `read_matter`,
-  `search_matter`, `search_kosmos`, `read_document`, `read_email_thread`,
+  itself. Tools: `find_matter`, `read_matter`, `search_matter`, `search_kosmos`, `read_document`, `read_email_thread`,
   `read_conversation`, `read_invoice`, `add_fact`, `add_witness`,
   `add_task`. Long reads truncate at `READ_TRUNCATE_CHARS` (40k) with an
   explicit marker. All intelligence lives in the APIs; the script only
@@ -85,20 +75,8 @@ Activity screens are. Intakes in the practice-wide search need
 
 ## Write access
 
-Three write surfaces, all create-or-append, none destructive:
+Two write surfaces, both create-only, neither destructive:
 
-- **Notes**: `write_note` appends to (default) or replaces one note's
-  markdown. It works only while that note's AI button in the editor
-  toolbar (the sparkles icon) is switched on: a per-note grant stored as
-  a 24-hour expiry timestamp (`Note.ai_write_until`), toggled off by a
-  second click and self-expiring otherwise. The grant is per note and
-  note-wide (any user's Claude with access to the note may write while it
-  is on), because the MCP API is stateless token auth: there is no
-  browser session to consult, so the note itself carries the grant.
-  Writes land in the note's history like any other edit, and an open
-  editor detects them through the normal conflict machinery. Claude
-  cannot create or delete notes. The in-app AI's note writes are not
-  gated by this field (see [AI chat and context](ai/context.md)).
 - **Timeline facts and witnesses**: `add_fact` and `add_witness` reuse
   `_create_fact_from_entry()` and `_create_witness_from_entry()`
   (validation, matter scoping of cited ids, name dedup): exactly what the
@@ -114,7 +92,7 @@ Three write surfaces, all create-or-append, none destructive:
   formatter in `apps/ai/context.py` changes what both the in-app chat
   and Claude Desktop see; a new section needs a `SECTIONS` entry and, if
   it carries money, a place in `FINANCIAL_SECTIONS`.
-- **Matter scope differs by API.** The notes and case APIs serve open
+- **Matter scope differs by API.** The case API serves open
   matters only; the practice-wide search lists matters of any status,
   because it is navigational.
 - **The script is the shipped artefact.** Users download it from the
@@ -132,5 +110,5 @@ Where the transport and packaging may go next is recorded in
 - [Claude Desktop access to Kosmos](../../admin/integrations/claude-desktop.md)
   for setup; [AI chat and context](ai/context.md) and
   [Agentic chat](ai/agent-chat.md) for the formatters and the search
-  handler this reuses; [Notes and drafts](notes-and-drafts.md) for the
-  editor toggle and the companion token.
+  handler this reuses; [Drafts](drafts.md) for the companion that shares
+  the token.

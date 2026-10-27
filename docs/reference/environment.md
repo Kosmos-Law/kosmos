@@ -73,15 +73,13 @@ variable belongs to stays off or falls back until it is set.
 |---|---|---|
 | `GOOGLE_DATA_DIR` | `google/` in the repository | Directory holding the Google OAuth client file (google_tokens.json) and the tokens generated when an integration is connected. A relative path is resolved from the repository root. |
 | `CALENDAR_ID` | empty | Id of the Google Calendar that events sync with. |
-| `DRIVE_NOTES_ROOT` | `Matters - Open` | Name of the Drive folder that holds one subfolder per matter. |
-| `DRIVE_SHARED_DRIVE_ID` | empty | Shared Drive id. Set only when the root folder lives in a Shared Drive. |
 | `GMAIL_LABEL_ROOT` | `Matters - Open` | Parent Gmail label whose child labels can be linked to matters. Blank offers every user label in the mailbox. |
 
 ## Drafting (LibreOffice)
 
 | Variable | Default | Description |
 |---|---|---|
-| `SOFFICE_BIN` | `soffice` | Headless LibreOffice binary for the server-side redline module (apps/drive/redline.py). Drafting does not currently use that module: edits are applied by the companion extension in the user's LibreOffice. |
+| `SOFFICE_BIN` | `soffice` | Headless LibreOffice binary for the server-side redline module (apps/drafts/redline.py). Drafting does not currently use that module: edits are applied by the companion extension in the user's LibreOffice. |
 | `UNO_PYTHON` | `/usr/bin/python3` | A Python interpreter that has the UNO bindings (the system python3 with the python3-uno package), not the project virtualenv. Used only by the same server-side redline module. |
 
 ## AI and research

@@ -54,25 +54,6 @@ def schedule_specs():
             ),
         ),
         ScheduleSpec(
-            "drive-sync",
-            "apps.drive.google.scheduled_sync",
-            "* * * * *",
-            description=(
-                "Incremental Google Drive sync of linked matter folders "
-                "through the Drive Changes API. Does nothing until Google "
-                "Drive is connected."
-            ),
-        ),
-        ScheduleSpec(
-            "drive-sync-nightly-full",
-            "apps.drive.google.scheduled_sync_full",
-            "30 3 * * *",
-            description=(
-                "Full re-crawl of every linked Drive folder, to catch "
-                "anything the incremental sync missed."
-            ),
-        ),
-        ScheduleSpec(
             "gmail-sync",
             "apps.mail.google.scheduled_sync",
             "*/2 * * * *",

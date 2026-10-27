@@ -77,12 +77,20 @@ def test_user_is_told_to_ask_an_administrator(client, no_client_file):
 def test_connect_buttons_show_once_configured(admin_client, client_file):
     body = admin_client.get(reverse("settings:integrations-index")).content.decode()
 
-    for app in ("contacts", "calendar", "drive", "email"):
+    for app in ("contacts", "calendar", "email"):
         assert reverse("settings:google-login", args=[app]) in body
+    assert reverse("settings:google-login", args=["drive"]) not in body
     assert "Google sign-in isn't set up" not in body
 
 
-@pytest.mark.parametrize("app", ["contacts", "calendar", "drive"])
+@pytest.mark.parametrize("view", ["settings:google-login", "settings:google-logout"])
+def test_the_retired_drive_integration_is_not_found(admin_client, client_file, view):
+    response = admin_client.post(reverse(view, args=["drive"]))
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize("app", ["contacts", "calendar"])
 def test_login_without_client_file_redirects_with_a_toast(
     admin_client, no_client_file, app
 ):

@@ -20,8 +20,6 @@ class Proceeding(AuditMixin, models.Model):
     nickname = models.CharField(max_length=50, blank=True, null=True)
     status = models.CharField(max_length=50, null=True)
     primary = models.BooleanField(default=False)
-    # Drive record folders feeding this proceeding live in
-    # apps.drive.models.DriveFolderMapping (Documents tab, Drive Folder modal).
     history = HistoricalRecords()
 
     def __str__(self):

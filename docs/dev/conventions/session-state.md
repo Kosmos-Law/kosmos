@@ -77,8 +77,8 @@ directly (users, intakes, payments, credits, matter contacts) go through
 the same helper; the labels tab stores `dict(request.POST)`, which keeps
 every value as a list instead.
 
-The newer flow, used by tasks, time, expenses, flat fees, facts, notes
-and mail, merges the POST into what is already stored and skips the
+The newer flow, used by tasks, time, expenses, flat fees, facts and
+mail, merges the POST into what is already stored and skips the
 token (`apps/activity/time/views.py`):
 
 ```python

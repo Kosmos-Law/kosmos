@@ -1,7 +1,7 @@
 """Backfill the semantic material index (apps/case/semantic.py).
 
 Embeds every open matter's materials of every registered kind (documents,
-notes, emails, highlights and timeline facts), plus the firm library.
+emails, highlights and timeline facts).
 Unchanged objects (same content hash) are skipped, so re-runs are cheap;
 run once after deploy and whenever the index needs a catch-up (for
 example after qcluster downtime).
@@ -18,7 +18,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--matter", type=int, help="One matter id only")
-        parser.add_argument("--library", action="store_true", help="Library notes only")
 
     def handle(self, *args, **options):
         totals = {"objects": 0, "chunks": 0}
@@ -35,20 +34,14 @@ class Command(BaseCommand):
                     )
 
         kinds = semantic.kinds()
-        if not options["library"]:
-            matters = Matter.objects.filter(status="Open")
-            if options["matter"]:
-                matters = Matter.objects.filter(id=options["matter"])
-            for matter in matters:
-                self.stdout.write(f"Indexing {matter.name} ({matter.id})...")
-                for entry in kinds:
-                    if entry.backfill:
-                        run(entry.kind, entry.backfill(matter))
-        if not options["matter"]:
-            self.stdout.write("Indexing the firm library...")
+        matters = Matter.objects.filter(status="Open")
+        if options["matter"]:
+            matters = Matter.objects.filter(id=options["matter"])
+        for matter in matters:
+            self.stdout.write(f"Indexing {matter.name} ({matter.id})...")
             for entry in kinds:
-                if entry.backfill_library:
-                    run(entry.kind, entry.backfill_library())
+                if entry.backfill:
+                    run(entry.kind, entry.backfill(matter))
         self.stdout.write(
             self.style.SUCCESS(
                 f"Indexed {totals['objects']} objects, {totals['chunks']} chunks "

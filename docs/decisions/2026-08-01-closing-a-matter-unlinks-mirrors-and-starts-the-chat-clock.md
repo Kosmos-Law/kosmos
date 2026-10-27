@@ -1,5 +1,11 @@
 # Closing a matter unlinks its mirrors and starts the chat clock (2026-08-01)
 
+> In part superseded on 2026-10-27 by [Google Drive is
+> removed](2026-10-27-google-drive-removed.md):
+> the Drive folder fields and mapping rows are gone, so closing a matter
+> clears only its Gmail label. The retention clock is unaffected. What
+> follows is the record as written.
+
 A matter's documents mirror in from a Google Drive folder and its emails
 from a Gmail label, both under roots named for open matters. When a firm
 closes a file it moves the Drive folder and the Gmail label to a closed

@@ -1,10 +1,10 @@
 # Case building
 
 The Case shell is the per-matter workspace: documents and their OCR text,
-the Google Drive mirror that feeds them, highlights, the timeline of facts,
-witnesses, labels, saved case law, and search inside the matter. It is one
-Django app, `apps/case`, with one sub-package per tab, plus `apps/drive`
-(the mirror) and `apps/search` (the sidebar search across matters). The
+highlights, the timeline of facts, witnesses, labels, saved case law, and
+search inside the matter. It is one Django app, `apps/case`, with one
+sub-package per tab, plus `apps/search` (the sidebar search across
+matters). The
 AI tab is documented on its own pages; this page only links to them.
 Saved case law is a view of the AI tab in the interface but its code and
 model live here.
@@ -17,17 +17,16 @@ model live here.
 | `apps/case/tabs.py`, `apps/case/registrations.py` | The tab registry, and what the case app registers at start-up: its tabs, its semantic-index kinds, its matter lookups |
 | `apps/case/services.py` | The public surface the apps above the case builder import from (with `models.py`, `courtlistener.py` and `jurisdictions.py`); see [Module boundaries](../architecture.md#module-boundaries) |
 | `apps/case/semantic.py` | The semantic index: chunking, embedding, the kind registry, save-time re-indexing, `semantic_entries()` |
-| `apps/case/notes/` | The Notes tab, a matter-scoped view over `apps/notes` |
 | `apps/case/models.py` | `Label`, `Document`, `Highlight`, `Fact`, `Witness`, `CaseLaw` |
-| `apps/case/documents/` | Documents tab, upload, duplicate detection, mbox import, OCR task, viewer, the Drive Folder modal |
-| `apps/drive/` | The Drive mirror: changes feed, folder mappings, upsert, tombstones |
+| `apps/case/documents/` | Documents tab, upload, duplicate detection, mbox import, OCR task, viewer |
+| `apps/drive/` | Migrations only: the shell that drops the removed Drive mirror's tables (see [Google Drive is removed](../../decisions/2026-10-27-google-drive-removed.md)) |
 | `apps/case/highlights/` | Highlights tab and the viewer's highlight endpoints |
 | `apps/case/facts/`, `apps/case/witnesses/` | Timeline and Witnesses tabs, the Timeline PDF |
 | `apps/case/labels/` | Labels tab and the apply-labels modal used by every tab |
 | `apps/case/caselaws/` | Saved cases (the AI tab's Case Law view), the case-law viewer, the summary task |
 | `apps/case/courtlistener.py`, `courtlistener_throttle.py`, `jurisdictions.py` | The CourtListener client (citation lookup, cluster and opinion fetches, opinion search); the process-wide request throttle; the state court lists |
 | `apps/case/search/`, `apps/case/search_config.py` | Search inside a matter; watson registration |
-| `apps/search/` | The sidebar search across matters, contacts, intakes and notes |
+| `apps/search/` | The sidebar search across matters, contacts and intakes |
 | `apps/accounts/middleware.py`, `apps/accounts/access.py` | Matter membership enforced from the URL |
 | `templates/case/` | One folder per tab; `viewer.html` and `caselaw-viewer.html` are standalone pages |
 | `static/pdfjs/` | pdf.js, installed by `scripts/update_pdfjs.py`; `web/viewer.html` is customised |
@@ -43,9 +42,8 @@ definition and `parse_importance()` the one parser.
   Discovery, Evidence, Record), `proceeding` (SET_NULL), `file`, `labels`,
   the OCR fields (`ocr_status`, `ocr_text`, `page_count`,
   `ocr_pages_done`), `search_vector`, `importance`, `ai_context` (auto,
-  always, never), `summary`, the fingerprints (`content_hash`,
-  `page_fingerprint`) and the Drive provenance fields (`drive_file_id`,
-  unique; `drive_path`; `drive_modified`; `drive_mapping`, SET_NULL).
+  always, never), `summary` and the fingerprints (`content_hash`,
+  `page_fingerprint`).
   `save()` runs `full_clean()`, enforces the proceeding rule and
   fingerprints a file that has no hash yet. History excludes `ocr_text`
   and `search_vector`: a status-only save was snapshotting megabytes of
@@ -63,32 +61,23 @@ definition and `parse_importance()` the one parser.
 - **`CaseLaw`**: a CourtListener cluster saved to a matter, unique on
   (`matter`, `cluster_id`). `text` and `html` are legacy and no longer
   written; the opinion is fetched on demand.
-- **Drive**: `DriveFolderMapping` (one top-level subfolder of a matter's
-  Drive folder, its `category` and `proceeding`; the check constraint
-  `drive_folder_mapping_proceeding_rule` mirrors the document rule),
-  `DriveRecordTombstone`, `DriveMatterState` (the badge's cached state)
-  and the single-row `DriveSyncState` (the changes-feed cursor). The
-  matter's folder itself is `Matter.drive_folder` and `drive_folder_id`.
 
 The proceeding rule lives in `Document.save()`: a document with a
 proceeding is `Record` unless it is `Discovery`. Every path that writes
 category and proceeding together respects it (the row menus refuse with a
-toast, the form clears the proceeding, the Drive mapping writes the pair
-through `apply_mapping_fields()`), but a bulk `update()` bypasses `save()`
-and must keep the pair consistent itself.
+toast, the form clears the proceeding), but a bulk `update()` bypasses
+`save()` and must keep the pair consistent itself.
 
 ## How it works
 
 ### Switching it off
 
-The case file and the library are firm-wide features an administrator
-switches under Settings > Features (`Firm.case_file_enabled`,
-`Firm.library_enabled`, read through `apps/settings/features/__init__.py`).
-Off, `PermissionMiddleware` answers 404 under `/case/` (less the MCP API
-and the matter-scoped note routes) or `/notes/`; the sidebar, the matter
-header's cross-link, the Notes tab's `available` and the notes kind in the
-firm-wide search read the same switches, and the Drive mirror's scheduled
-syncs return early. Nothing is deleted.
+The case file is a firm-wide feature an administrator switches under
+Settings > Features (`Firm.case_file_enabled`, read through
+`apps/settings/features/__init__.py`). Off, `PermissionMiddleware`
+answers 404 under `/case/` (less the MCP API under `/case/api/`); the
+sidebar and the matter header's cross-link read the same switch.
+Nothing is deleted.
 
 ### The shell
 
@@ -142,9 +131,8 @@ reads the first message, `generate_email_pdf()` renders
 fetcher that only allows the template's own font hosts, and the document's
 date and description come from the email.
 
-`documents_edit` refuses a new file on a Drive-synced document and a
-matter change on one (`DRIVE_MOVE_MESSAGE`); a move of an uploaded
-document copies the file to the new matter's path. Bulk actions read the
+`documents_edit` takes a replacement file and a change of matter; a
+move copies the file to the new matter's path. Bulk actions read the
 selection from the session and pass it through `_selected_on_matter()`,
 which keeps only ids on the matter in the URL, because the membership
 check covered that matter and not the selection. `bulk_documents_matter`
@@ -190,48 +178,6 @@ touched either. Highlights reach the page's script through
 `json_for_script()`, which escapes what HTML would read, because a
 highlight's text is whatever was selected in a PDF from outside the firm.
 
-### The Drive mirror
-
-Setup is the Drive Folder modal on the Documents tab
-(`apps/case/documents/drive.py`): pick the matter's folder under the Drive
-root (`DRIVE_NOTES_ROOT`), then map its top-level subfolders to a category
-and, for Record and Discovery, a proceeding. `drive_folder_save` validates
-rows with `mappings.normalize_rule()`, writes `DriveFolderMapping` rows
-keyed by Drive folder id (so renames do not break the link), runs
-`backfill_documents()` over the documents a changed mapping already
-brought in, and queues `records.resync_mapping_by_id` for each changed
-row. Unmapping a row deletes the mapping and leaves its documents as they
-are. `suggest_mapping()` pre-fills a category from folder names such as
-"Corr" or "Record - Appeal"; Evidence is never suggested, on purpose.
-
-Sync runs every minute (`drive-sync`, `apps.drive.google.scheduled_sync`)
-over the Drive Changes API with a cursor in `DriveSyncState`, and nightly
-(`drive-sync-nightly-full`) as a full crawl that also refreshes folder
-names, flags missing folders and records each matter's unmapped
-subfolders for the badge. `_process_change()` walks a file up to the root,
-finds the nearest mapped ancestor with `resolve_mapping()`, and hands PDFs
-to `records.ingest_pdf()`. That function is the upsert: a tombstoned id is
-skipped; an unchanged `modifiedTime` only refreshes provenance (and strips
-another matter's labels if the file moved between matters); a changed file
-has its bytes replaced, fingerprints recomputed and OCR reset and
-re-queued; a new file first looks for a hand-uploaded twin to adopt
-(`_adopt_candidate`: same matter, name, date and size) before creating a
-row. User-set metadata is never touched after the first ingest, and
-category and proceeding follow the mapping only when the file arrives
-through a different mapping than before.
-
-The contract, stated in `apps/drive/records.py`: the mirror is
-**append-only** (a deletion, trash or move out of Drive never removes a
-document), **PDFs only**, and **read-only on Drive** (the application
-never writes to Drive). A document deleted in the application writes a
-`DriveRecordTombstone` through the `pre_delete` signal in
-`apps/drive/signals.py`, so the file does not come back on the next pass.
-Closing a matter clears its Drive link and mappings
-(`Matter.save()`); the synced documents stay. `restore_drive_documents`
-re-downloads documents whose file is missing from storage, a repair for a
-window when uploads went to local disk (see
-[Prod storage](operations.md)).
-
 ### Highlights
 
 A highlight is made in one of the two viewers. The Highlights tab
@@ -271,8 +217,8 @@ matter's material: the global labels plus that matter's. The apply modal
 and `add_label_to` resolve the posted label id through it, so another
 matter's label cannot be attached; `remove_label_from` resolves through
 `obj.labels` so a leftover label can always be taken off. On a move
-between matters (`_drop_other_matters_labels()`, and the equivalent in
-`ingest_pdf`) the leaving matter's labels stay behind and global labels
+between matters (`_drop_other_matters_labels()`) the leaving matter's
+labels stay behind and global labels
 travel with the document.
 
 ### Saved cases
@@ -314,14 +260,14 @@ the filter.
 Search inside a matter (`apps/case/search/views.py`) is hybrid:
 `watson.search(query)` over the whole index (the case models are
 registered in `apps/case/search_config.py`), keeping the document,
-highlight, fact and note hits on this matter, then meaning matches from
+highlight and fact hits on this matter, then meaning matches from
 the pgvector index (`apps/case/semantic.py`, `semantic_entries()`)
 appended and marked `semantic` (none without a Gemini key, which the
 embeddings need). Highlights on case law are left out
 because the result row renders document highlights only. The importance
 filter means "at least this important", as on the other tabs. The sidebar
 search (`apps/search/`)
-runs watson over matters, contacts, intakes and notes with synonym
+runs watson over matters, contacts and intakes with synonym
 expansion, matches proceedings by normalised case number, and shows only
 matters the user may open; `apps/search/api.py` exposes the same search to
 the MCP server.
@@ -330,11 +276,9 @@ the MCP server.
 
 | Task | Queued by | On failure |
 |---|---|---|
-| `apps.case.documents.tasks.process_document_ocr` | upload, file replacement, mbox import, Drive ingest, retry and force | `ocr_status="failed"`, `ocr_error` set, badge offers retry |
+| `apps.case.documents.tasks.process_document_ocr` | upload, file replacement, mbox import, retry and force | `ocr_status="failed"`, `ocr_error` set, badge offers retry |
 | `apps.case.documents.tasks.generate_document_summary` | the OCR task, only with AI configured | logged, document keeps no summary |
 | `apps.case.caselaws.tasks._generate_caselaw_summary` | `caselaws_save` and the agent's `save-caselaw` block, through `generate_caselaw_summary()`, only with AI configured | logged, the case keeps no summary |
-| `apps.drive.records.resync_mapping_by_id` | the Drive Folder modal | logged; the nightly full pass catches up |
-| `apps.drive.google.scheduled_sync`, `scheduled_sync_full` | schedules `drive-sync` and `drive-sync-nightly-full` | a 410 on the cursor re-bootstraps; other errors raise and the next tick retries |
 
 The `post_save` signal in `apps/case/documents/signals.py` also queues OCR
 on a document created with its file in the first save. Schedules are
@@ -364,19 +308,14 @@ matrix is in the [permissions reference](../../reference/permissions.md).
   the view is open to any signed-in user.
 - **`Document.save()` is the only place the proceeding rule runs.**
   `queryset.update()` skips it (and `full_clean()` and history). Write
-  category and proceeding together, as `apply_mapping_fields()` does.
+  category and proceeding together.
 - **Fingerprints describe the uploaded bytes, not the stored file.** OCR
   replaces the file with the OCR'd PDF but leaves `content_hash` alone, so
   a re-upload of the original still matches. A path that replaces bytes
   on purpose must clear the hash or call `set_fingerprints()`.
 - **The OCR signal never sees a two-phase upload.** The first save has no
   file, so the signal marks it `not_applicable`; the view must queue OCR
-  itself after the file save, as `documents_add` and
-  `records._queue_ocr()` do.
-- **The mirror never deletes and never writes to Drive.** Do not add a
-  delete path to the sync; delete in the application, which tombstones.
-  The `drive_file_id` unique constraint is what makes the upsert safe
-  under two concurrent passes (`IntegrityError` is caught).
+  itself after the file save, as `documents_add` does.
 - **`watson.search()` in the matter search is not scoped.** It searches
   the whole index and the view filters by matter afterwards; a big index
   makes every matter search cost the same.
@@ -395,10 +334,9 @@ matrix is in the [permissions reference](../../reference/permissions.md).
 
 - Guide: [Documents](../../guide/documents.md), [Timeline, witnesses
   and highlights](../../guide/facts.md), [Case law](../../guide/research.md)
-- Admin: [Google Workspace](../../admin/integrations/google.md) (the Drive
-  connection), [Storage](../../admin/integrations/storage.md)
+- Admin: [Storage](../../admin/integrations/storage.md)
 - Subsystems: [Matters](matters.md), [AI context](ai/context.md),
-  [Agentic chat](ai/agent-chat.md), [Notes and drafts](notes-and-drafts.md),
+  [Agentic chat](ai/agent-chat.md), [Drafts](drafts.md),
   [Email and intakes](email-and-intakes.md) (the Emails tab),
   [MCP](mcp.md) (the case JSON API), [Operations](operations.md)
 - Conventions: [HTMX and Alpine](../conventions/htmx-alpine.md),

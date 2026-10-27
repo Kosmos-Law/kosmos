@@ -263,7 +263,7 @@ def email_importance(request, email_id, value):
 
 
 # ---------------------------------------------------------------------------
-# Gmail label linking (mirrors the Notes tab's Drive folder linking)
+# Gmail label linking
 # ---------------------------------------------------------------------------
 
 

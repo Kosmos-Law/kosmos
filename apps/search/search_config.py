@@ -23,6 +23,3 @@ watson.register(
     Intake,
     fields=("name", "email", "phone"),
 )
-
-# Note: Note model is registered in apps.case.search_config
-# Filtering for standalone notes (matter__isnull=True) happens in views

@@ -5,10 +5,7 @@
       <div class="toolbar">
         <h1>Google Account</h1>
       </div>
-      <p class="detail-text">
-        Connect a Google account to synchronize contacts and calendar events and
-        to mirror matter documents from Google Drive.
-      </p>
+      <p class="detail-text">Connect a Google account to synchronize contacts and calendar events.</p>
       {% if not google_oauth_ready %}
         <p class="detail-text">
           Google sign-in isn't set up on this server yet, so nothing here can
@@ -48,69 +45,12 @@
                href="{% url 'settings:google-login' 'calendar' %}">Connect</a>
           {% endif %}
         </div>
-        <div class="integrations-item integrations-item-stacked">
-          <div class="integrations-item-row">
-            <span>Google Drive (Documents)</span>
-            {% if drive_token %}
-              <button type="button"
-                      class="btn btn-secondary confirm"
-                      data-href="{% url 'settings:google-logout' 'drive' %}"
-                      data-method="post"
-                      data-confirm-title="Disconnect Google Drive"
-                      data-confirm-message="Disconnect Google Drive for the whole firm? Kosmos stops syncing with it until an administrator connects it again."
-                      data-confirm-text="Disconnect">Disconnect</button>
-            {% elif google_oauth_ready %}
-              <a class="btn btn-success"
-                 href="{% url 'settings:google-login' 'drive' %}">Connect</a>
-            {% endif %}
-          </div>
-          {% if not case_file_enabled %}
-            <p class="detail-text drive-sync-note">
-              The case file is switched off (Settings &gt; Features), so the
-              Drive mirror is paused until it is on again.
-            </p>
-          {% endif %}
-          {% if drive_status %}
-            {% if drive_status.linked_matters %}
-              <p class="detail-text drive-sync-note">
-                {{ drive_status.linked_matters }} matter{{ drive_status.linked_matters|pluralize }}
-                linked to a Drive folder, {{ drive_status.mapped_folders }}
-                folder{{ drive_status.mapped_folders|pluralize }} mapped,
-                {{ drive_status.synced_records }} document{{ drive_status.synced_records|pluralize }} synced.
-              </p>
-            {% else %}
-              <p class="detail-text drive-sync-note">
-                No matters are linked to a Drive folder yet. Open a matter's
-                <strong>Documents</strong> tab and choose <strong>Link Drive Folder</strong>
-                to link it and map its subfolders.
-              </p>
-            {% endif %}
-            {% if drive_status.matters_needing_attention %}
-              <p class="detail-text drive-sync-note">
-                {{ drive_status.matters_needing_attention }}
-                matter{{ drive_status.matters_needing_attention|pluralize }}
-                {{ drive_status.matters_needing_attention|pluralize:"has,have" }} unmapped or
-                missing Drive folders (see the Drive Folder button on each Documents tab).
-              </p>
-            {% endif %}
-            {% if drive_status.missing_folders %}
-              <p class="detail-text drive-sync-note">
-                Warning: {{ drive_status.missing_folders|length }} mapped
-                folder{{ drive_status.missing_folders|length|pluralize }}
-                no longer exist{{ drive_status.missing_folders|length|pluralize:"s," }}
-                in Drive ({{ drive_status.missing_folders|join:", " }}).
-                Re-map from the affected matter's Documents tab. Nothing was
-                deleted.
-              </p>
-            {% endif %}
-          {% endif %}
-        </div>
       </div>
       <h2 class="settings-section">AI</h2>
       <hr />
       <p class="detail-text">
         AI features are optional and stay hidden until a provider key is set:
-        chat on a matter, intake assessments, document and note summaries, and
+        chat on a matter, intake assessments, document summaries, and
         AI quick task entry. Either provider runs all of them; with both,
         background work uses Gemini and chats offer both. Matter search by
         meaning needs a Gemini key.
@@ -168,19 +108,19 @@
         </div>
         {% if gmail_status %}
           {% if gmail_status.linked_matters %}
-            <p class="detail-text drive-sync-note">
+            <p class="detail-text sync-note">
               {{ gmail_status.synced_count }} email{{ gmail_status.synced_count|pluralize }}
               synced across {{ gmail_status.linked_matters }} matter{{ gmail_status.linked_matters|pluralize }}.
             </p>
           {% else %}
-            <p class="detail-text drive-sync-note">
+            <p class="detail-text sync-note">
               No matters are linked to a Gmail label yet. Open a matter's
               <strong>Emails</strong> tab and choose <strong>Link Gmail Label</strong>
               to start syncing its case emails.
             </p>
           {% endif %}
           {% for account in gmail_accounts %}
-            <p class="detail-text drive-sync-note">
+            <p class="detail-text sync-note">
               {{ account.address }}
               ({{ account.user.get_full_name|default:account.user.username }}):
               {% if account.last_sync_at %}

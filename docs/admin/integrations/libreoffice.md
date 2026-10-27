@@ -1,20 +1,26 @@
 # Drafting with LibreOffice
 
-How to set up AI-assisted drafting: an attorney links an AI chat to a
-draft `.odt` document, and edits the AI makes in the chat appear in the
-document as tracked changes, to accept or reject in Writer. This page covers what the server needs, the
-companion extension each user installs in their own LibreOffice, and the
-headless LibreOffice packages on the server.
+How to set up AI-assisted drafting: an AI chat is linked to a draft
+`.odt` document, and edits the AI makes in the chat appear in the
+document as tracked changes, to accept or reject in Writer. This page
+covers what the server needs, the companion extension each user installs
+in their own LibreOffice, and the headless LibreOffice packages on the
+server.
+
+!!! note
+
+    Linking a new draft is turned off for now: the chat has no way to
+    pick the file until the firm's document store is connected. Drafts
+    already linked keep working as described here.
 
 ## How it works
 
 Drafting has two halves, and it helps to know which half does what.
 
-1. In a matter's AI chat, the user links the conversation to an `.odt`
-   file in the matter's Google Drive folder. Kosmos reads the file from
-   Drive, converts it to text, and gives that text to the AI as the draft
-   under discussion.
-2. The user opens the same document in LibreOffice Writer on their own
+1. A conversation in a matter's AI chat is linked to an `.odt` file.
+   Kosmos holds the document's text, converted from the file, and gives
+   it to the AI as the draft under discussion.
+2. The user opens the document in LibreOffice Writer on their own
    computer and chooses **Kosmos → Connect to drafting session**. This
    menu comes from the *companion extension*, a small LibreOffice add-on
    downloaded from Kosmos.
@@ -28,16 +34,11 @@ Drafting has two halves, and it helps to know which half does what.
 4. The user accepts or rejects the changes in Writer and saves the file.
 
 The edits are applied on the user's computer, by the user's LibreOffice.
-The server relays them. It never writes to the document or to Google
-Drive. If no extension is connected when the AI proposes edits, the chat
+The server relays them. It never writes to the document. If no extension is connected when the AI proposes edits, the chat
 answers that the edits were not applied and nothing is changed.
 
 ## What the server needs
 
-- **Google Drive connected, and the matter linked to its Drive folder.**
-  The list of drafts a user can link is the `.odt` files in that folder
-  and up to four levels of subfolders. See
-  [Google Workspace](google.md#google-drive).
 - **pandoc** installed, to convert the document to text for the AI. It is
   in the package list under [Machine
   requirements](../install-manual.md#machine-requirements).
@@ -85,30 +86,20 @@ also used for links in email.
 ## User setup
 
 Each user does this once on their own computer. They need LibreOffice
-Writer, and a way to open the files in the matter's Drive folder locally
-(a desktop client that syncs Google Drive to a folder).
+Writer and the linked `.odt` file on that computer.
 
-1. Open a matter's AI chat and click the pen button beside the message
-   box. It opens the **Link a Draft** dialog.
-2. In the dialog, follow the **LibreOffice companion extension** link.
-   The link is there whatever the dialog shows, including when Drive is
-   not connected or the folder has no `.odt` file yet.
-3. Click **Download kosmos-companion.oxt**. The dialog names the current
-   version.
-4. In LibreOffice, open Tools, Extension Manager, Add, and choose the
+1. Download the extension from the download button beside the draft's
+   badge in the chat window, or, while signed in to Kosmos, directly from:
+
+    ```
+    https://kosmos.example.com/case/drafts/companion/kosmos-companion.oxt
+    ```
+
+2. In LibreOffice, open Tools, Extension Manager, Add, and choose the
    downloaded file (or double-click the file). Restart LibreOffice.
-5. Back in Kosmos, link the draft to the conversation by picking it in
-   the **Link a Draft** dialog.
-6. Open the same `.odt` file in Writer and choose **Kosmos → Connect to
+3. Open the linked `.odt` file in Writer and choose **Kosmos → Connect to
    drafting session**. A message confirms the connection and names the
    matter and the conversation.
-
-A signed-in user can also fetch the extension directly, without going
-through the dialog:
-
-```
-https://kosmos.example.com/case/drafts/companion/kosmos-companion.oxt
-```
 
 Things users should know:
 
@@ -122,9 +113,8 @@ Things users should know:
   confirmation is worth reading. Several conversations linked to the
   same file are not a choice: they share one connection, and nobody is
   asked.
-- If a linked file is renamed in Drive, Kosmos picks up the new name the
-  next time a message is sent in that conversation. Send one before
-  connecting the renamed file.
+- A linked file that is renamed no longer pairs: Kosmos keeps the name
+  the file had when it was linked.
 - The **Kosmos** menu in Writer also has **Disconnect** and **Status**.
   Status shows the installed version.
 - The document has to stay open and connected while they work with the
@@ -140,11 +130,16 @@ Things users should know:
 
 ## Versions and updating
 
-The current version of the extension is **0.4.1**. The server builds each
+The current version of the extension is **0.4.2**. The server builds each
 user's download from its own copy of the source, so a download is always
 the version the server was deployed with. An installed copy does not
 update itself: it changes only when the user downloads the file again and
 installs it.
+
+What 0.4.2 changes over 0.4.1: only its wording. Its messages no longer
+mention Google Drive or the retired **Link a Draft** dialog, and on
+disconnecting it says the AI goes on reading the draft as it was when last
+connected.
 
 What 0.4.1 changes over 0.4.0: nothing in how it talks to the server.
 When a user loses access to the draft's matter, it stops and says so
@@ -160,15 +155,13 @@ What 0.4.0 adds over 0.3.0:
   still waiting for them. If the chat has already given up and told the
   user the edits were not applied, the extension leaves the document
   alone. 0.3.0 applied them regardless.
-- Its messages name things as Kosmos does now (the **Link a Draft**
-  dialog, the pen button beside the message box).
 
 To see which version is installed, choose **Kosmos → Status** in Writer.
 0.4.0 and later end the message with "Companion version" and the number. A copy
 whose Status message names no version is 0.3.0.
 
-To update: download the extension again from the **LibreOffice
-companion extension** link in the Link a Draft dialog, open Tools,
+To update: download the extension again from the address under
+[User setup](#user-setup), open Tools,
 Extension Manager, Add in LibreOffice, choose the new file, accept
 replacing the installed version, and restart LibreOffice.
 
@@ -184,8 +177,8 @@ The downloaded extension is personal. Along with the server address it
 contains the user's access token, so it works with no configuration and
 must not be shared or left on a shared drive.
 
-- The token is created automatically the first time a user opens the
-  companion dialog or downloads the extension.
+- The token is created automatically the first time a user downloads
+  the extension.
 - It is the same token (`ApiToken`) that gives the user's Claude
   Desktop access to Kosmos, described in
   [Claude Desktop](claude-desktop.md). There is one per user. Anyone
@@ -210,7 +203,7 @@ The install instructions include two server packages,
 `libreoffice-writer-nogui` and `python3-uno`, and the reference lists two
 variables for them, `SOFFICE_BIN` and `UNO_PYTHON`. They belong to a
 server-side module
-([`apps/drive/redline.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/drive/redline.py))
+([`apps/drafts/redline.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/drafts/redline.py))
 that starts a headless LibreOffice and applies the same edit operations
 to an `.odt` file as tracked changes.
 
@@ -241,8 +234,7 @@ has no LibreOffice bindings.
 1. Download the extension as a test user and inspect `config.json` as
    shown above. The `server` value must be the address users reach
    Kosmos at, starting with `https://`.
-2. Install it, link a draft in a chat, open the file in Writer and
-   connect. **Kosmos → Status** should report "Connected" with the
+2. Install it, open a linked draft in Writer and connect. **Kosmos → Status** should report "Connected" with the
    matter's name.
 3. In the chat, tell the AI to make a small change to the draft. The
    reply should include "Applied 1 edit as tracked changes in the open
@@ -264,11 +256,9 @@ or revoked, or the user was deactivated. Download a fresh copy and
 reinstall it.
 
 **"No draft link found for ..."** The open document's file name does not
-match any draft this user has linked. Link the document in the chat
-first, and check that the local file has exactly the name shown in
-Kosmos. If the file was renamed after it was linked, send a message in
-the linked conversation so Kosmos reads the new name, then connect
-again.
+match any draft this user has linked. Check that the local file has
+exactly the name shown on the draft's badge in the chat; a file renamed
+after it was linked must be given its old name back.
 
 **Writer asks which matter and conversation the document belongs to.**
 The user has linked more than one file of this name. Pick the one this
@@ -277,8 +267,7 @@ longer in use (the x beside the draft's name in each chat), or give the
 files different names.
 
 **"This document has never been saved."** The extension can only pair a
-saved file. Save it into the matter's Drive folder, link it, then
-connect.
+saved file. Save it under the linked name, then connect.
 
 **The chat says the edits were not applied because the draft is not
 connected.** No extension has checked in for that document in the last
@@ -305,11 +294,6 @@ chat has already said so. Ask again.
 **The chat says "change recording could not be enabled".** The
 document's tracked-changes protection is on. Remove the protection in
 Writer and ask again.
-
-**The Link a Draft dialog says to connect Google Drive, or finds no ODT
-files.** Drive is not connected, the matter has no Drive folder linked,
-or the folder has no `.odt` file. Only `.odt` files can be drafts: save a
-Word document as ODT first.
 
 **There is no Kosmos menu in Writer after installing.** The menu appears
 only in Writer documents. If it is missing there too, LibreOffice could

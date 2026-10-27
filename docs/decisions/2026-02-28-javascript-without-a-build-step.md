@@ -90,5 +90,4 @@ at the price of a cheap conditional request per file.
 ## Related
 
 - [HTMX, Alpine and idiomorph](../dev/conventions/htmx-alpine.md)
-- [Notes and drafts](../dev/subsystems/notes-and-drafts.md)
 - [Architecture](../dev/architecture.md), the static files table

@@ -90,6 +90,8 @@ INSTALLED_APPS = [
     "apps.books",
     "apps.management",
     "apps.notes",
+    # Retired (Google Drive removed): migrations only, so the migration that
+    # drops its tables runs. Taken out in a later release.
     "apps.drive",
     "apps.drafts",
     "apps.mail",
@@ -461,7 +463,6 @@ GOOGLE_DATA_DIR = (
 GOOGLE_CLIENT_SECRET_PATH = GOOGLE_DATA_DIR / "google_tokens.json"
 GOOGLE_CONTACTS_TOKEN_PATH = GOOGLE_DATA_DIR / "contact_tokens.json"
 GOOGLE_CALENDAR_TOKEN_PATH = GOOGLE_DATA_DIR / "calendar_tokens.json"
-GOOGLE_DRIVE_TOKEN_PATH = GOOGLE_DATA_DIR / "drive_tokens.json"
 GOOGLE_EMAIL_TOKEN_PATH = GOOGLE_DATA_DIR / "email_tokens.json"
 CALENDAR_ID = env("CALENDAR_ID", default="")
 LAW_FIRM_ID = env("LAW_FIRM_ID", default="")
@@ -477,15 +478,8 @@ QUICKBOOKS_ENVIRONMENT = env("QUICKBOOKS_ENVIRONMENT", default="production")
 # CourtListener API Configuration (for citation verification)
 COURTLISTENER_API_TOKEN = env("COURTLISTENER_API_KEY", default="")
 
-# Google Drive document mirror
-# Root Drive folder holding one subfolder per matter (linked and mapped from
-# each matter's Documents tab).
-DRIVE_NOTES_ROOT = env("DRIVE_NOTES_ROOT", default="Matters - Open")
-# Optional: set if "Matters - Open" lives in a Shared Drive rather than My Drive.
-DRIVE_SHARED_DRIVE_ID = env("DRIVE_SHARED_DRIVE_ID", default="")
-
 # Headless LibreOffice, used to apply AI-proposed edits to ODT drafts as
-# tracked changes (apps/drive/redline.py). UNO_PYTHON must be an interpreter
+# tracked changes (apps/drafts/redline.py). UNO_PYTHON must be an interpreter
 # with UNO bindings — the system python3 with the python3-uno package, not the
 # project venv (apt-get install libreoffice-writer-nogui python3-uno).
 SOFFICE_BIN = env("SOFFICE_BIN", default="soffice")

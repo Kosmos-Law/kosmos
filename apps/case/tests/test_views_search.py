@@ -165,25 +165,32 @@ class TestSearchClear:
 class TestSemanticMerge:
     """Meaning matches from the semantic index join the case search."""
 
-    def _row(self, note, similarity=0.71):
+    def _row(self, fact, text, similarity=0.71):
         return {
-            "kind": "note",
-            "object_id": note.id,
-            "text": note.content,
+            "kind": "fact",
+            "object_id": fact.id,
+            "text": text,
             "similarity": similarity,
             "query": "dog",
         }
 
-    def test_meaning_match_row_rendered(self, client_with_matter, monkeypatch):
-        from apps.notes.models import Note
+    def _fact(self, matter, description):
+        from apps.case.models import Fact
 
-        matter = client_with_matter.matter
-        note = Note.objects.create(
-            matter=matter, title="Companion animal", content="the canine companion"
+        return Fact.objects.create(
+            matter=matter,
+            date="2024-01-25",
+            description=description,
         )
+
+    def test_meaning_match_row_rendered(self, client_with_matter, monkeypatch):
+        matter = client_with_matter.matter
+        fact = self._fact(matter, "Companion animal")
         monkeypatch.setattr(
             "apps.case.search.views.semantic_entries",
-            lambda queries, m, kinds, limit: [[self._row(note)]],
+            lambda queries, m, kinds, limit: [
+                [self._row(fact, "the canine companion")]
+            ],
         )
         client_with_matter.post(f"/case/{matter.id}/search/query/", {"query": "dog"})
         html = client_with_matter.get(
@@ -197,16 +204,12 @@ class TestSemanticMerge:
     def test_keyword_hit_not_duplicated(self, client_with_matter, monkeypatch):
         from watson import search as watson
 
-        from apps.notes.models import Note
-
         matter = client_with_matter.matter
-        note = Note.objects.create(
-            matter=matter, title="Dog walk", content="the dog was walked"
-        )
-        watson.default_search_engine.update_obj_index(note)
+        fact = self._fact(matter, "Dog walk")
+        watson.default_search_engine.update_obj_index(fact)
         monkeypatch.setattr(
             "apps.case.search.views.semantic_entries",
-            lambda queries, m, kinds, limit: [[self._row(note)]],
+            lambda queries, m, kinds, limit: [[self._row(fact, "Dog walk")]],
         )
         client_with_matter.post(f"/case/{matter.id}/search/query/", {"query": "dog"})
         html = client_with_matter.get(

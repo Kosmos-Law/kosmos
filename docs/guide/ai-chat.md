@@ -34,7 +34,7 @@ you send your first question.
 | Mode | How it works | Pick it when |
 |---|---|---|
 | **Classic** | Kosmos loads the case file into your question before the AI sees it, and the AI answers in one pass. | You want a quick answer, or the question ranges over the whole matter. |
-| **Agentic** | The AI starts from an index of the case file, then searches and opens documents, emails and notes one step at a time, and shows each step. With the Research permission, it can also search published case law. | The matter is large, or the answer turns on reading particular documents closely. A reply can take several minutes. |
+| **Agentic** | The AI starts from an index of the case file, then searches and opens documents and emails one step at a time, and shows each step. With the Research permission, it can also search published case law. | The matter is large, or the answer turns on reading particular documents closely. A reply can take several minutes. |
 
 **Model** lists the Claude and Gemini models of the providers your server
 is connected to. The mode and the model are fixed once the conversation
@@ -94,9 +94,9 @@ Good to know:
 ## What the AI is given
 
 A chat on a matter works from that matter's record. Nothing from another
-matter is given to it. Two things come from outside the matter: the
-firm's library notes (see [Notes](notes.md)), and the names and titles
-of the firm's users, with your own name and email address.
+matter is given to it. One thing comes from outside the matter: the
+names and titles of the firm's users, with your own name and email
+address.
 
 What it is given also depends on who asks. Time entries, with their rates
 and fees, are given for every user who can open the matter, as the
@@ -126,16 +126,15 @@ Chosen for each question:
 
 - documents set to **Auto** whose text has been extracted (see
   [Documents](documents.md));
-- the matter's notes and its synced email threads, with the text of
-  their attachments (see [Email](email.md));
+- the matter's synced email threads, with the text of their
+  attachments (see [Email](email.md));
 - saved cases (the **Case Law** view of the **AI** tab, see
   [Case law](research.md)) and other conversations set to **Auto**;
 - invoices, only when the question is about billing and you have the
-  Financial permission;
-- library notes, only when one bears on the question.
+  Financial permission.
 
 If these items come to less than about 30,000 words, and there are no
-invoices or library notes to consider, all of them are loaded.
+invoices to consider, all of them are loaded.
 Otherwise a first AI step is shown your question and a list of the items
 (name, category, date, a short summary, size and importance) and picks
 the ones to load in full. The rest are given by name only, so the AI can
@@ -145,8 +144,8 @@ tell you that a document exists which it has not read.
 
 The AI starts with the matter's details, contacts, witnesses and
 proceedings, the highlights and timeline when they are short, and an
-index with one line for each document, email thread, note, saved case,
-earlier conversation and library note. From there it opens what it needs,
+index with one line for each document, email thread, saved case and
+earlier conversation. From there it opens what it needs,
 up to 40 lookups for each question. It can also read the matter's tasks,
 events, settlement log, and time, expense and flat-fee entries. With the
 Financial permission, the index lists the matter's invoices as well, and
@@ -188,33 +187,25 @@ Good to know:
 ## Have the AI add to the matter
 
 The AI answers in prose unless you tell it to record something. Use the
-word "timeline", "witness" or "note" in the request: one that leaves the
+word "timeline" or "witness" in the request: one that leaves the
 word out may be answered in prose only.
 
 | You say, for example | The reply shows | Where it lands |
 |---|---|---|
 | "Add these dates to the timeline." | "Added to timeline:" and each fact, with its date and source | The matter's **Timeline** tab, linked to the source highlight or document when there is one |
 | "Add her as a witness." | "Added witness:" and the name, or "Already on the witness list:" | The **Witnesses** tab |
-| "Save that analysis to a note." | "Created note:" and the title | The matter's notes, with you as author |
-| "Add this to the note on service of process." | "Appended to note:" or "Rewrote note:" and the title ("library note" for one in the Library) | The same note, on the matter or in the Library |
 | "Save these cases." (Agentic only, with the Research permission) | "Saved to case law:" and each case | The **Case Law** view of the **AI** tab, with what the case was cited for |
 
 A matter chat does not create tasks. Add them yourself (see
 [Tasks](tasks.md)).
-To have the AI edit a document you are drafting, link the draft to the
-conversation with the pen button beside the message box (see
-[Drafts](drafts.md)).
+In a conversation with a linked draft, the AI edits the document as
+tracked changes in LibreOffice Writer (see [Drafts](drafts.md)).
 
 Good to know:
 
 - Nothing is confirmed first. The items exist as soon as the reply
   appears, so read each line and correct mistakes on the tab where the
   item landed.
-- The AI adds to the end of a note unless you tell it to rewrite or
-  replace the note. A rewrite replaces the whole note, and a firm library
-  note can be rewritten this way from any matter.
-- A line saying the assistant described a note write without performing
-  one means no note was changed. Ask again.
 
 ## Check sources and citations
 
@@ -286,7 +277,7 @@ Conversations on a matter stay until someone deletes them, with one
 exception: once a matter has been **Closed** for a retention period (180
 days unless your administrator has changed it), its AI conversations are
 deleted. See [Close a matter](matters.md#close-a-matter). Timeline facts,
-witnesses, notes and saved cases that the AI added are part of the matter
+witnesses and saved cases that the AI added are part of the matter
 and are not deleted with the chats.
 
 ## What leaves the firm

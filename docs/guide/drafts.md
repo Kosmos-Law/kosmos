@@ -1,9 +1,9 @@
 # Drafts
 
 This page is for attorneys and paralegals who write documents for a
-matter. It covers how to link a document to an AI chat, have the AI edit
-it as tracked changes in LibreOffice Writer, and what happens to the link
-afterwards. You should already know how to open a matter
+matter. It covers a document linked to an AI chat: how to have the AI
+edit it as tracked changes in LibreOffice Writer, and what happens to the
+link afterwards. You should already know how to open a matter
 ([Matters](matters.md)) and start a chat on it ([AI chat](ai-chat.md)).
 Drafts are part of the AI chat, so they are available only when your
 firm has set up AI (see [AI](settings.md#ai)).
@@ -11,79 +11,44 @@ firm has set up AI (see [AI](settings.md#ai)).
 ## What a draft is
 
 A draft is a word-processor file in OpenDocument Text format (a file
-ending in .odt) that sits in the matter's Google Drive folder and is
-linked to one AI conversation on the matter. You write in LibreOffice
-Writer on your own computer. The AI reads the document as you have it
-open, and when you tell it to change something, the change appears in
-Writer as a tracked change for you to accept or reject.
+ending in .odt) linked to one AI conversation on the matter. You write in
+LibreOffice Writer on your own computer. The AI reads the document as you
+have it open, and when you tell it to change something, the change
+appears in Writer as a tracked change for you to accept or reject.
 
-Kosmos has no drafts list, no versions and no publish step. The file in
-your Drive folder is the working copy, and Kosmos never changes it: every
-edit is made by Writer on your computer, and saving the file is what
-updates Drive.
+Kosmos has no drafts list, no versions and no publish step. The file on
+your computer is the working copy, and Kosmos never changes it: every
+edit is made by Writer, and saving the file is up to you.
+
+!!! note
+
+    Linking a new draft to a conversation is not available at present.
+    A conversation that already has a draft keeps it, and everything
+    below works for it as described.
 
 ## Before you start
 
-- The firm's Google Drive is connected and the matter is linked to its
-  Drive folder (**Link Drive Folder** on the matter's **Documents** tab,
-  see [Documents](documents.md)).
-- The matter's Drive folder is synced to your computer, so that you can
-  open its files in Writer and your saves go back to Drive.
-- LibreOffice Writer has the Kosmos companion extension installed. You
-  download it from Kosmos: in the **Link a Draft** dialog (described
-  below) click **LibreOffice companion extension**, then **Download
-  kosmos-companion.oxt**, and follow the three steps shown there. The
-  operator's page
+- The conversation has a draft linked: its chat shows a badge with the
+  file's name beside the message box.
+- LibreOffice Writer has the Kosmos companion extension installed. To
+  download it, choose the download button beside the draft's badge in
+  the chat; the dialog has the install steps. The operator's page
   [Drafting with LibreOffice](../admin/integrations/libreoffice.md) has
-  the details and the fixes for common problems.
+  the install steps and the fixes for common problems.
 
 The download is personal. It carries your access token, so do not share
 the file. If you use **Rotate token** or **Revoke token** under
 **Settings → Claude Desktop**, download the extension again and reinstall
 it (see [Settings](settings.md)).
 
-This page describes version 0.4.1 of the extension. The download dialog,
-**LibreOffice Companion**, names the current version, and **Kosmos →
+This page describes version 0.4.2 of the extension. **Kosmos →
 Status** in Writer shows the version you have installed (a copy that
 shows none is older). To update, download the file again, install it over
 the old one and restart LibreOffice.
 
-## Link a draft to a conversation
-
-1. Save the document as an .odt file in the matter's Drive folder, in any
-   subfolder up to four levels down, and let it sync.
-2. Open the matter, click **Case**, then **AI**. Click the **+** button
-   to start a conversation, or click a conversation's title and choose
-   **Resume**. The chat opens in a new browser tab.
-3. Click the pen button at the left of the message box. **Link a Draft**
-   opens and lists the matter's .odt files, each with its subfolder.
-4. Click the file.
-
-The pen button is replaced by a badge with the file's name, and the
-conversation carries a **Draft** badge in the **AI** tab's list.
-
-If the link cannot be made, the pen button stays and a message headed
-**Draft not linked** gives the reason. For example, "That file was not
-found in this matter's Drive folder. Reopen the list and pick the draft
-again." means the file was moved or deleted after the list opened.
-
-Good to know:
-
-- The pen button appears only while the firm's Google Drive is
-  connected. A draft linked earlier keeps its badge and its unlink button
-  either way.
-- The dialog reads "Connect Google Drive and link this matter's Drive
-  folder to use drafts." when the matter has no Drive folder linked, and
-  "No ODT files found in this matter's Drive folder." when there is
-  nothing to pick. The link to the extension download is shown in both
-  cases.
-- A conversation holds one draft at a time. Several conversations can
-  link the same file.
-
 ## Connect the document in Writer
 
-1. Open the same file in LibreOffice Writer, from the Drive folder on
-   your computer.
+1. Open the linked file in LibreOffice Writer.
 2. Choose **Kosmos → Connect to drafting session**.
 
 A message confirms the connection and names the file, the matter and the
@@ -101,7 +66,7 @@ unconnected.
 | **Kosmos** menu item | What it does |
 |---|---|
 | **Connect to drafting session** | Pairs the open document with its link in Kosmos and turns on the display of tracked changes. |
-| **Disconnect** | Stops the connection. The AI goes back to reading the copy in Drive. |
+| **Disconnect** | Stops the connection. The AI goes on reading the text Writer last sent. |
 | **Status** | Says whether the document is connected, to which file, matter and conversation, and what happened last. It also shows the version of the extension you have installed. |
 
 Good to know:
@@ -160,14 +125,14 @@ Good to know:
 - While connected, the AI reads the document as it is open in Writer,
   saved or not. Your own edits reach it within about half a minute.
 - When Writer is not connected, the AI can still discuss the draft. It
-  reads the copy in Drive, which it checks again once its copy is more
-  than five minutes old.
+  reads the text Writer last sent, so edits made since then reach it
+  only once you connect again.
 
 ## What the AI is given
 
 With each message in a conversation that has a draft, the AI receives the
 full text of the draft along with what any chat on the matter receives:
-the matter's details, people, facts, documents, notes, emails and the
+the matter's details, people, facts, documents, emails and the
 conversation so far. While Writer is connected, the document is copied to
 your firm's Kosmos server about every 30 seconds and after each set of
 edits. The text then goes outside the firm to the AI provider whose model
@@ -189,19 +154,16 @@ To unlink a draft:
 2. An **Unlink Draft** dialog asks "Unlink this draft from the
    conversation? The document itself is untouched." Click **Unlink**.
 
-The pen button returns. Only the link is removed: the document is not
-deleted or changed. Deleting the conversation removes its link in the
-same way.
+Only the link is removed: the document is not deleted or changed. A
+draft cannot be linked again once unlinked. Deleting the conversation
+removes its link in the same way.
 
 Good to know:
 
-- Kosmos cannot rename, move or delete the file. Do that in Drive.
-- If you rename the file in Drive, Writer answers "No draft link found"
-  until the link has the new name. The link takes it when Kosmos next
-  reads the file from Drive: that happens when you send a message in the
-  conversation while Writer is not connected and Kosmos's copy is more
-  than five minutes old. To reconnect sooner, unlink the draft and link
-  it again.
+- Kosmos cannot rename, move or delete the file.
+- Writer pairs the document with its link by file name. If you rename
+  the file, Writer answers "No draft link found". Keep the name the
+  link shows.
 
 ## File the finished document
 
@@ -211,17 +173,15 @@ that to the matter. See [Documents](documents.md).
 
 ## When the matter is closed
 
-Setting a matter to **Complete** or **Closed** removes its link to the
-Drive folder, so **Link a Draft** no longer lists any files. A draft
-already linked stays linked. When the matter's AI chat history is deleted
+A draft linked to a conversation stays linked when the matter is set to
+**Complete** or **Closed**. When the matter's AI chat history is deleted
 after it has been **Closed** for the retention period (see
 [Close a matter](matters.md#close-a-matter)), the links go with the
-conversations. The files in Drive are not touched.
+conversations. The files are not touched.
 
 ## Limits
 
-- Only .odt files can be drafts. Save a Word document as ODT first.
-- The file must be in the matter's Drive folder, no more than four
-  subfolders down, and must have been saved before Writer can connect.
+- Only .odt files can be drafts.
+- The file must have been saved before Writer can connect.
 - Kosmos does not lock a draft or coordinate two people working on the
   same file. Each person's AI edits go to their own open copy.

@@ -67,8 +67,7 @@ in Kosmos.
 !!! note "The consent screen asks for more than Gmail"
 
     Kosmos requests all of its Google scopes on every connection:
-    Calendar, Contacts, read-only Drive, read-only Gmail and Gmail
-    labels. A user connecting only their mailbox is still asked to grant
+    Calendar, Contacts, read-only Gmail and Gmail labels. A user connecting only their mailbox is still asked to grant
     the others, and the token stored for them carries those grants. The
     Gmail sync itself uses only the two Gmail scopes.
 
@@ -104,7 +103,7 @@ Each user does this once, signed in as themselves:
    "Your mailbox:" followed by the address.
 
 Any user can connect their own mailbox. Admin rights are needed only for
-the firm-wide Calendar, Contacts and Drive connections. Without the OAuth
+the firm-wide Calendar and Contacts connections. Without the OAuth
 client file there is no **Connect** button, and a matter's **Emails** tab
 is hidden unless it already holds synced emails. A user has one
 mailbox at a time, and connecting again replaces it.

@@ -155,7 +155,7 @@ Two processes, in two terminals:
 .venv/bin/python manage.py qcluster      # Django-Q worker
 ```
 
-`qcluster` runs the background work: OCR, Drive, Gmail and Calendar
+`qcluster` runs the background work: OCR, Gmail and Calendar
 syncs, AI jobs, embeddings and the schedules `setup_schedules`
 installed. Without it, uploads sit unprocessed and AI chats never answer.
 Sign in with the superuser; Kosmos emails a sign-in code at every login,
@@ -179,9 +179,9 @@ terminal.
   request.
 
 ```bash
-.venv/bin/python -m pytest apps/notes/tests/test_views.py --reuse-db
-.venv/bin/python -m pytest apps/notes/tests/test_views.py::TestNotesIndex
-.venv/bin/python -m pytest -k "note" --reuse-db
+.venv/bin/python -m pytest apps/tasks/tests/test_add_task.py --reuse-db
+.venv/bin/python -m pytest apps/tasks/tests/test_add_task.py::test_empty_description_is_a_form_error
+.venv/bin/python -m pytest -k "task" --reuse-db
 ```
 
 **The database role needs more rights for tests than for running the
@@ -236,7 +236,7 @@ and commit again; see
 Run ruff on the files you changed rather than on a directory:
 
 ```bash
-ruff check --fix apps/notes/views.py && ruff format apps/notes/views.py
+ruff check --fix apps/tasks/views.py && ruff format apps/tasks/views.py
 ```
 
 Pre-commit excludes `migrations/` (the `exclude:` line at the top of its

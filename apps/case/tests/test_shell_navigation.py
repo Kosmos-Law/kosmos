@@ -13,12 +13,12 @@ def _active_item(body, nav_id):
     return 'class="active"' in body[li_start:start]
 
 
-def test_the_sidebar_lists_case_and_library_after_the_practice_pages(client):
+def test_the_sidebar_lists_case_after_the_practice_pages(client):
     body = client.get("/matters/").content.decode()
     assert body.index('id="nav-activity"') < body.index("sidebar-divider")
     assert body.index("sidebar-divider") < body.index('id="nav-case"')
-    assert body.index('id="nav-case"') < body.index('id="nav-notes"')
     assert 'id="nav-case" href="/case/"' in body
+    assert 'id="nav-notes"' not in body
 
 
 def test_a_case_tab_lights_case_not_matters(client, matter):
