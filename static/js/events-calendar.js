@@ -17,6 +17,9 @@ const CALENDAR_CONTAINER_IDS = ["events", "matterEvents"];
 // behind the view toggle.
 const PHONE_WIDTH = 768;
 
+// Where the last-used view is kept (savedView)
+const SAVED_VIEW_KEY = "calendar-view-2";
+
 function onPhone() {
   return window.innerWidth <= PHONE_WIDTH;
 }
@@ -100,8 +103,49 @@ function entryRank(entry) {
   return 0;
 }
 
-// The views drawn as the month grid is: the month, and the dash's week
-const MONTH_GRIDS = ["dayGridMonth", "dashWeek"];
+// The views drawn as the month grid is: the month, the five weeks from
+// this one, and the dash's week
+const MONTH_GRIDS = ["dayGridMonth", "monthRolling", "dashWeek"];
+
+// The calendar's month grids show every event, the rows growing to hold
+// them; a day's tasks past the first few fold into "N more tasks", which
+// opens the day. (The dash's week has the server's own fold.)
+const TASK_FOLD_VIEWS = ["dayGridMonth", "monthRolling"];
+const MONTH_TASK_LIMIT = 2;
+
+function foldTasks(entries) {
+  const byDay = new Map();
+  const kept = [];
+  for (const entry of entries) {
+    const props = entry.extendedProps || {};
+    if (props.kind !== "task") {
+      kept.push(entry);
+      continue;
+    }
+    const day = String(entry.start).slice(0, 10);
+    if (!byDay.has(day)) {
+      byDay.set(day, []);
+    }
+    byDay.get(day).push(entry);
+  }
+  for (const [day, tasks] of byDay) {
+    tasks.sort((a, b) => String(a.title).localeCompare(String(b.title)));
+    kept.push(...tasks.slice(0, MONTH_TASK_LIMIT));
+    const rest = tasks.length - MONTH_TASK_LIMIT;
+    if (rest > 0) {
+      kept.push({
+        id: `more-tasks-${day}`,
+        title: `${rest} more task${rest === 1 ? "" : "s"}`,
+        start: day,
+        allDay: true,
+        className: "fc-event-more-tasks",
+        editable: false,
+        extendedProps: { kind: "more-tasks", day },
+      });
+    }
+  }
+  return kept;
+}
 
 // A task's box is an element of its own, so a click on it can be told
 // from a click on the rest of the chip: the box marks the task done, the
@@ -209,6 +253,8 @@ document.addEventListener("alpine:init", () => {
     tasks: Boolean(opts.tasks),
     tasksUrls: opts.tasksUrls || {},
     weekRange: "",
+    // whether the last fetch folded tasks (null before the first)
+    tasksFolded: null,
     isCurrentWeek: true,
 
     initCalendar() {
@@ -329,7 +375,7 @@ document.addEventListener("alpine:init", () => {
               left: "prev,next today",
               center: "title",
               right:
-                "multiMonthRolling,dayGridMonth,timeGridWeek,timeGridDay,listRolling",
+                "multiMonthRolling,monthRolling,dayGridMonth,timeGridWeek,timeGridDay,listRolling",
             },
         noEventsContent: "No events",
 
@@ -362,6 +408,28 @@ document.addEventListener("alpine:init", () => {
           // weekday row to the window's top with nothing behind it
           dayGridMonth: {
             stickyHeaderDates: false,
+          },
+          // Five weeks from the week in view, so it opens with this week
+          // on top and the weeks ahead below it, where the month grid
+          // spends its first rows on weeks gone by. Prev and next step
+          // four weeks, so the last week in view becomes the first. The
+          // first of each month carries its month's name, to mark where
+          // one ends and the next begins.
+          monthRolling: {
+            type: "dayGrid",
+            duration: { weeks: 5 },
+            dateAlignment: "week",
+            dateIncrement: { weeks: 4 },
+            buttonText: "5 Weeks",
+            stickyHeaderDates: false,
+            dayHeaderFormat: { weekday: "short" },
+            dayCellContent: (arg) => {
+              const day = arg.date.getDate();
+              if (day !== 1 || arg.isToday) {
+                return String(day);
+              }
+              return `${arg.date.toLocaleString("en-US", { month: "short" })} 1`;
+            },
           },
           // The agenda (the phone's view, a choice on wider screens): the
           // month ahead from the day in view, so it opens on today and
@@ -407,6 +475,11 @@ document.addEventListener("alpine:init", () => {
         events: {
           url: this.apiUrl,
           method: "GET",
+          // the month grids fold a day's later tasks (foldTasks)
+          success: (entries) => {
+            this.tasksFolded = this.foldsTasks();
+            return this.tasksFolded ? foldTasks(entries) : entries;
+          },
           failure: function () {
             console.error("Failed to load events");
           },
@@ -441,9 +514,15 @@ document.addEventListener("alpine:init", () => {
         // every view switch, so it doubles as the persistence hook.
         datesSet: (info) => {
           this.applyViewHeight(info.view.type);
+          // A switch between a month grid and a view that shows every
+          // task can fall inside the range already fetched; fetch again
+          // so the tasks are folded, or not, for the new view
+          if (this.tasksFolded !== null && this.tasksFolded !== this.foldsTasks()) {
+            this.calendar.refetchEvents();
+          }
           // The agenda is the phone's view, not a choice to carry over
           if (!phone) {
-            localStorage.setItem("calendar-view", info.view.type);
+            localStorage.setItem(SAVED_VIEW_KEY, info.view.type);
           }
         },
         windowResize: () => this.applyViewHeight(this.calendar.view.type),
@@ -463,16 +542,24 @@ document.addEventListener("alpine:init", () => {
       // Reopen in the last-used view (year/month/week/day/agenda), shared
       // by the Events tab and matter Events calendars. Validate against the
       // real view names so a stale or hand-edited value can't break the
-      // render.
-      const saved = localStorage.getItem("calendar-view");
+      // render. The key was renamed when 5 Weeks became the default, so
+      // everyone opened on it once; the old key is cleared.
+      localStorage.removeItem("calendar-view");
+      const saved = localStorage.getItem(SAVED_VIEW_KEY);
       const valid = [
         "multiMonthRolling",
         "dayGridMonth",
+        "monthRolling",
         "timeGridWeek",
         "timeGridDay",
         "listRolling",
       ];
-      return valid.includes(saved) ? saved : "dayGridMonth";
+      return valid.includes(saved) ? saved : "monthRolling";
+    },
+
+    // Whether the view in hand folds a day's later tasks
+    foldsTasks() {
+      return Boolean(this.calendar) && TASK_FOLD_VIEWS.includes(this.calendar.view.type);
     },
 
     applyViewHeight(viewType) {
@@ -502,9 +589,14 @@ document.addEventListener("alpine:init", () => {
       if (props.kind === "holiday") {
         return;
       }
-      // The dash's fold of a day's tasks leads to the task list
+      // A month grid's fold of a day's tasks opens that day, where all
+      // of them show; the dash's leads to the task list
       if (props.kind === "more-tasks") {
-        window.location.href = "/tasks/";
+        if (props.day) {
+          this.calendar.changeView("timeGridDay", props.day);
+        } else {
+          window.location.href = "/tasks/";
+        }
         return;
       }
       // A task's box marks it done; it leaves the grid, which shows only

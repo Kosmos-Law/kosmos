@@ -474,25 +474,25 @@
    title wraps under its time rather than under its own first word. (The
    year view keeps the one-line chip, cut with an ellipsis.) The selector
    matches the chip rules' weight, so its padding wins. */
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-event.fc-daygrid-dot-event {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-event.fc-daygrid-dot-event {
   display: block;
   padding-left: 1.375rem;
   position: relative;
 }
 
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-event-time,
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-event-title {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-event-time,
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-event-title {
   display: inline;
 }
 
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-daygrid-event-dot {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-daygrid-event-dot {
   left: 0.375rem;
   margin: 0;
   position: absolute;
   top: 0.5rem;
 }
 
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-meeting-icon {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-daygrid-dot-event .fc-meeting-icon {
   left: 0.3125rem;
   margin: 0;
   position: absolute;
@@ -615,7 +615,7 @@
    the chip's tooltip has the whole of it. A timed entry's time is inside
    its title there (events-calendar.js), so the two are cut together. A
    chip that runs over several days has their width for its two lines. */
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-event .fc-event-title {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-daygrid-event .fc-event-title {
   -webkit-box-orient: vertical;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -644,7 +644,7 @@
 
 /* Day cells. The height is the month view's: the year view's mini months
    keep FullCalendar's own compact cells. */
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-daygrid-day-frame {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-daygrid-day-frame {
   min-height: 6rem;
 }
 
@@ -725,12 +725,12 @@
    (tables.css): the header fill and left-set text, ruled off below (above)
    and between its cells. The dash's Calendar Week heads its days the same
    way. */
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) th.fc-col-header-cell {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) th.fc-col-header-cell {
   background: var(--background-th);
   text-align: left;
 }
 
-:is(.fc-dayGridMonth-view, .fc-dashWeek-view) .fc-col-header-cell-cushion {
+:is(.fc-dayGridMonth-view, .fc-monthRolling-view, .fc-dashWeek-view) .fc-col-header-cell-cushion {
   padding: 0.5rem 0.75rem;
 }
 
