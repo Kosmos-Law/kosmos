@@ -119,7 +119,7 @@ formulas (`color-mix`) and component styles consume tokens as before.
 Files with co-located dark (shared by all four darks) blocks include `buttons.css`,
 `badges.css`, `sidebar.css`, `detail.css`, `interface.css`, `viewer.css`,
 `apps/tasks.css`, `apps/calendar.css`, `apps/matters.css`,
-`apps/ai.css`, `apps/case/highlights.css`, `apps/notes-editor.css`. Grep
+`apps/ai.css`, `apps/case/highlights.css`. Grep
 `:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"])` for the authoritative list.
 
 Related: never use a new `font-size` below `1rem`. The smaller sizes

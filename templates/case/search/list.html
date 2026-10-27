@@ -59,17 +59,6 @@
                hx-include="#search-query-input, .search-scope-checkbox">
         Facts
       </label>
-      <label class="search-scope">
-        <input type="checkbox"
-               class="search-scope-checkbox"
-               name="scope_notes"
-               {% if "notes" in active_scopes %}checked{% endif %}
-               hx-post="{% url 'case:search-query' matter.id %}"
-               hx-trigger="change"
-               hx-target="#search-results"
-               hx-include="#search-query-input, .search-scope-checkbox">
-        Notes
-      </label>
     </div>
     <div id="search-results">{% include "case/search/results.html" %}</div>
   </div>

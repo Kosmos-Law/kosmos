@@ -11,7 +11,7 @@ Gathers matter data for the system prompt, organized by importance
 6. Administrative info (tasks, events, settlement)
 
 Content types with importance ratings:
-- Documents, Highlights, Facts, Notes, Emails
+- Documents, Highlights, Facts, Emails
 - Reference Conversations (automatically HIGH importance since explicitly flagged)
 - Case Law (ai_context field controls inclusion)
 
@@ -43,7 +43,6 @@ from apps.mail.models import Email
 from apps.matters.models import Relationship
 from apps.matters.proceedings.models import Proceeding
 from apps.matters.settlement.models import SettlementEntry
-from apps.notes.models import Note
 from apps.settings.models import Firm
 from apps.tasks.models import Task
 
@@ -88,11 +87,9 @@ TYPE_ICONS = {
     "document": "📄",
     "highlight": "🔍",
     "fact": "📅",
-    "note": "📝",
     "caselaw": "⚖️",
     "conversation": "💬",
     "email": "✉️",
-    "library": "📚",
 }
 
 
@@ -101,7 +98,7 @@ class ContextItem:
     """A single item to include in context, with importance and type info."""
 
     importance: int
-    item_type: str  # "document", "highlight", "fact", "note", "caselaw", "conversation"
+    item_type: str  # "document", "highlight", "fact", "caselaw", "conversation"
     content: str
     source_id: int  # For reference
 
@@ -169,9 +166,7 @@ def collect_context_items(
     Collect items that are always included in context (ai_context="always"
     for Documents/CaseLaw, plus all Highlights, Facts, Conversations).
 
-    Items with ai_context="auto" are handled by the selector in selector.py;
-    so are all Notes (notes carry no AI knobs — library notes reach chats
-    only through the selector manifest).
+    Items with ai_context="auto" are handled by the selector in selector.py.
 
     Args:
         matter: The Matter object
@@ -451,9 +446,9 @@ Prefer the highlight whenever one supports the point. A highlight link
 already identifies its document, so never add a second link to the
 document itself for the same point. Documents and highlights are the
 ONLY citable sources: never cite tasks, time entries, timeline facts,
-events, notes, or other case records as authority for a point. Use
+events, or other case records as authority for a point. Use
 only ids whose handles appear in this context; never invent or guess
-an id, and never write the raw [doc:ID], [hl:ID], or [note:ID] handles
+an id, and never write the raw [doc:ID] or [hl:ID] handles
 in your reply."""
 
 MATTER_CONTEXT_TEMPLATE = """
@@ -602,8 +597,8 @@ def assemble_matter_context(matter, user=None, conversation=None) -> str:
 
 
 # How long a conversation may reuse its previously assembled context. Long
-# enough to cover the quick follow-ups that dominate live chat ("now save
-# that to a note"), short enough that a new line of questioning soon gets a
+# enough to cover the quick follow-ups that dominate live chat ("now add
+# that to the timeline"), short enough that a new line of questioning soon gets a
 # fresh selector pass.
 CONTEXT_REUSE_SECONDS = 600
 
@@ -628,7 +623,7 @@ def _unpack_context(packed):
     return zlib.decompress(packed).decode("utf-8")
 
 
-def _context_fingerprint(matter, include_library, llm, user, include_financial):
+def _context_fingerprint(matter, llm, user, include_financial):
     """Cheap change marker for the matter's AI-visible material.
 
     The requesting user and what they may see are part of it: a context
@@ -636,30 +631,23 @@ def _context_fingerprint(matter, include_library, llm, user, include_financial):
     user once their Financial permission has changed.
 
     Count + latest-updated_at per source table. Any write to the material
-    the context is built from (including the AI's own note/fact/witness
+    the context is built from (including the AI's own fact/witness
     writes) changes the fingerprint and forces a rebuild, so reuse never
     hides a change. Sections that merely decorate the prompt (tasks,
     events, time entries) are deliberately not fingerprinted — staleness
     there is harmless within the TTL.
     """
-    from apps.notes.models import get_library_notes
-
     querysets = {
         "doc": Document.objects.filter(matter=matter),
         "hl": Highlight.objects.filter(
             Q(document__matter=matter) | Q(caselaw__matter=matter)
         ),
         "fact": Fact.objects.filter(matter=matter),
-        "note": Note.objects.filter(matter=matter),
         "case": CaseLaw.objects.filter(matter=matter),
         "wit": matter.witnesses.all(),
     }
-    if include_library:
-        querysets["lib"] = get_library_notes()
-
     parts = [
         llm,
-        str(include_library),
         str(user.id if user else ""),
         f"fin:{int(include_financial)}",
     ]
@@ -675,7 +663,6 @@ def assemble_matter_context_with_selection(
     llm,
     user=None,
     conversation=None,
-    include_library=True,
     on_activity=None,
 ) -> str:
     """
@@ -698,9 +685,6 @@ def assemble_matter_context_with_selection(
             them. With no user there is no billing detail at all: no
             invoices, and time entries without money.
         conversation: Optional Conversation (excluded from reference conversations)
-        include_library: Offer firm-library notes (standalone notes in
-            AI-library folders) to the selector, and inject "always" library
-            notes.
         on_activity: Optional callback receiving one-line progress notes
             (chat surfaces them in the live activity log).
     """
@@ -735,9 +719,7 @@ def assemble_matter_context_with_selection(
     ctx_cache_key = context_reuse_key(conversation.id) if conversation else None
     fingerprint = None
     if ctx_cache_key:
-        fingerprint = _context_fingerprint(
-            matter, include_library, llm, user, include_financial
-        )
+        fingerprint = _context_fingerprint(matter, llm, user, include_financial)
         entry = status_cache.get(ctx_cache_key)
         if entry and entry.get("fingerprint") == fingerprint:
             logger.info(
@@ -761,7 +743,7 @@ def assemble_matter_context_with_selection(
     sections["settlement"] = format_settlement(matter)
 
     # Collect "always" items (Documents/CaseLaw with ai_context="always",
-    # plus all Highlights, Facts, Notes, Conversations)
+    # plus all Highlights, Facts, Conversations)
     always_items = collect_context_items(
         matter,
         current_conversation=conversation,
@@ -818,7 +800,6 @@ def assemble_matter_context_with_selection(
     manifest_items, content_map = build_manifest(
         matter,
         current_conversation=conversation,
-        include_library=include_library,
         include_invoices=include_financial,
     )
     if manifest_items:
@@ -829,7 +810,6 @@ def assemble_matter_context_with_selection(
                 {
                     "caselaw": "case-law item",
                     "email": "email thread",
-                    "library": "library note",
                 },
             )
         )
@@ -896,7 +876,7 @@ def assemble_matter_context_with_selection(
 
     # Hard-ceiling enforcement. The selector caps its own auto-selected slice
     # against MODEL_CONTEXT_LIMITS, but the always-included content (fixed
-    # sections + ai_context="always" items + every Highlight / Fact / Note /
+    # sections + ai_context="always" items + every Highlight / Fact /
     # reference Conversation) isn't trimmed by the selector and can push the
     # final prompt past the model's window. If that happens, demote all
     # auto-selected items to "Also Available" so the AI still knows they exist

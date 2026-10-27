@@ -100,26 +100,6 @@ class Document(AuditMixin, models.Model):
     file = models.FileField(upload_to=document_upload_path, max_length=500)
     labels = models.ManyToManyField(Label, related_name="documents", blank=True)
 
-    # Drive sync provenance. Set only on documents ingested from a mapped
-    # folder of the matter's Drive folder; the sync upserts by drive_file_id
-    # and NEVER deletes — the mirror is append-only, so a Drive-side removal
-    # can't destroy OCR, highlights, or AI context.
-    drive_file_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
-    drive_path = models.CharField(max_length=1024, null=True, blank=True)
-    # RFC3339 modifiedTime snapshot; a mismatch triggers a file refresh.
-    drive_modified = models.CharField(max_length=64, null=True, blank=True)
-    drive_synced_at = models.DateTimeField(null=True, blank=True)
-    # The folder mapping this file arrived through; re-mapping that folder
-    # rewrites category/proceeding on exactly these documents. Nulled when
-    # the file moves out of every mapped folder (the document itself stays).
-    drive_mapping = models.ForeignKey(
-        "drive.DriveFolderMapping",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="documents",
-    )
-
     # OCR fields
     ocr_status = models.CharField(
         max_length=20, choices=OCR_STATUS_CHOICES, default="pending"
@@ -165,14 +145,10 @@ class Document(AuditMixin, models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def is_drive_synced(self):
-        return bool(self.drive_file_id)
-
     def reset_extraction(self):
         """Forget everything derived from the bytes.
 
-        Every path that replaces the file (a re-upload, a Drive refresh)
+        Every path that replaces the file (a re-upload)
         calls this before saving so OCR runs again on the new content and
         the summary task, which skips a document that already has one,
         writes a fresh summary instead of keeping the old file's.
@@ -257,8 +233,8 @@ class Document(AuditMixin, models.Model):
         # uploaded, not the stored file: the OCR task overwrites the file
         # with the OCR'd PDF and leaves the hash alone on purpose, which is
         # what lets a re-upload of the original still match. A path that
-        # replaces the bytes with a genuinely different file (documents_edit,
-        # the Drive refresh) sets new fingerprints itself.
+        # replaces the bytes with a genuinely different file (documents_edit)
+        # sets new fingerprints itself.
         if self.file and not self.content_hash:
             try:
                 self.file.open("rb")
@@ -552,13 +528,11 @@ class MaterialChunk(models.Model):
 
     Written by apps/case/semantic.py (chunking, hashing, save-time
     re-indexing) and queried by the agent's search_materials via cosine
-    distance. Library notes carry no matter.
+    distance.
     """
 
     KIND_CHOICES = [
         ("document", "Document"),
-        ("note", "Note"),
-        ("library", "Library note"),
         ("email", "Email"),
         ("highlight", "Highlight"),
         ("fact", "Fact"),

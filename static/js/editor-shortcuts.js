@@ -1,16 +1,14 @@
-// Shared keyboard shortcuts for the TipTap editing surfaces (notes editor,
-// AI compose-prompt modal) — the formatting half of the shortcut map lives
-// here so both surfaces speak it identically. Surface-specific actions
-// (save, search, reference picker, shortcuts modal) arrive as callbacks;
-// a shortcut whose action is absent falls through to the browser
-// untouched. The caller owns the binding scope: the notes editor binds on
-// document (its editor is the whole page), the prompt modal binds on the
-// modal root so the listener dies with the modal.
+// Keyboard shortcuts for the TipTap editing surfaces (the AI
+// compose-prompt modal) — the formatting half of the shortcut map.
+// Surface-specific actions (save, search, shortcuts modal) arrive as
+// callbacks; a shortcut whose action is absent falls through to the
+// browser untouched. The caller owns the binding scope: the prompt modal
+// binds on the modal root so the listener dies with the modal.
 //
 // Two tiers. handleEditorShortcut acts on the editor's text (formatting,
 // headings, delete block), so a caller bound wider than the editor must
 // only call it while focus is in that text: Ctrl+D with the caret in a
-// title or search box must not delete a paragraph of the note.
+// title or search box must not delete a paragraph of the text.
 // handleSurfaceShortcut is the part that is safe from anywhere on the
 // surface (save, search bar, shortcuts dialog).
 

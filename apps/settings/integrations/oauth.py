@@ -1,6 +1,6 @@
 """Whether this server can start a Google sign-in at all.
 
-Every Google integration (Contacts, Calendar, Drive and each user's Gmail)
+Every Google integration (Contacts, Calendar and each user's Gmail)
 connects through one OAuth client, whose secret file an administrator saves
 as ``google_tokens.json`` in ``GOOGLE_DATA_DIR``. Until that file exists and
 holds a client, a Connect button can only fail, so the pages that offer one

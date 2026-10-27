@@ -673,7 +673,6 @@ document.addEventListener('keydown', function(event) {
       'fp': () => htmx.ajax('GET', '/search/?scope=proceedings', { target: '#htmx-modal-container' }),
       'fc': () => htmx.ajax('GET', '/search/?scope=contacts', { target: '#htmx-modal-container' }),
       'fi': () => htmx.ajax('GET', '/search/?scope=intakes', { target: '#htmx-modal-container' }),
-      'fn': () => htmx.ajax('GET', '/search/?scope=notes', { target: '#htmx-modal-container' }),
     };
 
     const action = LEADER_ACTIONS[seq];
@@ -695,7 +694,7 @@ document.addEventListener('keydown', function(event) {
 
   // i — focus the visible text input on list views
   if (event.key === 'i') {
-    const input = document.querySelector('.tasks-add-quick-input, .toolbar-search, #notes-keyword-input');
+    const input = document.querySelector('.tasks-add-quick-input, .toolbar-search');
     if (input) {
       event.preventDefault();
       input.focus();

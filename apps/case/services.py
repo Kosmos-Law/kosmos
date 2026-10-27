@@ -20,7 +20,6 @@ from apps.case.documents.tasks import (
     process_document_ocr,
     sanitize_text,
 )
-from apps.case.notes.markdown_ext import NoteReferenceExtension
 from apps.case.semantic import (
     register_kind as register_semantic_kind,
     semantic_entries,
@@ -38,7 +37,6 @@ GENERATE_DOCUMENT_SUMMARY_TASK = "apps.case.documents.tasks.generate_document_su
 __all__ = [
     "EmailMetadata",
     "GENERATE_DOCUMENT_SUMMARY_TASK",
-    "NoteReferenceExtension",
     "PROCESS_DOCUMENT_OCR_TASK",
     "Tab",
     "extract_existing_text",

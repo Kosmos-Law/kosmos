@@ -15,7 +15,6 @@ from apps.ai.agent_tools import (
 )
 from apps.case.models import CaseLaw
 from apps.mail.models import Email
-from apps.notes.models import Note, NoteFolder
 
 pytestmark = pytest.mark.django_db
 
@@ -221,81 +220,69 @@ class TestSearch:
     def test_phrase_or_and_variants(self, executor, matter, user):
         from watson import search as watson
 
-        note_a = Note.objects.create(
+        from apps.case.models import Fact
+
+        fact_a = Fact.objects.create(
             matter=matter,
-            title="Deposit memo",
-            content="The earnest money deposit was returned to the buyer.",
+            date="2024-01-25",
+            description="The earnest money deposit was returned to the buyer.",
         )
-        note_b = Note.objects.create(
+        fact_b = Fact.objects.create(
             matter=matter,
-            title="Wire note",
-            content="Money for the deposit arrived by wire.",
+            date="2024-01-26",
+            description="Money for the deposit arrived by wire.",
         )
-        for note in (note_a, note_b):
-            watson.default_search_engine.update_obj_index(note)
+        for fact in (fact_a, fact_b):
+            watson.default_search_engine.update_obj_index(fact)
 
         phrase, _ = run(
-            executor, "search_materials", query='"earnest money"', kinds=["note"]
+            executor, "search_materials", query='"earnest money"', kinds=["fact"]
         )
-        assert [h["id"] for h in phrase["hits"]] == [note_a.id]
+        assert [h["id"] for h in phrase["hits"]] == [fact_a.id]
 
         either, _ = run(
-            executor, "search_materials", query="earnest OR wire", kinds=["note"]
+            executor, "search_materials", query="earnest OR wire", kinds=["fact"]
         )
-        assert {h["id"] for h in either["hits"]} == {note_a.id, note_b.id}
+        assert {h["id"] for h in either["hits"]} == {fact_a.id, fact_b.id}
 
         merged, outcome = run(
             executor,
             "search_materials",
             queries=["earnest money", "deposit arrived"],
-            kinds=["note"],
+            kinds=["fact"],
         )
         by_id = {h["id"]: h for h in merged["hits"]}
-        assert by_id[note_a.id]["matched"] == ["earnest money"]
-        assert by_id[note_b.id]["matched"] == ["deposit arrived"]
+        assert by_id[fact_a.id]["matched"] == ["earnest money"]
+        assert by_id[fact_b.id]["matched"] == ["deposit arrived"]
         step = executor.events[-1]
         assert step["title"] == 'Searched "earnest money" and 1 more'
         assert "2 hits" in step["detail"]
 
-    def test_document_and_library_summaries_in_hits(
-        self, executor, matter, user, text_document
-    ):
+    def test_document_summary_in_hits(self, executor, matter, user, text_document):
         from watson import search as watson
 
         text_document.summary = "A preservation demand covering the ESI at issue."
         text_document.save(update_fields=["summary"])
         watson.default_search_engine.update_obj_index(text_document)
-        root = NoteFolder.objects.create(name="Firm Library")
-        lib = Note.objects.create(
-            author=user,
-            folder=root,
-            title="Spoliation guide",
-            content="How to send a spoliation letter.",
-            summary="Checklist for preservation demands.",
-        )
-        watson.default_search_engine.update_obj_index(lib)
         payload, _ = run(executor, "search_materials", query="spoliation")
         by_kind = {h["kind"]: h for h in payload["hits"]}
         assert by_kind["document"]["summary"] == (
             "A preservation demand covering the ESI at issue."
         )
-        assert by_kind["library"]["summary"] == ("Checklist for preservation demands.")
 
-    def test_fuzzy_fallback_on_typo(self, executor, matter, user):
+    def test_fuzzy_fallback_on_typo(self, executor, matter, document):
         from watson import search as watson
 
-        note = Note.objects.create(
-            matter=matter,
-            title="Spoliation Letter",
-            content="Preservation demand sent to opposing counsel.",
-        )
-        watson.default_search_engine.update_obj_index(note)
+        document.name = "Spoliation Letter"
+        document.description = "Preservation demand sent to opposing counsel."
+        document.save(update_fields=["name", "description"])
+        watson.default_search_engine.update_obj_index(document)
         payload, outcome = run(
-            executor, "search_materials", query="spoilation leter", kinds=["note"]
+            executor, "search_materials", query="spoilation leter", kinds=["document"]
         )
         assert not outcome["is_error"]
         assert "near matches" in payload["note"]
-        assert payload["hits"][0]["id"] == note.id
+        assert payload["hits"][0]["id"] == document.id
         assert payload["hits"][0]["fuzzy"] is True
 
     def test_empty_query(self, executor):
@@ -321,33 +308,6 @@ class TestOtherReads:
         assert payload["messages"] == 2
         assert "Body 0" in payload["text"] and "Body 1" in payload["text"]
         assert executor.events[-1]["kind"] == "email"
-
-    def test_note_and_library_note(self, executor, matter, user):
-        note = Note.objects.create(matter=matter, title="Memo", content="Matter memo")
-        root = NoteFolder.objects.create(name="Firm Library")
-        lib = Note.objects.create(
-            author=user, folder=root, title="Guide", content="Library guide"
-        )
-        payload, _ = run(executor, "read_note", note_id=note.id)
-        assert payload["text"] == "Matter memo" and payload["library"] is False
-        payload, _ = run(executor, "read_note", note_id=lib.id)
-        assert payload["text"] == "Library guide" and payload["library"] is True
-        assert payload["folder"] == "Firm Library"
-
-    def test_other_matter_note_refused(self, executor, user, contact, practice_area):
-        from apps.matters.models import Matter
-
-        other = Matter.objects.create(
-            user=user,
-            name="Other",
-            status="Open",
-            date_start="2024-01-01",
-            practice_area=practice_area,
-            client=contact,
-        )
-        note = Note.objects.create(matter=other, title="Secret", content="x")
-        payload, outcome = run(executor, "read_note", note_id=note.id)
-        assert outcome["is_error"]
 
     def test_caselaw_opinion_is_cached(self, executor, matter, monkeypatch):
         from django.core.cache import cache

@@ -49,7 +49,7 @@ only that mailbox's row), collapsed for display and AI by RFC 822
 `message_id` through `EmailQuerySet.dedup()`, first-synced row wins. Rows
 hold text only (`body_text`, and `body_html` for the preview); Gmail stays
 the archive, and `gmail_url` deep-links to it. `importance` defaults to 3,
-one below documents and notes. `document` (`SET_NULL`) points at the
+one below documents. `document` (`SET_NULL`) points at the
 promoted `Document`. `matter` and `account` are `CASCADE`: deleting a
 matter or disconnecting a mailbox removes those rows. A null `account`
 marks a row from before per-user mailboxes, awaiting `adopt_gmail_account`.
@@ -159,8 +159,8 @@ bootstraps or consumes the history feed.
 null-account row), fetches the message in `full` format, runs
 `parser.parse_payload()`, creates the `Email` and its attachments, and
 queues `process_email_attachments`. That task fetches each supported
-attachment's bytes transiently, extracts text (pypdf for PDFs, the Drive
-converter for office formats), stores it on the `EmailAttachment` and
+attachment's bytes transiently, extracts text (pypdf for PDFs,
+`utils/convert.py` for office formats), stores it on the `EmailAttachment` and
 discards the bytes. Images are skipped on purpose: signature logos would
 pollute every thread. A PDF under `PDF_TEXT_THRESHOLD` characters is
 marked `no_text_layer`, not OCR'd.

@@ -225,14 +225,6 @@ def _documents_list_response(request, matter_id):
     return render(request, "case/documents/list.html", context)
 
 
-# A document that came from Google Drive is on the matter its Drive folder is
-# linked to. The sync would move it straight back, so it is not moved here.
-DRIVE_MOVE_MESSAGE = (
-    "This document follows its folder in Google Drive. To move it to another "
-    "matter, move the file in Drive."
-)
-
-
 # A document filed under a proceeding is part of that proceeding's record:
 # Document.save() puts any other category back to Record.
 PROCEEDING_CATEGORIES = ("Record", "Discovery")
@@ -525,27 +517,7 @@ def documents_edit(request, document_id):
 
         uploaded_file = request.FILES.get("file")
 
-        # The Matter field is locked for a Drive-synced document (the form
-        # ignores it). A request that asks for another matter anyway is
-        # refused outright rather than saved with the matter left alone.
-        posted_matter = request.POST.get("matter")
-        if (
-            document.is_drive_synced
-            and posted_matter
-            and posted_matter != str(old_matter_id)
-        ):
-            form.add_error("matter", DRIVE_MOVE_MESSAGE)
-
-        if uploaded_file and document.drive_file_id:
-            # Drive-synced record: the bytes mirror the Drive file. Metadata
-            # stays editable; the file itself is replaced in Drive.
-            form.add_error(
-                None,
-                "FILE_REQUIRED: This document is synced from Google Drive. "
-                "Replace the file in the Drive record folder instead.",
-            )
-            uploaded_file = None
-        elif not uploaded_file and not document.file:
+        if not uploaded_file and not document.file:
             form.add_error(None, "FILE_REQUIRED: Please select a file to upload.")
         elif uploaded_file and not uploaded_file.name.lower().endswith(".pdf"):
             form.add_error(None, "FILE_REQUIRED: Only PDF files are accepted.")
@@ -1226,14 +1198,9 @@ def bulk_documents_matter(request, matter_id):
             target_matter = target_matter_for_user(target_matter_id, request.user)
 
             # Move documents to new matter
-            skipped = 0
             for doc in _selected_on_matter(
                 selected_documents, matter_id
             ).select_related("proceeding"):
-                if doc.is_drive_synced:
-                    skipped += 1
-                    continue
-
                 old_file_path = doc.file.name if doc.file else None
 
                 doc.matter = target_matter
@@ -1264,24 +1231,7 @@ def bulk_documents_matter(request, matter_id):
                         pass  # File move failed, but document is still moved
 
             clear_selected_ids(request, key)
-            response = selection_response("documentsChanged")
-            if skipped == 1:
-                toast_warning(
-                    response,
-                    "1 document from Google Drive was not moved. It follows its "
-                    "folder in Google Drive. To move it to another matter, move "
-                    "the file in Drive.",
-                    duration=10000,
-                )
-            elif skipped:
-                toast_warning(
-                    response,
-                    f"{skipped} documents from Google Drive were not moved. They "
-                    "follow their folders in Google Drive. To move one to "
-                    "another matter, move the file in Drive.",
-                    duration=10000,
-                )
-            return response
+            return selection_response("documentsChanged")
 
         return HttpResponse(status=400, content="No matter selected.")
 

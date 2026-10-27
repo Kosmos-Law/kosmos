@@ -576,7 +576,6 @@ def delete(request, id):
             # The case builder's rows, counted through their reverse relations
             # so the matter app needs none of its models.
             "documents_count": matter.documents.count(),
-            "notes_count": matter.notes.count(),
             "events_count": Event.objects.filter(matter=matter).count(),
             "invoices_count": Invoice.objects.filter(matter=matter).count(),
         }

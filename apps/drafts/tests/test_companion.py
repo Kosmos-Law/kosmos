@@ -155,7 +155,7 @@ def test_oxt_download_is_personalized_zip(client, user, settings):
     declared = re.search(
         r'<version value="([^"]+)"/>', archive.read("description.xml").decode()
     )
-    assert declared.group(1) == companion.EXTENSION_VERSION == "0.4.1"
+    assert declared.group(1) == companion.EXTENSION_VERSION == "0.4.2"
 
 
 def test_setup_dialog_names_the_version_and_how_to_update(client):
@@ -174,7 +174,7 @@ def test_sessions_name_the_file_and_the_conversation(api, link):
 
 @pytest.fixture
 def sibling(link, matter, user):
-    """A second conversation linking the same Drive file."""
+    """A second conversation linking the same file."""
     from apps.ai.models import Conversation
     from apps.drafts.models import DraftLink
 

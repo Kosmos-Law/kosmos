@@ -21,14 +21,12 @@ themselves, in
 
 ## Features
 
-The case builder's two features, the case file (each matter's documents,
-highlights, timeline, witnesses, emails, labels, search and AI tab) and
-the library (the notes), are on by default. An administrator switches
-either off for the whole firm under Settings > Features: the sidebar
-entry and every path go away for everyone, the data stays, and the Drive
-mirror pauses while the case file is off. The MCP matter API under
-`/case/api/` and the matter-scoped notes keep working with the case file
-off.
+The case file (each matter's documents, highlights, timeline,
+witnesses, emails, labels, search and AI tab) is on by default. An
+administrator switches it off for the whole firm under Settings >
+Features: the sidebar entry and every path go away for everyone, the
+and the data stays. The MCP matter API under
+`/case/api/` keeps working with the case file off.
 
 ## Integrations
 
@@ -45,7 +43,7 @@ Each integration stays off until it is configured.
 - [Online payments](integrations/payments.md): LawPay, Stripe or Confido,
   webhooks, and settlement.
 - [Google Workspace](integrations/google.md): the shared Google setup,
-  Calendar, Contacts and Drive.
+  Calendar and Contacts.
 - [Gmail sync](integrations/gmail.md): case email from each user's
   mailbox.
 - [Intakes from forwarded email](integrations/inbound-email.md): Mailgun

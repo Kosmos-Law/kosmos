@@ -1,8 +1,8 @@
-"""Convert downloaded note files to Markdown.
+"""Convert office files to Markdown (mail attachments, drafts).
 
 Word-processor files go through pandoc (a system binary — see README): `.md`
-passes through unchanged; `.docx`/`.odt` (and exported Google Docs, which we
-hand off as `.docx`) are converted to GitHub-flavored Markdown.
+passes through unchanged; `.docx`/`.odt` are converted to GitHub-flavored
+Markdown.
 
 Spreadsheets are handled in-process (no pandoc): `.xlsx` via openpyxl, `.ods`
 via odfpy, and `.csv` via the stdlib, each rendered as one GFM table per sheet so

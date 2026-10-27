@@ -16,11 +16,11 @@ restoring it.
 
 | What | Where | Notes |
 |---|---|---|
-| The database | PostgreSQL, the database named by `DB_NAME` in `config/.env` (the installer's default is `kosmos`) | Almost everything: matters, contacts, time and billing, trust ledgers, notes, AI conversations, emails synced from Gmail, extracted document text, the search indexes, the task queue and schedules, user accounts and sessions. |
+| The database | PostgreSQL, the database named by `DB_NAME` in `config/.env` (the installer's default is `kosmos`) | Almost everything: matters, contacts, time and billing, trust ledgers, AI conversations, emails synced from Gmail, extracted document text, the search indexes, the task queue and schedules, user accounts and sessions. |
 | Uploaded files, local storage | `media/` in the checkout, when `STORAGE_BACKEND=local` | Documents (`media/documents/`), stored invoice PDFs (`media/invoices/`) and the firm logo (`media/company/`). |
 | Uploaded files, object storage | The bucket named by `DIGITAL_OCEAN_BUCKET_NAME`, when `STORAGE_BACKEND=s3` | The same files, under the same paths, in an S3-compatible bucket instead of `media/`. |
 | Configuration | `config/.env` | Holds `SECRET_KEY`, the database password and every API key set there (AI keys entered under Settings → Integrations are in the database, encrypted with `SECRET_KEY`). It is not in git. |
-| Google credentials | The directory named by `GOOGLE_DATA_DIR` (default `google/` in the checkout) | The OAuth client file you downloaded from Google (`google_tokens.json`) and the tokens Kosmos obtained for Calendar, Contacts and Drive. Not in git. |
+| Google credentials | The directory named by `GOOGLE_DATA_DIR` (default `google/` in the checkout) | The OAuth client file you downloaded from Google (`google_tokens.json`) and the tokens Kosmos obtained for Calendar and Contacts. Not in git. |
 | The code version | The git commit of the checkout | Record it with each backup: `git rev-parse HEAD`. |
 
 The database and the uploaded files belong together. A document is a row
@@ -249,9 +249,7 @@ Then sign in and check the things a database-only test would miss:
     ```
 
     The command only lists. It deletes nothing unless you pass `--apply`,
-    so do not pass it here. For files that were mirrored from Google Drive,
-    `restore_drive_documents` can download missing ones again (it only
-    reports, unless you pass `--apply`).
+    so do not pass it here.
 
 ## Rehearsing a restore
 
@@ -269,7 +267,7 @@ world:
   fresh install);
 - set `PAYMENT_PROCESSOR=fake` and blank the processor keys;
 - do not copy the Google credential directory, so the firm-wide Calendar,
-  Contacts and Drive connections stay off.
+  and Contacts connections stay off.
 
 The background worker is what sends the daily digest and runs the sync
 jobs. If the rehearsal only needs to prove that the data is there, leave

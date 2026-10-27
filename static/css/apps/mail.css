@@ -1,6 +1,5 @@
 /* Case Emails tab — Gmail-synced messages (apps/mail): stacked message list
-   with a reading pane. The label-link modal reuses the .drive-folder-*
-   classes from notes.css. */
+   with a reading pane, and the label-link modal's picker. */
 
 .emails-toolbar .toolbar-right {
   display: flex;
@@ -168,4 +167,48 @@
   display: flex;
   gap: 0.75rem;
   margin-top: 1rem;
+}
+
+/* Label-link modal: the list of Gmail labels to pick from */
+
+.folder-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+}
+
+.folder-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-light);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.folder-picker-option:hover {
+  background: var(--background-section);
+}
+
+.folder-picker-option.disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+.folder-picker-name {
+  flex: 1;
+}
+
+.folder-picker-taken {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.error-text {
+  margin-top: 0.5rem;
+  color: var(--error);
 }

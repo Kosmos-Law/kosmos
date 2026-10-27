@@ -19,7 +19,7 @@ Which of these an operator needs, and when, is covered in
 
 | Command | What it does |
 |---|---|
-| `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in Drive and Gmail. Scheduled weekly by setup_schedules. |
+| `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in the firm's file store and Gmail. Scheduled weekly by setup_schedules. |
 
 ## books
 
@@ -48,14 +48,6 @@ Which of these an operator needs, and when, is covered in
 | `fix_document_paths` | Fix document file paths from old naming format to current convention |
 | `setup_chat_purge_schedule` | Create or update the weekly chat-purge schedule (Sunday 03:00 local): deletes AI chat history for matters closed past the retention window. Superseded by setup_schedules, which installs this with every other schedule. |
 | `update_search_vectors` | Update search vectors for all documents and highlights |
-
-## drive
-
-| Command | What it does |
-|---|---|
-| `link_drive_folders` | Link Google Drive matter folders (under the Drive root) to Matter records (Matter.drive_folder + drive_folder_id). Interactive; suggests matches by name. Subfolder mapping happens in the Documents tab. |
-| `restore_drive_documents` | Re-download Drive-mirrored documents whose file is missing from storage |
-| `sync_drive_notes` | Mirror PDFs under each matter's mapped Drive folders into Documents (append-only; categories and proceedings follow the Documents tab's Drive Folder mapping). The case-notes mirror is retired; files under Notes/ are ignored. |
 
 ## intakes
 
@@ -89,12 +81,6 @@ Which of these an operator needs, and when, is covered in
 |---|---|
 | `clean_history` | Delete change-history records and failed worker tasks older than specified days (default: 90) |
 | `setup_schedules` | Create or update every recurring Django-Q schedule used by Kosmos. |
-
-## notes
-
-| Command | What it does |
-|---|---|
-| `backfill_note_summaries` | Generate AI summaries for library notes whose summary is missing or stale. Queues onto qcluster by default; --sync runs inline. |
 
 ## tasks
 

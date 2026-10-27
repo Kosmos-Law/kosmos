@@ -1,26 +1,19 @@
-"""Views for linking a draft to a case AI conversation.
+"""Views for a case AI conversation's draft link.
 
-The chat window's draft button (the pen in the input row) opens the picker
-(the matter's Drive ODT files); choosing one creates the DraftLink and the
-chip partial swaps in.
-The companion setup modal (extension download) is reachable from the picker.
+Linking a new draft is off until the files have a home the server can
+list (it used to be a picker over the matter's Google Drive folder; see
+docs/decisions/2026-10-27-google-drive-removed.md). An existing link shows
+in the chat composer's chip and can be unlinked; the companion setup modal
+(extension download) stays for users of existing links.
 """
 
-import logging
-
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 
 from apps.accounts.models import ApiToken
 from apps.ai.models import Conversation
-from apps.drafts import services
 from apps.drafts.companion import EXTENSION_VERSION
-from apps.drive import google
-from utils.toasts import toast_error
-
-logger = logging.getLogger(__name__)
 
 
 def _get_conversation(conv_id):
@@ -34,12 +27,6 @@ def _get_conversation(conv_id):
     )
 
 
-def _link_refused(message):
-    """Leave the chip as it is and say why. 204 keeps HTMX from swapping
-    an empty body into the chip; the toast carries the reason."""
-    return toast_error(HttpResponse(status=204), message, title="Draft not linked")
-
-
 def _chip_response(request, conversation):
     response = render(
         request,
@@ -48,40 +35,6 @@ def _chip_response(request, conversation):
     )
     response["HX-Trigger"] = "draftLinkChanged"
     return response
-
-
-@login_required
-def draft_picker(request, conv_id):
-    """Modal listing the matter's Drive ODT files."""
-    conversation = _get_conversation(conv_id)
-    matter = conversation.matter
-    drive_ready = bool(matter and matter.drive_folder) and google.check_credentials()
-    return render(
-        request,
-        "ai/draft-picker.html",
-        {
-            "conversation": conversation,
-            "matter": matter,
-            "drive_ready": drive_ready,
-            "files": services.list_matter_odt_files(matter) if drive_ready else [],
-        },
-    )
-
-
-@login_required
-@require_http_methods(["POST"])
-def draft_link(request, conv_id):
-    """Link the conversation to the chosen Drive file."""
-    conversation = _get_conversation(conv_id)
-    drive_file_id = request.POST.get("file", "")
-    if not drive_file_id:
-        return _link_refused("Choose a file from the matter's Drive folder.")
-    try:
-        services.create_link(conversation, drive_file_id)
-    except services.DraftError as exc:
-        return _link_refused(str(exc))
-    conversation.refresh_from_db()
-    return _chip_response(request, conversation)
 
 
 @login_required

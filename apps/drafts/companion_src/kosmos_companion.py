@@ -15,7 +15,7 @@ edits were not applied. A refused round is left alone, so the chat and the
 document cannot disagree about it.
 
 The edit operations and their semantics are identical to the server's
-headless applier (apps/drive/uno_driver.py): replace, delete_paragraph,
+headless applier (apps/drafts/uno_driver.py): replace, delete_paragraph,
 insert_after. A round is wrapped in one undo context; if any edit fails the
 whole round is undone, so a round either fully applies or leaves the
 document untouched (and it is a single Ctrl+Z for the user either way).
@@ -564,9 +564,8 @@ class Companion(unohelper.Base, XJobExecutor):
         url = doc.getURL()
         if not url:
             self._message(
-                "This document has never been saved. Save it as an ODT file "
-                "in the matter's Drive folder, link it to a conversation in "
-                "Kosmos (Link a Draft), then connect again."
+                "This document has never been saved. Open the ODT file that "
+                "is linked to a conversation in Kosmos, then connect again."
             )
             return
         doc_name = os.path.basename(uno.fileUrlToSystemPath(url))
@@ -653,8 +652,8 @@ class Companion(unohelper.Base, XJobExecutor):
                 self._message(
                     f'Disconnected from "{connection.session["name"]}". '
                     "While disconnected, edits the AI proposes are not "
-                    "applied. The AI goes on reading the draft from the copy "
-                    "in Google Drive."
+                    "applied. The AI goes on reading the draft as it was when "
+                    "last connected."
                 )
 
     def _status(self):

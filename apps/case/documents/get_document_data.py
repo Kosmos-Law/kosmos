@@ -3,7 +3,6 @@ from django.db.models import Count
 from apps.accounts.access import filter_matters_for_user
 from apps.case.models import Document, Label
 from apps.case.views import get_matter_from_url
-from apps.drive.mappings import matter_drive_status
 from apps.management.pagination import CustomPaginator
 from apps.management.selection import (
     all_visible_selected,
@@ -141,8 +140,6 @@ def get_document_data(request, matter_id):
         "all_selected": all_selected,
         "proceedings": proceedings,
         "selected_proceeding": selected_proceeding,
-        # DB-only Drive summary for the toolbar button (never calls Drive).
-        "drive_status": matter_drive_status(matter),
         "current_order": current_order,
         "importances": list(range(7, 0, -1)),
         "importance_value": importance_value,

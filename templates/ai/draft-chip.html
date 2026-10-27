@@ -1,48 +1,32 @@
 {% comment %}
 The draft-link control in the chat composer. Swapped via #draftChip after
-link/unlink. In an unsaved conversation (no id yet) the button first
-materializes the row via linkDraftForNewChat() (standalone window only),
-so a draft can be linked before the first prompt. Case chat is the only
-surface with drafts (the Research tab has its own), so no kind branch
-here. Without Drive connected there is nothing to link, so the link button
-is left out; a draft already linked still shows, with its unlink button.
+unlink. Linking a new draft is off for now (it was a picker over the
+matter's Google Drive folder), so only a draft already linked shows, with
+the companion setup (to install or update the extension) and its unlink
+button.
 {% endcomment %}
-{% load ai_extras %}
-{% drive_connected as drive_on %}
-{% if not conversation.id %}
-  {% if drive_on %}
-    <button type="button"
-            class="btn-icon draft-link-btn"
-            onclick="linkDraftForNewChat()"
-            title="Link a draft (an ODT from this matter's Drive folder)">
-      <i class="icon-wifi-pen"></i>
-    </button>
-  {% endif %}
-{% else %}
-  {% if conversation.draft_link %}
-    <span class="app-badge ai-draft-badge"
-          title="Edits apply to this document in your open LibreOffice window">
-      <i class="icon-file-text"></i>
-      {{ conversation.draft_link.name }}
-    </span>
-    <button type="button"
-            class="btn-icon btn-sm"
-            hx-post="{% url 'drafts:unlink' conversation.id %}"
-            hx-target="#draftChip"
-            hx-swap="innerHTML"
-            hx-confirm="Unlink this draft from the conversation? The document itself is untouched."
-            data-confirm-title="Unlink Draft"
-            data-confirm-text="Unlink"
-            title="Unlink draft">
-      <i class="icon-x"></i>
-    </button>
-  {% elif drive_on %}
-    <button type="button"
-            class="btn-icon draft-link-btn"
-            hx-get="{% url 'drafts:picker' conversation.id %}"
-            hx-target="#htmx-modal-container"
-            title="Link a draft (an ODT from this matter's Drive folder)">
-      <i class="icon-wifi-pen"></i>
-    </button>
-  {% endif %}
+{% if conversation.id and conversation.draft_link %}
+  <span class="app-badge ai-draft-badge"
+        title="Edits apply to this document in your open LibreOffice window">
+    <i class="icon-file-text"></i>
+    {{ conversation.draft_link.name }}
+  </span>
+  <button type="button"
+          class="btn-icon btn-sm"
+          hx-get="{% url 'drafts:companion-setup' %}"
+          hx-target="#htmx-modal-container"
+          title="LibreOffice companion: install or update">
+    <i class="icon-download"></i>
+  </button>
+  <button type="button"
+          class="btn-icon btn-sm"
+          hx-post="{% url 'drafts:unlink' conversation.id %}"
+          hx-target="#draftChip"
+          hx-swap="innerHTML"
+          hx-confirm="Unlink this draft from the conversation? The document itself is untouched."
+          data-confirm-title="Unlink Draft"
+          data-confirm-text="Unlink"
+          title="Unlink draft">
+    <i class="icon-x"></i>
+  </button>
 {% endif %}

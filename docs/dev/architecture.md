@@ -23,9 +23,9 @@ subsystem pages group them.
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
 | [Books](subsystems/books.md) | `apps/books` | The general ledger: the chart of accounts with its tax lines, journal entries, the statements and the tax summary. A module, off by default, gated by the Books permission. |
-| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab, the saved case law and the semantic index; the Google Drive mirror; the notes and the library. |
+| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab, the saved case law and the semantic index. `apps/notes` holds only the models and migrations of the retired notes, kept for their data ([Notes are retired](../decisions/2026-10-27-notes-retired.md)); `apps/drive` holds only the migrations that drop the removed Google Drive mirror's tables ([Google Drive is removed](../decisions/2026-10-27-google-drive-removed.md)). |
 | [AI](subsystems/ai/context.md) | `apps/ai`, `apps/llm` | The context builders, the chat surfaces, the agent tool loop (with its CourtListener research tools) and the Claude Desktop API over a matter; the model-provider layer (the Anthropic and Gemini clients, embeddings, pricing, the status store). |
-| [Notes and drafts](subsystems/notes-and-drafts.md) | `apps/notes`, `apps/drafts` | The notes editor, folders and library (part of the case builder); draft links and the LibreOffice companion (`companion_src/`). |
+| [Drafts](subsystems/drafts.md) | `apps/drafts` | Draft links and the LibreOffice companion (`companion_src/`). |
 | [Email and intakes](subsystems/email-and-intakes.md) | `apps/mail`, `apps/intakes`, `apps/search` | Gmail sync onto matters and the Emails tab; intakes, the inbound Mailgun webhook, the client forms; the global search modal. |
 | Settings | `apps/settings` | One package per Settings page (`firm/`, `users/`, `permissions/`, `appearance/`, `integrations/`, `claude/`, and so on) and the `Firm` record. |
 
@@ -38,9 +38,9 @@ None of the directories under `apps/` is vestigial: every one is
 installed and routed. There is no `billing`, `lab` or `research` app;
 billing lives in `apps/invoicing` and case-law research in the agentic
 chat's tools (`apps/ai/agent_tools.py`) over the CourtListener client in
-`apps/case/courtlistener.py`. Two packages have no `urls.py`: `apps/llm`
-has no views, and `apps/drive` has none at all (it is driven by signals,
-the worker and management commands).
+`apps/case/courtlistener.py`. Three packages have no `urls.py`:
+`apps/llm` has no views, and `apps/notes` and `apps/drive` hold no code
+beyond their models and migrations.
 
 ## `config/`
 
@@ -49,7 +49,7 @@ the worker and management commands).
 | `config/settings.py` | Reads `config/.env` through `django-environ`, defines `Q_CLUSTER`, the two caches, storage, email and logging. Explained in [Platform and config](subsystems/platform-and-config.md). |
 | `config/urls.py` | The health endpoints, the sign-in views, then one `include()` per app at the root, including the two public, tokenized URL sets (the payment page under `apps/invoicing/pay/urls.py` and the client intake form under `apps/intakes/client_forms/public_urls.py`). |
 | `config/health.py` | `/health/live/`, `/health/ready/` and `/health/worker/`. |
-| `config/context.py` | Two context processors: `env` (the `ENV` value, which the templates use to show the development banner) and `integrations` (lazy `ai_enabled` and `caselaw_available`, which hide the optional AI and saved case-law surfaces, and the firm's `case_file_enabled` and `library_enabled` switches). |
+| `config/context.py` | Two context processors: `env` (the `ENV` value, which the templates use to show the development banner) and `integrations` (lazy `ai_enabled` and `caselaw_available`, which hide the optional AI and saved case-law surfaces, and the firm's `case_file_enabled` and `books_enabled` switches). |
 | `config/helpers.py` | Small utilities used across apps: `normalize_phone()`, `dictfetchall()`, `MultipleOrderingFilter` for `django-filter`, and the `dump*` debugging helpers. |
 | `config/tests/` | Tests for the health endpoints, media routing, rate limiting, safe Markdown and the generated reference pages. |
 
@@ -64,15 +64,15 @@ The middleware order is fixed in `MIDDLEWARE`: Django's own stack, then
 Every page is wrapped by `templates/base.html`, whose sidebar
 (`templates/sidebar.html`) is the one navigation. It lists the practice
 pages first: Dash, Matters, Calendar, Tasks, Contacts, Activity and, by
-permission flag, Invoicing, Intakes and Reports. Below a rule come the
-case builder's two entries, Case and Library, with Search, Settings and
-Shortcuts in the utility list under them. The sidebar's list is
+permission flag, Invoicing, Intakes and Reports. Below a rule comes the
+case builder's entry, Case, with Search, Settings and Shortcuts in the
+utility list under it. The sidebar's list is
 `hx-boost`ed with `hx-target="#main-content"` and
 `hx-select="#main-content"`, so a click fetches the full page and swaps
 only the content column; the sidebar itself is never re-rendered by
 navigation. Which item is active comes from the `app` context variable
-each view sets: the matter record's views set `matters`, the case
-shell's `case`, the notes editor's `notes`.
+each view sets: the matter record's views set `matters` and the case
+shell's `case`.
 
 **The matter record**, under `/matters/<id>/...`, is the practice
 manager's view of a matter: Overview, Contacts, Rates, Activity, Events,
@@ -80,7 +80,7 @@ Tasks, Proceedings, Settlement and Ledger
 (`templates/matters/includes/detail-nav.html`).
 
 **The case file**, under `/case/<id>/...`, is the case builder's view of
-the same matter: Documents, Highlights, Timeline, Witnesses, Notes,
+the same matter: Documents, Highlights, Timeline, Witnesses,
 Emails, Labels, Search and AI (or Case Law while AI is off). Case in the
 sidebar opens `/case/`, which reopens the last matter on its last tab;
 the shell remembers both in the session (`last_viewed_matter`,
@@ -109,19 +109,19 @@ the form-field renderers (`form-fields-template*.html`, selected through
 `FORM_RENDERER` in settings), the HTMX modal shell, the brand marks and
 gradients, the user chips and the format toolbar. `templates/base-minimal.html`
 is the no-sidebar base for the sign-in pages, the public payment and
-intake-form pages, the notes editor and the AI prompt windows.
+intake-form pages and the AI prompt windows.
 
 ## Module boundaries
 
-The case builder (`apps/case`, `apps/drive`, `apps/notes`) is a module
-with a known surface, so that it could be extracted one day, or retired.
+The case builder (`apps/case`, plus `apps/drive` and `apps/notes`, which
+now hold only migrations and dormant models) is a module with a known
+surface, so that it could be extracted one day, or retired.
 Four import-linter contracts in `pyproject.toml` hold the line, and CI
 runs them (`uv run lint-imports`):
 
 - the case builder imports only the core (`accounts`, `settings`,
   `management`, `matters`, `contacts`, `folders`) and `apps/llm`;
-- the core never imports the case builder (Settings > Integrations'
-  import of `apps/drive/google.py` is the one named exception);
+- the core never imports the case builder;
 - the apps on top of it (`apps/ai`, `apps/mail`, `apps/drafts`) reach it
   only through `apps/case/models.py`, `apps/case/services.py`,
   `apps/case/courtlistener.py` and `apps/case/jurisdictions.py`;
@@ -130,9 +130,8 @@ runs them (`uv run lint-imports`):
 What crosses the boundary is registered at start-up rather than
 imported: case-shell tabs (`apps/case/tabs.py`), semantic-index kinds
 (`apps/case/semantic.py`), matter lookups for the access middleware
-(`apps/accounts/access.py`), kinds in the firm-wide search
-(`apps/search/registry.py`), and the `matter_closed` signal
-(`apps/matters/signals.py`). The record is [The case builder is a module
+(`apps/accounts/access.py`) and kinds in the firm-wide search
+(`apps/search/registry.py`). The record is [The case builder is a module
 with its own navigation](../decisions/2026-10-19-the-case-builder-is-a-module-with-its-own-navigation.md).
 
 ## How a request moves
@@ -192,8 +191,8 @@ interchangeable.
 **The Django-Q worker** (`python manage.py qcluster`, the `qcluster.service`
 unit in production) runs everything that is queued with
 `django_q.tasks.async_task()` and the recurring schedules in
-`apps/management/schedules.py`: OCR, Drive, Gmail and Calendar sync,
-document and note summaries, semantic re-indexing, payment webhook
+`apps/management/schedules.py`: OCR, Gmail and Calendar sync,
+document summaries, semantic re-indexing, payment webhook
 reconciliation, the daily digest, the chat purge. The worker is configured by `Q_CLUSTER` in
 settings and explained on the [operations page](subsystems/operations.md).
 
@@ -237,7 +236,7 @@ Two indexes, both in PostgreSQL:
 
 - **Keyword** search is `django-watson`. Models register in
   `apps/search/search_config.py` (matters, contacts, intakes),
-  `apps/case/search_config.py` (documents, highlights, facts, notes) and
+  `apps/case/search_config.py` (documents, highlights, facts) and
   `apps/mail/apps.py` (emails). The case search tab (`apps/case/search/views.py`) calls
   `watson.search()`; the agent's `search_materials` tool
   (`apps/ai/agent_tools.py`) queries `watson_searchentry` directly
@@ -261,8 +260,8 @@ Two indexes, both in PostgreSQL:
 | `static/js/main.js` | Page-wide behaviour: the confirm-link handler, CSRF helper, clipboard, the space-bar leader key and the command palette, matter switcher and nav switcher it opens. |
 | `static/js/alpine-components.js` | The `Alpine.data()` components: `dropdown`, `modal`, `confirmModal` and the chart toggles. |
 | `static/js/toasts.js`, `htmx-focus.js`, `sidebar.js`, `theme.js`, `nav-layout.js` | The shell: toasts, focus after swaps, the sidebar, themes and the painted favicon, the horizontal layout. |
-| `static/js/<app>.js`, `static/js/notes/` | Per-app scripts; the notes editor is split into modules under `notes/` and loaded as ES modules. |
-| `static/js/vendor/tiptap.bundle.js` | The notes editor's Tiptap build (`@tiptap/*` 2.27.2, bundled with esbuild). Its build sources are not in the repository: the bundle was rebuilt by hand and committed (2026-08-15, "table support with pipe-markdown round-trip"), and the `build.mjs` that produced it was retired. To add an extension, rebuild the bundle the same way and commit the result. |
+| `static/js/<app>.js` | Per-app scripts. |
+| `static/js/vendor/tiptap.bundle.js` | The Tiptap build behind the AI prompt editor (`prompt-editor.js`, with `highlight-mark.js` and `plain-copy.js`) (`@tiptap/*` 2.27.2, bundled with esbuild). Its build sources are not in the repository: the bundle was rebuilt by hand and committed (2026-08-15, "table support with pipe-markdown round-trip"), and the `build.mjs` that produced it was retired. To add an extension, rebuild the bundle the same way and commit the result. |
 | `static/css/palette.css`, `colors.css` | The colour ramps and the semantic tokens for the seven themes; see [CSS theming](frontend/theming.md). |
 | `static/css/*.css`, `static/css/apps/` | One stylesheet per component and per app, every one linked from `base.html` through `static_v`, which appends the file's modification time so a changed file is fetched again. |
 | `static/pdfjs/` | The PDF.js viewer, refreshed by `scripts/update_pdfjs.py`. |
@@ -296,7 +295,7 @@ are bare paths that `static_v` cannot version (`deploy/nginx/kosmos.conf`).
          +-------------+--------------+
          v                            v
    object storage               external services
-   STORAGE_BACKEND=s3           Google (Calendar, Contacts, Drive, Gmail)
+   STORAGE_BACKEND=s3           Google (Calendar, Contacts, Gmail)
    (or media/ on disk)          Anthropic and Gemini (chat, summaries,
                                   embeddings)
                                 CourtListener (research, citations)

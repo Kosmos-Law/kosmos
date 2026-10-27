@@ -1,16 +1,11 @@
 from django.urls import path
-from django.views.generic import RedirectView
 
 from apps.case import views
 from apps.case.caselaws import views as caselaws
-from apps.case.documents import (
-    drive,
-    views as documents,
-)
+from apps.case.documents import views as documents
 from apps.case.facts import views as facts
 from apps.case.highlights import views as highlights
 from apps.case.labels import views as labels
-from apps.case.notes import views as notes
 from apps.case.search import views as search
 from apps.case.witnesses import views as witnesses
 
@@ -480,80 +475,6 @@ urlpatterns = [
         witnesses.remove_witness_from,
         name="remove-witness-from",
     ),
-    # Notes sub-tab (matter-scoped; per-note editor routes live under notes:)
-    path("case/<int:matter_id>/notes/", notes.notes_index, name="notes-index"),
-    path("case/<int:matter_id>/notes/list/", notes.notes_list, name="notes-list"),
-    path("case/<int:matter_id>/notes/add/", notes.notes_add, name="notes-add"),
-    path("case/<int:matter_id>/notes/filter/", notes.notes_filter, name="notes-filter"),
-    path(
-        "case/<int:matter_id>/notes/filter/keyword/",
-        notes.notes_filter_keyword,
-        name="notes-filter-keyword",
-    ),
-    path(
-        "case/<int:matter_id>/notes/filter/importance/<int:importance_value>/",
-        notes.notes_filter_importance,
-        name="notes-filter-importance",
-    ),
-    path(
-        "case/<int:matter_id>/notes/filter/category/<str:category>/",
-        notes.notes_filter_category,
-        name="notes-filter-category",
-    ),
-    path(
-        "case/<int:matter_id>/notes/filter/category/",
-        notes.notes_filter_category,
-        {"category": ""},
-        name="notes-filter-category-clear",
-    ),
-    path(
-        "case/<int:matter_id>/notes/filter/topic/<str:topic>/",
-        notes.notes_filter_topic,
-        name="notes-filter-topic",
-    ),
-    path(
-        "case/<int:matter_id>/notes/filter/topic/",
-        notes.notes_filter_topic_clear,
-        name="notes-filter-topic-clear",
-    ),
-    path(
-        "case/<int:matter_id>/notes/sort/<str:order>/",
-        notes.notes_sort,
-        name="notes-sort",
-    ),
-    path("case/notes/<int:note_id>/edit/", notes.note_edit, name="notes-edit"),
-    path(
-        "case/notes/<int:note_id>/category/<str:value>/",
-        notes.note_category,
-        name="note-category",
-    ),
-    path(
-        "case/notes/<int:note_id>/importance/<int:value>/",
-        notes.note_importance,
-        name="note-importance",
-    ),
-    # Drive Folder modal (Documents tab): link the matter's Drive folder and
-    # map its subfolders to categories / proceedings.
-    path(
-        "case/<int:matter_id>/documents/drive/",
-        drive.drive_folder_modal,
-        name="documents-drive-modal",
-    ),
-    path(
-        "case/<int:matter_id>/documents/drive/rows/",
-        drive.drive_mapping_rows,
-        name="documents-drive-rows",
-    ),
-    path(
-        "case/<int:matter_id>/documents/drive/save/",
-        drive.drive_folder_save,
-        name="documents-drive-save",
-    ),
-    path(
-        "case/<int:matter_id>/documents/drive/unlink/",
-        drive.drive_folder_unlink,
-        name="documents-drive-unlink",
-    ),
     # Labels (matter-scoped)
     path("case/<int:matter_id>/labels/", labels.labels_index, name="labels-index"),
     path("case/<int:matter_id>/labels/list/", labels.labels_list, name="labels-list"),
@@ -805,12 +726,6 @@ urlpatterns = [
         "case/witnesses/<int:witness_id>/alignment/<str:alignment>/",
         witnesses.witness_alignment,
         name="witness-alignment",
-    ),
-    # Notes moved to the unified /notes/<id>/ routes; this redirect keeps
-    # pre-unification /case/notes/<id>/ history entries and bookmarks alive
-    path(
-        "case/notes/<int:note_id>/",
-        RedirectView.as_view(pattern_name="notes:note-view"),
     ),
     # Label operations
     path(

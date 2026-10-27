@@ -77,7 +77,6 @@ class Firm(AuditMixin):
     # The case builder's features, on or off for the whole firm (Settings >
     # Features, admins only). Read through apps/settings/features.py.
     case_file_enabled = models.BooleanField(default=True)
-    library_enabled = models.BooleanField(default=True)
     # Books, the ledger behind invoicing and trust (apps/books). Off until
     # an administrator turns it on: a firm that keeps its books elsewhere
     # never sees it.

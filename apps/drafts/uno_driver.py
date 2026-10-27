@@ -3,7 +3,7 @@
 This script is executed by settings.UNO_PYTHON (normally /usr/bin/python3 with
 the python3-uno system package) — never imported by Django code, because the
 project venv has no UNO bindings. The public entry point is
-apps.drive.redline.apply_redline_edits, which spawns this script.
+apps.drafts.redline.apply_redline_edits, which spawns this script.
 
 Usage: python3 uno_driver.py <job.json>
 

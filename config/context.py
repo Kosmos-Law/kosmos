@@ -24,8 +24,8 @@ def integrations(request):
     caselaw_available: a CourtListener token is set and the user holds the
     Research permission; saved case law is a view of the AI tab, or its
     own tab when AI is off.
-    case_file_enabled, library_enabled: the case builder's features, as the
-    firm's administrator set them (Settings > Features).
+    case_file_enabled: the case builder's feature, as the firm's
+    administrator set it (Settings > Features).
     """
 
     def _ai():
@@ -42,11 +42,6 @@ def integrations(request):
         from apps.settings.features import case_file_enabled
 
         return case_file_enabled()
-
-    def _library():
-        from apps.settings.features import library_enabled
-
-        return library_enabled()
 
     def _books():
         from apps.settings.features import books_enabled
@@ -65,7 +60,6 @@ def integrations(request):
         "caselaw_available": SimpleLazyObject(_caselaw),
         # The firm's feature switches (apps/settings/features.py).
         "case_file_enabled": SimpleLazyObject(_case_file),
-        "library_enabled": SimpleLazyObject(_library),
         "books_enabled": SimpleLazyObject(_books),
         "books_mirror": SimpleLazyObject(_books_mirror),
     }

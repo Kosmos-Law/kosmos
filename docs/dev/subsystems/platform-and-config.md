@@ -132,8 +132,7 @@ project entries. On the way in they run in this order:
    [AI is optional](ai/context.md#ai-is-optional). For a signed-in
    user it then answers 404 on a feature the firm's administrator has
    switched off under Settings > Features: `CASE_FILE_PATTERN` (all of
-   `/case/` less the MCP API and the matter-scoped note routes) and
-   `LIBRARY_PATTERN` (the notes). Then, for a
+   `/case/` less the MCP API under `/case/api/`). Then, for a
    signed-in user who is not an admin, it refuses with 403:
    the `ADMIN_ONLY_PATHS` (the Users, Permissions, Firm, Contacts, Matters
    and Tasks settings pages); any path in `PERMISSION_PATHS` whose flag
@@ -147,8 +146,8 @@ project entries. On the way in they run in this order:
    the matter from whichever id the URL names (document, fact,
    conversation, and so on, through `MATTER_LOOKUPS`) and refuses a user
    limited to assigned matters. The comment in the class states the rule:
-   hiding a tab is not a gate; the URL has to refuse too. `/matters/` and
-   `/notes/` views carry their own checks. The flags and what they open
+   hiding a tab is not a gate; the URL has to refuse too. `/matters/`
+   views carry their own checks. The flags and what they open
    are in the [permissions matrix](../../reference/permissions.md).
 5. **`HistoryRequestMiddleware`** (`simple_history`). Attaches the
    request user to the history rows written by models with
@@ -235,7 +234,7 @@ authenticated, all with `Cache-Control: no-store`:
   it. Pages extend it and fill `content` and, optionally, `body_class`.
 - `templates/base-minimal.html` is the same head without the sidebar, for
   pages shown outside the shell: the public payment and intake-form
-  pages, the notes editor and the AI prompt windows. It exposes `title`
+  pages and the AI prompt windows. It exposes `title`
   and `favicon` blocks.
 - `templates/registration/base.html` is a third, smaller head that the
   sign-in, code and password reset pages under `templates/registration/`

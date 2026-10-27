@@ -32,15 +32,14 @@ database and run when the worker comes back. Until then:
 
 | What | Symptom while the worker is down |
 |---|---|
-| Text extraction and OCR of uploaded PDFs | Documents stay at "pending", with no searchable text. This covers uploads, PDFs mirrored from Google Drive and email attachments saved as documents. |
-| AI summaries of documents and library notes | No summary appears. Document summaries are queued when OCR finishes, so they wait behind it. |
+| Text extraction and OCR of uploaded PDFs | Documents stay at "pending", with no searchable text. This covers uploads and email attachments saved as documents. |
+| AI summaries of documents | No summary appears. Document summaries are queued when OCR finishes, so they wait behind it. |
 | Semantic search index | Changed records are not embedded (only when `SEMANTIC_AUTO_INDEX` is on). |
 | Online payment webhooks | The payment processor's notification is accepted and queued, but the payment is not marked settled, confirmed or reversed in Kosmos. |
 | Intakes from forwarded email | The message is stored, but no intake is created from it. |
 | Gmail | Attachment text is not extracted, and linking a label to a matter does not pull its messages in. |
-| Google Drive | Saving a folder mapping does not pull its files in. |
 | Saved case law | A case saved to a matter gets no summary. |
-| Every scheduled job | No daily digest email, no Google Calendar, Drive or Gmail sync, no chat purge. |
+| Every scheduled job | No daily digest email, no Google Calendar or Gmail sync, no chat purge. |
 
 Kosmos does say so in two places. Administrators see a notice at the top
 of every page: "The background worker isn't running, so OCR, syncing and
@@ -183,7 +182,6 @@ order.
 | `setup_schedules` | Creates or updates every recurring job. |
 | `createsuperuser` | Creates the first user. |
 | `seed_intake_forms` | Optional. Loads starter intake form templates. They were written for one firm's practice, so review them before use. `--list` shows them; existing forms are left alone unless you pass `--replace`. |
-| `link_drive_folders` | After connecting Google Drive. Interactive: matches Drive folders to matters. `--list` only reports. |
 | `link_gmail_labels` | After connecting Gmail. Interactive: matches Gmail labels to matters. `--list` only reports. |
 | `lawpay_accounts` | Lists the LawPay deposit accounts so you can copy their ids into `config/.env`. |
 | `confido_check` | A check of the Confido payment configuration that charges nothing. Run it before taking the first live payment. |
@@ -195,9 +193,7 @@ order.
 | `reconcile_pending` | An online payment or trust deposit is stuck as pending because the processor's webhook never arrived. Asks the processor for the current state of every in-flight payment and applies it. `--dry-run` reports without changing anything. The worker runs the same check every hour (the `payments-reconcile` job). |
 | `backfill_ocr` | Documents are stuck at pending or failed OCR, for example after their tasks used up all ten attempts. Queues them again. `--all` reprocesses every PDF. |
 | `build_semantic_index` | The semantic search index is behind, for example after worker downtime or when `SEMANTIC_AUTO_INDEX` was first switched on. Runs in the foreground, not through the worker, and skips anything unchanged. |
-| `backfill_note_summaries` | Library notes are missing their AI summaries. `--sync` runs in the foreground instead of queueing. |
-| `sync_calendar`, `sync_drive_notes`, `sync_gmail` | Run a Google sync now instead of waiting for the schedule, and see its output. The Drive and Gmail commands take `--full` and `--dry-run`. |
-| `restore_drive_documents` | Documents mirrored from Google Drive have a database record but no stored file. Downloads them again. Reports only, unless you pass `--apply`. |
+| `sync_calendar`, `sync_gmail` | Run a Google sync now instead of waiting for the schedule, and see its output. The Gmail command takes `--full` and `--dry-run`. |
 | `cleanup_orphan_documents` | Document records whose stored file is missing and cannot be recovered. Reports only, unless you pass `--apply`. |
 | `dedupe_documents` | The same file was added to a matter more than once. Reports only, unless you pass `--apply`. |
 | `generate_invoice_pdfs` | Stored invoice PDFs are missing or wrong. Regenerates them. `--clear` deletes every stored invoice PDF. |
@@ -224,7 +220,7 @@ when you upgrade an install that predates the change.
 `setup_chat_purge_schedule` are older,
 single-purpose versions of `setup_schedules`. Each calls the same code,
 limited to its own jobs. `setup_schedules` installs everything they do,
-plus the Calendar and Drive jobs that have no command of their own, so
+plus the Calendar job that has no command of its own, so
 there is no reason to run them on a new install.
 
 ## Check that it is working

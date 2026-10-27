@@ -79,8 +79,8 @@ def test_remembered_emails_tab_kept_when_shown(client, matter, oauth_ready):
 
 def test_get_last_tab_leaves_other_tabs_alone(rf, matter, oauth_missing):
     request = rf.get("/")
-    request.session = {f"case_tab_{matter.id}": "notes"}
-    assert get_last_tab(request, matter.id) == "notes"
+    request.session = {f"case_tab_{matter.id}": "witnesses"}
+    assert get_last_tab(request, matter.id) == "witnesses"
 
 
 def test_not_connected_copy_says_each_person_connects(client, matter, oauth_ready):

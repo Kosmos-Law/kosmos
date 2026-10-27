@@ -1,5 +1,11 @@
 # The Drive mirror: append-only, PDF-only, read-only on Drive (2026-08-01)
 
+> Superseded on 2026-10-27 by [Google Drive is
+> removed](2026-10-27-google-drive-removed.md):
+> the Drive mirror and its tombstones are gone, and the documents it
+> brought in are ordinary documents. The contract stays a reference for
+> the Dropbox mirror. What follows is the record as written.
+
 A firm files its record in Google Drive by hand, and the application
 needs those files as `Document` rows (OCR'd, searchable, highlightable,
 visible to the AI). A sync that mirrors a folder tree has to decide what

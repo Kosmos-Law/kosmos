@@ -52,10 +52,10 @@ access, and the things that bite.
 | [Tasks and calendar](subsystems/tasks-and-calendar.md) | Tasks, checklists, events, Google Calendar sync, the digest, the Dash |
 | [Time and billing](subsystems/time-and-billing.md) | Time, expenses and flat fees, invoices, credits, applications, reports |
 | [Trust and payments](subsystems/trust-and-payments.md) | The trust ledger, payments and their trust withdrawals, online payments, payment requests |
-| [Case building](subsystems/case-building.md) | Documents, OCR, the Drive mirror, highlights, facts, witnesses, labels, search |
+| [Case building](subsystems/case-building.md) | Documents, OCR, highlights, facts, witnesses, labels, search |
 | [The AI context system](subsystems/ai/context.md) | Conversations, context builders, the selector, status, fenced writes |
 | [Agentic chat](subsystems/ai/agent-chat.md) | The tool-loop chat mode |
-| [Notes and drafts](subsystems/notes-and-drafts.md) | The notes editor and folders, drafts and the LibreOffice companion |
+| [Drafts](subsystems/drafts.md) | Draft links and the LibreOffice companion |
 | [Email and intakes](subsystems/email-and-intakes.md) | Gmail sync, inbound email, intakes, client forms |
 | [MCP server and JSON APIs](subsystems/mcp.md) | What Claude Desktop talks to |
 | [Operations](subsystems/operations.md) | The task queue and schedules, storage, recovery commands, publishing the docs |

@@ -44,40 +44,16 @@ def test_formatting_a_reply_uses_still_renders():
     assert "code &lt;here&gt;" in rendered
 
 
-def test_document_reference_becomes_a_link(document):
-    rendered = str(render_markdown(f"See [[doc:{document.id}|the lease]]."))
-
-    assert f'<a href="/case/documents/{document.id}/view/"' in rendered
-    assert 'class="note-ref note-ref-document"' in rendered
-    assert "the lease" in rendered
-
-
-def test_a_reference_cannot_carry_markup(document):
-    document.name = 'Lease" onmouseover="alert(1)'
-    document.save()
-
+def test_a_note_chip_is_inert_text(document):
+    # Notes are retired; their [[doc:ID|label]] chips are plain text now,
+    # and markup in one is still escaped.
     rendered = str(
         render_markdown(f"[[doc:{document.id}|<img src=x onerror=alert(1)>]]")
     )
 
+    assert "<a " not in rendered
     assert "<img" not in rendered
-    assert 'onmouseover="alert(1)"' not in rendered
     assert "&lt;img" in rendered
-
-
-def test_highlight_reference_becomes_a_link(highlight):
-    rendered = str(render_markdown(f"[[hl:{highlight.id}|quoted]]"))
-
-    viewer = reverse("case:viewer", args=[highlight.document_id])
-    assert f'<a href="{viewer}?highlight={highlight.id}"' in rendered
-
-
-def test_missing_reference_says_so():
-    rendered = str(render_markdown("[[doc:999999|gone]]"))
-
-    assert (
-        '<span class="note-ref note-ref-missing">[Missing document]</span>' in rendered
-    )
 
 
 # --- data written into a page's script, and third-party excerpts ------------

@@ -8,7 +8,7 @@ with a human collaborator's edits — untouched text is preserved byte-for-byte,
 which is the whole reason to edit natively instead of round-tripping through
 pandoc.
 
-LibreOffice is driven over UNO by apps/drive/uno_driver.py, executed under
+LibreOffice is driven over UNO by apps/drafts/uno_driver.py, executed under
 settings.UNO_PYTHON (normally /usr/bin/python3 with the python3-uno package)
 because the project venv has no UNO bindings. Each job launches a throwaway
 soffice with its own user profile, so concurrent jobs cannot contend.

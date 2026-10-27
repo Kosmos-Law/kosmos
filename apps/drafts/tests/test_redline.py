@@ -1,4 +1,4 @@
-"""Tests for the UNO redline applier (apps/drive/redline.py).
+"""Tests for the UNO redline applier (apps/drafts/redline.py).
 
 Most tests drive a real headless LibreOffice and are skipped when it (or
 python3-uno) is not installed: apt-get install libreoffice-writer-nogui
@@ -10,14 +10,15 @@ import zipfile
 
 import pytest
 
-from apps.drive import convert, redline
-from apps.drive.redline import (
+from apps.drafts import redline
+from apps.drafts.redline import (
     AppliedEdit,
     DeleteParagraph,
     InsertParagraphs,
     RedlineEdit,
     RedlineError,
 )
+from utils import convert
 
 needs_uno = pytest.mark.skipif(
     not redline.is_available(),

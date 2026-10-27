@@ -136,8 +136,8 @@
   color: var(--yellow-400);
 }
 
-/* Selected list rows (contacts, clients/folders sidebar, note and
-   checklist folders) — wash plus the selected ink, matching the nav's
+/* Selected list rows (contacts, clients/folders sidebar, checklist
+   folders) — wash plus the selected ink, matching the nav's
    active treatment; the row names are links, so the anchors take the
    ink too. */
 .item-selected-highlight,
@@ -216,4 +216,32 @@ input:is([type="checkbox"], [type="radio"]):focus-visible,
   /* A quiet halo beyond the ring — a pale solid spread (Stripe-style),
      not a blur, so it reads soft without the fuzzy Bootstrap glow. */
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+/* Keyboard shortcuts modal */
+
+.shortcuts-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.shortcuts-table th,
+.shortcuts-table td {
+  border: 1px solid var(--border-medium);
+  padding: 0.75rem 0.75rem;
+}
+
+.shortcuts-table th {
+  background: var(--background-subnav);
+  text-align: left;
+}
+
+.shortcuts-table kbd {
+  background: var(--background-control);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.1rem 0.35rem;
 }

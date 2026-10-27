@@ -1,5 +1,13 @@
 # The case builder is a module with its own navigation (2026-10-19)
 
+> In part superseded on 2026-10-27 by [Notes are
+> retired](2026-10-27-notes-retired.md) (the library, its switch and the
+> Notes tab) and by [Google Drive is
+> removed](2026-10-27-google-drive-removed.md)
+> (the Drive mirror, the Settings > Integrations seam into
+> `apps/drive/google.py` and the `matter_closed` signal). The boundary
+> and its contracts stand. What follows is the record as written.
+
 Kosmos is two products in one codebase. The practice manager manages
 data: matters, contacts, calendar, tasks, time, invoicing, trust,
 intakes. The case builder manages content: the matter's documents and

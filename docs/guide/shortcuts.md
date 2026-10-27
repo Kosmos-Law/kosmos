@@ -46,7 +46,7 @@ These work on every page that has the sidebar.
 | `Space` then `g` | Opens **Go to**. |
 | `Space` then `b` | Narrows the sidebar to icons, or widens it again. |
 | `Space` then `f` then `f` | Opens **Search** on the **All** tab. |
-| `Space` then `f` then `m`, `p`, `c`, `i` or `n` | Opens **Search** on **Matters**, **Proceedings**, **Contacts**, **Intakes** or **Notes**. |
+| `Space` then `f` then `m`, `p`, `c` or `i` | Opens **Search** on **Matters**, **Proceedings**, **Contacts** or **Intakes**. |
 | `i` | Puts the cursor in the page's quick box, on the pages that have one. See [Lists](#lists). |
 
 ## The palettes
@@ -86,7 +86,7 @@ These work on both sides of a matter unless the row says otherwise. See
 | `c` | Changes to the **Case** side, on the tab you last used there. |
 | `d` | Changes to the **Detail** side, on the tab you last used there. |
 | `[` and `]` | Open the previous or the next matter on its **Overview** tab. |
-| `i` | On the **Tasks** tab, puts the cursor in **+ Quick Task**. On the **Notes** tab, in **Keyword Search**. On the **AI** tab, in **Filter conversations . . .**. |
+| `i` | On the **Tasks** tab, puts the cursor in **+ Quick Task**. On the **AI** tab, in **Filter conversations . . .**. |
 
 Good to know:
 
@@ -106,7 +106,6 @@ Good to know:
 | **Activity**: **Time**, **Expenses**, **Flat Fees** | `[` and `]` | Show the previous or the next user's entries. |
 | **Matters** | `i` | Puts the cursor in **Filter list . . .**. |
 | **Matters**, **Filter list . . .** | `Enter` | Opens the first matter in the list. |
-| **Library** | `i` | Puts the cursor in **Keyword Search**. |
 
 Good to know:
 
@@ -152,24 +151,16 @@ and single keys do not work there. See [Documents](documents.md).
 | `Ctrl` + mouse wheel | Zooms the document in or out. |
 | `Esc` | Closes **Create Highlight** without saving. |
 
-## The notes editor
+## Compose Prompt
 
+**Compose Prompt** in the AI chat is a small editor for a long question.
 Ordinary editing keys (bold, italic, undo, redo) work as they do
-elsewhere. These are the editor's own. Its menu **More actions → Keyboard
-shortcuts** shows a list too. See [Notes](notes.md).
-
-`Ctrl` + `K`, `Ctrl` + `H`, `Ctrl` + `S` and `Ctrl` + `?` work wherever
-the cursor is in the editor. The keys that change the note itself (the
-headings, lists, highlights and the other formatting keys, `Ctrl` + `D`
-and **Insert source**) work only while the cursor is in the note's text.
-With the cursor in the title or in **Find...**, they do nothing.
+elsewhere. These are its own, and they work while the cursor is in the
+prompt's text. See [AI chat](ai-chat.md).
 
 | Keys | What it does |
 |---|---|
-| `Ctrl` + `K` | Opens **Search Notes**. `↓` and `↑` move, `Enter` opens the note, `Esc` closes. |
-| `Ctrl` + `H` | Shows or hides the **Search & Replace** bar. `Enter` in **Find...** goes to the next match. `Enter` in **Replace with...** replaces the current match. `Esc` closes the bar. |
-| `Ctrl` + `S` | Saves now. |
-| `Ctrl` + `?` | Opens the editor's **Keyboard Shortcuts** list. |
+| `Ctrl` + `S` | Saves your draft now. |
 | `Ctrl` + `1` to `Ctrl` + `5` | Heading 1 to 5. Press again for normal text. |
 | `F2`, `F3`, `F4` | Heading 2, 3 or 4. |
 | `Ctrl` + `0` | Normal text. |
@@ -177,18 +168,10 @@ With the cursor in the title or in **Find...**, they do nothing.
 | `Ctrl` + `8` | Blockquote. |
 | `Ctrl` + `↑` and `Ctrl` + `↓` | Move the list item up or down. |
 | `Ctrl` + `D` or `Ctrl` + `Delete` | Deletes the paragraph the cursor is in. |
-| `Ctrl` + `Shift` + `;` | **Insert source**: opens the source picker at the cursor. `Esc` closes it. |
 | `Ctrl` + `Shift` + `S` | Strikethrough. |
-| `Ctrl` + `E` | Inline code. |
-| `Ctrl` + `Alt` + `C` | Code block. |
-| `Tab` and `Shift` + `Tab` | In a code block, add or remove four spaces. |
 | `Alt` + `1` to `Alt` + `6` | Highlight in gray, yellow, green, red, purple or orange. Press again to remove it. |
 | `Alt` + `A`, `Y`, `G`, `R`, `P` or `O` | The same six colours, by letter. `A` is gray. |
 | `Alt` + `` ` `` or `Alt` + `C` | Removes the highlight. |
-| `Enter` and `Esc` | In the note's title, or while renaming in the file list: `Enter` saves the name, `Esc` puts the old one back. |
-
-The formatting keys also work in **Compose Prompt** in the AI chat, where
-`Ctrl` + `S` saves your draft. See [AI chat](ai-chat.md).
 
 Good to know:
 

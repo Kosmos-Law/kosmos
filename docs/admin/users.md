@@ -184,7 +184,7 @@ from the user's next request.
 | Delete a matter | Yes | No |
 | Delete a voided invoice | Yes | No |
 | Add, edit or delete time-entry abbreviation codes | Yes | No |
-| Connect or disconnect the firm's Google Calendar, Contacts and Drive | Yes | No. Any user can connect their own Gmail mailbox |
+| Connect or disconnect the firm's Google Calendar and Contacts | Yes | No. Any user can connect their own Gmail mailbox |
 | Dashboard "Collections" section | Yes | No |
 | Reset another user's authenticator app | Yes | No |
 
@@ -244,7 +244,7 @@ adds a matter is made a member of it, so they can open what they create.
 For a restricted user, Kosmos then:
 
 - leaves other matters out of the matter list, the matter switchers, and
-  the matter choices in task, event, time, expense, document and note
+  the matter choices in task, event, time, expense and document
   forms;
 - leaves other matters' tasks and events out of the task list and board,
   the calendar and the daily digest (tasks and events on no matter stay),
@@ -254,14 +254,13 @@ For a restricted user, Kosmos then:
 - answers HTTP 403 for another matter's pages under `/matters/<id>/`;
 - answers HTTP 403 for anything in another matter's case workspace under
   `/case/`: its documents (including downloads and the viewer),
-  highlights, timeline, witnesses, labels, notes, emails, AI chats and
+  highlights, timeline, witnesses, labels, emails, AI chats and
   research. The check follows the record, so the address of a single
   document, chat or email is refused just as the matter's own pages are;
 - leaves other matters' entries out of the time, expense and flat-fee
   lists and their CSV exports, and refuses another matter's entry when
   it is asked for directly;
-- leaves other matters, their proceedings and their notes out of search,
-  and hides their notes in the notes editor;
+- leaves other matters and their proceedings out of search;
 - limits the dashboard's matter lists and upcoming events, the daily
   digest and the Claude Desktop connection to their matters.
 

@@ -1,5 +1,13 @@
 # Drafts are companion-first over a Drive `.odt` (2026-08-06)
 
+> In part superseded on 2026-10-27 by [Google Drive is
+> removed](2026-10-27-google-drive-removed.md):
+> there is no Drive picker, so a new draft cannot be linked until the
+> Dropbox integration gives the server a way to pick the file, and
+> `doc_text` is no longer re-fetched from Drive. The companion protocol
+> and the rest of the record stand. What follows is the record as
+> written.
+
 AI-assisted drafting began on 2026-08-04 as a server-side system: a
 `DraftSession` pinned a Drive `.odt` to a conversation, every round of
 AI edits was applied by headless LibreOffice into an immutable
@@ -90,8 +98,8 @@ saying "edits you approve".
 
 ## Related
 
-- [Notes and drafts](../dev/subsystems/notes-and-drafts.md), "Drafts:
-  companion-first" and "Retired designs".
+- [Drafts](../dev/subsystems/drafts.md), "Companion-first" and
+  "Retired designs".
 - [Drafting with LibreOffice](../admin/integrations/libreoffice.md).
 - [Claude Desktop: packaging roadmap](claude-desktop-roadmap.md): the
   same token (`ApiToken`) serves the MCP server.

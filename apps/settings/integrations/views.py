@@ -4,12 +4,11 @@ import logging
 import google_auth_oauthlib.flow
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseBadRequest, HttpResponseForbidden
+from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 from googleapiclient.discovery import build
 
-import apps.drive.google as drive_google
 import apps.mail.google as mail_google
 from apps.mail.models import GmailAccount
 from apps.settings.features import books_enabled
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 CONTACTS_TOKEN_PATH = settings.GOOGLE_CONTACTS_TOKEN_PATH
 CALENDAR_TOKEN_PATH = settings.GOOGLE_CALENDAR_TOKEN_PATH
-DRIVE_TOKEN_PATH = settings.GOOGLE_DRIVE_TOKEN_PATH
 EMAIL_TOKEN_PATH = settings.GOOGLE_EMAIL_TOKEN_PATH
 GOOGLE_TOKEN_PATH = settings.GOOGLE_CLIENT_SECRET_PATH
 
@@ -30,7 +28,6 @@ GOOGLE_TOKEN_PATH = settings.GOOGLE_CLIENT_SECRET_PATH
 TOKEN_PATHS = {
     "contacts": CONTACTS_TOKEN_PATH,
     "calendar": CALENDAR_TOKEN_PATH,
-    "drive": DRIVE_TOKEN_PATH,
     "email": EMAIL_TOKEN_PATH,
 }
 
@@ -63,7 +60,6 @@ def _create_flow(redirect_uri, state=None):
         scopes=[
             "https://www.googleapis.com/auth/calendar",
             "https://www.googleapis.com/auth/contacts",
-            "https://www.googleapis.com/auth/drive.readonly",
             "https://www.googleapis.com/auth/gmail.readonly",
             # Label create/rename only — message content stays read-only.
             # Lets the sync provision each mailbox's matter labels so users
@@ -98,12 +94,9 @@ def _visible_gmail_accounts(user, gmail_status):
 def index(request):
     contacts_token = _token_exists(CONTACTS_TOKEN_PATH)
     calendar_token = _token_exists(CALENDAR_TOKEN_PATH)
-    drive_token = _token_exists(DRIVE_TOKEN_PATH)
     # Email is per-user (GmailAccount rows), not a shared token file.
     email_token = mail_google.check_credentials()
 
-    # Drive case-notes sync health (last sync, synced count, unmatched folders).
-    drive_status = drive_google.get_sync_status() if drive_token else None
     # Gmail case-email sync health (per-account last sync, missing labels).
     gmail_status = mail_google.get_sync_status() if email_token else None
 
@@ -112,8 +105,6 @@ def index(request):
         "subapp": "integrations",
         "contacts_token": contacts_token,
         "calendar_token": calendar_token,
-        "drive_token": drive_token,
-        "drive_status": drive_status,
         "email_token": email_token,
         "gmail_status": gmail_status,
         "own_gmail_account": GmailAccount.objects.filter(user=request.user).first(),
@@ -138,6 +129,9 @@ def index(request):
 def _forbidden_for(request, app):
     """Shared-token integrations (firm-wide files) are admin-only; email is
     per-user, so any signed-in user may connect their own mailbox."""
+    if app not in TOKEN_PATHS:
+        # An integration that no longer exists (Drive) or never did.
+        raise Http404
     return app != "email" and not request.user.is_admin
 
 
@@ -208,7 +202,7 @@ def google_store(request):
         )
         return redirect("/settings/integrations/")
 
-    path = TOKEN_PATHS.get(app, CALENDAR_TOKEN_PATH)
+    path = TOKEN_PATHS[app]
 
     prepare_path(path)
     with open(path, "w") as file:
@@ -237,7 +231,7 @@ def google_logout(request, app):
         GmailAccount.objects.filter(user=request.user).delete()
         return redirect("/settings/integrations/")
 
-    path = TOKEN_PATHS.get(app, CALENDAR_TOKEN_PATH)
+    path = TOKEN_PATHS[app]
 
     prepare_path(path)
     with open(path, "w") as file:

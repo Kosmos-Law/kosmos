@@ -18,7 +18,6 @@ how the pieces are wired so a contributor can change them.
 | `apps/management/management/commands/setup_schedules.py` | Installs the registry. |
 | `apps/management/management/commands/clean_history.py` | Prunes `simple_history` tables. |
 | `apps/case/management/commands/` | `setup_chat_purge_schedule` (a legacy subset of `setup_schedules`), `purge_closed_chats`, the document repair commands, `build_semantic_index`, `update_search_vectors`. |
-| `apps/drive/management/commands/restore_drive_documents.py` | Re-downloads Drive-mirrored files missing from storage. |
 | `apps/invoicing/management/commands/reconcile_pending.py`, `apps/invoicing/pay/reconcile.py` | The missed-webhook backstop for online payments. |
 | `config/health.py` | `/health/worker/`, the worker's liveness signal. |
 | `deploy/` | The systemd units, gunicorn config, nginx site and logrotate file that `scripts/install.sh --prod` renders. |
@@ -58,8 +57,8 @@ are `ai_status_<conversation id>` payloads written by the chat threads
 Work reaches it two ways. Code queues a task with
 `django_q.tasks.async_task("dotted.path.to.function", *args)`; the
 callers are the OCR pipeline (`apps/case/documents/tasks.py`, `signals.py`,
-`views.py`), the Drive and Gmail syncs, note and document summaries
-(`apps/notes/tasks.py`), semantic re-indexing (`apps/case/semantic.py`),
+`views.py`), the Gmail sync, document summaries, semantic
+re-indexing (`apps/case/semantic.py`),
 saved case-law summaries (`apps/case/caselaws/tasks.py`), the inbound intake
 webhook (`apps/intakes/inbound.py`), payment webhooks
 (`apps/invoicing/pay/views.py`). Or a `Schedule` row fires on its cron and the cluster calls the schedule's `func`.
@@ -139,18 +138,9 @@ not scheduled; an operator runs it.
 
 ### Storage repair
 
-`restore_drive_documents` exists because of one incident the module
-docstring records: on 2026-08-03 production ran for about three hours
-with `STORAGE_BACKEND` unset, so the Drive mirror wrote 25 PDFs to the
-web server's disk instead of the bucket. The rows were fine; the bytes
-never reached storage, and the regular sync would not repair them because
-it compares Drive's `modifiedTime` to the row's and treats an unchanged
-file as done. The command finds `Document` rows with a `drive_file_id`
-whose file `storage.exists()` denies, downloads the bytes from Drive
-again under the row's existing path, recomputes the fingerprints and
-re-queues OCR where it had not finished. Dry run by default; `--apply`
-writes. Its neighbours `cleanup_orphan_documents` and
-`fix_document_paths` are described with it in
+`cleanup_orphan_documents` and `fix_document_paths`, in
+`apps/case/management/commands/`, repair `Document` rows whose file and
+row have drifted apart. Both are described in
 [File storage](../../admin/integrations/storage.md#repair-commands).
 
 ### Payment reconciliation
@@ -271,5 +261,5 @@ library's commands and the shell, see
 - [Platform and config](platform-and-config.md),
   [AI context system](ai/context.md) (the status cache from the chat's
   side), [Trust and payments](trust-and-payments.md),
-  [Case building](case-building.md) (the OCR and Drive tasks).
+  [Case building](case-building.md) (the OCR tasks).
 - [Writing documentation](../writing-docs.md).

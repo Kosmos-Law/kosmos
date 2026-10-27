@@ -5,15 +5,13 @@
 """Kosmos MCP server for Claude Desktop.
 
 A deliberately thin stdio translator: every tool is one HTTP call against
-the token-authed JSON APIs in Kosmos (apps/notes/api.py for notes,
-apps/ai/api.py for the matter record, apps/search/api.py for the
-practice-wide search), which own all access control, ranking, and
-formatting. Reads cover notes, every section of a matter (including its
-AI conversations, ledger, and trust position), invoices, the matter's
-hybrid keyword+semantic material search, and the practice-wide search;
-writes are narrow: append/replace on notes whose editor AI-write toggle
-is on (a 24-hour grant), and create-only timeline facts, witnesses, and
-tasks. Money reads require the user's financial permission in Kosmos.
+the token-authed JSON APIs in Kosmos (apps/ai/api.py for the matter
+record, apps/search/api.py for the practice-wide search), which own all
+access control, ranking, and formatting. Reads cover every section of a
+matter (including its AI conversations, ledger, and trust position),
+invoices, the matter's hybrid keyword+semantic material search, and the
+practice-wide search; writes are narrow: create-only timeline facts,
+witnesses, and tasks. Money reads require the user's financial permission in Kosmos.
 
 Claude Desktop launches this script itself; configure it in
 claude_desktop_config.json (this is Claude DESKTOP's config, not
@@ -76,10 +74,9 @@ mcp = MCPServer("kosmos-notes")
 def _request(path, payload=None, **params):
     """Call a Kosmos API endpoint (GET, or POST when payload is given).
 
-    path is root-relative (notes/api/... or case/api/...). API error
+    path is root-relative (case/api/... or search/api/...). API error
     bodies are raised as tool errors verbatim: the 401 body tells the
-    user how to reissue a token and the note-write 403 explains the
-    editor toggle, so both must reach the conversation.
+    user how to reissue a token, so it must reach the conversation.
     """
     if not KOSMOS_URL:
         raise RuntimeError(
@@ -129,18 +126,6 @@ def _truncate(content):
     )
 
 
-def _manifest(notes):
-    if not notes:
-        return "No notes found."
-    lines = []
-    for note in notes:
-        line = f"- [id {note['id']}] {note['path']} (updated {note['updated_at'][:10]})"
-        if note.get("summary"):
-            line += f": {note['summary']}"
-        lines.append(line)
-    return "\n".join(lines)
-
-
 @mcp.tool()
 def find_matter(query: str) -> str:
     """Find open Kosmos matters by name (case-insensitive contains match).
@@ -149,97 +134,10 @@ def find_matter(query: str) -> str:
     instructions) to its matter_id, then pass that id to the other
     matter tools. Returns each match as its id and full name.
     """
-    matters = _get("notes/api/matters/", q=query)["matters"]
+    matters = _get("case/api/matters/", q=query)["matters"]
     if not matters:
         return f"No open matters match {query!r}."
     return "\n".join(f"- [id {m['id']}] {m['name']}" for m in matters)
-
-
-@mcp.tool()
-def list_library() -> str:
-    """List the general notes Library (notes not tied to any matter).
-
-    Returns one line per note: id, folder path, last-updated date, and a
-    short summary when one exists. Use read_note with an id to read one.
-    """
-    return _manifest(_get("notes/api/notes/", scope="library")["notes"])
-
-
-@mcp.tool()
-def list_matter_notes(matter_id: int) -> str:
-    """List all notes belonging to one matter (resolve the id with
-    find_matter first).
-
-    Returns one line per note: id, path, last-updated date, and a short
-    summary when one exists. Use read_note with an id to read one.
-    """
-    return _manifest(_get("notes/api/notes/", scope=f"matter:{matter_id}")["notes"])
-
-
-@mcp.tool()
-def search_notes(query: str, matter_id: int | None = None, limit: int = 20) -> str:
-    """Search notes by title/path and full text (two ranked bands).
-
-    Scoped to one matter's notes when matter_id is given; otherwise spans
-    the Library plus every matter the user can access. Content matches
-    include an excerpt with the match wrapped in **. limit caps each band
-    (max 100). Use read_note to read a result in full.
-    """
-    scope = f"matter:{matter_id}" if matter_id is not None else "all"
-    result = _get("notes/api/search/", q=query, scope=scope, limit=limit)
-    sections = []
-    if result["title_matches"]:
-        sections.append(
-            "Title/path matches:\n"
-            + "\n".join(
-                f"- [id {n['id']}] {n['path']}" for n in result["title_matches"]
-            )
-        )
-    if result["content_matches"]:
-        sections.append(
-            "Content matches:\n"
-            + "\n".join(
-                f"- [id {n['id']}] {n['path']}: {n['excerpt']}"
-                for n in result["content_matches"]
-            )
-        )
-    return "\n\n".join(sections) or f"No notes match {query!r}."
-
-
-@mcp.tool()
-def read_note(note_id: int) -> str:
-    """Read one note in full (markdown), by the id shown in listings and
-    search results.
-
-    The header gives the note's path and last-updated time; cite the note
-    by its title/path when you use it. Very large notes are truncated,
-    with an explicit marker saying so.
-    """
-    note = _get(f"notes/api/notes/{note_id}/")
-    return (
-        f"# {note['title']}\n"
-        f"Path: {note['path']}\n"
-        f"Updated: {note['updated_at']}\n\n"
-        f"{_truncate(note['content'])}"
-    )
-
-
-@mcp.tool()
-def write_note(note_id: int, content: str, mode: str = "append") -> str:
-    """Write to one note: mode "append" adds the content as new
-    paragraphs after the existing text, "replace" overwrites the whole
-    note. Content is plain markdown. Notes cannot be created or deleted.
-
-    This edits the user's real note immediately; only call it when the
-    user has explicitly asked for the write, and prefer append unless
-    they clearly want a rewrite. Writing requires the note's AI-write
-    toggle in the Kosmos editor (a 24-hour grant); if it is off the
-    error explains how to enable it - relay that to the user verbatim.
-    """
-    result = _post(
-        f"notes/api/notes/{note_id}/write/", {"content": content, "mode": mode}
-    )
-    return result["message"]
 
 
 @mcp.tool()
@@ -278,8 +176,7 @@ def search_matter(
     limit: int = 15,
 ) -> str:
     """Hybrid search across one matter's materials: documents (OCR
-    text), matter notes, firm library notes, synced emails, highlights,
-    and timeline facts. Matches by meaning as well as by words (semantic
+    text), synced emails, highlights, and timeline facts. Matches by meaning as well as by words (semantic
     neighbors are merged with the keyword hits).
 
     Keyword side: words are stemmed and ANDed; use "quoted phrases" for
@@ -287,13 +184,12 @@ def search_matter(
     queries with 2 to 4 differently phrased variants (synonyms, terms of
     art, statute numbers): one call runs them all and merges the ranked
     hits. When nothing matches, near-miss titles come back as fuzzy
-    hits. kinds restricts to any of: document, note, library, email,
-    highlight, fact. limit is at most 40.
+    hits. kinds restricts to any of: document, email, highlight,
+    fact. limit is at most 40.
 
     Each hit carries a snippet and the handle to read the full item
-    (doc: read_document, thread: read_email_thread, note: and lib:
-    read_note, hl: and fact: are already in the highlights and timeline
-    sections). Hits marked semantic were found by meaning alone, so the
+    (doc: read_document, thread: read_email_thread; hl: and fact: are
+    already in the highlights and timeline sections). Hits marked semantic were found by meaning alone, so the
     words themselves may not appear in the text.
     """
     payload = {"query": query, "queries": queries, "kinds": kinds, "limit": limit}
@@ -333,15 +229,15 @@ def search_kosmos(query: str, scope: str = "all") -> str:
     """Search the whole practice the way the Kosmos search page does:
     matters (name, status note, description), proceedings (fuzzy case
     number: "2024cv12345" finds "2024-CV-12345"), contacts (name,
-    company, email, phone, notes), intakes (name, email, phone), and
-    notes. An all-digit query matches client reference ids and phone
-    numbers exactly.
+    company, email, phone, notes), and intakes (name, email, phone). An
+    all-digit query matches client reference ids and phone numbers
+    exactly.
 
-    scope is one of: all, matters, proceedings, contacts, intakes,
-    notes. Results carry [matter:ID], [proceeding:ID], [contact:ID],
-    [intake:ID], and [note:ID] handles; matter ids feed the read_matter
-    tools (open matters only) and note ids feed read_note. Use
-    find_matter instead when you only need a matter's id by name.
+    scope is one of: all, matters, proceedings, contacts, intakes.
+    Results carry [matter:ID], [proceeding:ID], [contact:ID], and
+    [intake:ID] handles; matter ids feed the read_matter tools (open
+    matters only). Use find_matter instead when you only need a
+    matter's id by name.
     """
     result = _get("search/api/", q=query, scope=scope)
     return result["text"]

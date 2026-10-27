@@ -176,13 +176,12 @@ class TestBuildWorkingSet:
         working = build_working_set(conversation, matter)
         assert "Opinion:\nTHE OPINION TEXT" in working.text
 
-    def test_note_email_and_conversation_fetch(self, conversation, matter, user):
+    def test_email_and_conversation_fetch(self, conversation, matter, user):
+        # A note read from before notes were retired is skipped, not fetched.
         from django.utils import timezone
 
         from apps.mail.models import Email
-        from apps.notes.models import Note
 
-        note = Note.objects.create(matter=matter, title="Memo", content="Matter memo")
         Email.objects.create(
             matter=matter,
             gmail_id="m1",
@@ -201,16 +200,16 @@ class TestBuildWorkingSet:
             conversation,
             user,
             [
-                read_step("note", note.id, note.title),
+                read_step("note", 12, "Memo"),
+                read_step("library", 13, "Guide"),
                 read_step("email", "t1", "Depo dates"),
                 read_step("conversation", earlier.id, "Earlier"),
             ],
         )
         working = build_working_set(conversation, matter)
-        assert "Matter memo" in working.text
         assert "Tuesday works." in working.text
         assert "Earlier answer" in working.text
-        assert len(working.carried) == 3
+        assert working.carried == {("email", "t1"), ("conversation", str(earlier.id))}
 
 
 class TestSystemIntegration:

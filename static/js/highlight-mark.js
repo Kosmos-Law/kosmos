@@ -14,8 +14,7 @@
 
 import { Highlight } from "./vendor/tiptap.bundle.js";
 
-// Light-palette fills matching the highlight rules in notes-editor.css and
-// ai.css (hex, not oklch — external HTML parsers only speak hex; values
+// Light-palette fills matching the highlight rules in ai.css (hex, not oklch — external HTML parsers only speak hex; values
 // are the palette's *-100 steps, which marks keep even in dark themes).
 const HIGHLIGHT_FILLS = {
   "mark-green": "#ecfccb",

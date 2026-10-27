@@ -1,8 +1,7 @@
 // Shared formatting toolbar for TipTap editors.
 // Pairs with templates/components/format-toolbar.html (buttons carry
 // data-cmd) and the .format-toolbar styles in interface.css. Used by the
-// notes editor and the AI compose-prompt modal so both surfaces share one
-// formatting UX.
+// AI compose-prompt modal.
 
 const COMMANDS = {
   undo: {
@@ -52,25 +51,13 @@ const COMMANDS = {
   },
 };
 
-// The table button toggles the notes table bar; that wiring lives with the
-// bar itself (notes/table-bar.js) since only the notes editor has one. Here
-// we just hide the button on surfaces whose editor lacks the Table
-// extension (the AI compose-prompt modal).
+// What the table button does is wired by the editor's page; here we just
+// hide it when the editor lacks the Table extension.
 function wireTable(toolbar, editor) {
   const btn = toolbar.querySelector("[data-table-toggle]");
   if (!btn) return;
   btn.style.display =
     typeof editor.commands.insertTable === "function" ? "" : "none";
-}
-
-// The source-chip button opens the notes reference picker; that wiring
-// lives with the picker (notes/references.js + notes-editor.js). Here we
-// just hide the button on surfaces whose editor lacks the NoteRef node
-// (the AI compose-prompt modal).
-function wireReferences(toolbar, editor) {
-  const btn = toolbar.querySelector("[data-ref-insert]");
-  if (!btn) return;
-  btn.style.display = editor.schema.nodes.noteRef ? "" : "none";
 }
 
 // The last-used highlight color, shared across surfaces so the swatch the
@@ -149,7 +136,7 @@ function wireHighlight(toolbar, editor) {
 
 // Wire a .format-toolbar container to a TipTap editor: clicks run the
 // command, and .active tracks the selection. Safe to call again with a new
-// editor instance (the notes editor rebuilds on every note switch) — onclick
+// editor instance — onclick
 // assignment replaces the stale handler instead of stacking a new listener.
 export function connectFormatToolbar(toolbar, editor) {
   if (!toolbar || !editor) return;
@@ -159,7 +146,6 @@ export function connectFormatToolbar(toolbar, editor) {
   );
   const hlToggleBtn = wireHighlight(toolbar, editor);
   wireTable(toolbar, editor);
-  wireReferences(toolbar, editor);
 
   const update = () => {
     for (const btn of buttons) {

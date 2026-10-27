@@ -9,8 +9,8 @@ from apps.ai.context import (
     context_reuse_key,
 )
 from apps.ai.models import Conversation
+from apps.case.models import Fact
 from apps.llm.status import status_cache
-from apps.notes.models import Note
 
 pytestmark = pytest.mark.django_db
 
@@ -46,7 +46,7 @@ def assemble(matter, conversation, user, message):
 
 def test_follow_up_reuses_context(user, matter, conversation, manifest_counter):
     first = assemble(matter, conversation, user, "analyze service of process")
-    second = assemble(matter, conversation, user, "now save that to a note")
+    second = assemble(matter, conversation, user, "now add that to the timeline")
     assert manifest_counter["n"] == 1
     assert second == first
 
@@ -64,7 +64,7 @@ def test_reuse_entry_is_cross_process(user, matter, conversation, manifest_count
 
 def test_material_change_rebuilds(user, matter, conversation, manifest_counter):
     assemble(matter, conversation, user, "question one")
-    Note.objects.create(matter=matter, title="AI conclusion", content="text")
+    Fact.objects.create(matter=matter, date="2024-01-25", description="AI conclusion")
     assemble(matter, conversation, user, "question two")
     assert manifest_counter["n"] == 2
 

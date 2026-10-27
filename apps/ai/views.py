@@ -9,7 +9,7 @@ import time
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Max
 from django.db.models.functions import Coalesce
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -336,31 +336,6 @@ def new_conversation_view(request, matter_id):
     }
 
     return render(request, "ai/conversation-standalone.html", context)
-
-
-@login_required
-def create_conversation(request, matter_id):
-    """Materialize a new conversation before its first message.
-
-    Normally the row is created lazily by send_message; actions that need a
-    real conversation up front (linking a draft in a fresh chat window) POST
-    here with the same fields the chat form carries and get the id back.
-    """
-    if request.method != "POST":
-        return HttpResponse(status=405)
-    matter, _ = get_matter_from_url(request, matter_id)
-    llm = request.POST.get("llm", "gemini-pro-latest")
-    if llm not in VALID_LLMS:
-        llm = "gemini-pro-latest"
-    kind = _kind_param(request.POST)
-    conversation = Conversation.objects.create(
-        matter=matter,
-        title=request.POST.get("title", "").strip() or "New Conversation",
-        llm=llm,
-        kind=kind,
-        user=request.user,
-    )
-    return JsonResponse({"id": conversation.id})
 
 
 @login_required

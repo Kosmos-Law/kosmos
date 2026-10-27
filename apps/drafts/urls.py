@@ -1,4 +1,4 @@
-"""Draft links (a conversation pinned to a Drive ODT) and the LibreOffice
+"""Draft links (a conversation pinned to an ODT) and the LibreOffice
 companion's setup modal, .oxt download and token-authed JSON API. The paths
 keep their historic /case/ prefix: the installed companion extension polls
 /case/drafts/companion/api/.
@@ -12,18 +12,8 @@ from apps.drafts import companion, views
 app_name = "drafts"
 
 urlpatterns = [
-    # Draft links (a conversation pinned to a Drive ODT; edits apply via
-    # the LibreOffice companion)
-    path(
-        "case/ai/conversations/<int:conv_id>/draft/picker/",
-        views.draft_picker,
-        name="picker",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/draft/link/",
-        views.draft_link,
-        name="link",
-    ),
+    # Draft links (a conversation pinned to an ODT; edits apply via the
+    # LibreOffice companion). New links are off for now.
     path(
         "case/ai/conversations/<int:conv_id>/draft/unlink/",
         views.draft_unlink,

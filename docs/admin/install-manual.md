@@ -27,10 +27,11 @@ sudo apt-get install -y libpangocairo-1.0-0 tesseract-ocr ghostscript poppler-ut
 - **Poppler** (`poppler-utils`) - Required by pdf2image for PDF to image
   conversion
 - **Pandoc** (`pandoc`) - Converts LibreOffice drafts (`.odt`) to Markdown
-  so the AI can read the document being drafted (`apps/drive/convert.py`).
+  so the AI can read the document being drafted, and Word and
+  OpenDocument email attachments to text (`utils/convert.py`).
 - **LibreOffice Writer** (`libreoffice-writer-nogui` + `python3-uno`) - Used
   by a server-side module that applies edits to `.odt` files as tracked
-  changes (`apps/drive/redline.py`). Drafting does not currently go through
+  changes (`apps/drafts/redline.py`). Drafting does not currently go through
   it: edits are applied by the companion extension in each user's own
   LibreOffice, so the application runs without these two packages. See
   [Drafting with LibreOffice](integrations/libreoffice.md).
@@ -137,7 +138,7 @@ python manage.py qcluster
 
 Recurring jobs are installed explicitly and idempotently by
 `python manage.py setup_schedules`. This one command configures the digest,
-Google Calendar, Google Drive, Gmail, and chat-retention schedules. It is
+Google Calendar, Gmail, and chat-retention schedules. It is
 safe to run again after a deployment; migrations and schedule setup are
 never run automatically when the application starts.
 

@@ -120,8 +120,7 @@ without crowding the dialogue.
         <li class="ai-research-step">
           <i class="icon-book-open"></i>
           <div>
-            Read library note
-            <a href="{% url 'notes:note-view' event.note_id %}" target="_blank">{{ event.title|default:event.note_id }}</a>
+            Read library note <em>{{ event.title|default:event.note_id }}</em>
             {% if event.truncated %}<span class="detail-text">(truncated)</span>{% endif %}
             {% if event.cached %}<span class="detail-text">(from earlier read)</span>{% endif %}
           </div>

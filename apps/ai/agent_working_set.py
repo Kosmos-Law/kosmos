@@ -26,8 +26,6 @@ logger = logging.getLogger(__name__)
 READ_KINDS = (
     "document",
     "email",
-    "note",
-    "library",
     "caselaw",
     "conversation",
     "opinion",
@@ -132,31 +130,6 @@ def _fetch_email_thread(matter, conversation, ident):
     return head + "\n\n" + format_email_thread(emails)
 
 
-def _fetch_note(matter, conversation, ident):
-    from apps.notes.models import Note
-
-    note = Note.objects.filter(matter=matter, pk=_int(ident)).first()
-    if note is None or not note.content:
-        return ""
-    head = f"### Note [note:{note.id}]: {note.title} ({note.get_category_display()})"
-    return head + "\n\n" + note.content
-
-
-def _fetch_library_note(matter, conversation, ident):
-    from apps.notes.models import get_library_notes
-
-    from .selector import library_folder_path
-
-    note = get_library_notes().filter(pk=_int(ident)).select_related("folder").first()
-    if note is None or not note.content:
-        return ""
-    head = (
-        f"### Library note [lib:{note.id}]: {note.title} "
-        f"({library_folder_path(note.folder)})"
-    )
-    return head + "\n\n" + note.content
-
-
 def _fetch_caselaw(matter, conversation, ident):
     from apps.case.models import CaseLaw
 
@@ -227,8 +200,6 @@ def _fetch_opinion(matter, conversation, ident):
 _FETCHERS = {
     "document": _fetch_document,
     "email": _fetch_email_thread,
-    "note": _fetch_note,
-    "library": _fetch_library_note,
     "caselaw": _fetch_caselaw,
     "conversation": _fetch_conversation,
     "opinion": _fetch_opinion,

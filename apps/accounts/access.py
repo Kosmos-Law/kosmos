@@ -53,8 +53,7 @@ def register_matter_lookup(key, model, fields, object_type=None):
 def matter_ids_for_route(view_kwargs):
     """Ids of the matters a case-workspace route touches, from its URL
     keywords. An id that matches no row contributes nothing (the view will
-    answer 404), as does a row with no matter (a library note, an intake
-    chat)."""
+    answer 404), as does a row with no matter (an intake chat)."""
     lookups = {}
     for key, value in view_kwargs.items():
         if key in MATTER_LOOKUPS:

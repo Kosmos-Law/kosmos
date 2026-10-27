@@ -96,7 +96,6 @@ The sidebar on the left is the main menu. Entries appear in this order.
 | **Tasks** | The firm's to-do list. | Everyone |
 | **Contacts** | Clients and everyone else the firm deals with. | Everyone |
 | **Activity** | **Time**, **Expenses** and **Flat Fees**. See [Time and expenses](time-and-expenses.md). | Everyone |
-| **Library** | Notes, kept in folders. | Everyone |
 | **Invoicing** | **Work in Progress**, **Invoices**, **Payments**, **Credits**, **Collection**, **Trust** and **Requests**. | Financial permission |
 | **Intakes** | Prospective clients and their intake records. | Intakes permission |
 | **Reports** | **Activity**, **Revenue**, **Realization**, **Work in Progress**, **Intakes**, **Clients** and **AR Aging**. See [Reports](reports.md). | Reports permission, which is off until an administrator switches it on |
@@ -119,12 +118,12 @@ A matter has two sides. Click a pill to change sides.
 | Side | Tabs |
 |---|---|
 | **Detail** | **Overview**, **Contacts**, **Rates**, **Activity**, **Events**, **Tasks**, **Proceedings**, **Settlement**, **Ledger** |
-| **Case** | **Documents**, **Highlights**, **Timeline**, **Witnesses**, **Notes**, **Emails**, **Labels**, **Search**, **AI** (or **Case Law**) |
+| **Case** | **Documents**, **Highlights**, **Timeline**, **Witnesses**, **Emails**, **Labels**, **Search**, **AI** (or **Case Law**) |
 
 **Detail** is the office side of the matter: who is involved, what work
 was recorded, what is scheduled, the court proceedings and the money.
 **Case** is the working file: the documents, the passages you marked in
-them, the fact timeline, witnesses, notes, email, and the AI tools with
+them, the fact timeline, witnesses, email, and the AI tools with
 the matter's saved case law. Kosmos reopens each side on the tab you last used there.
 
 **AI** appears only when your firm has set up AI. Without it, saved case
@@ -151,15 +150,15 @@ Good to know:
 
 1. Click **Search** in the sidebar.
 2. Start typing. Results appear as you type, grouped under **Matters**,
-   **Proceedings**, **Contacts**, **Intakes** and **Notes**.
+   **Proceedings**, **Contacts** and **Intakes**.
 3. To narrow the results, click a tab: **All**, **Matters**,
-   **Proceedings**, **Contacts**, **Intakes** or **Notes**. (Intakes and
+   **Proceedings**, **Contacts** or **Intakes**. (Intakes and
    their tab appear only if you have the Intakes permission.)
 4. Click a result.
 
-The matter, contact or intake opens. A note opens in a new browser tab.
+The matter, contact or intake opens.
 Search looks at matter names and descriptions, case numbers, contact and
-intake names, email addresses and phone numbers, and notes. A case number
+intake names, email addresses and phone numbers. A case number
 is found without its punctuation: "2024cv12345" finds "2024-CV-12345".
 
 Good to know:
@@ -167,7 +166,7 @@ Good to know:
 - This search does not read documents. To search inside one matter's
   documents, use the **Search** tab on its **Case** side.
 - If you type digits only, Kosmos looks for phone numbers, case numbers
-  and a matter's client reference number, not names or notes.
+  and a matter's client reference number, not names.
 
 ## Keyboard shortcuts
 

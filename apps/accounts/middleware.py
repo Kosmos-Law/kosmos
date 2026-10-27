@@ -69,8 +69,8 @@ class PermissionMiddleware:
         r"^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/"
     )
 
-    # Where matter membership is enforced from the URL alone. /matters/ and
-    # /notes/ views carry their own checks.
+    # Where matter membership is enforced from the URL alone. /matters/
+    # views carry their own checks.
     MATTER_SCOPED_PREFIXES = ("/case/",)
 
     # Paths only admins may access (page + all its endpoints), regardless of perms.
@@ -88,12 +88,10 @@ class PermissionMiddleware:
 
     # The case builder's features, switched off for the whole firm by an
     # administrator (Settings > Features). Off, the paths 404 for everyone.
-    # The matter-scoped note routes belong to the library, not the case
-    # file; the MCP matter API under /case/api/ serves practice data too
-    # and stays up.
+    # The MCP matter API under /case/api/ serves practice data too and
+    # stays up.
     CASE_FILE_PATTERN = re.compile(r"^/case/")
-    CASE_FILE_EXEMPT = re.compile(r"^/case/api/|^/case/\d+/notes/|^/case/notes/")
-    LIBRARY_PATTERN = re.compile(r"^/notes/|^/case/\d+/(tab/)?notes/|^/case/notes/")
+    CASE_FILE_EXEMPT = re.compile(r"^/case/api/")
     # Books (apps/books), off unless the administrator turned it on.
     BOOKS_PATTERN = re.compile(r"^/books/|^/settings/books/|^/settings/quickbooks/")
 
@@ -121,11 +119,6 @@ class PermissionMiddleware:
                 from apps.settings.features import case_file_enabled
 
                 if not case_file_enabled():
-                    return HttpResponseNotFound()
-            if self.LIBRARY_PATTERN.match(request.path):
-                from apps.settings.features import library_enabled
-
-                if not library_enabled():
                     return HttpResponseNotFound()
             if self.BOOKS_PATTERN.match(request.path):
                 from apps.settings.features import books_enabled

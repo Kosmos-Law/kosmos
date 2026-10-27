@@ -1,7 +1,7 @@
-"""Settings > Features: the firm's administrator switches the case file and
-the library off for everyone. Off, the sidebar and the matter header lose
-their entries, the paths answer 404, the Notes tab and the notes search
-scope disappear, and the Drive mirror pauses. The data stays."""
+"""Settings > Features: the firm's administrator switches the case file
+off for everyone. Off, the sidebar and the matter header lose their
+entries and the paths answer 404. The data stays.
+Notes are retired: their pages are gone whatever the switches say."""
 
 import pytest
 from django.urls import reverse
@@ -37,24 +37,27 @@ def test_the_page_is_admin_only(client, admin_client):
     assert admin_client.get(reverse("settings:features-index")).status_code == 200
 
 
-def test_both_features_are_on_by_default(admin_client, matter):
+def test_the_case_file_is_on_by_default(admin_client, matter):
     body = admin_client.get("/matters/").content.decode()
     assert 'id="nav-case"' in body
-    assert 'id="nav-notes"' in body
     assert admin_client.get(f"/case/{matter.id}/documents/").status_code == 200
-    assert admin_client.get("/notes/").status_code == 200
+
+
+def test_the_form_has_no_library_switch(admin_client):
+    body = admin_client.get(reverse("settings:features-index")).content.decode()
+    assert "Library" not in body
 
 
 def test_saving_the_form_switches_the_features(admin_client):
     response = admin_client.post(
         reverse("settings:features-index"),
-        {"case_file_enabled": "False", "library_enabled": "True"},
+        {"case_file_enabled": "False", "books_enabled": "True"},
     )
     assert response.status_code == 200
     assert "Feature settings updated" in response.headers["HX-Toast"]
     firm = Firm.objects.get()
     assert firm.case_file_enabled is False
-    assert firm.library_enabled is True
+    assert firm.books_enabled is True
 
 
 def test_case_file_off_hides_and_refuses_the_case_file(admin_client, matter):
@@ -62,7 +65,6 @@ def test_case_file_off_hides_and_refuses_the_case_file(admin_client, matter):
 
     body = admin_client.get("/matters/").content.decode()
     assert 'id="nav-case"' not in body
-    assert 'id="nav-notes"' in body  # the library stays
     record = admin_client.get(f"/matters/{matter.id}", follow=True).content.decode()
     assert f'href="/case/select-matter/{matter.id}/"' not in record
     assert admin_client.get("/case/").status_code == 404
@@ -70,21 +72,18 @@ def test_case_file_off_hides_and_refuses_the_case_file(admin_client, matter):
     assert admin_client.get(f"/case/{matter.id}/tab/ai/").status_code == 404
 
 
-def test_case_file_off_keeps_the_mcp_api_and_matter_notes(admin_client, matter):
+def test_case_file_off_keeps_the_mcp_api(admin_client, matter):
     _switch(case_file_enabled=False)
     # The middleware lets these through; the API itself wants a token.
     assert (
         admin_client.get(f"/case/api/matter/{matter.id}/overview/").status_code == 401
     )
-    assert admin_client.get(f"/case/{matter.id}/notes/list/").status_code == 200
+    assert admin_client.get("/case/api/matters/").status_code == 401
 
 
-def test_library_off_hides_and_refuses_the_notes(admin_client, matter):
-    _switch(library_enabled=False)
-
+def test_the_notes_are_gone(admin_client, matter):
     body = admin_client.get("/matters/").content.decode()
     assert 'id="nav-notes"' not in body
-    assert 'id="nav-case"' in body
     assert admin_client.get("/notes/").status_code == 404
     assert admin_client.get(f"/case/{matter.id}/notes/").status_code == 404
     nav = admin_client.get(f"/case/{matter.id}/tab/documents/").content.decode()
@@ -97,22 +96,12 @@ def test_library_off_hides_and_refuses_the_notes(admin_client, matter):
     assert response["Location"] == reverse("case:documents-index", args=[matter.id])
 
 
-def test_library_off_drops_notes_from_the_firm_wide_search(admin_client):
-    _switch(library_enabled=False)
+def test_the_firm_wide_search_has_no_notes(admin_client):
     body = admin_client.get(reverse("search:search")).content.decode()
     assert "Notes" not in body
 
 
-def test_both_off_drops_the_sidebar_rule(admin_client):
-    _switch(case_file_enabled=False, library_enabled=False)
+def test_case_file_off_drops_the_sidebar_rule(admin_client):
+    _switch(case_file_enabled=False)
     body = admin_client.get("/matters/").content.decode()
     assert "sidebar-divider" not in body
-
-
-def test_the_drive_mirror_pauses_with_the_case_file(db, monkeypatch):
-    from apps.drive import google
-
-    _switch(case_file_enabled=False)
-    monkeypatch.setattr(google, "sync", lambda **kw: pytest.fail("sync ran"))
-    assert google.scheduled_sync() == {"skipped": "case file off"}
-    assert google.scheduled_sync_full() == {"skipped": "case file off"}

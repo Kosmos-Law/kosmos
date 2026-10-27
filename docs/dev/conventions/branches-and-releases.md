@@ -126,10 +126,10 @@ have made is not the one you reviewed. Look at the diff, then stage and
 commit again:
 
 ```bash
-git commit -m "fix(notes): ..."    # hook reformats, commit fails
+git commit -m "fix(tasks): ..."    # hook reformats, commit fails
 git diff                           # see what it changed
 git add -u
-git commit -m "fix(notes): ..."    # clean, commit succeeds
+git commit -m "fix(tasks): ..."    # clean, commit succeeds
 ```
 
 The second commit usually passes at once. If it fails again, a hook is

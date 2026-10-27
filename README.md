@@ -24,29 +24,27 @@ separately. Clients can be asked for trust deposits the same way.
 
 **Case building.** Documents with OCR text extraction, highlights and
 citations, a chronological fact timeline, witness tracking, and case law
-pulled from CourtListener and saved to the matter. The case file and the
-notes library are a module of their own, with their own entries in the
-sidebar, and an administrator can switch either off for the whole firm.
+pulled from CourtListener and saved to the matter. The case file is a
+module of its own, with its own entry in the sidebar, and an
+administrator can switch it off for the whole firm.
 
 **AI assistance.** Per-matter chat with a context system that selects the
-relevant documents, notes, case law and prior conversations for each question
+relevant documents, emails, case law and prior conversations for each question
 within the model's budget. An agentic mode can search the matter and
 CourtListener itself, and chat can write back into the record: facts,
-witnesses, notes and saved case law. Claude and Gemini are supported, and
+witnesses and saved case law. Claude and Gemini are supported, and
 either one runs every AI feature. AI is optional: until a provider key is
 set (in `config/.env` or by an admin under Settings > Integrations), no AI
 appears anywhere in the application.
 
-**Notes and drafting.** A rich-text notes editor with folders, matter-scoped
-and general libraries that feed the AI, and AI-proposed edits applied to
-LibreOffice drafts as native tracked changes.
+**Drafting.** AI-proposed edits applied to LibreOffice drafts as native
+tracked changes.
 
-**Google Workspace.** Calendar and Contacts sync, Gmail labels mapped to
-matters with a per-matter email view, and Drive folders mapped to document
-categories so PDFs flow into the matter automatically.
+**Google Workspace.** Calendar and Contacts sync, and Gmail labels mapped
+to matters with a per-matter email view.
 
-**Claude Desktop.** An MCP server exposes notes, matters, conversations and
-financial data to Claude Desktop (see [Claude Desktop access](docs/admin/integrations/claude-desktop.md)).
+**Claude Desktop.** An MCP server exposes matters, documents, conversations
+and financial data to Claude Desktop (see [Claude Desktop access](docs/admin/integrations/claude-desktop.md)).
 
 ## Installation
 
@@ -110,7 +108,7 @@ restart the two services.
 ### Manual installation and configuration
 
 Every step the script performs, written out for other platforms or for
-debugging, plus troubleshooting and the Google Calendar, Contacts and Drive
+debugging, plus troubleshooting and the Google Calendar, Contacts and Gmail
 setup that happens after the app is running:
 **[docs/admin/install-manual.md](docs/admin/install-manual.md)**, with
 [configuration](docs/admin/configuration.md),
