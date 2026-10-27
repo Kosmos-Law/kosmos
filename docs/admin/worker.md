@@ -196,6 +196,7 @@ order.
 | `sync_calendar`, `sync_gmail` | Run a Google sync now instead of waiting for the schedule, and see its output. The Gmail command takes `--full` and `--dry-run`. |
 | `cleanup_orphan_documents` | Document records whose stored file is missing and cannot be recovered. Reports only, unless you pass `--apply`. |
 | `dedupe_documents` | The same file was added to a matter more than once. Reports only, unless you pass `--apply`. |
+| `purge_unannotated_documents` | Deletes documents nobody has worked on: no highlight, no timeline fact, no note and not a promoted email. Labels and descriptions do not protect a document. The stored files, search entries and semantic-index chunks go too, and this can't be undone, so take a backup first. Reports a count per matter only, unless you pass `--apply`. `--list` names each document and `--matter` limits it to one matter. Written for the Google Drive removal, when most documents were unannotated copies from the mirror. |
 | `generate_invoice_pdfs` | Stored invoice PDFs are missing or wrong. Regenerates them. `--clear` deletes every stored invoice PDF. |
 | `update_search_vectors` | Recomputes the search columns on documents and highlights. |
 | `purge_closed_chats` | Runs the weekly chat purge by hand. `--days` sets the retention window and `--dry-run` reports what would be deleted. |

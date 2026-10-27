@@ -46,6 +46,7 @@ Which of these an operator needs, and when, is covered in
 | `dedupe_documents` | Delete duplicate documents (same matter) that have no highlights or references |
 | `fingerprint_documents` | Compute content fingerprints for documents that lack them |
 | `fix_document_paths` | Fix document file paths from old naming format to current convention |
+| `purge_unannotated_documents` | Delete documents that have no highlight, fact, note or promoted email, with their stored files. Dry run unless --apply is given. |
 | `setup_chat_purge_schedule` | Create or update the weekly chat-purge schedule (Sunday 03:00 local): deletes AI chat history for matters closed past the retention window. Superseded by setup_schedules, which installs this with every other schedule. |
 | `update_search_vectors` | Update search vectors for all documents and highlights |
 
