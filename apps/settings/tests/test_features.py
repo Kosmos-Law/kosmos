@@ -51,13 +51,13 @@ def test_the_form_has_no_library_switch(admin_client):
 def test_saving_the_form_switches_the_features(admin_client):
     response = admin_client.post(
         reverse("settings:features-index"),
-        {"case_file_enabled": "False", "books_enabled": "True"},
+        {"case_file_enabled": "False", "accounting_enabled": "True"},
     )
     assert response.status_code == 200
     assert "Feature settings updated" in response.headers["HX-Toast"]
     firm = Firm.objects.get()
     assert firm.case_file_enabled is False
-    assert firm.books_enabled is True
+    assert firm.accounting_enabled is True
 
 
 def test_case_file_off_hides_and_refuses_the_case_file(admin_client, matter):
@@ -99,9 +99,3 @@ def test_the_notes_are_gone(admin_client, matter):
 def test_the_firm_wide_search_has_no_notes(admin_client):
     body = admin_client.get(reverse("search:search")).content.decode()
     assert "Notes" not in body
-
-
-def test_case_file_off_drops_the_sidebar_rule(admin_client):
-    _switch(case_file_enabled=False)
-    body = admin_client.get("/matters/").content.decode()
-    assert "sidebar-divider" not in body

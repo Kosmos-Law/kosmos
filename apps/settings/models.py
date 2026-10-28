@@ -77,12 +77,12 @@ class Firm(AuditMixin):
     # The case builder's features, on or off for the whole firm (Settings >
     # Features, admins only). Read through apps/settings/features.py.
     case_file_enabled = models.BooleanField(default=True)
-    # Books, the ledger behind invoicing and trust (apps/books). Off until
+    # Accounting, the ledger behind invoicing and trust (apps/accounting). Off until
     # an administrator turns it on: a firm that keeps its books elsewhere
     # never sees it.
-    books_enabled = models.BooleanField(default=False)
+    accounting_enabled = models.BooleanField(default=False)
     # The return the firm files and the basis it keeps its books on. The
-    # chart's tax lines are read by form (apps/books/tax_lines.py); the
+    # chart's tax lines are read by form (apps/accounting/tax_lines.py); the
     # basis decides when invoicing posts revenue.
     tax_form = models.CharField(
         max_length=12, choices=TAX_FORM_CHOICES, default="schedule_c"

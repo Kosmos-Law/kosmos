@@ -98,27 +98,26 @@
         matter on its last tab. The firm's administrator can switch it off
         (Settings > Features).
       {% endcomment %}
-      {% if case_file_enabled or books_enabled and user.is_admin or books_enabled and user.perm_books %}
-        <li class="sidebar-divider" aria-hidden="true"></li>
-      {% endif %}
       {% if case_file_enabled %}
         <li {% if app == 'case' %}class="active"{% endif %}>
           <a id="nav-case" href="{% url 'case:case-index' %}" data-tooltip="Cases">
-            <i class="icon-folder-open"></i>
+            <i class="icon-notebook"></i>
             <span class="sidebar-label">Cases</span>
           </a>
         </li>
       {% endif %}
       {% comment %}
-        Books: the ledger behind invoicing and trust. A module like the
-        case builder (Settings > Features), and gated by the Books
-        permission, so most staff never see it.
+        Accounting (apps/accounting): the ledger behind invoicing and trust. A
+        module like the case builder (Settings > Features), and gated by the
+        Accounting permission, so most staff never see it.
       {% endcomment %}
-      {% if books_enabled and user.is_admin or books_enabled and user.perm_books %}
-        <li {% if app == 'books' %}class="active"{% endif %}>
-          <a id="nav-books" href="{% url 'books:index' %}" data-tooltip="Books">
-            <i class="icon-book-open"></i>
-            <span class="sidebar-label">Books</span>
+      {% if accounting_enabled and user.is_admin or accounting_enabled and user.perm_accounting %}
+        <li {% if app == 'accounting' %}class="active"{% endif %}>
+          <a id="nav-accounting"
+             href="{% url 'accounting:index' %}"
+             data-tooltip="Accounting">
+            <i class="icon-wallet-cards"></i>
+            <span class="sidebar-label">Accounting</span>
           </a>
         </li>
       {% endif %}

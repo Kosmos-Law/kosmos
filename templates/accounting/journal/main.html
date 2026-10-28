@@ -1,0 +1,7 @@
+{% extends "accounting/main.html" %}
+{% block subcontent %}
+  <div id="journal"
+       hx-trigger="accountingChanged from:body"
+       hx-get="{% url 'accounting:journal-list' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}"
+       hx-target="this">{% include "accounting/journal/list.html" %}</div>
+{% endblock subcontent %}

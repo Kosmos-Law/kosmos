@@ -92,7 +92,7 @@ INSTALLED_APPS = [
     "apps.trust",
     "apps.invoicing",
     "apps.reports",
-    "apps.books",
+    "apps.accounting",
     "apps.management",
     "apps.notes",
     # Retired (Google Drive removed): migrations only, so the migration that
@@ -469,7 +469,7 @@ GOOGLE_CLIENT_SECRET_PATH = GOOGLE_DATA_DIR / "google_tokens.json"
 GOOGLE_EMAIL_TOKEN_PATH = GOOGLE_DATA_DIR / "email_tokens.json"
 LAW_FIRM_ID = env("LAW_FIRM_ID", default="")
 
-# QuickBooks Online (apps/books/intuit.py): the OAuth client of the app
+# QuickBooks Online (apps/accounting/intuit.py): the OAuth client of the app
 # registered on developer.intuit.com. Development keys reach only sandbox
 # companies and production keys only real ones, so the environment says
 # which host the keys belong to.

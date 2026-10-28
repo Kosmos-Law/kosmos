@@ -1,0 +1,55 @@
+{% load humanize %}
+{% comment %}
+  One account in the tree, and its sub-accounts under it: this template
+  includes itself. A parent folds like a kind does; its total is its own
+  balance plus its children's.
+{% endcomment %}
+<div class="tree-section"
+     x-data="{ collapsed: {{ node.collapsed|yesno:'true,false' }} }">
+  <div id="account-{{ node.row.account.id }}"
+       class="tree-row tree-account depth-{{ node.row.account.depth }}{% if not node.row.account.is_active %} inactive{% endif %}{% if node.children %} tree-parent{% endif %}">
+    {% if node.children %}
+      <i class="icon-chevron-down tree-chevron"
+         role="button"
+         tabindex="0"
+         :class="{ collapsed: collapsed }"
+         @click="collapsed = !collapsed; htmx.ajax('POST', '{% url 'accounting:tree-toggle' %}', {values: {node: '{{ node.key }}'}, swap: 'none'})"></i>
+    {% else %}
+      <span class="tree-chevron"></span>
+    {% endif %}
+    <span class="tree-code">{{ node.row.account.code }}</span>
+    <a class="tree-name"
+       href="{% url 'accounting:account-ledger' node.row.account.id %}">{{ node.row.account.name }}</a>
+    {% if node.row.account.role %}<span class="tree-role">{{ node.row.account.get_role_display }}</span>{% endif %}
+    {% if not node.row.account.is_active %}<span class="app-badge badge-gray">Inactive</span>{% endif %}
+    {% if node.row.account.schedule_c_line or node.row.account.form_1120s_line %}
+      <span class="tree-tax"
+            title="Schedule C line {{ node.row.account.schedule_c_line|default:'none' }} · 1120-S line {{ node.row.account.form_1120s_line|default:'none' }}">
+        C {{ node.row.account.schedule_c_line|default:"–" }} · S {{ node.row.account.form_1120s_line|default:"–" }}
+      </span>
+    {% endif %}
+    <span class="row-actions">
+      <button type="button"
+              class="btn-icon"
+              title="Edit account"
+              hx-get="{% url 'accounting:account-edit' node.row.account.id %}"
+              hx-target="#htmx-modal-container">
+        <i class="icon-pencil"></i>
+      </button>
+    </span>
+    <span class="tree-amount">
+      {% if node.total < 0 %}
+        ({{ node.total|floatformat:2|intcomma|slice:"1:" }})
+      {% else %}
+        {{ node.total|floatformat:2|intcomma }}
+      {% endif %}
+    </span>
+  </div>
+  {% if node.children %}
+    <div x-show="!collapsed">
+      {% for child in node.children %}
+        {% include "accounting/accounts/tree-account.html" with node=child %}
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

@@ -156,6 +156,18 @@ cut-over.
   then the visibility work on Accounts, Journal and Statements against
   real data; then cut-over and the slices as first ordered.
 
+## Amendment (2026-10-28): Books is renamed Accounting
+
+The module is called Accounting, in the interface and behind it: the app
+is `apps/accounting` (label `accounting`), its pages are under
+`/accounting/` and `/settings/accounting/`, the switch is
+`Firm.accounting_enabled` and the permission `perm_accounting`, and the
+tables are `app_accounting_*`. The decision above is unchanged; read its
+names as the new ones. The relabelling of the applied migrations,
+content types and permissions that the rename needs is done by the
+app's `migrate` command before Django plans the migration
+(`apps/accounting/management/commands/migrate.py`).
+
 ## Evidence
 
 - The owner's requests of 2026-10-22: the project, the placement, the
@@ -172,7 +184,7 @@ cut-over.
 
 ## Related
 
-- [Books](../dev/subsystems/books.md).
+- [Accounting](../dev/subsystems/accounting.md).
 - [The case builder is a module with its own navigation (2026-10-19)](2026-10-19-the-case-builder-is-a-module-with-its-own-navigation.md): the module pattern Books follows.
 - [Trust available is client-level and uses the pending balance (2026-07-03)](2026-07-03-trust-available-client-level-pending.md).
 - [The reports permission opens the reports (2026-10-02)](2026-10-02-reports-permission-opens-the-reports.md).

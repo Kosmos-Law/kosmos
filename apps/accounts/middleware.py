@@ -38,7 +38,7 @@ class PermissionMiddleware:
         ("/intakes/", "perm_intakes"),
         ("/settings/intake-emails/", "perm_intakes"),
         ("/reports/", "perm_reports"),
-        ("/books/", "perm_books"),
+        ("/accounting/", "perm_accounting"),
     ]
 
     # The same gates for pages whose path starts with a matter id. Hiding
@@ -82,7 +82,7 @@ class PermissionMiddleware:
         "/settings/matters/",
         "/settings/tasks/",
         "/settings/features/",
-        "/settings/books/",
+        "/settings/accounting/",
         "/settings/quickbooks/",
     ]
 
@@ -92,8 +92,10 @@ class PermissionMiddleware:
     # stays up.
     CASE_FILE_PATTERN = re.compile(r"^/case/")
     CASE_FILE_EXEMPT = re.compile(r"^/case/api/")
-    # Books (apps/books), off unless the administrator turned it on.
-    BOOKS_PATTERN = re.compile(r"^/books/|^/settings/books/|^/settings/quickbooks/")
+    # Accounting (apps/accounting), off unless the administrator turned it on.
+    ACCOUNTING_PATTERN = re.compile(
+        r"^/accounting/|^/settings/accounting/|^/settings/quickbooks/"
+    )
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -120,10 +122,10 @@ class PermissionMiddleware:
 
                 if not case_file_enabled():
                     return HttpResponseNotFound()
-            if self.BOOKS_PATTERN.match(request.path):
-                from apps.settings.features import books_enabled
+            if self.ACCOUNTING_PATTERN.match(request.path):
+                from apps.settings.features import accounting_enabled
 
-                if not books_enabled():
+                if not accounting_enabled():
                     return HttpResponseNotFound()
 
         if request.user.is_authenticated and not request.user.is_admin:

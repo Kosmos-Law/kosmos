@@ -1,13 +1,13 @@
 {% comment %}
-  QuickBooks Online, for administrators while Books is on. One connection
-  for the firm: the company Books mirrors. Without the app's keys in
+  QuickBooks Online, for administrators while Accounting is on. One connection
+  for the firm: the company Accounting mirrors. Without the app's keys in
   config/.env there is nothing to connect with, so no button, and a note
   saying so.
 {% endcomment %}
 <h2 class="settings-section">QuickBooks Online</h2>
 <hr />
 <p class="detail-text">
-  Books mirrors the firm's QuickBooks Online company: the chart of accounts
+  Accounting mirrors the firm's QuickBooks Online company: the chart of accounts
   and every transaction, as the bookkeeper keeps them. Connect the company
   once; the sync keeps the mirror current, and nothing here writes back to
   QuickBooks.
@@ -35,7 +35,9 @@
             {% if connection.is_sandbox %}(sandbox){% endif %}
           </span>
           <span>
-            <form method="post" action="{% url 'books:sync' %}" class="inline-form">
+            <form method="post"
+                  action="{% url 'accounting:sync' %}"
+                  class="inline-form">
               {% csrf_token %}
               <button type="submit" class="btn btn-success">Sync now</button>
             </form>
@@ -44,7 +46,7 @@
                     data-href="{% url 'settings:quickbooks-disconnect' %}"
                     data-method="post"
                     data-confirm-title="Disconnect QuickBooks"
-                    data-confirm-message="Disconnect QuickBooks Online for the whole firm? Books stops syncing with it until an administrator connects it again. What has already been mirrored stays."
+                    data-confirm-message="Disconnect QuickBooks Online for the whole firm? Accounting stops syncing with it until an administrator connects it again. What has already been mirrored stays."
                     data-confirm-text="Disconnect">Disconnect</button>
           </span>
         {% else %}

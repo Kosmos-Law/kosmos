@@ -15,8 +15,8 @@ def _active_item(body, nav_id):
 
 def test_the_sidebar_lists_case_after_the_practice_pages(client):
     body = client.get("/matters/").content.decode()
-    assert body.index('id="nav-activity"') < body.index("sidebar-divider")
-    assert body.index("sidebar-divider") < body.index('id="nav-case"')
+    assert body.index('id="nav-activity"') < body.index('id="nav-case"')
+    assert "sidebar-divider" not in body
     assert 'id="nav-case" href="/case/"' in body
     assert 'id="nav-notes"' not in body
 

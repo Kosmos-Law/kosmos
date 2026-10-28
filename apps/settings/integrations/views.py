@@ -13,7 +13,7 @@ import apps.contacts.google as contacts_google
 import apps.mail.google as mail_google
 from apps.contacts.models import GoogleContactCopy, GoogleContactsSetting
 from apps.mail.models import GmailAccount
-from apps.settings.features import books_enabled
+from apps.settings.features import accounting_enabled
 from apps.settings.integrations import PENDING_TOAST_KEY, quickbooks
 from apps.settings.integrations.oauth import google_oauth_configured
 from utils.toasts import toast_success
@@ -98,7 +98,7 @@ def index(request):
     }
     if request.user.is_admin:
         context.update(_ai_context())
-        if books_enabled():
+        if accounting_enabled():
             context.update(quickbooks.context())
 
     return render(request, "settings/integrations/index.html", context)

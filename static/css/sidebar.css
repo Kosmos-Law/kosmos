@@ -113,14 +113,6 @@
    Nav Items
    ========================================================================== */
 
-/* The rule between the practice pages and the case builder's entries: the
-   same rule as the one above the utils list, edge to edge of the sidebar
-   (the negative margins undo .sidebar-nav's padding). */
-.sidebar-nav li.sidebar-divider {
-  border-top: 1px solid var(--border-medium);
-  margin: 0.5rem -1rem;
-}
-
 .sidebar-nav li {
   margin-bottom: 1px;
 }
@@ -204,10 +196,6 @@
 .sidebar-collapsed .sidebar-nav-utils {
   margin: 0 -0.75rem;
   padding: 0.5rem 0.75rem;
-}
-
-.sidebar-collapsed .sidebar-nav li.sidebar-divider {
-  margin: 0.5rem -0.75rem;
 }
 
 
@@ -470,12 +458,6 @@
     border-top: none;
     margin: 0;
     padding: 0;
-  }
-
-  /* No rules on the horizontal bar; the utils group's own border is gone
-     too, and the gap already separates the groups. */
-  [data-nav="horizontal"] .sidebar-nav li.sidebar-divider {
-    display: none;
   }
 
   [data-nav="horizontal"] .sidebar-nav li {

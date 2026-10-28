@@ -81,10 +81,10 @@ def schedule_specs():
         ),
         ScheduleSpec(
             "quickbooks-sync",
-            "apps.books.sync.scheduled_sync",
+            "apps.accounting.sync.scheduled_sync",
             "*/30 * * * *",
             description=(
-                "Mirrors the firm's QuickBooks Online company into Books: the "
+                "Mirrors the firm's QuickBooks Online company into Accounting: the "
                 "chart of accounts, every transaction, and a check against "
                 "QuickBooks's own trial balance. Does nothing until QuickBooks "
                 "is connected under Settings > Integrations."

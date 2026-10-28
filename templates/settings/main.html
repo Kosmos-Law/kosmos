@@ -21,9 +21,9 @@
             <li {% if subapp == "features" %}class="active"{% endif %}>
               <a href="{% url 'settings:features-index' %}">Features</a>
             </li>
-            {% if books_enabled %}
-              <li {% if subapp == "books" %}class="active"{% endif %}>
-                <a href="{% url 'settings:books-index' %}">Books</a>
+            {% if accounting_enabled %}
+              <li {% if subapp == "accounting" %}class="active"{% endif %}>
+                <a href="{% url 'settings:accounting-index' %}">Accounting</a>
               </li>
             {% endif %}
           {% endif %}
