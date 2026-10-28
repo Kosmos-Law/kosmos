@@ -262,6 +262,17 @@ Settings Contacts - Column Layout
   justify-content: space-between;
 }
 
+/* Two or more buttons at the end of a row (Sync now and Disconnect): a gap
+   between them side by side, and between them when a long name above
+   wraps them onto separate lines. */
+.integrations-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 .sync-note {
   margin: 0;
 }

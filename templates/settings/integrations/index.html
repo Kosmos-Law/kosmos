@@ -45,7 +45,7 @@
         <div class="integrations-item-row">
           {% if own_gmail_account %}
             <span>Your mailbox: {{ own_gmail_account.address }}</span>
-            <span>
+            <span class="integrations-actions">
               {% if not own_gmail_account.can_manage_labels and google_oauth_ready %}
                 <a class="btn btn-success"
                    href="{% url 'settings:google-login' 'email' %}">Reconnect</a>
