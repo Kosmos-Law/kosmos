@@ -142,9 +142,8 @@ def delete(request, folder_id):
                 continue
             # Delete relationships
             Relationship.objects.filter(contact=contact).delete()
-            # Delete from Google if connected
-            if google.check_credentials() and contact.google_id:
-                google.delete_contact(contact)
+            # Remove it from every user's Google Contacts it was copied to
+            google.remove_all(contact)
             contact.delete()
 
     # Clear selected contact if it was in this folder

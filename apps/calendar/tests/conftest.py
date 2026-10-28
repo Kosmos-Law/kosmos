@@ -47,7 +47,7 @@ def event(user, matter):
 
 @pytest.fixture
 def event_data(event):
-    exclude_keys = {"_state", "id", "google_id", "user_id", "matter_id"}
+    exclude_keys = {"_state", "id", "user_id", "matter_id"}
     event_data = {
         key: value
         for key, value in event.__dict__.items()

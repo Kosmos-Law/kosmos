@@ -1,5 +1,10 @@
 # Google Calendar sync: Kosmos wins on conflicts (2026-10-02)
 
+> Superseded on 2026-10-28 by [Google Calendar sync is removed, and
+> Google Contacts is per user](2026-10-28-google-calendar-removed-contacts-per-user.md):
+> nothing is synced with Google Calendar now. The rules below stay a
+> reference if a sync is ever built again.
+
 Events mirror to one shared Google Calendar. The push side is a side
 effect of saving an event; the pull side runs every two minutes from a
 `syncToken`. Three things went wrong with the first versions, each

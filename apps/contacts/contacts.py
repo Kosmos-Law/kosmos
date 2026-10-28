@@ -117,10 +117,16 @@ def get_list_data(request):
 
             open_matters = open_relationships
 
-    if google.check_credentials():
-        google_logged_in = True
-    else:
-        google_logged_in = False
+    # The cloud button: shown to a user who has connected their own Google
+    # Contacts, lit when they have copied this contact
+    google_logged_in = google.is_connected(request.user)
+    google_copy = (
+        google.copy_for(request.user, selected_contact)
+        if google_logged_in and selected_contact
+        else None
+    )
+    google_copied = google_copy is not None
+    google_copy_automatic = bool(google_copy and google_copy.automatic)
 
     # Balances are worked out only for a user who may see them: the Trust tab
     # is theirs alone, and nothing else on the page should carry the numbers.
@@ -144,6 +150,8 @@ def get_list_data(request):
         "selected_contact": selected_contact,
         "selected_contact_not_found": selected_contact_not_found,
         "google_logged_in": google_logged_in,
+        "google_copied": google_copied,
+        "google_copy_automatic": google_copy_automatic,
         "relationships": relationships,
         "open_matters": open_matters,
         "show_trust": show_trust,

@@ -14,7 +14,7 @@ Times are in the firm's time zone, the `TIME_ZONE` variable in
 |---|---|---|
 | `daily-digest` | Daily at 07:00 (`0 7 * * *`) | Emails each active user who has the digest switched on a summary of overdue, today's and upcoming items. |
 | `event-reminders` | Every minute (`* * * * *`) | Sends the event notifications that have come due, by email or pushed to the ntfy app, as each one says. |
-| `calendar-sync` | Every 2 minutes (`*/2 * * * *`) | Two-way Google Calendar sync: pushes pending local changes and deletions, then pulls changes from Google. Does nothing until Google Calendar is connected. |
+| `google-contacts-auto` | Every 15 minutes (`*/15 * * * *`) | Copies the clients (or Client groups) of open matters to the Google Contacts of each user who chose automatic copies, and removes the ones it added once their matter is no longer open. |
 | `gmail-sync` | Every 2 minutes (`*/2 * * * *`) | Syncs labelled Gmail messages onto their mapped matters, across every connected mailbox. Does nothing until a mailbox is connected and a label is linked to a matter. |
 | `gmail-sync-weekly-full` | Monday at 03:15 (`15 3 * * 1`) | Full Gmail re-sync of every linked label. |
 | `chat-purge-weekly` | Sunday at 03:00 (`0 3 * * 0`) | Deletes AI chat history for matters that have been closed for longer than CHAT_RETENTION_DAYS (180 by default; 0 keeps chats indefinitely). |
@@ -27,7 +27,7 @@ Times are in the firm's time zone, the `TIME_ZONE` variable in
 |---|---|
 | `daily-digest` | `apps.tasks.digest.send_daily_digest` |
 | `event-reminders` | `apps.calendar.reminders.send_due` |
-| `calendar-sync` | `apps.calendar.sync.scheduled_sync` |
+| `google-contacts-auto` | `apps.contacts.google.scheduled_sync_automatic` |
 | `gmail-sync` | `apps.mail.google.scheduled_sync` |
 | `gmail-sync-weekly-full` | `apps.mail.google.scheduled_sync_full` |
 | `chat-purge-weekly` | `apps.ai.purge.scheduled_purge_closed_chats` |

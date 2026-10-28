@@ -44,13 +44,13 @@ def schedule_specs():
             ),
         ),
         ScheduleSpec(
-            "calendar-sync",
-            "apps.calendar.sync.scheduled_sync",
-            "*/2 * * * *",
+            "google-contacts-auto",
+            "apps.contacts.google.scheduled_sync_automatic",
+            "*/15 * * * *",
             description=(
-                "Two-way Google Calendar sync: pushes pending local changes "
-                "and deletions, then pulls changes from Google. Does nothing "
-                "until Google Calendar is connected."
+                "Copies the clients (or Client groups) of open matters to the "
+                "Google Contacts of each user who chose automatic copies, and "
+                "removes the ones it added once their matter is no longer open."
             ),
         ),
         ScheduleSpec(

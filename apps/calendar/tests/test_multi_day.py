@@ -1,6 +1,5 @@
 """An event over several days: it has an end date, shows on every day it
-covers, reads in days in the lists, and goes to and from Google with its
-whole span."""
+covers, and reads in days in the lists."""
 
 import json
 from datetime import date, time, timedelta
@@ -8,7 +7,6 @@ from datetime import date, time, timedelta
 import pytest
 from django.urls import reverse
 
-import apps.calendar.google as google
 from apps.calendar.forms import EventForm
 from apps.calendar.models import Event
 
@@ -195,63 +193,6 @@ def test_the_list_reads_the_span_in_days(client, user):
 
     assert "to 2030-03-06" in page
     assert "3 days" in page
-
-
-# --- Google ----------------------------------------------------------------
-
-
-def test_a_span_is_pushed_with_its_last_day(monkeypatch, user):
-    sent = {}
-
-    class Service:
-        def events(self):
-            return self
-
-        def insert(self, calendarId, body):
-            sent.update(body)
-            return self
-
-        def execute(self):
-            return {"id": "g1"}
-
-    monkeypatch.setattr(google, "build_service", lambda: Service())
-    event = _event(
-        user=user, date=date(2030, 3, 4), end_date=date(2030, 3, 6), description="Trial"
-    )
-
-    google.add_event(event)
-
-    assert sent["start"]["date"] == "2030-03-04"
-    assert sent["end"]["date"] == "2030-03-07"
-
-
-def test_a_span_pulled_from_google_keeps_its_last_day():
-    data = google._parse_google_event(
-        {"start": {"date": "2030-03-04"}, "end": {"date": "2030-03-07"}}
-    )
-
-    assert data["date"] == date(2030, 3, 4)
-    assert data["end_date"] == date(2030, 3, 6)
-
-
-def test_a_one_day_event_pulled_from_google_has_no_end_date():
-    data = google._parse_google_event(
-        {"start": {"date": "2030-03-04"}, "end": {"date": "2030-03-05"}}
-    )
-
-    assert data["end_date"] is None
-
-
-def test_a_timed_span_pulled_from_google_ends_on_its_last_day():
-    data = google._parse_google_event(
-        {
-            "start": {"dateTime": "2030-03-04T14:00:00-05:00"},
-            "end": {"dateTime": "2030-03-05T10:00:00-05:00"},
-        }
-    )
-
-    assert data["end_date"] == date(2030, 3, 5)
-    assert data["end_time"] == time(10, 0)
 
 
 def test_the_models_last_day_and_moments(user):

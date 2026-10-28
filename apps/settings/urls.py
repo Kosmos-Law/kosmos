@@ -61,6 +61,11 @@ urlpatterns = [
     # Integrations
     path("settings/integrations/", integration_urls.index, name="integrations-index"),
     path(
+        "settings/integrations/google-contacts/auto",
+        integration_urls.google_contacts_auto,
+        name="google-contacts-auto",
+    ),
+    path(
         "settings/integrations/ai/<str:provider>/",
         integration_urls.ai_key_save,
         name="ai-key-save",

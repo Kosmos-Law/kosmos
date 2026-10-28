@@ -1,4 +1,3 @@
-import json
 import logging
 
 import google_auth_oauthlib.flow
@@ -7,28 +6,34 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
+from django_q.tasks import async_task
 from googleapiclient.discovery import build
 
+import apps.contacts.google as contacts_google
 import apps.mail.google as mail_google
+from apps.contacts.models import GoogleContactCopy, GoogleContactsSetting
 from apps.mail.models import GmailAccount
 from apps.settings.features import books_enabled
 from apps.settings.integrations import PENDING_TOAST_KEY, quickbooks
 from apps.settings.integrations.oauth import google_oauth_configured
-from utils.prepare_path import prepare_path
 from utils.toasts import toast_success
 
 logger = logging.getLogger(__name__)
 
-CONTACTS_TOKEN_PATH = settings.GOOGLE_CONTACTS_TOKEN_PATH
-CALENDAR_TOKEN_PATH = settings.GOOGLE_CALENDAR_TOKEN_PATH
-EMAIL_TOKEN_PATH = settings.GOOGLE_EMAIL_TOKEN_PATH
 GOOGLE_TOKEN_PATH = settings.GOOGLE_CLIENT_SECRET_PATH
 
-# Map the <app> URL segment to its token file.
-TOKEN_PATHS = {
-    "contacts": CONTACTS_TOKEN_PATH,
-    "calendar": CALENDAR_TOKEN_PATH,
-    "email": EMAIL_TOKEN_PATH,
+# The Google connections, by the <app> URL segment, and the scopes each
+# asks for. Both are per user. The firm-wide Calendar sync was removed
+# (2026-10-28), and Contacts moved from a firm account to each user's own.
+GOOGLE_SCOPES = {
+    "email": [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        # Label create/rename only — message content stays read-only.
+        # Lets the sync provision each mailbox's matter labels so users
+        # only ever *apply* labels, never build the taxonomy.
+        "https://www.googleapis.com/auth/gmail.labels",
+    ],
+    "contacts": [contacts_google.SCOPE],
 }
 
 GOOGLE_OAUTH_MISSING_MSG = (
@@ -37,35 +42,13 @@ GOOGLE_OAUTH_MISSING_MSG = (
 )
 
 
-def _token_exists(file_path):
-    prepare_path(file_path)
-
-    try:
-        with open(file_path, "r") as file:
-            data = json.load(file)
-
-        return "token" in data
-    except (IOError, json.JSONDecodeError):
-        return False
-
-
 def _get_redirect_uri(request):
     return f"https://{request.get_host()}/settings/google/store"
 
 
-def _create_flow(redirect_uri, state=None):
+def _create_flow(redirect_uri, app, state=None):
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        GOOGLE_TOKEN_PATH,
-        state=state,
-        scopes=[
-            "https://www.googleapis.com/auth/calendar",
-            "https://www.googleapis.com/auth/contacts",
-            "https://www.googleapis.com/auth/gmail.readonly",
-            # Label create/rename only — message content stays read-only.
-            # Lets the sync provision each mailbox's matter labels so users
-            # only ever *apply* labels, never build the taxonomy.
-            "https://www.googleapis.com/auth/gmail.labels",
-        ],
+        GOOGLE_TOKEN_PATH, state=state, scopes=GOOGLE_SCOPES[app]
     )
 
     flow.redirect_uri = redirect_uri
@@ -73,11 +56,9 @@ def _create_flow(redirect_uri, state=None):
 
 
 def _get_auth_url(flow):
-    return flow.authorization_url(
-        access_type="offline",
-        prompt="consent",
-        include_granted_scopes="true",
-    )
+    # No include_granted_scopes: each connection's token carries only the
+    # scopes that connection asked for.
+    return flow.authorization_url(access_type="offline", prompt="consent")
 
 
 def _visible_gmail_accounts(user, gmail_status):
@@ -92,8 +73,6 @@ def _visible_gmail_accounts(user, gmail_status):
 
 @login_required
 def index(request):
-    contacts_token = _token_exists(CONTACTS_TOKEN_PATH)
-    calendar_token = _token_exists(CALENDAR_TOKEN_PATH)
     # Email is per-user (GmailAccount rows), not a shared token file.
     email_token = mail_google.check_credentials()
 
@@ -103,9 +82,8 @@ def index(request):
     context = {
         "app": "settings",
         "subapp": "integrations",
-        "contacts_token": contacts_token,
-        "calendar_token": calendar_token,
         "email_token": email_token,
+        **_contacts_context(request.user),
         "gmail_status": gmail_status,
         "own_gmail_account": GmailAccount.objects.filter(user=request.user).first(),
         "gmail_accounts": _visible_gmail_accounts(request.user, gmail_status),
@@ -126,19 +104,51 @@ def index(request):
     return render(request, "settings/integrations/index.html", context)
 
 
-def _forbidden_for(request, app):
-    """Shared-token integrations (firm-wide files) are admin-only; email is
-    per-user, so any signed-in user may connect their own mailbox."""
-    if app not in TOKEN_PATHS:
-        # An integration that no longer exists (Drive) or never did.
+def _require_known(app):
+    """Any other name is an integration that no longer exists (Drive,
+    Calendar) or never did."""
+    if app not in GOOGLE_SCOPES:
         raise Http404
-    return app != "email" and not request.user.is_admin
+
+
+def _contacts_context(user):
+    return {
+        "contacts_connected": contacts_google.is_connected(user),
+        "contacts_auto": contacts_google.auto_setting(user),
+        "contacts_auto_choices": GoogleContactsSetting.AUTO_CHOICES,
+        "google_oauth_ready": google_oauth_configured(),
+    }
+
+
+@login_required
+@require_POST
+def google_contacts_auto(request):
+    """Save which contacts Kosmos copies to the user's Google Contacts on
+    its own, and bring their copies in line at once on the worker."""
+    auto = request.POST.get("auto", "")
+    if auto not in dict(GoogleContactsSetting.AUTO_CHOICES):
+        return HttpResponseBadRequest("Unknown choice.")
+    if not contacts_google.is_connected(request.user):
+        return HttpResponseBadRequest("Connect Google Contacts first.")
+    contacts_google.set_auto_setting(request.user, auto)
+    async_task("apps.contacts.google.sync_automatic_task", request.user.id)
+
+    response = render(
+        request,
+        "settings/integrations/google-contacts.html",
+        _contacts_context(request.user),
+    )
+    if auto == GoogleContactsSetting.OFF:
+        message = "Automatic contacts off. The ones Kosmos added are being removed."
+    else:
+        message = "Saved. Your Google Contacts will be updated in a minute or two."
+    toast_success(response, message)
+    return response
 
 
 @login_required
 def google_login(request, app):
-    if _forbidden_for(request, app):
-        return HttpResponseForbidden()
+    _require_known(app)
     if not google_oauth_configured():
         # Reached from a stale page or a typed address: say why, don't 500.
         request.session[PENDING_TOAST_KEY] = {
@@ -149,7 +159,7 @@ def google_login(request, app):
     redirect_uri = _get_redirect_uri(request)
 
     # Create OAuth2 flow instance
-    flow = _create_flow(redirect_uri)
+    flow = _create_flow(redirect_uri, app)
 
     authorization_url, state = _get_auth_url(flow)
 
@@ -172,71 +182,57 @@ def google_store(request):
             "This Google connection was not started from this session. "
             "Go back to Settings, Integrations and connect again."
         )
-    if _forbidden_for(request, app):
-        return HttpResponseForbidden()
+    _require_known(app)
 
     redirect_uri = _get_redirect_uri(request)
 
     # Create OAuth2 flow instance
-    flow = _create_flow(redirect_uri, state=state)
+    flow = _create_flow(redirect_uri, app, state=state)
 
     authorization_response = request.build_absolute_uri()
     flow.fetch_token(authorization_response=authorization_response)
 
-    google_credentials = flow.credentials.to_json()
-
-    if app == "email":
-        # Per-user mailbox: the token lands on the requester's GmailAccount,
-        # not the shared token file. The address comes from the mailbox
-        # itself (getProfile), so sent mail can be recognized as "ours".
-        service = build("gmail", "v1", credentials=flow.credentials)
-        profile = service.users().getProfile(userId="me").execute()
-        GmailAccount.objects.update_or_create(
-            user=request.user,
-            defaults={
-                "address": profile.get("emailAddress", ""),
-                "token": google_credentials,
-                # Fresh token, fresh mailbox view: force a bootstrap.
-                "history_id": None,
-            },
-        )
+    if app == "contacts":
+        # The requester's own Google Contacts: the token lands on their user
+        request.user.google_contacts_credentials = flow.credentials.to_json()
+        request.user.save(update_fields=["google_contacts_credentials"])
         return redirect("/settings/integrations/")
 
-    path = TOKEN_PATHS[app]
-
-    prepare_path(path)
-    with open(path, "w") as file:
-        file.write(google_credentials)
-
-    # On (re)connecting the calendar, flush any local events that weren't synced
-    # while disconnected — adopting existing Pending events on first connect and
-    # clearing the backlog after a token outage.
-    if app == "calendar":
-        from apps.calendar import sync
-
-        sync.reconcile()
-
+    # Per-user mailbox: the token lands on the requester's GmailAccount.
+    # The address comes from the mailbox itself (getProfile), so sent mail
+    # can be recognized as "ours".
+    service = build("gmail", "v1", credentials=flow.credentials)
+    profile = service.users().getProfile(userId="me").execute()
+    GmailAccount.objects.update_or_create(
+        user=request.user,
+        defaults={
+            "address": profile.get("emailAddress", ""),
+            "token": flow.credentials.to_json(),
+            # Fresh token, fresh mailbox view: force a bootstrap.
+            "history_id": None,
+        },
+    )
     return redirect("/settings/integrations/")
 
 
 @login_required
 @require_POST
 def google_logout(request, app):
-    if _forbidden_for(request, app):
-        return HttpResponseForbidden()
-    if app == "email":
-        # Disconnect the requester's own mailbox. Cascades that mailbox's
-        # Email rows; messages a colleague's mailbox also holds stay visible
-        # through their rows (promoted Documents are never touched).
-        GmailAccount.objects.filter(user=request.user).delete()
+    _require_known(app)
+    if app == "contacts":
+        # The copies Kosmos added on its own go while the token still
+        # works; the ones copied by hand stay in the Google account. Then
+        # forget the token and which contacts they copied.
+        contacts_google.set_auto_setting(request.user, GoogleContactsSetting.OFF)
+        contacts_google.sync_automatic(request.user)
+        request.user.google_contacts_credentials = ""
+        request.user.save(update_fields=["google_contacts_credentials"])
+        GoogleContactCopy.objects.filter(user=request.user).delete()
         return redirect("/settings/integrations/")
-
-    path = TOKEN_PATHS[app]
-
-    prepare_path(path)
-    with open(path, "w") as file:
-        file.write("")
-
+    # Disconnect the requester's own mailbox. Cascades that mailbox's Email
+    # rows; messages a colleague's mailbox also holds stay visible through
+    # their rows (promoted Documents are never touched).
+    GmailAccount.objects.filter(user=request.user).delete()
     return redirect("/settings/integrations/")
 
 

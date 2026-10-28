@@ -77,20 +77,22 @@ def test_user_is_told_to_ask_an_administrator(client, no_client_file):
 def test_connect_buttons_show_once_configured(admin_client, client_file):
     body = admin_client.get(reverse("settings:integrations-index")).content.decode()
 
-    for app in ("contacts", "calendar", "email"):
+    for app in ("email", "contacts"):
         assert reverse("settings:google-login", args=[app]) in body
-    assert reverse("settings:google-login", args=["drive"]) not in body
+    for app in ("drive", "calendar"):
+        assert reverse("settings:google-login", args=[app]) not in body
     assert "Google sign-in isn't set up" not in body
 
 
+@pytest.mark.parametrize("app", ["drive", "calendar"])
 @pytest.mark.parametrize("view", ["settings:google-login", "settings:google-logout"])
-def test_the_retired_drive_integration_is_not_found(admin_client, client_file, view):
-    response = admin_client.post(reverse(view, args=["drive"]))
+def test_the_retired_integrations_are_not_found(admin_client, client_file, view, app):
+    response = admin_client.post(reverse(view, args=[app]))
 
     assert response.status_code == 404
 
 
-@pytest.mark.parametrize("app", ["contacts", "calendar"])
+@pytest.mark.parametrize("app", ["email", "contacts"])
 def test_login_without_client_file_redirects_with_a_toast(
     admin_client, no_client_file, app
 ):
@@ -117,7 +119,24 @@ def test_user_gmail_login_without_client_file_redirects(client, no_client_file):
 def test_login_with_client_file_goes_to_google(admin_client, client_file, monkeypatch):
     monkeypatch.setattr(integration_views, "GOOGLE_TOKEN_PATH", client_file)
 
-    response = admin_client.get(reverse("settings:google-login", args=["calendar"]))
+    response = admin_client.get(reverse("settings:google-login", args=["email"]))
 
     assert response.status_code == 302
     assert response["Location"].startswith("https://accounts.google.com/")
+
+
+@pytest.mark.parametrize(
+    "app, scope",
+    [("email", "gmail.readonly"), ("contacts", "auth%2Fcontacts")],
+)
+def test_each_connection_asks_only_for_its_own_scopes(
+    client, client_file, monkeypatch, app, scope
+):
+    monkeypatch.setattr(integration_views, "GOOGLE_TOKEN_PATH", client_file)
+
+    location = client.get(reverse("settings:google-login", args=[app]))["Location"]
+
+    assert scope in location
+    assert "calendar" not in location
+    assert ("gmail" in location) == (app == "email")
+    assert "include_granted_scopes" not in location

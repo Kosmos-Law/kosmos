@@ -25,7 +25,7 @@ permissions.
 | **Contacts** | Administrators | The groups, roles and relationship types offered for contacts. |
 | **Practice Areas** | Administrators | The practice areas offered on matters and intakes. |
 | **Tasks** | Administrators, once AI is set up | How the quick task line reads what you type. |
-| **Integrations** | Everyone | Google connections and AI providers. A user who is not an administrator sees only **Case Email**. |
+| **Integrations** | Everyone | Gmail, Google Contacts and AI providers. A user who is not an administrator sees only **Case Email** and **Google Contacts**. |
 | **Claude Desktop** | Everyone | Connecting the Claude Desktop app to Kosmos. |
 | **Intake Forms** | Administrators and users with the Intakes permission | Forms sent to prospective clients. |
 | **Intake Emails** | Administrators and users with the Intakes permission | Ready-made emails for intakes. |
@@ -341,31 +341,21 @@ pick has no key, Kosmos uses the other provider's model.
 
 ## Integrations
 
-**Settings → Integrations** connects Kosmos to Google and to the AI
-providers. An administrator sees **Google Account**, two connections
-that serve the whole firm through one Google account, **AI** and **Case
-Email**. Everyone else sees only **Case Email**.
-
-| Connection | What it does once connected |
-|---|---|
-| **Google Contacts** | A contact added in Kosmos is added to the Google account, and removed from it when the contact is deleted in Kosmos. |
-| **Google Calendar** | Events are kept in step, in both directions, with one Google calendar. The person who runs your server chooses which. |
-
-To connect one, click **Connect**, choose the Google account and approve
-the request. You return to **Integrations** and the button now reads
-**Disconnect**. If you see "This Google connection was not started from
-this session. Go back to Settings, Integrations and connect again.",
-click **Connect** again.
+**Settings → Integrations** connects Kosmos to your Gmail and Google
+Contacts, and to the AI providers. An administrator sees **AI**, **Case
+Email** and **Google Contacts** (and QuickBooks, when the firm uses it).
+Everyone else sees **Case Email** and **Google Contacts**. Each person
+connects their own Google account; none serves the whole firm. Kosmos
+does not sync with Google Calendar; see
+[Calendar](calendar.md#post-an-invitation-you-received) for posting a
+meeting invitation.
 
 If Google sign-in is not set up on your server yet, there are no
 **Connect** buttons. An administrator sees a note pointing to the setup
 guide ([Google Workspace](../admin/integrations/google.md)). Everyone else
-sees "Google sign-in isn't set up yet. Ask an administrator."
-
-To disconnect one, click **Disconnect**, then **Disconnect** again in the
-prompt. Kosmos stops syncing with it for the whole firm until an
-administrator connects it again. Contacts and events already in Kosmos
-stay in place.
+sees "Google sign-in isn't set up yet. Ask an administrator." If you see
+"This Google connection was not started from this session. Go back to
+Settings, Integrations and connect again.", click **Connect** again.
 
 Under **Case Email**, each user connects their own Gmail mailbox: click
 **Connect** beside **Your Gmail mailbox**. Kosmos creates the case labels
@@ -380,13 +370,20 @@ confirm, then removes that mailbox's emails from matters. Emails a
 colleague's mailbox also holds, and emails already saved as documents,
 are kept.
 
-Good to know:
+Under **Google Contacts**, click **Connect** beside **Your Google
+Contacts** and choose your Google account. A contact's page then has a
+cloud button that copies the contact to your Google Contacts, and so to
+your phone (see [Contacts](contacts.md#copy-a-contact-to-your-google-contacts)).
+**Add automatically** has Kosmos add, on its own, the client (or everyone
+in the **Client** group) of each open matter, and remove them when the
+matter closes; see
+[Contacts](contacts.md#add-clients-automatically). **Disconnect** asks
+you to confirm. It removes the contacts Kosmos added automatically; the
+ones you copied with the button stay in your Google account, but Kosmos
+stops updating them.
 
-- Whichever **Connect** you click, Google asks for access to calendar,
-  contacts and Gmail together. Kosmos uses only the connection you
-  clicked.
-- Connecting with a different Google account replaces the earlier
-  connection.
+Connecting with a different Google account replaces the earlier
+connection.
 
 ### AI
 

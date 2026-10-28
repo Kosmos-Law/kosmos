@@ -157,6 +157,7 @@ nav = [
       { "2026-08-04: Tasks panel retired, user chips stay" = "decisions/2026-08-04-tasks-panel-retired-user-chips-stay.md" },
       { "2026-08-07: Date presets are re-derived from their label on every read" = "decisions/2026-08-07-semantic-date-presets.md" },
       { "2026-10-02: Google Calendar sync: Kosmos wins on conflicts" = "decisions/2026-10-02-google-calendar-sync-rules.md" },
+      { "2026-10-28: Google Calendar sync is removed, and Google Contacts is per user" = "decisions/2026-10-28-google-calendar-removed-contacts-per-user.md" },
     ] },
     { "Billing and trust" = [
       { "2026-06-25: Online payments: provisional until settled, and the processor switch" = "decisions/2026-06-25-online-payments-provisional-and-the-processor-switch.md" },

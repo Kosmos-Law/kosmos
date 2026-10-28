@@ -2,8 +2,8 @@
 
 This page is for anyone at the firm who keeps or checks dates: attorneys,
 paralegals and office staff. It covers how to add hearings, deadlines and
-appointments, change and find them, and what happens when the firm has
-connected a Google Calendar. If you are new to Kosmos, read
+appointments, change and find them, and how to post a calendar
+invitation you received. If you are new to Kosmos, read
 [Getting started](getting-started.md) first.
 
 ## What an event is
@@ -148,7 +148,7 @@ pending event whose date has passed stays **Pending** until you change it.
 
 | Status | Where the event shows |
 |---|---|
-| **Pending** | Everywhere: the Calendar as it first opens, the matter's **Events** tab and **Overview**, the Dash, the digest and the firm's Google Calendar. |
+| **Pending** | Everywhere: the Calendar as it first opens, the matter's **Events** tab and **Overview**, the Dash and the digest. |
 | **Complete** | On the Calendar and the matter's **Events** tab only when the status menu is on **Complete** or **All Statuses**. It leaves the **Overview**, the Dash and the digest. |
 | **Missed** | The same as **Complete**, under its own label. |
 
@@ -250,42 +250,27 @@ Good to know:
   Notifications**. See [Settings](settings.md#notifications). A push that
   cannot be delivered goes by email instead.
 
-## Google Calendar
+## Post an invitation you received
 
-Your firm can connect one Google Calendar for everyone. An administrator
-does this under **Settings → Integrations**. See
-[Google Workspace](../admin/integrations/google.md). Until then, events
-are kept in Kosmos only and the event dialogs say nothing about Google.
+Kosmos is the firm's calendar. It does not sync with Google Calendar or
+any other calendar app: an event is added and changed here, and a
+meeting in your own calendar is not on the firm's until you post it.
 
-If the calendar is connected but the person who runs your server has not
-yet chosen which calendar to use, **Add Event** and **Edit Event** show a
-yellow note saying "Google Calendar is connected, but no calendar is
-chosen to sync with", and saving an event shows the same note. Events are
-saved in Kosmos meanwhile. Ask your administrator to finish the setup.
+To post a meeting invitation, forward the invitation email to the firm's
+calendar address. Ask your administrator for it. Forward it from the
+address you sign in to Kosmos with, and keep the invitation's attachment.
 
-Once it is connected, events travel both ways:
+- It is posted as a firm event, with no matter and no one assigned. Open
+  it in **Edit Event** to set the matter and who is attending.
+- The meeting link, the invitation's text and the place come with it, as
+  described under [Add an event](#add-an-event), and so does who sent it,
+  as **Organizer**.
+- When the organizer changes or cancels the meeting, forward the new
+  email too: the event is updated, or removed if cancelled.
+- You get a short email saying what happened.
 
-| What you do | What happens |
-|---|---|
-| Add or change a **Pending** event in Kosmos | Google is updated at once. The title is the matter name, " - ", then the description, or the description alone when the event has no matter. The date, the last day, the times and the **Location** go too, or the **Meeting link** or the **Type** when there is no location. Google's description is the meeting link ("Join:" and the link) and then the **Details**. |
-| Mark an event **Complete** or **Missed** | It stays on Google as last sent. Later changes in Kosmos are not sent, and changes on Google are not brought in. |
-| Delete an event in Kosmos | It is removed from Google. |
-| Add an event on Google | It arrives in Kosmos within about two minutes as a **Pending** event assigned to **Firm**, with no **Party** set. An event over several days keeps its span. If its title is a matter's full name, " - ", then a description, it joins that matter. Otherwise it has no matter and the whole title is its description. |
-| Change a synced event on Google | Kosmos takes the new title, date, times, location and description (as **Details**) within about two minutes, and a Google Meet added there as the **Meeting link**. A location, link or description removed on Google is removed in Kosmos. The event keeps its matter unless the new title starts with another matter's full name and " - ". |
-| Delete a synced event on Google | A **Pending** event is deleted from Kosmos. A **Complete** or **Missed** event stays in Kosmos, and so does a **Pending** event whose latest changes had not reached Google. |
-
-If Google cannot be reached when you save, a warning says the event was
-saved but did not sync ("Event saved, but couldn't sync to Google
-Calendar. Reconnect it in Settings."). Kosmos tries again every two minutes. Ask your
-administrator to reconnect if the warning keeps appearing.
-
-Good to know:
-
-- An event that stays in Kosmos after it is deleted on Google is never
-  sent to Google again, even if you edit it or set it back to
-  **Pending**. The list shows "Not on Google Calendar" under its
-  description, and **Edit Event** says the same above the form.
-- A repeating event on Google arrives as separate events.
+You choose what reaches the firm's calendar: an invitation you do not
+forward stays in your own calendar only.
 
 ## Who sees which events
 

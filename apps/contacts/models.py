@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from apps.accounts.models import CustomUser
@@ -92,7 +93,6 @@ class Contact(AuditMixin, models.Model):
     website = models.CharField(max_length=255, blank=True, null=True)
     map = models.CharField(max_length=255, blank=True, null=True)
     notes = models.CharField(max_length=255, blank=True, null=True)
-    google_id = models.CharField(max_length=255, blank=True, null=True)
     intake = models.ForeignKey(Intake, on_delete=models.SET_NULL, null=True)
     history = HistoricalRecords()
 
@@ -208,3 +208,66 @@ class ContactRelationship(AuditMixin, models.Model):
             models.Index(fields=["from_contact"]),
             models.Index(fields=["to_contact"]),
         ]
+
+
+class GoogleContactCopy(models.Model):
+    """A contact copied to one user's own Google Contacts (see
+    apps.contacts.google). One per user and contact. A copy with no user
+    was made through the firm-wide Google account Kosmos used before
+    2026-10-28; adopt_google_contacts gives those to the user who owns that
+    account."""
+
+    contact = models.ForeignKey(
+        Contact, on_delete=models.CASCADE, related_name="google_copies"
+    )
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="google_contact_copies",
+    )
+    # The People API's id for the copy, "people/c123…"
+    resource_name = models.CharField(max_length=255)
+    # Added by the automatic client copies (GoogleContactsSetting), not by
+    # the button: removed again once the contact no longer qualifies
+    automatic = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "app_contact_google_copy"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contact", "user"], name="google_copy_once_per_user"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.contact} in {self.user or 'the former firm account'}"
+
+
+class GoogleContactsSetting(models.Model):
+    """A user's choice of contacts Kosmos copies to their Google Contacts on
+    its own, from the Open matters they can see (apps.contacts.google
+    .sync_automatic). Kept here rather than on the user so the contacts
+    app owns it."""
+
+    OFF = "off"
+    CLIENTS = "clients"
+    CLIENT_GROUP = "client_group"
+    AUTO_CHOICES = (
+        (OFF, "Off"),
+        (CLIENTS, "The client of each open matter"),
+        (CLIENT_GROUP, "Everyone in the Client group of each open matter"),
+    )
+
+    user = models.OneToOneField(
+        CustomUser, on_delete=models.CASCADE, related_name="google_contacts_setting"
+    )
+    auto = models.CharField(max_length=20, choices=AUTO_CHOICES, default=OFF)
+
+    class Meta:
+        db_table = "app_contact_google_setting"
+
+    def __str__(self):
+        return f"{self.user}: {self.get_auto_display()}"

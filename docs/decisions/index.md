@@ -55,6 +55,7 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [Tasks panel retired, user chips stay (2026-08-04)](2026-08-04-tasks-panel-retired-user-chips-stay.md)
 - [Date presets are re-derived from their label on every read (2026-08-07)](2026-08-07-semantic-date-presets.md)
 - [Google Calendar sync: Kosmos wins on conflicts (2026-10-02)](2026-10-02-google-calendar-sync-rules.md)
+- [Google Calendar sync is removed, and Google Contacts is per user (2026-10-28)](2026-10-28-google-calendar-removed-contacts-per-user.md)
 
 ## Billing and trust
 

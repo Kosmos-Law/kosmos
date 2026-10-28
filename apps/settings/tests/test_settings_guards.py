@@ -102,7 +102,7 @@ def test_a_google_callback_this_session_did_not_start_is_refused(admin_client):
 def test_a_google_callback_with_the_wrong_state_is_refused(admin_client):
     session = admin_client.session
     session["state"] = "expected"
-    session["app"] = "calendar"
+    session["app"] = "email"
     session.save()
 
     response = admin_client.get(

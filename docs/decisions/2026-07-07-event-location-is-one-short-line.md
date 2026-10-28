@@ -58,4 +58,5 @@ either; the reason is not recorded beyond the field being a pointer.
 
 - [Tasks and calendar](../dev/subsystems/tasks-and-calendar.md): the
   Event model.
-- [Google Calendar sync rules](2026-10-02-google-calendar-sync-rules.md).
+- [Google Calendar sync rules](2026-10-02-google-calendar-sync-rules.md)
+  (superseded: the sync was removed on 2026-10-28).

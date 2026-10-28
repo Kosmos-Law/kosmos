@@ -27,7 +27,7 @@ matter record and the case file sit in the one sidebar is in
 | `apps/matters/activity/`, `events/`, `tasks/`, `categories/` | Matter-scoped views over other subsystems' records |
 | `apps/contacts/models.py` | `Contact`, `ContactQuerySet`, `RelationshipType`, `ContactRelationship`, `derive_client_status()` |
 | `apps/contacts/access.py`, `apps/contacts/contacts.py` | Matter and trust checks; `get_list_data()` for the sidebar lists and the selected contact |
-| `apps/contacts/google.py` | Copy a contact to Google Contacts and remove it again |
+| `apps/contacts/google.py` | Copy a contact to a user's own Google Contacts, refresh and remove the copies |
 | `apps/folders/` | `Folder` and the sidebar's folder and client-status selection |
 | `apps/settings/matters/`, `apps/settings/contacts/` | Practice areas; roles, groups and relationship types |
 | `templates/matters/`, `templates/contacts/`, `templates/folders/` | The screens |
@@ -134,8 +134,7 @@ listed on the Settlement tab and fed to the AI context
 **`Contact`** (`apps/contacts/models.py`, table `app_contact`) is the
 firm-wide address book row: name, company, address, three labelled phones,
 two emails, `folder` (`SET_NULL`), `intake` (`SET_NULL`, the intake it was
-converted from), and `google_id` when it has been copied to Google
-Contacts. `user` is `SET_NULL` to the user who last saved it. A contact's
+converted from). `user` is `SET_NULL` to the user who last saved it. A contact's
 client status is never stored: `derive_client_status()` reads it from the
 statuses of its `client_matters` (Open or Complete gives Current, Pending
 gives Pending, only Closed gives Former, none gives Nonclient, or Pending
@@ -292,12 +291,25 @@ small view in `apps/contacts/<tab>/views.py` that sets
 `selected_contact_id` and renders `contacts/main.html`. The Trust tab
 raises `PermissionDenied` without `can_see_trust()`.
 
-A contact with `google_id` is mirrored to the connected Google account:
-`edit` deletes and re-adds it there (`google.delete_contact`,
-`google.add_contact`), and the delete views remove it. `google.py` reads
-one token file (`GOOGLE_CONTACTS_TOKEN_PATH`), so the Google account is the
-firm's, not per user; `check_credentials()` guards every call so an
-unconnected server changes nothing.
+Google Contacts is per user. A user's token is
+`CustomUser.google_contacts_credentials`, set by the `contacts` connection
+in Settings > Integrations, and each copy is a **`GoogleContactCopy`**
+(`contact`, `user`, the People API `resource_name`; one per user and
+contact). `toggle_google_sync` copies or uncopies for the requester only.
+`edit` calls `google.refresh_copies()`, which deletes and re-creates every
+copy whose owner is still connected; the contact and folder delete views
+call `google.remove_all()`, which returns how many copies it could not
+reach. Every Google call is best-effort and logged.
+**`GoogleContactsSetting`** holds a user's choice of automatic copies
+(off, clients, Client group); `sync_automatic()` adds the contacts of the
+Open matters they can see (`filter_matters_for_user`) and removes the
+`automatic` copies that no longer qualify, run by the
+`google-contacts-auto` job and queued when the choice changes. The button
+leaves an automatic copy alone. A copy with no user
+came from the firm-wide account used before 2026-10-28; the
+`adopt_google_contacts` command gives those, and the old token file, to
+one user. See [the
+decision](../../decisions/2026-10-28-google-calendar-removed-contacts-per-user.md).
 
 Deleting a folder optionally deletes its contacts; those with
 `deletion_blockers()` are kept and counted.

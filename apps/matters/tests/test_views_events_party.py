@@ -1,4 +1,4 @@
-"""An event with no party (one made on Google Calendar) shows an empty
+"""An event with no party (one posted from an invitation) shows an empty
 Party cell on the matter Events tab, not the word None."""
 
 import pytest

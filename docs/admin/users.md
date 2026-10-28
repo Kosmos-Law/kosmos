@@ -184,7 +184,6 @@ from the user's next request.
 | Delete a matter | Yes | No |
 | Delete a voided invoice | Yes | No |
 | Add, edit or delete time-entry abbreviation codes | Yes | No |
-| Connect or disconnect the firm's Google Calendar and Contacts | Yes | No. Any user can connect their own Gmail mailbox |
 | Dashboard "Collections" section | Yes | No |
 | Reset another user's authenticator app | Yes | No |
 

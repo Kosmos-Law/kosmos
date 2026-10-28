@@ -77,7 +77,7 @@ def contact(user, folder):
 @pytest.fixture
 def contact_data(contact):
     contact_data = contact.__dict__.copy()
-    keys = "_state id google_id map intake_id".split()
+    keys = "_state id map intake_id".split()
 
     for key in keys:
         del contact_data[key]

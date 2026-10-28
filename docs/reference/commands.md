@@ -34,7 +34,6 @@ Which of these an operator needs, and when, is covered in
 | Command | What it does |
 |---|---|
 | `send_event_reminders` | Sends the event notifications that have come due, by email or ntfy. |
-| `sync_calendar` | Sync events with Google Calendar (two-way sync) |
 
 ## case
 
@@ -49,6 +48,12 @@ Which of these an operator needs, and when, is covered in
 | `purge_unannotated_documents` | Delete documents that have no highlight, fact, note or promoted email, with their stored files. Dry run unless --apply is given. |
 | `setup_chat_purge_schedule` | Create or update the weekly chat-purge schedule (Sunday 03:00 local): deletes AI chat history for matters closed past the retention window. Superseded by setup_schedules, which installs this with every other schedule. |
 | `update_search_vectors` | Update search vectors for all documents and highlights |
+
+## contacts
+
+| Command | What it does |
+|---|---|
+| `adopt_google_contacts` | Give the former firm-wide Google Contacts token (GOOGLE_DATA_DIR/contact_tokens.json) and the contacts copied through it to one user. |
 
 ## intakes
 
