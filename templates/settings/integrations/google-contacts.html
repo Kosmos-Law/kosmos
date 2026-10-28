@@ -1,7 +1,7 @@
 {% comment %}
   The user's own Google Contacts: connect or disconnect, and, once
-  connected, which contacts Kosmos copies on its own. The select posts on
-  change and this list is swapped whole.
+  connected, which contacts Kosmos copies on its own. A menu item posts
+  its choice and this list is swapped whole.
 {% endcomment %}
 <div id="google-contacts-settings" class="integrations-list">
   <div class="integrations-item">
@@ -26,26 +26,45 @@
   {% if contacts_connected %}
     <div class="integrations-item integrations-item-stacked">
       <div class="integrations-item-row">
-        <label for="google-contacts-auto">Add automatically</label>
-        <select id="google-contacts-auto"
-                name="auto"
-                hx-post="{% url 'settings:google-contacts-auto' %}"
-                hx-trigger="change"
-                hx-target="#google-contacts-settings"
-                hx-swap="outerHTML">
-          {% for value, label in contacts_auto_choices %}
-            <option value="{{ value }}"
-                    {% if value == contacts_auto %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
+        <span>Add automatically</span>
+        <div class="dropdown" x-data="dropdown()">
+          <button type="button"
+                  id="google-contacts-auto"
+                  class="select-btn"
+                  x-ref="button"
+                  @click="toggle()"
+                  :aria-expanded="open">
+            {% for value, label in contacts_auto_choices %}
+              {% if value == contacts_auto %}{{ label }}{% endif %}
+            {% endfor %}
+            <small>
+              <i class="icon-chevron-down"></i>
+            </small>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end"
+              x-ref="menu"
+              x-show="open"
+              hx-target="#google-contacts-settings"
+              hx-swap="outerHTML">
+            {% for value, label in contacts_auto_choices %}
+              <li>
+                <a class="dropdown-item {% if value == contacts_auto %}active{% endif %}"
+                   href="#"
+                   hx-post="{% url 'settings:google-contacts-auto' %}"
+                   hx-vals='{"auto": "{{ value }}"}'>{{ label }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
       </div>
       <p class="detail-text">
-        Kosmos copies these to your Google Contacts on its own, from every open
-        matter you can see: right after you choose, then every fifteen minutes
-        as matters open. When a matter closes,
-        or someone leaves its Client group, the contacts it added are removed
-        again; so are all of them if you choose Off. Contacts you copied with
-        the button are never removed this way.
+        <strong>Clients</strong> copies the client of every open matter you can
+        see to your Google Contacts; <strong>Client groups</strong> copies
+        everyone in each one's Client group. Kosmos does it right after you
+        choose, then every fifteen minutes as matters open. When a matter
+        closes, or someone leaves its Client group, the contacts it added are
+        removed again; so are all of them if you choose Off. Contacts you
+        copied with the button are never removed this way.
       </p>
     </div>
   {% endif %}

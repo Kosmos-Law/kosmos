@@ -231,7 +231,7 @@ Settings Contacts - Column Layout
 .integrations-list {
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-sm);
-  width: 30rem;
+  max-width: 30rem;
 }
 
 .integrations-item {

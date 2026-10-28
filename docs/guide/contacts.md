@@ -274,8 +274,8 @@ Google Contacts**, choose **Add automatically**:
 | Choice | What Kosmos adds |
 |---|---|
 | **Off** | Nothing. You copy contacts with the button. |
-| **The client of each open matter** | The client of every **Open** matter you can see. |
-| **Everyone in the Client group of each open matter** | The client and everyone else in the **Client** group of every **Open** matter you can see, such as a spouse or a company's officers. |
+| **Clients** | The client of every **Open** matter you can see. |
+| **Client groups** | The client and everyone else in the **Client** group of every **Open** matter you can see, such as a spouse or a company's officers. |
 
 Kosmos adds them right after you choose, then checks every fifteen
 minutes. When a matter is no longer **Open** (closed, or set back to

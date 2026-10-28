@@ -1,6 +1,16 @@
 {% extends "settings/main.html" %}
 {% block subcontent %}
-  <h2 class="settings-section">Quick Task Entry</h2>
-  <hr />
-  <div id="tasks-settings">{% include "settings/tasks/form.html" %}</div>
+  <div class="settings">
+    <div class="toolbar">
+      <h1>Tasks</h1>
+    </div>
+    <p class="detail-text">How tasks are entered, for everyone at the firm.</p>
+    <h2 class="settings-section">Quick Task Entry</h2>
+    <hr />
+    <p class="detail-text">
+      How the quick-add line at the top of the Tasks page reads what is
+      typed into it.
+    </p>
+    <div id="tasks-settings">{% include "settings/tasks/form.html" %}</div>
+  </div>
 {% endblock subcontent %}
