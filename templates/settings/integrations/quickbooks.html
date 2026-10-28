@@ -34,7 +34,7 @@
             {{ connection.company_name|default:"QuickBooks company" }}
             {% if connection.is_sandbox %}(sandbox){% endif %}
           </span>
-          <span>
+          <span class="integrations-actions">
             <form method="post"
                   action="{% url 'accounting:sync' %}"
                   class="inline-form">
@@ -64,11 +64,11 @@
     {% with connection=quickbooks.connection %}
       {% if connection %}
         <p class="detail-text sync-note">
-          Connected {{ connection.connected_at|date:"M j, Y" }}
           {% if connection.connected_by %}
-            by {{ connection.connected_by.get_full_name|default:connection.connected_by.username }}
+            Connected {{ connection.connected_at|date:"M j, Y" }} by {{ connection.connected_by.get_full_name|default:connection.connected_by.username }}.
+          {% else %}
+            Connected {{ connection.connected_at|date:"M j, Y" }}.
           {% endif %}
-          .
           Company id {{ connection.realm_id }}.
           {% if connection.last_sync_at %}
             Last synced {{ connection.last_sync_at|date:"M j, g:i A" }}.
