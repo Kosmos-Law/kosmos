@@ -1,0 +1,7 @@
+{% extends "accounting/main.html" %}
+{% block subcontent %}
+  <div id="accounts"
+       hx-trigger="accountingChanged from:body"
+       hx-get="{% url 'accounting:accounts-list' %}"
+       hx-target="this">{% include "accounting/accounts/list.html" %}</div>
+{% endblock subcontent %}

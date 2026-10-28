@@ -1,12 +1,12 @@
 """Settings > Integrations > QuickBooks Online: what the page offers, and
 the connect, callback and disconnect views. Intuit itself is stubbed out
-in apps/books/intuit.py's tests; here `intuit.connect` is replaced."""
+in apps/accounting/intuit.py's tests; here `intuit.connect` is replaced."""
 
 import pytest
 from django.urls import reverse
 
-from apps.books import intuit
-from apps.books.models import QuickBooksConnection
+from apps.accounting import intuit
+from apps.accounting.models import QuickBooksConnection
 from apps.settings.integrations import PENDING_TOAST_KEY
 from apps.settings.models import Firm
 
@@ -16,9 +16,9 @@ INDEX = "/settings/integrations/"
 
 
 @pytest.fixture
-def books_on(db):
+def accounting_on(db):
     firm = Firm.objects.first() or Firm.objects.create(name="Firm")
-    firm.books_enabled = True
+    firm.accounting_enabled = True
     firm.save()
     return firm
 
@@ -37,7 +37,7 @@ def no_keys(settings):
 
 
 @pytest.fixture
-def connection(books_on):
+def connection(accounting_on):
     conn = QuickBooksConnection(
         realm_id="4620816365", company_name="Craig Legal", environment="sandbox"
     )
@@ -47,23 +47,25 @@ def connection(books_on):
 
 
 class TestPage:
-    def test_offers_connect_with_keys_and_books_on(self, admin_client, books_on, keys):
+    def test_offers_connect_with_keys_and_accounting_on(
+        self, admin_client, accounting_on, keys
+    ):
         html = admin_client.get(INDEX).content.decode()
         assert "QuickBooks Online" in html
         assert reverse("settings:quickbooks-connect") in html
         assert "(sandbox)" in html
 
-    def test_says_why_without_keys(self, admin_client, books_on, no_keys):
+    def test_says_why_without_keys(self, admin_client, accounting_on, no_keys):
         html = admin_client.get(INDEX).content.decode()
         assert "QuickBooks Online" in html
         assert "QUICKBOOKS_CLIENT_ID" in html
         assert reverse("settings:quickbooks-connect") not in html
 
-    def test_hidden_while_books_is_off(self, admin_client, keys):
-        Firm.objects.create(name="Firm", books_enabled=False)
+    def test_hidden_while_accounting_is_off(self, admin_client, keys):
+        Firm.objects.create(name="Firm", accounting_enabled=False)
         assert "QuickBooks" not in admin_client.get(INDEX).content.decode()
 
-    def test_hidden_from_staff(self, client, books_on, keys):
+    def test_hidden_from_staff(self, client, accounting_on, keys):
         assert "QuickBooks" not in client.get(INDEX).content.decode()
 
     def test_shows_the_company_when_connected(self, admin_client, connection, keys):
@@ -76,7 +78,9 @@ class TestPage:
 
 
 class TestConnect:
-    def test_sends_the_admin_to_intuit_with_a_state(self, admin_client, books_on, keys):
+    def test_sends_the_admin_to_intuit_with_a_state(
+        self, admin_client, accounting_on, keys
+    ):
         response = admin_client.get(reverse("settings:quickbooks-connect"))
         assert response.status_code == 302
         assert response.url.startswith(intuit.AUTHORIZE_URL)
@@ -87,16 +91,18 @@ class TestConnect:
             in response.url
         )
 
-    def test_without_keys_returns_with_a_toast(self, admin_client, books_on, no_keys):
+    def test_without_keys_returns_with_a_toast(
+        self, admin_client, accounting_on, no_keys
+    ):
         response = admin_client.get(reverse("settings:quickbooks-connect"))
         assert response.status_code == 302 and response.url == INDEX
         assert admin_client.session[PENDING_TOAST_KEY]["type"] == "error"
 
-    def test_staff_are_refused(self, client, books_on, keys):
+    def test_staff_are_refused(self, client, accounting_on, keys):
         assert client.get(reverse("settings:quickbooks-connect")).status_code == 403
 
-    def test_not_found_while_books_is_off(self, admin_client, keys):
-        Firm.objects.create(name="Firm", books_enabled=False)
+    def test_not_found_while_accounting_is_off(self, admin_client, keys):
+        Firm.objects.create(name="Firm", accounting_enabled=False)
         assert (
             admin_client.get(reverse("settings:quickbooks-connect")).status_code == 404
         )
@@ -109,7 +115,7 @@ class TestStore:
         session.save()
 
     def test_refuses_a_callback_this_session_did_not_start(
-        self, admin_client, books_on, keys
+        self, admin_client, accounting_on, keys
     ):
         response = admin_client.get(
             "/settings/quickbooks/store?code=c&state=x&realmId=1"
@@ -117,7 +123,7 @@ class TestStore:
         assert response.status_code == 400
         assert not QuickBooksConnection.objects.exists()
 
-    def test_connects_and_says_so(self, admin_client, books_on, keys, monkeypatch):
+    def test_connects_and_says_so(self, admin_client, accounting_on, keys, monkeypatch):
         calls = []
 
         def fake_connect(code, realm_id, redirect, user=None):
@@ -142,7 +148,7 @@ class TestStore:
         assert "quickbooks_state" not in admin_client.session
 
     def test_a_cancelled_sign_in_returns_with_an_error(
-        self, admin_client, books_on, keys, monkeypatch
+        self, admin_client, accounting_on, keys, monkeypatch
     ):
         monkeypatch.setattr(
             intuit, "connect", lambda *a, **k: pytest.fail("not called")
@@ -155,7 +161,7 @@ class TestStore:
         assert admin_client.session[PENDING_TOAST_KEY]["type"] == "error"
 
     def test_a_refused_code_returns_with_the_reason(
-        self, admin_client, books_on, keys, monkeypatch
+        self, admin_client, accounting_on, keys, monkeypatch
     ):
         def refuse(*args, **kwargs):
             raise intuit.QuickBooksError(
@@ -170,7 +176,7 @@ class TestStore:
         assert response.status_code == 302
         assert "invalid_grant" in admin_client.session[PENDING_TOAST_KEY]["message"]
 
-    def test_missing_code_or_company(self, admin_client, books_on, keys):
+    def test_missing_code_or_company(self, admin_client, accounting_on, keys):
         self._start(admin_client)
         assert (
             admin_client.get("/settings/quickbooks/store?state=s1").status_code == 400

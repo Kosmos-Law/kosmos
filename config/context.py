@@ -43,15 +43,15 @@ def integrations(request):
 
         return case_file_enabled()
 
-    def _books():
-        from apps.settings.features import books_enabled
+    def _accounting():
+        from apps.settings.features import accounting_enabled
 
-        return books_enabled()
+        return accounting_enabled()
 
-    def _books_mirror():
-        # The QuickBooks connection while Books mirrors it (apps/books/sync.py),
-        # or None. Read only by the Books pages and the Integrations page.
-        from apps.books import intuit
+    def _accounting_mirror():
+        # The QuickBooks connection while Accounting mirrors it (apps/accounting/sync.py),
+        # or None. Read only by the Accounting pages and the Integrations page.
+        from apps.accounting import intuit
 
         return intuit.connection()
 
@@ -60,8 +60,8 @@ def integrations(request):
         "caselaw_available": SimpleLazyObject(_caselaw),
         # The firm's feature switches (apps/settings/features.py).
         "case_file_enabled": SimpleLazyObject(_case_file),
-        "books_enabled": SimpleLazyObject(_books),
-        "books_mirror": SimpleLazyObject(_books_mirror),
+        "accounting_enabled": SimpleLazyObject(_accounting),
+        "accounting_mirror": SimpleLazyObject(_accounting_mirror),
     }
 
 

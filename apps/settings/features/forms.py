@@ -26,19 +26,19 @@ class FeaturesForm(forms.ModelForm):
         "removes Case from the sidebar and the link from the matter; the "
         "data stays.",
     )
-    books_enabled = _switch(
-        "Books",
+    accounting_enabled = _switch(
+        "Accounting",
         "The firm's ledger: the chart of accounts, journal entries and the "
-        "financial statements behind invoicing and trust. On adds Books to "
-        "the sidebar for users with the Books permission.",
+        "financial statements behind invoicing and trust. On adds Accounting to "
+        "the sidebar for users with the Accounting permission.",
     )
 
     class Meta:
         model = Firm
-        fields = ["case_file_enabled", "books_enabled"]
+        fields = ["case_file_enabled", "accounting_enabled"]
 
-    def clean_books_enabled(self):
-        return self.cleaned_data.get("books_enabled") or False
+    def clean_accounting_enabled(self):
+        return self.cleaned_data.get("accounting_enabled") or False
 
     def clean_case_file_enabled(self):
         return self.cleaned_data.get("case_file_enabled") or False

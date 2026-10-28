@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{# djlint:off #}{% block body_class %}has-subnav{% endblock body_class %}{# djlint:on #}
+{% block content %}
+  <div id="content" class="container content">
+    <div class="detail">
+      <nav class="subnav">
+        <ul>
+          <li {% if subapp == "accounts" %}class="active"{% endif %}>
+            <a href="{% url 'accounting:accounts-index' %}">Accounts</a>
+          </li>
+          <li {% if subapp == "journal" %}class="active"{% endif %}>
+            <a href="{% url 'accounting:journal-index' %}">Journal</a>
+          </li>
+          <li {% if subapp == "statements" %}class="active"{% endif %}>
+            <a href="{% url 'accounting:statements-index' %}">Statements</a>
+          </li>
+        </ul>
+      </nav>
+      {% if accounting_mirror %}
+        <div class="accounting-mirror">
+          <span>
+            Mirrored from QuickBooks Online
+            {% if accounting_mirror.company_name %}({{ accounting_mirror.company_name }}){% endif %}
+            &middot;
+            {% if accounting_mirror.last_sync_at %}
+              synced {{ accounting_mirror.last_sync_at|date:"M j, g:i A" }}
+            {% else %}
+              not synced yet
+            {% endif %}
+          </span>
+          <button type="button"
+                  class="btn-icon"
+                  title="Sync with QuickBooks now"
+                  hx-post="{% url 'accounting:sync' %}"
+                  hx-swap="none"
+                  hx-disabled-elt="this">
+            <i class="icon-refresh-cw with-text"></i>Sync now
+          </button>
+        </div>
+      {% endif %}
+      <div class="detail-body">
+        {% block subcontent %}
+        {% endblock subcontent %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}

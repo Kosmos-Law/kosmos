@@ -1,0 +1,39 @@
+{% extends "accounting/statements/main.html" %}
+{% block statement %}
+  {% load humanize %}
+  <h3>Trial Balance</h3>
+  <p class="detail-text">As of {{ end|date:"F j, Y" }}</p>
+  <table class="table statement-table">
+    <thead>
+      <tr>
+        <th>Account</th>
+        <th class="numeric">Debit</th>
+        <th class="numeric">Credit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.account }}</td>
+          <td class="numeric">
+            {% if row.debit %}{{ row.debit|floatformat:2|intcomma }}{% endif %}
+          </td>
+          <td class="numeric">
+            {% if row.credit %}{{ row.credit|floatformat:2|intcomma }}{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="3" class="empty-entries">Nothing posted yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-total">
+        <td>Total</td>
+        <td class="numeric">{{ total_debit|floatformat:2|intcomma }}</td>
+        <td class="numeric">{{ total_credit|floatformat:2|intcomma }}</td>
+      </tr>
+    </tfoot>
+  </table>
+{% endblock statement %}

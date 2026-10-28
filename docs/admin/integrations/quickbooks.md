@@ -1,11 +1,11 @@
 # QuickBooks Online
 
-Books can mirror the firm's QuickBooks Online company: the chart of
+Accounting can mirror the firm's QuickBooks Online company: the chart of
 accounts and every transaction, as the bookkeeper keeps them there. The
 connection is one per firm, made by an administrator under **Settings →
 Integrations**, and nothing in Kosmos writes back to QuickBooks.
 
-Books itself is a module switched on under **Settings → Features**; while
+Accounting itself is a module switched on under **Settings → Features**; while
 it is off, the QuickBooks section is not shown and its addresses answer
 "not found".
 
@@ -76,29 +76,29 @@ again.
 ## What the mirror does
 
 Every thirty minutes, and whenever someone clicks **Sync now** (under
-the Books sub-navigation, or beside the connection on **Settings →
-Integrations**), Kosmos copies the company into Books:
+the Accounting sub-navigation, or beside the connection on **Settings →
+Integrations**), Kosmos copies the company into Accounting:
 
 - **The chart of accounts.** Every account in QuickBooks, inactive ones
-  included, is an account in Books, with QuickBooks's account number as
+  included, is an account in Accounting, with QuickBooks's account number as
   its code when it has one. A rename, a move under another parent or a
-  deactivation in QuickBooks is the same change in Books. Books adds two
+  deactivation in QuickBooks is the same change in Accounting. Accounting adds two
   things of its own, which the sync does not touch afterwards: the tax
   line each income and expense account lands on (Schedule C and Form
   1120-S), and the role an account plays (operating bank, trust bank,
   client trust liability and so on). Both are guessed from QuickBooks's
   account types and names and corrected on the Accounts page.
 - **Every transaction**, as a journal entry with its QuickBooks type and
-  id. A transaction edited in QuickBooks is updated in Books; one
+  id. A transaction edited in QuickBooks is updated in Accounting; one
   deleted there is deleted here.
-- **A check.** The sync then compares Books's trial balance for the
+- **A check.** The sync then compares Accounting's trial balance for the
   fiscal year with QuickBooks's own, account by account, and the
   connection's line on **Settings → Integrations** says whether they
   agree, and if not, on which account first. A transaction the sync
-  could not copy (an account Books lacks, lines that do not balance) is
+  could not copy (an account Accounting lacks, lines that do not balance) is
   named there too.
 
-While the company is connected, Books is read-only: there is no adding,
+While the company is connected, Accounting is read-only: there is no adding,
 editing, deleting or reversing of entries, and no adding of accounts.
 Make the change in QuickBooks and it arrives with the next sync.
 Accounts can still be edited, for their roles and tax lines.
@@ -117,4 +117,4 @@ the next reload.
 ## Disconnecting
 
 **Disconnect** tells Intuit the connection is over and forgets the
-tokens. What Books has already mirrored stays.
+tokens. What Accounting has already mirrored stays.

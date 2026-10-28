@@ -9,6 +9,15 @@ see its arguments.
 Which of these an operator needs, and when, is covered in
 [Background worker](../admin/worker.md#management-commands-an-operator-uses).
 
+## accounting
+
+| Command | What it does |
+|---|---|
+| `compare_quickbooks` | Compare the ledger's trial balance with a QuickBooks Trial Balance export. |
+| `import_quickbooks` | Import the chart of accounts and the journal from QuickBooks Online exports. |
+| `migrate` | Django's migrate, after relabelling the applied migrations and content types of the Books app as accounting (a no-op once done). |
+| `seed_chart` | Add the default chart of accounts for a law firm. Accounts whose code already exists are left alone, so the command is safe to repeat. |
+
 ## accounts
 
 | Command | What it does |
@@ -20,14 +29,6 @@ Which of these an operator needs, and when, is covered in
 | Command | What it does |
 |---|---|
 | `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in the firm's file store and Gmail. Scheduled weekly by setup_schedules. |
-
-## books
-
-| Command | What it does |
-|---|---|
-| `compare_quickbooks` | Compare the ledger's trial balance with a QuickBooks Trial Balance export. |
-| `import_quickbooks` | Import the chart of accounts and the journal from QuickBooks Online exports. |
-| `seed_chart` | Add the default chart of accounts for a law firm. Accounts whose code already exists are left alone, so the command is safe to repeat. |
 
 ## calendar
 

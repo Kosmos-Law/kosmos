@@ -96,7 +96,7 @@ What sits under each path:
 | `/settings/contacts/` | Contact roles, groups and relationship types. |
 | `/settings/matters/` | Practice areas. |
 | `/settings/tasks/` | Task settings. |
-| `/settings/features/` | The firm's feature switches: the case file and Books. |
+| `/settings/features/` | The firm's feature switches: the case file and Accounting. |
 | `/invoicing/` | Invoices, unbilled work, payments, credits, collection, payment requests, and the trust ledger (`/invoicing/trust/`). |
 | `/intakes/` | Intakes, their notes and chat, and the intake form builder (`/intakes/forms/`). |
 | `/settings/intake-emails/` | Intake email templates. |

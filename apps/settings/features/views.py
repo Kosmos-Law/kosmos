@@ -1,5 +1,5 @@
 """Settings > Features: the firm-wide switches for the case file and
-Books. Admin only (the middleware's
+Accounting. Admin only (the middleware's
 ADMIN_ONLY_PATHS); what each switch turns off is in
 apps/settings/features.py.
 """

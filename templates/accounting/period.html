@@ -1,0 +1,23 @@
+{% comment %}
+  The dates a page covers: two date inputs that reload the page on change
+  (a GET, so the period is in the address and can be bookmarked). Pass
+  `period_url`, the page's own URL.
+{% endcomment %}
+<form class="accounting-period"
+      method="get"
+      action="{{ period_url }}"
+      hx-get="{{ period_url }}"
+      hx-trigger="change"
+      hx-target="#main-content"
+      hx-select="#main-content"
+      hx-swap="outerHTML"
+      hx-push-url="true">
+  <label>
+    <span>From</span>
+    <input type="date" name="start" value="{{ start|date:'Y-m-d' }}">
+  </label>
+  <label>
+    <span>To</span>
+    <input type="date" name="end" value="{{ end|date:'Y-m-d' }}">
+  </label>
+</form>

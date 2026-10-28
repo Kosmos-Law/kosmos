@@ -1,0 +1,275 @@
+/* Accounting: the chart of accounts, the journal and the statements. */
+
+.accounting-period {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.accounting-period label {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.accounting-period span {
+  color: var(--color-muted);
+}
+
+/* The mirror's line under the sub-navigation: where the books come from,
+   when they were last copied, and a way to copy them now. */
+.accounting-mirror {
+  align-items: center;
+  color: var(--color-muted);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.5rem 0 0;
+}
+
+.accounting-empty {
+  margin: 2rem auto;
+  max-width: 36rem;
+  text-align: center;
+}
+
+.accounting-empty p {
+  margin-bottom: 1.5rem;
+}
+
+
+.table .accounting-group td {
+  color: var(--color-muted);
+  padding-top: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table .inactive td {
+  color: var(--color-muted);
+}
+
+.accounting-lines span {
+  display: block;
+}
+
+.accounting-lines span.credit,
+.table td.indent {
+  padding-left: 1.5rem;
+}
+
+.table.journal .reversed td {
+  color: var(--color-muted);
+}
+
+.statement h2 {
+  margin-bottom: 0.25rem;
+}
+
+.statement h3 {
+  margin-bottom: 0.5rem;
+}
+
+.statement-table {
+  max-width: 48rem;
+}
+
+.statement-table .statement-net td {
+  border-bottom: 3px double var(--border-medium);
+}
+
+.accounting-warning {
+  color: var(--error);
+  margin-top: 1rem;
+}
+
+.entry-lines-form td.numeric input {
+  text-align: right;
+}
+
+.entry-lines-form select {
+  width: 100%;
+}
+
+.entry-lines-form {
+  width: 100%;
+}
+
+.entry-lines-form th:first-child,
+.entry-lines-form td:first-child {
+  width: 40%;
+}
+
+.entry-lines-form td.numeric input {
+  width: 100%;
+}
+
+.entry-lines-form td:last-child input {
+  width: 100%;
+}
+
+/* The entry form is a two-column grid; the lines table spans both. */
+.form-compact .entry-lines-form {
+  grid-column: 1 / -1;
+}
+
+/* Column widths: the tables are table-layout fixed, so the text columns
+   need the room and the short ones give it up. */
+
+.table.journal .date,
+.table.general-ledger .date {
+  width: 8rem;
+}
+
+
+.table.journal th:nth-child(4) {
+  width: 8rem;
+}
+
+
+.table.statement-table td.code {
+  width: 5rem;
+}
+
+.table.journal .id {
+  width: 5rem;
+}
+
+.table.journal th:nth-child(6) {
+  width: 8rem;
+}
+
+/* ----------------------------
+ * The chart as a tree: type, kind, account. Rows are flex, ruled like a
+ * table's, with the balance at the far right so the levels add up down
+ * the page.
+ * ---------------------------- */
+
+.tree {
+  background: var(--background-td);
+  border: 1px solid var(--border-medium);
+  border-radius: 0.25rem;
+  overflow-x: auto;
+}
+
+.tree-row {
+  align-items: center;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.tree-head {
+  background: var(--background-th);
+  border-top: none;
+  color: var(--color-muted);
+}
+
+.tree-type {
+  background: var(--background-control);
+  border-top-color: var(--border-medium);
+  cursor: pointer;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tree-kind {
+  cursor: pointer;
+  font-weight: 500;
+  padding-left: 2.5rem;
+}
+
+.tree-account {
+  padding-left: 4.5rem;
+}
+
+.tree-account.inactive .tree-name,
+.tree-account.inactive .tree-code,
+.tree-account.inactive .tree-amount {
+  color: var(--color-muted);
+}
+
+.tree-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-chevron {
+  color: var(--color-muted);
+  flex-shrink: 0;
+  transition: transform 0.15s;
+  width: 1rem;
+}
+
+.tree-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.tree-code {
+  color: var(--color-muted);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  width: 3.5rem;
+}
+
+.tree-role,
+.tree-tax {
+  color: var(--color-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.tree-amount {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  width: 9rem;
+}
+
+.tree-row .row-actions {
+  flex-shrink: 0;
+  opacity: 0;
+  width: 1.5rem;
+}
+
+.tree-row:hover .row-actions,
+.tree-row:focus-within .row-actions {
+  opacity: 1;
+}
+
+@media (width <= 767px) {
+  .tree-role,
+  .tree-tax {
+    display: none;
+  }
+
+  .tree-kind {
+    padding-left: 1.5rem;
+  }
+
+  .tree-account {
+    padding-left: 2.5rem;
+  }
+}
+
+/* Sub-accounts step in one level each; a parent with children folds. */
+.tree-account.depth-1 {
+  padding-left: 6rem;
+}
+
+.tree-account.depth-2 {
+  padding-left: 7.5rem;
+}
+
+.tree-account.depth-3 {
+  padding-left: 9rem;
+}
+
+.tree-parent .tree-chevron {
+  cursor: pointer;
+}

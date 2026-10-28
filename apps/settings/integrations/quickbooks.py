@@ -1,11 +1,11 @@
 """Settings > Integrations > QuickBooks Online: connecting the firm's
-company for Books to mirror, and disconnecting it.
+company for Accounting to mirror, and disconnecting it.
 
-Admin-only, and only while Books is on (the middleware 404s the paths
+Admin-only, and only while Accounting is on (the middleware 404s the paths
 otherwise). The flow is the Google one's: Connect sends the administrator
 to Intuit with a state kept in the session, Intuit sends them back to
 /settings/quickbooks/store, and a callback whose state this session did
-not issue is refused. The real work is apps/books/intuit.py.
+not issue is refused. The real work is apps/accounting/intuit.py.
 """
 
 import logging
@@ -15,7 +15,7 @@ from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
 
-from apps.books import intuit
+from apps.accounting import intuit
 from apps.settings.integrations import PENDING_TOAST_KEY
 
 logger = logging.getLogger(__name__)

@@ -24,7 +24,7 @@ key configured, none of it is reachable (see
 | `apps/llm/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
 | `apps/llm/providers.py` | `complete()`, the one call for AI work that is not a matter chat; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
 | `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
-| `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `books_enabled` for templates |
+| `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `accounting_enabled` for templates |
 | `apps/ai/fact_blocks.py`, `witness_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
 | `apps/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links; citation extraction and CourtListener verification; the fast-tier vetting job |
 | `apps/ai/purge.py` | The closed-matter chat purge |
