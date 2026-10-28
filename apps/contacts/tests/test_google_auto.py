@@ -228,7 +228,12 @@ def test_choosing_saves_and_queues_a_run(client, user, people, monkeypatch):
     assert google.auto_setting(user) == CLIENT_GROUP
     assert queued == [("apps.contacts.google.sync_automatic_task", (user.id,))]
     page = " ".join(response.content.decode().split())
-    assert 'value="client_group" selected' in page
+    assert 'class="dropdown-item active" href="#"' in page
+    assert "<select" not in page
+    assert (
+        "Client groups"
+        in page.split('id="google-contacts-auto"')[1].split("</button>")[0]
+    )
 
 
 def test_an_unknown_choice_or_no_connection_is_refused(client, user, monkeypatch):

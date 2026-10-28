@@ -120,6 +120,22 @@ document.addEventListener('alpine:init', () => {
 
       // Check if menu would overflow viewport and adjust
       this.$nextTick(() => {
+        // A menu marked dropdown-menu-end ends at its button's right edge
+        // (a button at the end of a row). Any other menu that would run off
+        // the right of the screen (a phone) does the same. The width is
+        // measured with the menu moved left first, so a menu squeezed
+        // against the edge is not measured, and wrapped, at that width.
+        // (x-show may not have revealed the menu yet, and a hidden menu
+        // measures 0, so it is displayed for the measurement.)
+        const display = menu.style.display;
+        menu.style.display = 'block';
+        if (menu.classList.contains('dropdown-menu-end')
+            || menu.getBoundingClientRect().right > window.innerWidth - 8) {
+          menu.style.left = '8px';
+          const width = menu.getBoundingClientRect().width;
+          menu.style.left = `${Math.max(8, rect.right - width)}px`;
+        }
+        menu.style.display = display;
         const menuRect = menu.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;

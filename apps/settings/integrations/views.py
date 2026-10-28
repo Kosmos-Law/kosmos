@@ -111,11 +111,20 @@ def _require_known(app):
         raise Http404
 
 
+# The automatic-contacts menu, short enough for the button; the paragraph
+# under it says what each one means.
+CONTACTS_AUTO_LABELS = (
+    (GoogleContactsSetting.OFF, "Off"),
+    (GoogleContactsSetting.CLIENTS, "Clients"),
+    (GoogleContactsSetting.CLIENT_GROUP, "Client groups"),
+)
+
+
 def _contacts_context(user):
     return {
         "contacts_connected": contacts_google.is_connected(user),
         "contacts_auto": contacts_google.auto_setting(user),
-        "contacts_auto_choices": GoogleContactsSetting.AUTO_CHOICES,
+        "contacts_auto_choices": CONTACTS_AUTO_LABELS,
         "google_oauth_ready": google_oauth_configured(),
     }
 
