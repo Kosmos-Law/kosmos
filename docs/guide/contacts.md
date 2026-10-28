@@ -261,8 +261,33 @@ Good to know:
   three phone numbers only.
 - Each time anyone edits a copied contact, Kosmos replaces every copy in
   Google Contacts, so anything added to a copy in Google is lost.
-- If you disconnect Google Contacts, the contacts you copied stay in
+- If you disconnect Google Contacts, the contacts Kosmos added
+  automatically are removed. The ones you copied with the button stay in
   your Google account, but Kosmos stops updating or removing them.
+
+### Add clients automatically
+
+Instead of clicking each one, you can have Kosmos add your clients to
+your Google Contacts on its own. Under **Settings → Integrations →
+Google Contacts**, choose **Add automatically**:
+
+| Choice | What Kosmos adds |
+|---|---|
+| **Off** | Nothing. You copy contacts with the button. |
+| **The client of each open matter** | The client of every **Open** matter you can see. |
+| **Everyone in the Client group of each open matter** | The client and everyone else in the **Client** group of every **Open** matter you can see, such as a spouse or a company's officers. |
+
+Kosmos adds them right after you choose, then checks every fifteen
+minutes. When a matter is no longer **Open** (closed, or set back to
+**Pending**), or someone is taken out of its **Client** group, the
+contacts Kosmos added for it are removed from your Google Contacts. A
+contact who is on another open matter stays. Choosing **Off** removes
+everything Kosmos added. Matters that are already closed are never
+added.
+
+On a contact Kosmos added, the cloud button is lit but does not remove
+it; Kosmos would only add it back. Contacts you copied with the button
+yourself are never removed automatically.
 
 ## Who can see contacts
 

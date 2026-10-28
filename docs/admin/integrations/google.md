@@ -63,8 +63,14 @@ cloud button. Clicking it copies that contact to their Google account
 Nothing is copied automatically, and changes made in Google are not
 brought back. When a contact is edited in Kosmos, every user's copy is
 replaced; when it is deleted, every copy that can be reached is removed,
-and the person deleting is told about any that could not be. There is
-nothing to configure.
+and the person deleting is told about any that could not be.
+
+A user can also choose **Add automatically**: the client, or everyone in
+the Client group, of each Open matter they can see. The
+`google-contacts-auto` job adds those every fifteen minutes and removes
+the ones it added once their matter is no longer open. It needs the
+worker running and the schedules installed (`python manage.py
+setup_schedules`). There is nothing else to configure.
 
 The token is stored in the database with the user's account, so it is
 covered by database backups. Disconnecting forgets the token and which

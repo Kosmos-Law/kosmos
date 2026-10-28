@@ -1,0 +1,52 @@
+{% comment %}
+  The user's own Google Contacts: connect or disconnect, and, once
+  connected, which contacts Kosmos copies on its own. The select posts on
+  change and this list is swapped whole.
+{% endcomment %}
+<div id="google-contacts-settings" class="integrations-list">
+  <div class="integrations-item">
+    <span>Your Google Contacts</span>
+    {% if contacts_connected %}
+      <button type="button"
+              class="btn btn-secondary confirm"
+              data-href="{% url 'settings:google-logout' 'contacts' %}"
+              data-method="post"
+              data-confirm-title="Disconnect Google Contacts"
+              data-confirm-message="Disconnect your Google Contacts? Contacts Kosmos added automatically are removed. Contacts you copied with the button stay in your Google account, no longer updated."
+              data-confirm-text="Disconnect">Disconnect</button>
+    {% elif google_oauth_ready %}
+      <a class="btn btn-success"
+         href="{% url 'settings:google-login' 'contacts' %}">Connect</a>
+    {% elif user.role == 'ADMIN' %}
+      <span class="detail-text">Set up Google sign-in first (see above).</span>
+    {% else %}
+      <span class="detail-text">Google sign-in isn't set up yet. Ask an administrator.</span>
+    {% endif %}
+  </div>
+  {% if contacts_connected %}
+    <div class="integrations-item integrations-item-stacked">
+      <div class="integrations-item-row">
+        <label for="google-contacts-auto">Add automatically</label>
+        <select id="google-contacts-auto"
+                name="auto"
+                hx-post="{% url 'settings:google-contacts-auto' %}"
+                hx-trigger="change"
+                hx-target="#google-contacts-settings"
+                hx-swap="outerHTML">
+          {% for value, label in contacts_auto_choices %}
+            <option value="{{ value }}"
+                    {% if value == contacts_auto %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <p class="detail-text">
+        Kosmos copies these to your Google Contacts on its own, from every open
+        matter you can see: right after you choose, then every fifteen minutes
+        as matters open. When a matter closes,
+        or someone leaves its Client group, the contacts it added are removed
+        again; so are all of them if you choose Off. Contacts you copied with
+        the button are never removed this way.
+      </p>
+    </div>
+  {% endif %}
+</div>

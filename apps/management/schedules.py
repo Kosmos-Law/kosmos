@@ -44,6 +44,16 @@ def schedule_specs():
             ),
         ),
         ScheduleSpec(
+            "google-contacts-auto",
+            "apps.contacts.google.scheduled_sync_automatic",
+            "*/15 * * * *",
+            description=(
+                "Copies the clients (or Client groups) of open matters to the "
+                "Google Contacts of each user who chose automatic copies, and "
+                "removes the ones it added once their matter is no longer open."
+            ),
+        ),
+        ScheduleSpec(
             "gmail-sync",
             "apps.mail.google.scheduled_sync",
             "*/2 * * * *",

@@ -299,7 +299,13 @@ contact). `toggle_google_sync` copies or uncopies for the requester only.
 `edit` calls `google.refresh_copies()`, which deletes and re-creates every
 copy whose owner is still connected; the contact and folder delete views
 call `google.remove_all()`, which returns how many copies it could not
-reach. Every Google call is best-effort and logged. A copy with no user
+reach. Every Google call is best-effort and logged.
+**`GoogleContactsSetting`** holds a user's choice of automatic copies
+(off, clients, Client group); `sync_automatic()` adds the contacts of the
+Open matters they can see (`filter_matters_for_user`) and removes the
+`automatic` copies that no longer qualify, run by the
+`google-contacts-auto` job and queued when the choice changes. The button
+leaves an automatic copy alone. A copy with no user
 came from the firm-wide account used before 2026-10-28; the
 `adopt_google_contacts` command gives those, and the old token file, to
 one user. See [the

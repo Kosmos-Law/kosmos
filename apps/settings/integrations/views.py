@@ -6,11 +6,12 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
+from django_q.tasks import async_task
 from googleapiclient.discovery import build
 
 import apps.contacts.google as contacts_google
 import apps.mail.google as mail_google
-from apps.contacts.models import GoogleContactCopy
+from apps.contacts.models import GoogleContactCopy, GoogleContactsSetting
 from apps.mail.models import GmailAccount
 from apps.settings.features import books_enabled
 from apps.settings.integrations import PENDING_TOAST_KEY, quickbooks
@@ -82,7 +83,7 @@ def index(request):
         "app": "settings",
         "subapp": "integrations",
         "email_token": email_token,
-        "contacts_connected": contacts_google.is_connected(request.user),
+        **_contacts_context(request.user),
         "gmail_status": gmail_status,
         "own_gmail_account": GmailAccount.objects.filter(user=request.user).first(),
         "gmail_accounts": _visible_gmail_accounts(request.user, gmail_status),
@@ -108,6 +109,41 @@ def _require_known(app):
     Calendar) or never did."""
     if app not in GOOGLE_SCOPES:
         raise Http404
+
+
+def _contacts_context(user):
+    return {
+        "contacts_connected": contacts_google.is_connected(user),
+        "contacts_auto": contacts_google.auto_setting(user),
+        "contacts_auto_choices": GoogleContactsSetting.AUTO_CHOICES,
+        "google_oauth_ready": google_oauth_configured(),
+    }
+
+
+@login_required
+@require_POST
+def google_contacts_auto(request):
+    """Save which contacts Kosmos copies to the user's Google Contacts on
+    its own, and bring their copies in line at once on the worker."""
+    auto = request.POST.get("auto", "")
+    if auto not in dict(GoogleContactsSetting.AUTO_CHOICES):
+        return HttpResponseBadRequest("Unknown choice.")
+    if not contacts_google.is_connected(request.user):
+        return HttpResponseBadRequest("Connect Google Contacts first.")
+    contacts_google.set_auto_setting(request.user, auto)
+    async_task("apps.contacts.google.sync_automatic_task", request.user.id)
+
+    response = render(
+        request,
+        "settings/integrations/google-contacts.html",
+        _contacts_context(request.user),
+    )
+    if auto == GoogleContactsSetting.OFF:
+        message = "Automatic contacts off. The ones Kosmos added are being removed."
+    else:
+        message = "Saved. Your Google Contacts will be updated in a minute or two."
+    toast_success(response, message)
+    return response
 
 
 @login_required
@@ -184,8 +220,11 @@ def google_store(request):
 def google_logout(request, app):
     _require_known(app)
     if app == "contacts":
-        # Forget the requester's Google Contacts and which contacts they
-        # copied. The copies stay in their Google account.
+        # The copies Kosmos added on its own go while the token still
+        # works; the ones copied by hand stay in the Google account. Then
+        # forget the token and which contacts they copied.
+        contacts_google.set_auto_setting(request.user, GoogleContactsSetting.OFF)
+        contacts_google.sync_automatic(request.user)
         request.user.google_contacts_credentials = ""
         request.user.save(update_fields=["google_contacts_credentials"])
         GoogleContactCopy.objects.filter(user=request.user).delete()

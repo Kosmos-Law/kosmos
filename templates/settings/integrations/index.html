@@ -119,30 +119,10 @@
     <p class="detail-text">
       Connect your own Google account to copy contacts to it, one at a time,
       with the cloud button on a contact's page. They reach your phone
-      through Google. Everyone connects their own; nothing is copied until
-      you click.
+      through Google, or have Kosmos add your open matters' clients on its
+      own. Everyone connects their own.
     </p>
-    <div class="integrations-list">
-      <div class="integrations-item">
-        <span>Your Google Contacts</span>
-        {% if contacts_connected %}
-          <button type="button"
-                  class="btn btn-secondary confirm"
-                  data-href="{% url 'settings:google-logout' 'contacts' %}"
-                  data-method="post"
-                  data-confirm-title="Disconnect Google Contacts"
-                  data-confirm-message="Disconnect your Google Contacts? Contacts you copied stay in your Google account; Kosmos stops updating them."
-                  data-confirm-text="Disconnect">Disconnect</button>
-        {% elif google_oauth_ready %}
-          <a class="btn btn-success"
-             href="{% url 'settings:google-login' 'contacts' %}">Connect</a>
-        {% elif user.role == 'ADMIN' %}
-          <span class="detail-text">Set up Google sign-in first (see above).</span>
-        {% else %}
-          <span class="detail-text">Google sign-in isn't set up yet. Ask an administrator.</span>
-        {% endif %}
-      </div>
-    </div>
+    {% include "settings/integrations/google-contacts.html" %}
   </div>
   {% if pending_toast %}
     {% comment %}

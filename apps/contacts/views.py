@@ -411,7 +411,17 @@ def toggle_google_sync(request, id):
             )
         return redirect("contacts:index")
 
-    if google.copy_for(request.user, contact):
+    existing = google.copy_for(request.user, contact)
+    if existing and existing.automatic:
+        # Kosmos would only add it back on its next run
+        message = (
+            "Kosmos added this contact automatically while its matter is "
+            "open. Change automatic contacts in Settings to remove it."
+        )
+        if htmx:
+            return toast_warning(HttpResponse(status=204), message)
+        return redirect("contacts:index")
+    if existing:
         google.uncopy(request.user, contact)
     elif google.copy(request.user, contact) is None:
         if htmx:

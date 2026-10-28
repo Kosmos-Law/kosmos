@@ -374,8 +374,13 @@ Under **Google Contacts**, click **Connect** beside **Your Google
 Contacts** and choose your Google account. A contact's page then has a
 cloud button that copies the contact to your Google Contacts, and so to
 your phone (see [Contacts](contacts.md#copy-a-contact-to-your-google-contacts)).
-**Disconnect** asks you to confirm. The contacts you copied stay in your
-Google account, but Kosmos stops updating them.
+**Add automatically** has Kosmos add, on its own, the client (or everyone
+in the **Client** group) of each open matter, and remove them when the
+matter closes; see
+[Contacts](contacts.md#add-clients-automatically). **Disconnect** asks
+you to confirm. It removes the contacts Kosmos added automatically; the
+ones you copied with the button stay in your Google account, but Kosmos
+stops updating them.
 
 Connecting with a different Google account replaces the earlier
 connection.

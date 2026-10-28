@@ -37,10 +37,23 @@ account under Settings > Integrations, as they do their Gmail mailbox;
 the token is kept on their user row (`google_contacts_credentials`, a
 column that had sat unused). The cloud button copies a contact to *their*
 account and removes *their* copy. A copy is a `GoogleContactCopy` row,
-one per user and contact. It stays one-way and on demand, as before:
-nothing is copied until someone clicks, nothing comes back from Google,
-editing a contact replaces every user's copy, and deleting it removes
-every copy that can be reached.
+one per user and contact. It stays one-way, as before: nothing comes back
+from Google, editing a contact replaces every user's copy, and deleting
+it removes every copy that can be reached.
+
+**A user may also have their clients copied automatically**
+(`GoogleContactsSetting`, chosen under Settings > Integrations): Off,
+the client of each Open matter they can see, or everyone in each Open
+matter's Client group. The `google-contacts-auto` job (every fifteen
+minutes, and right away when the choice changes) adds what qualifies
+and removes the copies it added (`GoogleContactCopy.automatic`) once
+their contact no longer qualifies: the matter closed or was set back to
+Pending, the person left the Client group, or the user chose Off or
+disconnected. A contact on two Open matters stays until both close.
+Copies made with the button are never removed by it, and the button
+refuses to remove an automatic copy, which the next run would only add
+back. "Can see" means every matter for a user with all-matters access,
+which at this firm is everyone; the firm does not assign matters.
 
 Each Google connection now asks only for its own scopes (Gmail: read and
 labels; Contacts: contacts), without merging in earlier grants.
@@ -68,6 +81,13 @@ Google.
 **Removing Google Contacts with the calendar** was the first version of
 this change, reversed the same day.
 
+**Automatic copies from assigned matters only** would keep a phone to
+the person's own caseload, but the firm does not assign matters, so it
+would copy nothing. **Pending matters too** was left out: the copies
+follow current clients. **Keeping automatic copies after a matter
+closes** was left out: closing a matter is when the firm stops tracking
+it, so its contacts leave the phone with it.
+
 ## What was removed
 
 - `apps/calendar/google.py` and `apps/calendar/sync.py` (push, pull,
@@ -94,6 +114,9 @@ this change, reversed the same day.
 - `apps/contacts/migrations/0011_google_copies_per_user.py`: creates
   `GoogleContactCopy`, turns each `Contact.google_id` into a copy held by
   no one, then drops the column.
+- `apps/contacts/migrations/0012_google_contacts_automatic.py`: adds
+  `GoogleContactCopy.automatic` and the `GoogleContactsSetting` table.
+  The `google-contacts-auto` schedule is installed by `setup_schedules`.
 
 ## Consequences
 
@@ -113,8 +136,12 @@ this change, reversed the same day.
   uses the extras; a user removes them by revoking Kosmos in their Google
   account and connecting again. `OAUTHLIB_RELAX_TOKEN_SCOPE` is set so
   that Google returning an old grant is not refused as a changed scope.
-- Disconnecting Google Contacts forgets the user's copies in Kosmos; the
-  copies stay in their Google account, no longer updated.
+- Disconnecting Google Contacts first removes the copies Kosmos added
+  automatically (afterwards it could not reach them), then forgets the
+  user's copies in Kosmos; the ones made with the button stay in their
+  Google account, no longer updated.
+- A matter that closes leaves the phones within fifteen minutes, not at
+  once: nothing listens for the status change.
 - A copy is replaced, not updated, when its contact is edited (delete
   and create, as before), so anything added to it on the phone is lost.
 - The sync's rules (Kosmos wins, the `.update()` that pinned
