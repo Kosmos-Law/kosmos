@@ -10,8 +10,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-import apps.calendar.google as google
-import apps.calendar.sync as sync
 from apps.accounts.access import matter_access_required
 from apps.calendar import holidays, invitations, meetings
 from apps.calendar.access import event_for_user, matters_for_events
@@ -39,25 +37,10 @@ from .events import (
     toolbar_context,
 )
 
-# Shown when Google Calendar is connected but a sync push fails (e.g. an
-# expired/revoked token). The local save still succeeds — see
-# google.best_effort — so this is a non-blocking warning, not an error.
-GOOGLE_SYNC_FAILED_MSG = (
-    "Event saved, but couldn't sync to Google Calendar. Reconnect it in Settings."
-)
 
-
-def _event_change_response(
-    trigger, sync_failed=False, sync_message=GOOGLE_SYNC_FAILED_MSG
-):
-    """A 204 + HX-Trigger response for an event change, plus a warning toast
-    when the (best-effort) Google sync reported failure."""
-    response = HttpResponse(status=204, headers={"HX-Trigger": trigger})
-    if sync_failed:
-        # A blank CALENDAR_ID fails every push; reconnecting wouldn't help,
-        # so name the real cause instead.
-        toast_warning(response, google.setup_problem() or sync_message)
-    return response
+def _event_change_response(trigger):
+    """A 204 that tells the page an event changed."""
+    return HttpResponse(status=204, headers={"HX-Trigger": trigger})
 
 
 @login_required
@@ -278,12 +261,8 @@ def events_add(request, matter_id=None, origin="events"):
             # The assignees are a many-to-many, saved after the row
             form.save_m2m()
 
-            # Mirror to Google (Pending events only); records google_synced_at,
-            # or leaves it for reconcile() to retry if the push fails.
-            sync_failed = sync.push_event(event) == "failed"
-
             trigger = "matterEventChanged" if origin == "matters" else "eventsChanged"
-            return _event_change_response(trigger, sync_failed)
+            return _event_change_response(trigger)
 
     # if no post data has been submitted, show the contact form
     else:
@@ -296,9 +275,6 @@ def events_add(request, matter_id=None, origin="events"):
     if not matter_id:
         form.fields["description"].widget.attrs.pop("autofocus", None)
         form.fields["matter"].widget.attrs["autofocus"] = "autofocus"
-
-    # Warn only about a half-finished setup, never a firm without Google.
-    google_problem = google.setup_problem()
 
     today = timezone.localdate().strftime("%Y-%m-%d")
 
@@ -316,7 +292,6 @@ def events_add(request, matter_id=None, origin="events"):
         "add": True,
         "results": None,
         "action": action,
-        "google_problem": google_problem,
         "form": form,
     }
 
@@ -382,10 +357,8 @@ def events_edit(request, id, origin="events"):
             form.save_m2m()
             invitations.after_change(event, before, request.user)
 
-            sync_failed = sync.push_event(event) == "failed"
-
             trigger = "matterEventChanged" if origin == "matters" else "eventsChanged"
-            return _event_change_response(trigger, sync_failed)
+            return _event_change_response(trigger)
 
     else:
         form = EventForm(
@@ -394,9 +367,6 @@ def events_edit(request, id, origin="events"):
             matters=matters,
             use_required_attribute=False,
         )
-
-    # Warn only about a half-finished setup, never a firm without Google.
-    google_problem = google.setup_problem()
 
     context = (
         {
@@ -407,7 +377,6 @@ def events_edit(request, id, origin="events"):
             "action": f"/events/{id}/edit",
             "event": event,
             "detail_url": reverse("calendar:detail-origin", args=[id, origin]),
-            "google_problem": google_problem,
             "form": form,
             "origin": origin,
         }
@@ -427,19 +396,12 @@ def events_delete(request, id, origin="events"):
 
     event = event_for_user(id, request.user)
 
-    # The guests hear it is off, then it goes from Google (queuing a retry
-    # on failure) before it is deleted here
+    # The guests hear it is off before it is deleted
     invitations.send_cancellation(event, list(event.guests.all()), request.user)
-    sync_failed = sync.delete_event_remote(event) == "failed"
-
     event.delete()
 
     trigger = "matterEventChanged" if origin == "matters" else "eventsChanged"
-    return _event_change_response(
-        trigger,
-        sync_failed,
-        "Event deleted, but couldn't remove it from Google Calendar.",
-    )
+    return _event_change_response(trigger)
 
 
 def _deadline_inputs(request):
@@ -727,10 +689,7 @@ def events_quick_update(request, id):
 
     event.save()
 
-    # Sync to Google Calendar
-    sync_failed = sync.push_event(event) == "failed"
-
-    return _event_change_response("eventsChanged", sync_failed)
+    return _event_change_response("eventsChanged")
 
 
 @login_required

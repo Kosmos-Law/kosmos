@@ -20,7 +20,7 @@ variable belongs to stays off or falls back until it is set.
 | `ALLOWED_HOSTS` | **Required** | Comma-separated host names the application answers to. (comma-separated list) |
 | `CSRF_TRUSTED_ORIGINS` | empty | Comma-separated full origins (scheme, host and port when not the default) trusted for form posts. Needed behind a reverse proxy. (comma-separated list) |
 | `PUBLIC_BASE_URL` | empty | Scheme and host used to build absolute links outside a web request, such as payment links in emails sent by the background worker. Blank falls back to the host of the request that triggered the send, when there is one. |
-| `TIME_ZONE` | `America/New_York` | The firm's time zone, as a tz database name (for example America/Chicago). Dates shown in the app, the times scheduled jobs run, and the zone events are written to Google Calendar in all follow it. |
+| `TIME_ZONE` | `America/New_York` | The firm's time zone, as a tz database name (for example America/Chicago). Dates shown in the app, the times scheduled jobs run, and the times in the invitations Kosmos sends all follow it. |
 
 ## Database
 
@@ -72,7 +72,6 @@ variable belongs to stays off or falls back until it is set.
 | Variable | Default | Description |
 |---|---|---|
 | `GOOGLE_DATA_DIR` | `google/` in the repository | Directory holding the Google OAuth client file (google_tokens.json) and the tokens generated when an integration is connected. A relative path is resolved from the repository root. |
-| `CALENDAR_ID` | empty | Id of the Google Calendar that events sync with. |
 | `GMAIL_LABEL_ROOT` | `Matters - Open` | Parent Gmail label whose child labels can be linked to matters. Blank offers every user label in the mailbox. |
 
 ## Drafting (LibreOffice)

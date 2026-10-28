@@ -28,16 +28,17 @@
           </button>
         {% endif %}
         {% comment %}
-          Copies the contact to Google Contacts, or removes the copy. Shown
-          only when a Google account is connected: without one it did nothing.
+          Copies the contact to your own Google Contacts, or removes your
+          copy. Shown only once you have connected yours: without it the
+          button would do nothing.
         {% endcomment %}
         {% if google_logged_in %}
           <button type="button"
-                  class="btn-icon {% if selected_contact.google_id %}toggle-active{% endif %}"
-                  title="{% if selected_contact.google_id %}Remove from Google Contacts{% else %}Copy to Google Contacts{% endif %}"
+                  class="btn-icon {% if google_copied %}toggle-active{% endif %}"
+                  title="{% if google_copied %}Remove from your Google Contacts{% else %}Copy to your Google Contacts{% endif %}"
                   hx-post="{% url 'contacts:toggle-google-sync' id=selected_contact.id %}"
                   hx-swap="none">
-            {% if selected_contact.google_id %}
+            {% if google_copied %}
               <i class="icon-cloud-off"></i>
             {% else %}
               <i class="icon-cloud-upload"></i>

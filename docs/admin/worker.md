@@ -39,7 +39,7 @@ database and run when the worker comes back. Until then:
 | Intakes from forwarded email | The message is stored, but no intake is created from it. |
 | Gmail | Attachment text is not extracted, and linking a label to a matter does not pull its messages in. |
 | Saved case law | A case saved to a matter gets no summary. |
-| Every scheduled job | No daily digest email, no Google Calendar or Gmail sync, no chat purge. |
+| Every scheduled job | No daily digest email, no Gmail sync, no chat purge. |
 
 Kosmos does say so in two places. Administrators see a notice at the top
 of every page: "The background worker isn't running, so OCR, syncing and
@@ -193,7 +193,7 @@ order.
 | `reconcile_pending` | An online payment or trust deposit is stuck as pending because the processor's webhook never arrived. Asks the processor for the current state of every in-flight payment and applies it. `--dry-run` reports without changing anything. The worker runs the same check every hour (the `payments-reconcile` job). |
 | `backfill_ocr` | Documents are stuck at pending or failed OCR, for example after their tasks used up all ten attempts. Queues them again. `--all` reprocesses every PDF. |
 | `build_semantic_index` | The semantic search index is behind, for example after worker downtime or when `SEMANTIC_AUTO_INDEX` was first switched on. Runs in the foreground, not through the worker, and skips anything unchanged. |
-| `sync_calendar`, `sync_gmail` | Run a Google sync now instead of waiting for the schedule, and see its output. The Gmail command takes `--full` and `--dry-run`. |
+| `sync_gmail` | Run the Gmail sync now instead of waiting for the schedule, and see its output. Takes `--full` and `--dry-run`. |
 | `cleanup_orphan_documents` | Document records whose stored file is missing and cannot be recovered. Reports only, unless you pass `--apply`. |
 | `dedupe_documents` | The same file was added to a matter more than once. Reports only, unless you pass `--apply`. |
 | `purge_unannotated_documents` | Deletes documents nobody has worked on: no highlight, no timeline fact, no note and not a promoted email. Labels and descriptions do not protect a document. The stored files, search entries and semantic-index chunks go too, and this can't be undone, so take a backup first. Reports a count per matter only, unless you pass `--apply`. `--list` names each document and `--matter` limits it to one matter. Written for the Google Drive removal, when most documents were unannotated copies from the mirror. |

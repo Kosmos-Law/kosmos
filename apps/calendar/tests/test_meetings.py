@@ -1,7 +1,7 @@
 """Virtual meetings: an invitation's join link, details and organizer are
-kept on the event, sent out again in the firm's own invitations, and
-carried to and from Google; the links typed into locations before there
-was a field for them are moved into it."""
+kept on the event and sent out again in the firm's own invitations;
+the links typed into locations before there was a field for them are
+moved into it."""
 
 import importlib
 from datetime import date, time
@@ -10,8 +10,6 @@ import pytest
 from django.apps import apps as django_apps
 from django.urls import reverse
 
-import apps.calendar.google as google
-import apps.calendar.sync as sync
 from apps.calendar import invitations, meetings
 from apps.calendar.models import Event, EventGuest
 
@@ -19,7 +17,6 @@ from .test_invitations import ics
 
 pytestmark = pytest.mark.django_db
 
-DAY = {"start": {"date": "2030-03-04"}, "end": {"date": "2030-03-05"}}
 TIMES = "DTSTART:20300304T140000Z\r\nDTEND:20300304T150000Z\r\nSUMMARY:Meet and confer"
 
 ZOOM_LINK = "https://us02web.zoom.us/j/81234567890?pwd=AbC123xyz"
@@ -174,93 +171,6 @@ def test_a_new_link_or_text_is_a_change_the_guests_hear_of(meeting):
     before = invitations.details(meeting)
     meeting.details = "Passcode: 9999"
     assert invitations.details(meeting) != before
-
-
-# --- Google ------------------------------------------------------------------
-
-
-class FakeGoogle:
-    def __init__(self):
-        self.sent = []
-
-    def events(self):
-        return self
-
-    def insert(self, calendarId, body):
-        self.sent.append(body)
-        return self
-
-    def update(self, calendarId, eventId, body):
-        self.sent.append(body)
-        return self
-
-    def execute(self):
-        return {"id": "google-1"}
-
-
-@pytest.fixture
-def remote(monkeypatch):
-    fake = FakeGoogle()
-    monkeypatch.setattr(google, "check_credentials", lambda: True)
-    monkeypatch.setattr(google, "build_service", lambda: fake)
-    return fake
-
-
-def test_google_gets_the_link_as_the_location_and_atop_the_text(meeting, remote):
-    assert sync.push_event(meeting) == "ok"
-
-    body = remote.sent[-1]
-    assert body["location"] == ZOOM_LINK
-    assert body["description"] == f"Join: {ZOOM_LINK}\n\nPasscode: 1234"
-
-
-def test_a_place_stays_googles_location(meeting, remote):
-    meeting.location = "Courtroom 4"
-    meeting.save()
-    sync.push_event(meeting)
-
-    assert remote.sent[-1]["location"] == "Courtroom 4"
-
-
-def test_what_kosmos_sent_comes_back_as_it_was():
-    data = google._parse_google_event(
-        DAY
-        | {
-            "location": ZOOM_LINK,
-            "description": f"Join: {ZOOM_LINK}\n\nPasscode: 1234",
-        }
-    )
-
-    assert data["meeting_url"] == ZOOM_LINK
-    assert data["location"] is None
-    assert data["details"] == "Passcode: 1234"
-
-
-def test_a_meet_added_on_google_is_the_events_link():
-    data = google._parse_google_event(
-        DAY
-        | {
-            "hangoutLink": MEET_LINK,
-            "conferenceData": {
-                "entryPoints": [
-                    {"entryPointType": "phone", "uri": "tel:+1-555-0100"},
-                    {"entryPointType": "video", "uri": MEET_LINK},
-                ]
-            },
-            "description": "Agenda<br>Item one",
-        }
-    )
-
-    assert data["meeting_url"] == MEET_LINK
-    assert data["details"] == "Agenda\nItem one"
-
-
-def test_a_link_removed_on_google_is_removed_here():
-    data = google._parse_google_event(DAY | {"location": "Courtroom 4"})
-
-    assert data["meeting_url"] == ""
-    assert data["details"] == ""
-    assert data["location"] == "Courtroom 4"
 
 
 # --- the move ----------------------------------------------------------------

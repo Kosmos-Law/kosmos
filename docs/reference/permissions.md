@@ -233,7 +233,6 @@ Not checked against `perm_financial`:
 | Delete a matter | `apps/matters/views.py` | 403 |
 | Delete a voided invoice | `apps/invoicing/invoices/views.py` | 403 |
 | Add, edit, delete a time-entry abbreviation code | `apps/activity/time/views.py` | 403 with a message |
-| Connect or disconnect Google Calendar or Contacts (Gmail is open to every user) | `apps/settings/integrations/views.py` | 403 |
 | "Collections" section on the dashboard | `apps/dash/views.py` | Section omitted |
 
 User-management routes under `/settings/users/`

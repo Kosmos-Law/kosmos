@@ -49,7 +49,7 @@ access, and the things that bite.
 | [Platform and config](subsystems/platform-and-config.md) | Settings and environment, middleware, storage, email, logging, health, the `utils/` guards |
 | [Identity and access](subsystems/identity-and-access.md) | Users, sign-in codes, permission flags, matter membership, API tokens |
 | [Matters and contacts](subsystems/matters.md) | Matters and their lifecycle, proceedings, parties, contacts and folders, practice areas |
-| [Tasks and calendar](subsystems/tasks-and-calendar.md) | Tasks, checklists, events, Google Calendar sync, the digest, the Dash |
+| [Tasks and calendar](subsystems/tasks-and-calendar.md) | Tasks, checklists, events and invitations, the digest, the Dash |
 | [Time and billing](subsystems/time-and-billing.md) | Time, expenses and flat fees, invoices, credits, applications, reports |
 | [Trust and payments](subsystems/trust-and-payments.md) | The trust ledger, payments and their trust withdrawals, online payments, payment requests |
 | [Case building](subsystems/case-building.md) | Documents, OCR, highlights, facts, witnesses, labels, search |

@@ -40,8 +40,9 @@ appears anywhere in the application.
 **Drafting.** AI-proposed edits applied to LibreOffice drafts as native
 tracked changes.
 
-**Google Workspace.** Calendar and Contacts sync, and Gmail labels mapped
-to matters with a per-matter email view.
+**Google Workspace.** Gmail labels mapped to matters, from each user's own
+mailbox, with a per-matter email view; contacts copied to each user's own
+Google Contacts.
 
 **Claude Desktop.** An MCP server exposes matters, documents, conversations
 and financial data to Claude Desktop (see [Claude Desktop access](docs/admin/integrations/claude-desktop.md)).
@@ -108,7 +109,7 @@ restart the two services.
 ### Manual installation and configuration
 
 Every step the script performs, written out for other platforms or for
-debugging, plus troubleshooting and the Google Calendar, Contacts and Gmail
+debugging, plus troubleshooting and the Gmail and Google Contacts
 setup that happens after the app is running:
 **[docs/admin/install-manual.md](docs/admin/install-manual.md)**, with
 [configuration](docs/admin/configuration.md),

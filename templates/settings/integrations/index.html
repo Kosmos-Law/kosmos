@@ -2,50 +2,6 @@
 {% block subcontent %}
   <div class="settings">
     {% if user.role == 'ADMIN' %}
-      <div class="toolbar">
-        <h1>Google Account</h1>
-      </div>
-      <p class="detail-text">Connect a Google account to synchronize contacts and calendar events.</p>
-      {% if not google_oauth_ready %}
-        <p class="detail-text">
-          Google sign-in isn't set up on this server yet, so nothing here can
-          be connected. Save the Google OAuth client file as
-          <code>google_tokens.json</code> in the server's Google data directory,
-          as described in the administrator guide (<code>docs/admin/integrations/google.md</code>).
-        </p>
-      {% endif %}
-      <div class="integrations-list">
-        <div class="integrations-item">
-          <span>Google Contacts</span>
-          {% if contacts_token %}
-            <button type="button"
-                    class="btn btn-secondary confirm"
-                    data-href="{% url 'settings:google-logout' 'contacts' %}"
-                    data-method="post"
-                    data-confirm-title="Disconnect Google Contacts"
-                    data-confirm-message="Disconnect Google Contacts for the whole firm? Kosmos stops syncing with it until an administrator connects it again."
-                    data-confirm-text="Disconnect">Disconnect</button>
-          {% elif google_oauth_ready %}
-            <a class="btn btn-success"
-               href="{% url 'settings:google-login' 'contacts' %}">Connect</a>
-          {% endif %}
-        </div>
-        <div class="integrations-item">
-          <span>Google Calendar</span>
-          {% if calendar_token %}
-            <button type="button"
-                    class="btn btn-secondary confirm"
-                    data-href="{% url 'settings:google-logout' 'calendar' %}"
-                    data-method="post"
-                    data-confirm-title="Disconnect Google Calendar"
-                    data-confirm-message="Disconnect Google Calendar for the whole firm? Kosmos stops syncing with it until an administrator connects it again."
-                    data-confirm-text="Disconnect">Disconnect</button>
-          {% elif google_oauth_ready %}
-            <a class="btn btn-success"
-               href="{% url 'settings:google-login' 'calendar' %}">Connect</a>
-          {% endif %}
-        </div>
-      </div>
       <h2 class="settings-section">AI</h2>
       <hr />
       <p class="detail-text">
@@ -59,6 +15,14 @@
       {% if quickbooks %}
         {% include "settings/integrations/quickbooks.html" %}
       {% endif %}
+    {% endif %}
+    {% if not google_oauth_ready and user.role == 'ADMIN' %}
+      <p class="detail-text">
+        Google sign-in isn't set up on this server yet, so neither Gmail nor
+        Google Contacts can be connected. Save the Google OAuth client file as
+        <code>google_tokens.json</code> in the server's Google data directory,
+        as described in the administrator guide (<code>docs/admin/integrations/google.md</code>).
+      </p>
     {% endif %}
     <h2 class="settings-section">Case Email</h2>
     <hr />
@@ -147,6 +111,35 @@
               </ul>
             {% endif %}
           {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    <h2 class="settings-section">Google Contacts</h2>
+    <hr />
+    <p class="detail-text">
+      Connect your own Google account to copy contacts to it, one at a time,
+      with the cloud button on a contact's page. They reach your phone
+      through Google. Everyone connects their own; nothing is copied until
+      you click.
+    </p>
+    <div class="integrations-list">
+      <div class="integrations-item">
+        <span>Your Google Contacts</span>
+        {% if contacts_connected %}
+          <button type="button"
+                  class="btn btn-secondary confirm"
+                  data-href="{% url 'settings:google-logout' 'contacts' %}"
+                  data-method="post"
+                  data-confirm-title="Disconnect Google Contacts"
+                  data-confirm-message="Disconnect your Google Contacts? Contacts you copied stay in your Google account; Kosmos stops updating them."
+                  data-confirm-text="Disconnect">Disconnect</button>
+        {% elif google_oauth_ready %}
+          <a class="btn btn-success"
+             href="{% url 'settings:google-login' 'contacts' %}">Connect</a>
+        {% elif user.role == 'ADMIN' %}
+          <span class="detail-text">Set up Google sign-in first (see above).</span>
+        {% else %}
+          <span class="detail-text">Google sign-in isn't set up yet. Ask an administrator.</span>
         {% endif %}
       </div>
     </div>

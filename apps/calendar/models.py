@@ -53,15 +53,6 @@ class Event(AuditMixin, models.Model):
     organizer_name = models.CharField(max_length=255, blank=True, default="")
     organizer_email = models.EmailField(blank=True, default="")
     status = models.CharField(max_length=50, blank=True, null=True)
-    google_id = models.CharField(max_length=255, blank=True, null=True)
-    # When this event was last successfully pushed to Google Calendar. NULL means
-    # never pushed. The push is needed whenever this is NULL or older than
-    # updated_at (a local edit since the last sync) — that single comparison
-    # drives create, update, first-connect backfill, and retry-after-failure.
-    # One more state: synced once and now without a google_id. That is an
-    # event removed on Google and kept here (see detached_from_google); it is
-    # never pushed again.
-    google_synced_at = models.DateTimeField(null=True, blank=True)
     # A calendar invitation forwarded in (apps.calendar.invitations): its
     # identifier, so a later revision of it updates this event and a
     # cancellation removes it, and its revision, so an older one is stale
@@ -134,17 +125,6 @@ class Event(AuditMixin, models.Model):
             self.last_date, self.end_time, tzinfo=timezone.get_default_timezone()
         )
 
-    @property
-    def detached_from_google(self):
-        """True for an event that was deleted on Google and kept in Kosmos.
-
-        The user took it off their calendar on purpose, so it must not go
-        back as a new Google event. It is told apart from an event that was
-        never pushed (no google_id, no google_synced_at) by still carrying
-        the time of its last sync.
-        """
-        return not self.google_id and self.google_synced_at is not None
-
     class Meta:
         db_table = "app_event"
         indexes = [
@@ -212,34 +192,3 @@ class EventGuest(models.Model):
 
     def __str__(self):
         return self.name or self.email
-
-
-class CalendarSyncState(models.Model):
-    """Stores Google Calendar sync token for incremental sync."""
-
-    calendar_id = models.CharField(max_length=255, unique=True)
-    sync_token = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    last_sync_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Sync state for {self.calendar_id}"
-
-    class Meta:
-        db_table = "app_calendar_sync_state"
-
-
-class PendingGoogleDeletion(models.Model):
-    """A Google Calendar event that must be deleted remotely after a local
-    delete whose push failed. The Event row is gone, so the marker can't live on
-    it; reconcile() drains this and removes the record once Google confirms."""
-
-    google_id = models.CharField(max_length=255, unique=True)
-    calendar_id = models.CharField(max_length=255)
-    created_at = models.DateTimeField(default=timezone.now)
-
-    def __str__(self):
-        return f"Pending deletion of {self.google_id}"
-
-    class Meta:
-        db_table = "app_calendar_pending_deletion"

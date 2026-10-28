@@ -49,13 +49,6 @@
   display: block;
 }
 
-/* An event deleted on Google and kept here: said in words under the
-   description, since the row has no other sign of it. */
-.events-table .event-detached {
-  color: var(--color-muted);
-  display: block;
-}
-
 /* form */
 
 .events-form {
@@ -84,7 +77,6 @@
 
 /* The form's own top margin is the gap below the note; the note's own
    top margin clears the Deadline Calculator button above it. */
-.event-detached-note,
 .event-organizer {
   color: var(--color-muted);
   margin: 0.75rem 0 0;
@@ -179,10 +171,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0 0.5rem;
-}
-
-.event-detail .event-detached-note {
-  margin: 0;
 }
 
 .deadline-calculator-link a {

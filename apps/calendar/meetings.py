@@ -84,8 +84,8 @@ def is_service_name(text):
 
 
 def plain_text(text):
-    """Text that may be HTML (Google's descriptions, once edited on Google)
-    as plain text, its line breaks kept."""
+    """Text that may be HTML (an invitation's description, as Google sends
+    it) as plain text, its line breaks kept."""
     text = text or ""
     if "<" not in text:
         return text.strip()

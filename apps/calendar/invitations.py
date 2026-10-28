@@ -43,7 +43,7 @@ from icalendar import (
 )
 
 from apps.accounts.models import CustomUser
-from apps.calendar import meetings, sync
+from apps.calendar import meetings
 from apps.calendar.events import default_end_time
 from apps.calendar.models import Event
 
@@ -242,7 +242,6 @@ def post_invitation(user, invitation):
     if invitation.cancelled:
         if existing is None:
             return "missing", None
-        sync.delete_event_remote(existing)
         existing.delete()
         return "cancelled", existing
 
@@ -270,7 +269,6 @@ def post_invitation(user, invitation):
     )
     event.ical_sequence = invitation.sequence
     event.save()
-    sync.push_event(event)
     return ("updated" if existing else "created"), event
 
 

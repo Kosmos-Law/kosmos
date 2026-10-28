@@ -62,7 +62,7 @@ def contact(user, folder):
 
 @pytest.fixture
 def contact_data(contact):
-    exclude_keys = {"_state", "id", "google_id", "map", "intake_id"}
+    exclude_keys = {"_state", "id", "map", "intake_id"}
     contact_data = {
         key: value for key, value in contact.__dict__.items() if key not in exclude_keys
     }

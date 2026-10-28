@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from apps.accounts.models import CustomUser
@@ -92,7 +93,6 @@ class Contact(AuditMixin, models.Model):
     website = models.CharField(max_length=255, blank=True, null=True)
     map = models.CharField(max_length=255, blank=True, null=True)
     notes = models.CharField(max_length=255, blank=True, null=True)
-    google_id = models.CharField(max_length=255, blank=True, null=True)
     intake = models.ForeignKey(Intake, on_delete=models.SET_NULL, null=True)
     history = HistoricalRecords()
 
@@ -208,3 +208,36 @@ class ContactRelationship(AuditMixin, models.Model):
             models.Index(fields=["from_contact"]),
             models.Index(fields=["to_contact"]),
         ]
+
+
+class GoogleContactCopy(models.Model):
+    """A contact copied to one user's own Google Contacts (see
+    apps.contacts.google). One per user and contact. A copy with no user
+    was made through the firm-wide Google account Kosmos used before
+    2026-10-28; adopt_google_contacts gives those to the user who owns that
+    account."""
+
+    contact = models.ForeignKey(
+        Contact, on_delete=models.CASCADE, related_name="google_copies"
+    )
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="google_contact_copies",
+    )
+    # The People API's id for the copy, "people/c123…"
+    resource_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "app_contact_google_copy"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contact", "user"], name="google_copy_once_per_user"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.contact} in {self.user or 'the former firm account'}"

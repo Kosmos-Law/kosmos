@@ -44,16 +44,6 @@ def schedule_specs():
             ),
         ),
         ScheduleSpec(
-            "calendar-sync",
-            "apps.calendar.sync.scheduled_sync",
-            "*/2 * * * *",
-            description=(
-                "Two-way Google Calendar sync: pushes pending local changes "
-                "and deletions, then pulls changes from Google. Does nothing "
-                "until Google Calendar is connected."
-            ),
-        ),
-        ScheduleSpec(
             "gmail-sync",
             "apps.mail.google.scheduled_sync",
             "*/2 * * * *",

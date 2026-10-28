@@ -35,6 +35,11 @@ DEBUG = env("DEBUG")
 if DEBUG:
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
+# Google may answer a connection with scopes the account granted Kosmos
+# before (Calendar, from before 2026-10-28) besides the ones asked for;
+# oauthlib would refuse that token as "Scope has changed".
+os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
+
 # check dev v. production environment
 ENV = env("ENV")
 
@@ -239,7 +244,7 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "en-us"
 
 # The firm's time zone: dates shown in the app, schedule times and the
-# zone events are written to Google Calendar in.
+# times in the invitations Kosmos sends.
 TIME_ZONE = env("TIME_ZONE", default="America/New_York")
 
 USE_I18N = True
@@ -461,10 +466,7 @@ GOOGLE_DATA_DIR = (
     _google_data_dir if _google_data_dir.is_absolute() else BASE_DIR / _google_data_dir
 )
 GOOGLE_CLIENT_SECRET_PATH = GOOGLE_DATA_DIR / "google_tokens.json"
-GOOGLE_CONTACTS_TOKEN_PATH = GOOGLE_DATA_DIR / "contact_tokens.json"
-GOOGLE_CALENDAR_TOKEN_PATH = GOOGLE_DATA_DIR / "calendar_tokens.json"
 GOOGLE_EMAIL_TOKEN_PATH = GOOGLE_DATA_DIR / "email_tokens.json"
-CALENDAR_ID = env("CALENDAR_ID", default="")
 LAW_FIRM_ID = env("LAW_FIRM_ID", default="")
 
 # QuickBooks Online (apps/books/intuit.py): the OAuth client of the app

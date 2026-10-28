@@ -3,7 +3,7 @@
 This page is for anyone at the firm who keeps the address book: attorneys,
 paralegals and office staff. It covers how to find, add, edit and delete
 contacts, file them in folders, and connect them to matters, to each other
-and to Google Contacts. If you are new to Kosmos, read
+and to your own Google Contacts. If you are new to Kosmos, read
 [Getting started](getting-started.md) first.
 
 ## What a contact is
@@ -95,9 +95,8 @@ Good to know:
 Click a contact's name. Its page opens with the name and client badge at
 the top. At the top right, the copy button copies all of the contact's
 details (on the **Details** tab only), the cloud button copies the contact
-to Google Contacts (described below; it is there only when the firm's
-Google account is connected), and the pencil button opens **Edit
-Contact**.
+to your Google Contacts (described below; it is there only once you have
+connected yours), and the pencil button opens **Edit Contact**.
 
 | Tab | What it shows |
 |---|---|
@@ -159,7 +158,9 @@ Deleting is permanent. Deleted with the contact:
 
 - its place on every matter's **Contacts** tab;
 - its relationships on other contacts' **Related** tabs;
-- its copy in Google Contacts, if it has one.
+- every copy of it in Google Contacts, whoever made it. If a copy cannot
+  be removed (its owner has disconnected Google Contacts, for example),
+  Kosmos says how many are left, for you to delete there.
 
 The intake a contact was created from is kept.
 
@@ -235,27 +236,33 @@ You can do the same while opening a matter, with **Convert an intake…**
 Both need the Intakes permission. Intakes are described in
 [Intakes](intakes.md).
 
-## Copy a contact to Google Contacts
+## Copy a contact to your Google Contacts
 
-If an administrator has connected the firm's Google account (see
-[Google integrations](../admin/integrations/google.md)), you can copy
-contacts to it one at a time. The cloud button is shown only while that
-account is connected.
+You can copy contacts, one at a time, to your own Google account, which
+puts them on your phone. First connect it once: **Settings →
+Integrations → Google Contacts**, then **Connect** (see
+[Settings](settings.md#integrations)). The cloud button is shown only
+once you have.
 
 1. Open the contact.
 2. Click the cloud button at the top right, beside the pencil button.
 
-Kosmos adds the contact to the firm's Google Contacts and reloads the
-page. The button is now highlighted and shows a crossed-out cloud. Click
-it again to remove the contact from Google Contacts.
+Kosmos adds the contact to your Google Contacts and reloads the page. The
+button is now highlighted and shows a crossed-out cloud. Click it again
+to remove the contact from your Google Contacts.
 
 Good to know:
 
+- Each person's copies are their own. Your button shows whether *you*
+  have copied the contact; a colleague's copy is in their account, not
+  yours.
 - Nothing is copied until you click the button, and nothing comes back
   from Google. Google receives the **Name**, the first **Email** and the
   three phone numbers only.
-- Each time you edit a copied contact, Kosmos replaces the copy in Google
-  Contacts, so anything added to it in Google is lost.
+- Each time anyone edits a copied contact, Kosmos replaces every copy in
+  Google Contacts, so anything added to a copy in Google is lost.
+- If you disconnect Google Contacts, the contacts you copied stay in
+  your Google account, but Kosmos stops updating or removing them.
 
 ## Who can see contacts
 

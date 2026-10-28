@@ -19,7 +19,7 @@ subsystem pages group them.
 | [Platform and config](subsystems/platform-and-config.md) | `config/`, `utils/`, `apps/management` | Settings, URL root, middleware, health checks; the shared helpers (`utils/`); the session-held filter, selection and pagination helpers, the schedule registry and the `static_v` template tag. |
 | [Identity and access](subsystems/identity-and-access.md) | `apps/accounts` | `CustomUser` with its `perm_*` flags and `is_admin`, the emailed sign-in code, `access.py` (matter membership) and the two project middlewares. |
 | [Matters](subsystems/matters.md) | `apps/matters`, `apps/contacts`, `apps/folders` | Matters, proceedings, rates, ledger, settlement; contacts and relationships; the contact folders (`Folder` is also the task folder). |
-| [Tasks and calendar](subsystems/tasks-and-calendar.md) | `apps/tasks`, `apps/checklists`, `apps/calendar`, `apps/dash` | Tasks and the daily digest; checklist templates; events and the Google Calendar sync; the dashboard. |
+| [Tasks and calendar](subsystems/tasks-and-calendar.md) | `apps/tasks`, `apps/checklists`, `apps/calendar`, `apps/dash` | Tasks and the daily digest; checklist templates; events, invitations and reminders; the dashboard. |
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
 | [Books](subsystems/books.md) | `apps/books` | The general ledger: the chart of accounts with its tax lines, journal entries, the statements and the tax summary. A module, off by default, gated by the Books permission. |
@@ -191,7 +191,7 @@ interchangeable.
 **The Django-Q worker** (`python manage.py qcluster`, the `qcluster.service`
 unit in production) runs everything that is queued with
 `django_q.tasks.async_task()` and the recurring schedules in
-`apps/management/schedules.py`: OCR, Gmail and Calendar sync,
+`apps/management/schedules.py`: OCR, Gmail sync,
 document summaries, semantic re-indexing, payment webhook
 reconciliation, the daily digest, the chat purge. The worker is configured by `Q_CLUSTER` in
 settings and explained on the [operations page](subsystems/operations.md).

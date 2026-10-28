@@ -179,13 +179,9 @@ def edit(request, id):
         if form.is_valid():
             contact = form.save(commit=False)
             contact.user_id = request.user.id
-
-            # if the contact is saved in google, update the changes in google
-            if google.check_credentials() and contact.google_id:
-                google.delete_contact(contact)
-                contact.google_id = google.add_contact(contact)
-
             contact.save()
+            # Every user's copy in Google Contacts takes the change
+            google.refresh_copies(contact)
 
             # For HTMX requests, return 204 to close modal and trigger refresh
             if request.headers.get("HX-Request"):
@@ -241,18 +237,17 @@ def delete(request, id):
     for relationship in relationships:
         relationship.delete()
 
-    # delete google contact
-    if contact.google_id:
-        if google.check_credentials():
-            google.delete_contact(contact)
-        else:
-            request.session[PENDING_TOAST_KEY] = {
-                "type": "warning",
-                "message": (
-                    f"{contact.name} was deleted here, but Google Contacts is "
-                    "not connected, so the copy there was not removed."
-                ),
-            }
+    # Remove it from every user's Google Contacts it was copied to
+    left = google.remove_all(contact)
+    if left:
+        copies = "1 copy" if left == 1 else f"{left} copies"
+        request.session[PENDING_TOAST_KEY] = {
+            "type": "warning",
+            "message": (
+                f"{contact.name} was deleted here, but {copies} in Google "
+                "Contacts could not be removed. Delete them there."
+            ),
+        }
 
     # delete from database
     contact.delete()
@@ -385,8 +380,6 @@ def add_intake(request, id):
     folders = Folder.objects.filter(app="contacts").order_by("name")
     form.fields["folder"].queryset = folders
 
-    google_connected = google.check_credentials()
-
     context = {
         "app": "contacts",
         "action_type": "db_update",
@@ -395,7 +388,6 @@ def add_intake(request, id):
         "action": "/contacts/add",
         "folders": folders,
         "selected_folder": None,
-        "google_connected": google_connected,
         "form": form,
         "intake_id": id,
     }
@@ -409,22 +401,25 @@ def toggle_google_sync(request, id):
     contact = get_object_or_404(Contact, pk=id)
     htmx = request.headers.get("HX-Request")
 
-    # With no Google account connected there is nothing to copy to or remove
-    # from. The button is not shown then; a request that arrives anyway
-    # changes nothing and says so.
-    if not google.check_credentials():
+    # Each user copies to their own Google account. Without one connected
+    # there is nothing to copy to or remove from. The button is not shown
+    # then; a request that arrives anyway changes nothing and says so.
+    if not google.is_connected(request.user):
         if htmx:
             return toast_error(
-                HttpResponse(status=204), "Google Contacts is not connected."
+                HttpResponse(status=204), "Your Google Contacts is not connected."
             )
         return redirect("contacts:index")
 
-    if contact.google_id:
-        google.delete_contact(contact)
-        contact.google_id = ""
-    else:
-        contact.google_id = google.add_contact(contact)
-    contact.save()
+    if google.copy_for(request.user, contact):
+        google.uncopy(request.user, contact)
+    elif google.copy(request.user, contact) is None:
+        if htmx:
+            return toast_error(
+                HttpResponse(status=204),
+                "Couldn't reach Google Contacts. Reconnect it in Settings.",
+            )
+        return redirect("contacts:index")
     if htmx:
         return HttpResponse(status=204, headers={"HX-Refresh": "true"})
     return redirect("contacts:index")

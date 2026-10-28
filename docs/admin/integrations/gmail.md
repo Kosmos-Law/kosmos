@@ -64,12 +64,14 @@ that requires of your consent screen depends on how your Google Workspace
 and the Cloud project are set up, and is decided in Google's console, not
 in Kosmos.
 
-!!! note "The consent screen asks for more than Gmail"
+!!! note "Mailboxes connected before 2026-10-28"
 
-    Kosmos requests all of its Google scopes on every connection:
-    Calendar, Contacts, read-only Gmail and Gmail labels. A user connecting only their mailbox is still asked to grant
-    the others, and the token stored for them carries those grants. The
-    Gmail sync itself uses only the two Gmail scopes.
+    Until then every connection asked for Calendar and Contacts access as
+    well, and the tokens stored for those mailboxes still carry those
+    grants. Kosmos no longer uses them through the mailbox (Google
+    Contacts has its own connection now). A user who wants them gone
+    removes Kosmos under **Third-party apps & services** in their Google
+    account, then connects again.
 
 ## Choose the parent label
 
@@ -102,8 +104,7 @@ Each user does this once, signed in as themselves:
 3. Google returns to the Integrations page, which now shows
    "Your mailbox:" followed by the address.
 
-Any user can connect their own mailbox. Admin rights are needed only for
-the firm-wide Calendar and Contacts connections. Without the OAuth
+Any user can connect their own mailbox. Without the OAuth
 client file there is no **Connect** button, and a matter's **Emails** tab
 is hidden unless it already holds synced emails. A user has one
 mailbox at a time, and connecting again replaces it.

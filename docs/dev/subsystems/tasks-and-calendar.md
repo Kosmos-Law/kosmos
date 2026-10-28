@@ -1,8 +1,12 @@
 # Tasks and calendar
 
 Tasks are the firm's to-do list, checklists are reusable step lists that
-attach to a task, and events are dated appointments and deadlines that
-mirror to one shared Google Calendar. The work spans `apps/tasks/`,
+attach to a task, and events are dated appointments and deadlines. Kosmos
+is the only place events are kept: nothing is synced with Google Calendar
+(removed 2026-10-28, see [the
+decision](../../decisions/2026-10-28-google-calendar-removed-contacts-per-user.md)).
+A meeting reaches the calendar when someone forwards its invitation. The
+work spans `apps/tasks/`,
 `apps/checklists/`, `apps/calendar/`, the matter-scoped tabs under
 `apps/matters/tasks/` and `apps/matters/events/`, and the Dash
 (`apps/dash/`), which lists the day's events.
@@ -20,8 +24,8 @@ What the screens look like is in the user guide:
 | `apps/tasks/ai.py`, `digest.py`, `access.py` | AI quick add (firm opt-in); the daily digest; who may reach which tasks |
 | `apps/matters/tasks/views.py` | The matter Tasks tab, with its own per-matter filter |
 | `apps/checklists/models.py`, `views.py` | Templates, folders, attached checklists, `can_complete_task()` |
-| `apps/calendar/models.py` | `Event`, `CalendarSyncState`, `PendingGoogleDeletion` |
-| `apps/calendar/google.py`, `sync.py` | The Google Calendar API (push, pull, title parsing); `push_event()`, `reconcile()`, `scheduled_sync()` |
+| `apps/calendar/models.py` | `Event`, `EventReminder`, `EventGuest` |
+| `apps/calendar/invitations.py`, `meetings.py` | Invitations forwarded in and sent to guests; reading a meeting's link and details |
 | `apps/calendar/views.py`, `events.py`, `filter.py`, `access.py` | The Events page, the FullCalendar feed, the deadline calculator; who may reach which events |
 | `apps/matters/events/` | The matter Events tab |
 | `apps/dash/views.py`, `middleware.py` | The Dash sections, the once-a-day Dash redirect |
@@ -64,14 +68,9 @@ organizer; see [the decision](../../decisions/2026-10-16-event-meeting-fields.md
 and `apps/calendar/meetings.py`), `event_type`, `party`,
 `status` (Pending, Complete or Missed, free text), `user` (who saved it),
 `assignees` (a many-to-many to users; none means the firm's event), and
-`matter` (`CASCADE`). `google_id` and `google_synced_at`
-carry the Google link; the model's comment states the rule: the event
-needs pushing whenever `google_synced_at` is null or older than
-`updated_at`. `Event.detached_from_google` is the one more state, no
-`google_id` but a `google_synced_at`: deleted on Google and kept here.
-**CalendarSyncState** holds the Google `syncToken`; **PendingGoogleDeletion**
-records a Google id whose remote delete failed after the local row was
-gone.
+`matter` (`CASCADE`). `ical_uid` and `ical_sequence` tie an event to
+the invitation it was posted from, so a later revision updates it and a
+cancellation removes it.
 
 ## How it works
 
@@ -176,7 +175,7 @@ note text cannot carry live markup) and records the view in
 note and checklist badges for a page of tasks in set-based queries, not
 per row.
 
-### Events and Google Calendar
+### Events
 
 The Events page (`events_index`) is a list or a FullCalendar view,
 chosen by `events_view_mode` in the session. One saved filter
@@ -190,64 +189,13 @@ FullCalendar needs JSON; with a `matter_id` it serves the matter Events
 tab under that tab's own status filter. Drag and resize post to
 `events_quick_update`, which changes only date and times.
 
-Saving an event (`events_add`, `events_edit`, `events_quick_update`) calls
-`sync.push_event()` right after the local save. The push is a side
-effect: `google.best_effort` catches every API failure and logs it, the
-view shows a warning toast, and the local save stands. Only Pending events
-are mirrored (`SYNC_STATUS`); a Complete or Missed event stops syncing and
-stays on Google as last pushed. The Google title is `event_title()`,
-`"<full matter name> - <description>"`, or the description alone for an
-event on no matter. Deleting locally calls `delete_event_remote()` first;
-when Google is offline or the call fails, the id is queued in
-`PendingGoogleDeletion`.
-
-`reconcile()` makes the whole thing eventually consistent. It drains the
-queued deletions first, then pushes every Pending event whose
-`google_synced_at` is null or older than `updated_at`. That single
-comparison covers create, update, the first-connect backfill (every
-existing Pending event has a null `google_synced_at`) and retry after a
-failed push, so no "dirty" flag exists. The deletions go first so a local
-removal reaches Google before the pull would re-create it. Connecting or
-reconnecting the calendar in Settings → Integrations
-(`google_store` in `apps/settings/integrations/views.py`) runs
-`reconcile()` immediately.
-
-The pull is `google.sync_from_google()`. It lists with `singleEvents: True`
-(recurring series arrive as their instances) and `showDeleted: True`,
-incrementally through the stored `syncToken`; an expired token (HTTP 410)
-clears the state and runs a full sync, which starts from `timeMin` now, so
-past events are never pulled. For each Google event:
-
-- A local event with unpushed edits is skipped: Kosmos wins, and the next
-  reconcile pushes its version up.
-- Otherwise the local row is updated. Timed events are converted from
-  Google's RFC 3339 datetimes into `TIME_ZONE` before the wall-clock values
-  are stored (storing the UTC clock once shifted every synced event by the
-  UTC offset, compounding each round trip), and `google_synced_at` is
-  pinned to `updated_at` so the row is not pushed straight back.
-- The title is read by `_title_fields()`, for an existing event only when
-  it changed on Google: Kosmos writes that title itself, and re-deriving a
-  matter from an unchanged title is how events moved between matters.
-  `_matter_named_in()` requires the whole text before a `" - "` to be a
-  matter's name (every such break is tried, since a name may contain
-  `" - "`) and, when several match, settles only if exactly one is Open.
-  `_fit_description()` cuts the description to the column's 255 characters
-  on a word boundary; before that, one long title failed its pull on every
-  sync.
-- A new Google event is created locally as Pending (Google gives no
-  status, and a status-less event shows in no view), unless its id is
-  queued for deletion.
-- A cancelled Google event follows the deletion rule in
-  `_kept_when_deleted_on_google()`: the local event is deleted only when it
-  is Pending with no unpushed edits. A Complete or Missed event is the
-  firm's record and stays; unpushed edits are work Google never saw and
-  stay. A kept event is detached by `_detach()`, which clears `google_id`
-  and keeps `google_synced_at`, the state `Event.detached_from_google`
-  reads, so neither a later edit nor `reconcile()` sends it back.
-
-`CALENDAR_ID` names the one shared calendar and the token lives at
-`GOOGLE_CALENDAR_TOKEN_PATH`. Setup is in the operator guide:
-[Google Workspace](../../admin/integrations/google.md).
+A calendar invitation forwarded to `CALENDAR_INBOUND_ADDRESS` arrives
+through the inbound-mail webhook and is posted by
+`invitations.post_invitation()` as a firm event, with no assignees and no matter;
+its UID makes a later revision an update and a cancellation a delete.
+The same module emails invitations to an event's guests and records
+their answers. Setup and the sender check are in the operator guide:
+[Calendar invitations](../../admin/integrations/inbound-email.md#calendar-invitations).
 
 ### The deadline calculator
 
@@ -282,9 +230,8 @@ full page load of the day (`CustomUser.last_dash_check`).
   SMTP error for one user is logged and the loop goes on to the next.
   `setup_digest_schedule` is the older per-job installer, superseded
   by `setup_schedules`.
-- `calendar-sync` runs `scheduled_sync()` in `apps/calendar/sync.py` every
-  two minutes: `reconcile()`, then `sync_from_google()`. It does nothing
-  until the calendar is connected; `sync_calendar` runs it by hand.
+- `event-reminders` runs `send_due()` in `apps/calendar/reminders.py`
+  every minute and sends the event notifications that have come due.
 
 The schedules and their times are listed in the
 [scheduled jobs reference](../../reference/schedules.md).
@@ -318,13 +265,6 @@ or calendar permission flags. The matrix is in the
   in `apps/calendar/access.py` is what the Dash and the digest call for
   events (and `tasks_for_user()` for tasks). Do not write the `Q(matter__isnull=True)
   | Q(matter__in=...)` expression again; call the helper.
-- **`google_synced_at` is set with `.update()`, never `.save()`.** Both
-  `push_event()` and the pull pin it to `F("updated_at")` without touching
-  the row's `updated_at` or writing a history row. A `.save()` there would
-  bump `updated_at` and make the event look dirty again forever.
-- **Order matters in `scheduled_sync()`.** Deletions, then pushes, then the
-  pull. The pull re-creates anything it finds on Google with no local row
-  unless the id is in `PendingGoogleDeletion`.
 - **One trigger name for a changed task list.** The tasks views and
   `apps/checklists/views.py` both trigger `tasksListChanged`; the tasks
   tab and the matter Tasks tab reload on it. A new view that changes a
