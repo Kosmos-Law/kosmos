@@ -596,18 +596,18 @@ if [ "$PROD" -eq 1 ]; then
     run cp "$APP_DIR/deploy/gunicorn.conf.py" "$APP_DIR/gunicorn.conf.py"
   fi
 
-  for unit in law.socket law.service qcluster.service; do
+  for unit in law.socket law.service qcluster.service sessions.service; do
     if install_if_changed "$(render "$APP_DIR/deploy/systemd/$unit")" "/etc/systemd/system/$unit"; then
       UNITS_CHANGED=1
     fi
   done
   if [ "$UNITS_CHANGED" -eq 1 ]; then run sudo -n systemctl daemon-reload; fi
-  run sudo -n systemctl enable --now law.socket law.service qcluster.service
+  run sudo -n systemctl enable --now law.socket law.service qcluster.service sessions.service
   # Restart on every run, not only when a unit file changed: a re-run after
   # pulling new code must not leave the old code serving requests.
-  run sudo -n systemctl restart law.service qcluster.service
+  run sudo -n systemctl restart law.service qcluster.service sessions.service
   if [ "$DRY_RUN" -eq 0 ]; then
-    for svc in law.service qcluster.service; do
+    for svc in law.service qcluster.service sessions.service; do
       if systemctl is-active --quiet "$svc"; then
         log "$svc active"
       else
