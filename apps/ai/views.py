@@ -224,7 +224,7 @@ def ai_sort(request, matter_id, order):
     filter_data["order_by"] = new_order
     request.session[filter_session_key] = filter_data
 
-    return redirect("ai:list", matter_id=matter_id)
+    return redirect("ai:archive-list", matter_id=matter_id)
 
 
 @login_required

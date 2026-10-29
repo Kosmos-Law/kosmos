@@ -99,3 +99,12 @@ def usage_cost(usage, llm):
         usage.get("cache_write"),
     )
     return usd(cost) if cost is not None else ""
+
+
+@register.simple_tag
+def ai_archive_count(matter):
+    """How many conversations the earlier chat left on this matter: the
+    Archive pill shows only when there are some."""
+    from apps.ai.models import Conversation
+
+    return Conversation.objects.filter(matter=matter).count()

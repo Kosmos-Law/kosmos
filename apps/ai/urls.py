@@ -8,7 +8,7 @@ middleware's patterns go on working; only the URL names moved to the
 
 from django.urls import path
 
-from apps.ai import api, views
+from apps.ai import api, sessions, views
 
 app_name = "ai"
 
@@ -63,8 +63,46 @@ urlpatterns = [
         name="api-create-task",
     ),
     # AI Chat (matter-scoped)
-    path("case/<int:matter_id>/ai/", views.ai_index, name="index"),
-    path("case/<int:matter_id>/ai/list/", views.ai_list, name="list"),
+    path("case/<int:matter_id>/ai/", sessions.sessions_index, name="index"),
+    path("case/<int:matter_id>/ai/list/", sessions.sessions_list, name="list"),
+    path(
+        "case/<int:matter_id>/ai/sessions/launch/",
+        sessions.session_launch,
+        name="session-launch",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/",
+        sessions.session_page,
+        name="session-page",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/messages/",
+        sessions.session_messages,
+        name="session-messages",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/send/",
+        sessions.session_send,
+        name="session-send",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/model/",
+        sessions.session_model,
+        name="session-model",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/rename/",
+        sessions.session_rename,
+        name="session-rename",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/delete/",
+        sessions.session_delete,
+        name="session-delete",
+    ),
+    # The archive: conversations from the chat that preceded sessions.
+    path("case/<int:matter_id>/ai/archive/", views.ai_index, name="archive"),
+    path("case/<int:matter_id>/ai/archive/list/", views.ai_list, name="archive-list"),
     path("case/<int:matter_id>/ai/sort/<str:order>/", views.ai_sort, name="sort"),
     path("case/<int:matter_id>/ai/filter/", views.ai_filter, name="filter"),
     path("case/<int:matter_id>/ai/messages/", views.message_list, name="messages"),

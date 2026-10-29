@@ -53,7 +53,7 @@ access, and the things that bite.
 | [Time and billing](subsystems/time-and-billing.md) | Time, expenses and flat fees, invoices, credits, applications, reports |
 | [Trust and payments](subsystems/trust-and-payments.md) | The trust ledger, payments and their trust withdrawals, online payments, payment requests |
 | [Case building](subsystems/case-building.md) | Documents, OCR, highlights, facts, witnesses, labels, search |
-| [The AI context system](subsystems/ai/context.md) | Conversations, context builders, the selector, status, fenced writes |
+| [The AI context system](subsystems/ai/context.md) | The archive's engine: conversations, context builders, the selector, status, fenced writes. Sessions (`apps/ai/sessions.py`, the Claude Code successor) are recorded in [AI chat becomes Claude Code sessions](../decisions/2026-10-29-ai-chat-becomes-claude-code-sessions.md) |
 | [Agentic chat](subsystems/ai/agent-chat.md) | The tool-loop chat mode |
 | [Drafts](subsystems/drafts.md) | Draft links and the LibreOffice companion |
 | [Files](subsystems/files.md) | The Dropbox-synced Firm tree: matter folder links, the watcher, OCR in place |

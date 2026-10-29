@@ -1,0 +1,62 @@
+/* Claude Code sessions (apps/ai/sessions.py): the session page's header
+   and transcript extras. The chat layout, rail and message bubbles are
+   apps/ai.css; this only adds what a session has that a conversation did
+   not. */
+
+.session-header {
+  gap: 0.75rem;
+}
+
+.session-header-right {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.session-title {
+  cursor: text;
+}
+
+.session-rename .form-control {
+  font-size: 1.25rem;
+  font-weight: 600;
+  min-width: 20rem;
+}
+
+.session-folder {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.session-folder-missing {
+  color: var(--warning);
+}
+
+.session-model {
+  background: var(--background-control);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.session-trail {
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+}
+
+.session-trail summary {
+  cursor: pointer;
+}
+
+.session-note {
+  color: var(--color-muted);
+  font-style: italic;
+  padding: 0.5rem 1rem;
+}
+
+[x-cloak] {
+  display: none !important;
+}

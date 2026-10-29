@@ -18,12 +18,35 @@ models) or to both, under **Settings → Integrations** (see
 [AI](settings.md#ai)). Until one is connected, none of the places above
 appear: there is no **AI** tab on matters and no **Chat** on intakes.
 
-## Start a conversation on a matter
+## Start a session on a matter
 
-1. Open the matter, click **Case**, then **AI**. The tab lists the
-   matter's conversations.
-2. Click the plus button at the left of the toolbar. **New Conversation**
-   opens.
+The **AI** tab lists the matter's **sessions**: each one is Claude
+working from the matter's folder in the firm's files, reading what it
+needs as it goes.
+
+1. Open the matter, click **Case**, then **AI**.
+2. Click the plus button at the left of the toolbar. The session opens
+   in a new browser tab at once; there is nothing to fill in first.
+3. Choose the model at the top right of the session page if you want a
+   different one. **Claude Opus** is the default; **Claude Sonnet** is
+   faster and cheaper; **Claude Fable** is offered to administrators.
+   The choice applies from the next prompt.
+4. Type your first prompt. It becomes the session's name; click the
+   name to change it.
+
+Conversations from before sessions are under the **Archive** pill at
+the right of the toolbar. They open and read as before, but new chats
+are sessions.
+
+## Start a conversation on a matter (archive)
+
+Until the sessions engine is connected, a session saves your prompts
+and says so. The rest of this page describes the earlier chat, which
+the archive still uses.
+
+1. Open the matter, click **Case**, then **AI**, then **Archive**.
+2. (Historic) Click the plus button at the left of the toolbar. **New
+   Conversation** opens.
 3. Choose a **Mode** and a **Model**, type a **Name** and click
    **Submit**.
 

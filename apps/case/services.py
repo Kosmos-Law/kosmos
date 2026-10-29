@@ -46,6 +46,7 @@ __all__ = [
     "generate_email_pdf",
     "get_matter_from_url",
     "get_session_key",
+    "matter_folder",
     "parse_email_address",
     "process_document_ocr",
     "register_semantic_kind",
@@ -54,3 +55,14 @@ __all__ = [
     "semantic_entries",
     "set_last_tab",
 ]
+
+
+def matter_folder(matter):
+    """The matter's folder in the firm's files (apps/drive), or None when
+    none is linked or the Files integration is off."""
+    from apps.drive import tree
+    from apps.drive.models import MatterFolder
+
+    if not tree.configured():
+        return None
+    return MatterFolder.objects.filter(matter=matter).first()

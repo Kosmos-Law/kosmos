@@ -1,0 +1,125 @@
+{% load static cache_buster humanize drive_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" content="" />
+    <title>{{ session.display_title|truncatechars:40 }} - AI</title>
+    <link rel="icon"
+          data-favicon="ai"
+          type="image/x-icon"
+          href="{% static_v 'images/ai-favicon.svg' %}" />
+    <meta name="viewport" content="width = device-width, initial-scale = 1" />
+    <link rel="stylesheet"
+          href="https://unpkg.com/lucide-static@1.53.0/font/lucide.css" />
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap-reboot.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="{% static_v 'css/palette.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/colors.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/typeography.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/badges.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/buttons.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/icons.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/forms.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/interface.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/apps/ai.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/apps/files.css' %}" />
+    <link rel="stylesheet" href="{% static_v 'css/apps/sessions.css' %}" />
+    <script>
+    /* Match the app's theme (set on <html> before paint). Mirrors base.html. */
+    (function () {
+      var setting = localStorage.getItem('theme') || 'auto';
+      var resolved = setting === 'auto'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : setting;
+      document.documentElement.setAttribute('data-theme', resolved);
+    })();
+    </script>
+  </head>
+  <body class="ai-chat-body" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <div class="ai-chat-layout">
+      <aside class="ai-chat-sidebar" id="historySidebar">
+        <div class="ai-sidebar-header">
+          <h2>History</h2>
+          <button type="button"
+                  class="btn-icon ai-sidebar-rail-btn"
+                  onclick="toggleSidebar()"
+                  title="Expand history">
+            <i class="icon-history"></i>
+          </button>
+        </div>
+        <div class="ai-sidebar-list" id="promptList">
+          <div class="ai-sidebar-empty">No prompts yet</div>
+        </div>
+        <button type="button"
+                class="ai-sidebar-toggle"
+                onclick="toggleSidebar()"
+                title="Toggle sidebar">
+          <i class="icon-panel-left-close"></i>
+        </button>
+        <div class="ai-sidebar-resizer"
+             title="Drag to resize; double-click to reset"></div>
+      </aside>
+      <main class="ai-chat-main">
+        <header class="ai-chat-header session-header">
+          <span class="app-badge badge-purple">{{ matter.name }}</span>
+          <span id="sessionTitle">{% include "ai/sessions/title.html" %}</span>
+          <span class="session-header-right">
+            {% if folder %}
+              <span class="app-badge session-folder" title="{{ folder.path }}">
+                <i class="icon-folder with-text"></i>{{ folder.name }}
+              </span>
+            {% else %}
+              <a class="app-badge session-folder session-folder-missing"
+                 href="{% url 'ai:index' matter.id %}"
+                 target="_blank"
+                 title="The agent cannot read this matter's files until the matter is linked to its folder, on the AI tab.">
+                <i class="icon-folder-x with-text"></i>No folder linked
+              </a>
+            {% endif %}
+            <select name="model"
+                    class="session-model"
+                    title="Model for the next turn"
+                    hx-post="{% url 'ai:session-model' session.id %}"
+                    hx-trigger="change"
+                    hx-swap="none">
+              {% for key, label in model_choices %}
+                <option value="{{ key }}" {% if key == session.model %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </span>
+        </header>
+        <div class="ai-chat-scroll">
+          <div id="messageContainer" class="ai-messages">{% include "ai/sessions/messages.html" %}</div>
+        </div>
+        <div class="ai-input-container">
+          <div class="ai-input-row">
+            <form id="chatForm"
+                  hx-post="{% url 'ai:session-send' session.id %}"
+                  hx-target="#messageContainer"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="find button[type='submit']">
+              <textarea name="message"
+                        id="aiMessageInput"
+                        placeholder="Ask about this matter..."
+                        rows="2"
+                        required
+                        autofocus
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"></textarea>
+              <button type="submit" class="ai-send-btn" title="Send">
+                <i class="icon-send"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="{% static_v 'js/ai-history-panel.js' %}"></script>
+    <script src="{% static_v 'js/sessions.js' %}"></script>
+    <script>window.aiSessionMatterId = {{ matter.id }};</script>
+  </body>
+</html>

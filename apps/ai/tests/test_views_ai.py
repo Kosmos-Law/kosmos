@@ -168,7 +168,7 @@ class TestConversationListFilter:
         self._conv(matter, user, "Deposition prep")
         self._conv(matter, user, "Billing question")
         client.get(f"/case/{matter.id}/ai/filter/", {"q": "deposition"})
-        html = client.get(f"/case/{matter.id}/ai/list/").content.decode()
+        html = client.get(f"/case/{matter.id}/ai/archive/list/").content.decode()
         assert "Deposition prep" in html
         assert "Billing question" not in html
 
@@ -215,7 +215,7 @@ class TestConversationListFilter:
 
     def test_toolbar_has_search_and_participant_controls(self, client, matter, user):
         self._conv(matter, user, "Chat A", content="hi")
-        html = client.get(f"/case/{matter.id}/ai/list/").content.decode()
+        html = client.get(f"/case/{matter.id}/ai/archive/list/").content.decode()
         assert 'id="ai-participant-select"' in html
         assert 'name="q"' in html
         assert "ai-llm-select" not in html

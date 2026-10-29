@@ -1,0 +1,51 @@
+{% load humanize markdown_extras %}
+{% comment %}
+The session's transcript. The agent's answer renders as markdown with the
+trail of what it did above it; a prompt is plain text. Until the runtime is
+connected, a prompt is saved and the note below says so.
+{% endcomment %}
+{% for message in messages %}
+  <div class="ai-message ai-message-{{ message.role }}"
+       id="message-{{ message.id }}"
+       {% if message.role == "user" %}data-initials="{% if message.user %}{{ message.user.first_name|slice:':1' }}{{ message.user.last_name|slice:':1' }}{% else %}?{% endif %}
+       "
+       {% endif %}>
+    <div class="ai-message-header">
+      {% if message.role == "user" %}
+        <i class="icon-user-circle"></i>
+        <span>{{ message.user.get_full_name|default:"You" }}</span>
+      {% else %}
+        <i class="icon-bot"></i>
+        <span>Claude</span>
+      {% endif %}
+      <span class="ai-message-time">{{ message.created_at|naturaltime }}</span>
+    </div>
+    <div class="ai-message-content">
+      {% if message.role == "assistant" %}
+        {% if message.trail %}
+          <details class="session-trail">
+            <summary>{{ message.trail|length }} step{{ message.trail|length|pluralize }}</summary>
+            <ol>
+              {% for step in message.trail %}<li>{{ step.summary }}</li>{% endfor %}
+            </ol>
+          </details>
+        {% endif %}
+        <div class="ai-message-text">{{ message.content|render_markdown }}</div>
+      {% else %}
+        <div class="ai-message-text">{{ message.content|linebreaks }}</div>
+      {% endif %}
+    </div>
+  </div>
+{% empty %}
+  <div class="ai-empty-state">
+    <i class="icon-message-circle"></i>
+    <p>Start a session about this matter.</p>
+    <p class="text-muted">Claude works from the matter's folder in the firm's files and reads what it needs as it goes.</p>
+  </div>
+{% endfor %}
+{% if not runtime_connected and messages %}
+  <div class="session-note">
+    The agent is not connected yet. Your prompt is saved with the session and
+    will be answered once the runtime is in place.
+  </div>
+{% endif %}
