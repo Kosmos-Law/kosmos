@@ -43,6 +43,7 @@ class Command(BaseCommand):
             format="%(asctime)s %(levelname)s %(name)s: %(message)s",
             force=True,
         )
+        logging.getLogger("ocrmypdf").setLevel(logging.WARNING)
         run_ocr = not options["no_ocr"]
         if options["scan"]:
             stats = watcher.scan(run_ocr=run_ocr, progress=self.stdout.write)
