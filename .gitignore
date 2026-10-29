@@ -35,3 +35,6 @@ logs/*
 
 # Documentation site build output (zensical)
 /site/
+
+# The files watcher stages OCR output here (FILES_OCR_SCRATCH)
+.ocr-scratch/

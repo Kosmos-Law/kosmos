@@ -136,7 +136,7 @@ def files_status(request):
         total=Count("id"),
         without_text=Count("id", filter=Q(has_text=False)),
         ocr_done=Count("id", filter=Q(ocr_status="done")),
-        failed=Count("id", filter=Q(ocr_status="failed")),
+        failed=Count("id", filter=Q(ocr_status="failed") & ~Q(size=0)),
         pending=Count("id", filter=Q(ocr_status="pending")),
     )
     context = {
@@ -149,7 +149,10 @@ def files_status(request):
         "watcher_alive": heartbeat_age is not None
         and heartbeat_age < HEARTBEAT_STALE_SECONDS,
         "counts": counts,
-        "failures": PdfFile.objects.filter(ocr_status="failed").order_by("path")[:50],
+        # Empty files are listed under "Empty files", not as OCR failures.
+        "failures": PdfFile.objects.filter(ocr_status="failed")
+        .exclude(size=0)
+        .order_by("path")[:50],
         "linked": MatterFolder.objects.select_related("matter").order_by("path"),
         "missing": MatterFolder.objects.filter(missing_since__isnull=False)
         .select_related("matter")

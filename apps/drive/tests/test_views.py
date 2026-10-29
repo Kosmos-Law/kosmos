@@ -126,6 +126,7 @@ def test_status_page_is_for_admins_and_lists_what_the_watcher_found(
 ):
     PdfFile.objects.create(
         path=f"{SMITH}/scan.pdf",
+        size=10,
         has_text=False,
         ocr_status="failed",
         ocr_error="tesseract exploded",
@@ -143,3 +144,11 @@ def test_status_page_is_for_admins_and_lists_what_the_watcher_found(
     assert "tesseract exploded" in content
     assert "Matters - Open/Gone" in content
     assert "Matters - Open/Doe v Roe" in content
+
+
+def test_status_page_keeps_empty_files_out_of_the_failure_list(admin_client, firm_root):
+    PdfFile.objects.create(path="Admin/empty.pdf", size=0, ocr_status="failed")
+    PdfFile.objects.create(path="Admin/bad.pdf", size=10, ocr_status="failed")
+    content = admin_client.get(reverse("drive:files-status")).content.decode()
+    assert "Admin/bad.pdf" in content
+    assert "Admin/empty.pdf" not in content
