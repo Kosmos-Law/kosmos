@@ -109,6 +109,6 @@ Where the transport and packaging may go next is recorded in
 
 - [Claude Desktop access to Kosmos](../../admin/integrations/claude-desktop.md)
   for setup; [AI chat and context](ai/context.md) and
-  [Agentic chat](ai/agent-chat.md) for the formatters and the search
+  [Sessions](ai/sessions.md) for the matter tools and the search
   handler this reuses; [Drafts](drafts.md) for the companion that shares
   the token.

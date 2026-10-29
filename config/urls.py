@@ -40,6 +40,7 @@ urlpatterns = [
     path("", include("apps.ai.urls")),
     path("", include("apps.mail.urls")),
     path("", include("apps.drafts.urls")),
+    path("", include("apps.drive.urls")),
     # Activity App
     path("", include("apps.activity.urls")),
     # Trust App

@@ -151,34 +151,6 @@ and single keys do not work there. See [Documents](documents.md).
 | `Ctrl` + mouse wheel | Zooms the document in or out. |
 | `Esc` | Closes **Create Highlight** without saving. |
 
-## Compose Prompt
-
-**Compose Prompt** in the AI chat is a small editor for a long question.
-Ordinary editing keys (bold, italic, undo, redo) work as they do
-elsewhere. These are its own, and they work while the cursor is in the
-prompt's text. See [AI chat](ai-chat.md).
-
-| Keys | What it does |
-|---|---|
-| `Ctrl` + `S` | Saves your draft now. |
-| `Ctrl` + `1` to `Ctrl` + `5` | Heading 1 to 5. Press again for normal text. |
-| `F2`, `F3`, `F4` | Heading 2, 3 or 4. |
-| `Ctrl` + `0` | Normal text. |
-| `Ctrl` + `7` or `F7` | Bullet list. |
-| `Ctrl` + `8` | Blockquote. |
-| `Ctrl` + `↑` and `Ctrl` + `↓` | Move the list item up or down. |
-| `Ctrl` + `D` or `Ctrl` + `Delete` | Deletes the paragraph the cursor is in. |
-| `Ctrl` + `Shift` + `S` | Strikethrough. |
-| `Alt` + `1` to `Alt` + `6` | Highlight in gray, yellow, green, red, purple or orange. Press again to remove it. |
-| `Alt` + `A`, `Y`, `G`, `R`, `P` or `O` | The same six colours, by letter. `A` is gray. |
-| `Alt` + `` ` `` or `Alt` + `C` | Removes the highlight. |
-
-Good to know:
-
-- `Ctrl` + `D` asks for no confirmation. Press `Ctrl` + `Z` to undo it.
-- Your browser may keep a combination for itself, such as `Ctrl` + `1`
-  to change browser tabs. Use the other key in the table, or the toolbar.
-
 ## Dialogs, forms and chat
 
 | Where | Keys | What it does |
@@ -191,7 +163,7 @@ Good to know:
 | **Search contacts...** in a dialog | `↓` and `↑`, then `Enter` | Move through the results and choose one. |
 | An open menu | `Esc` | Closes the menu. |
 | A chat message box | `Enter` | Sends the message. `Shift` + `Enter` starts a new line. |
-| A chat in its own window | `Esc` | Stops the reply in progress. Pressed twice within half a second, it empties the message box. |
+| A session in its own window | `Esc` | Stops the turn in progress. Pressed twice within half a second, it empties the message box. |
 
 Good to know:
 

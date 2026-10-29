@@ -5,26 +5,18 @@ rate, fee, comp flag and invoice status for every user who can see the
 matter, as the Activity screens do. Invoices, the rates section, the ledger
 and trust are behind the Financial permission, as the Invoicing, Rates and
 Ledger screens are. A run for no user carries no billing detail at all.
+The matter tools here are the ones a session serves (session_tools.py);
+the Claude Desktop API applies the same rule.
 """
 
 import json
 
 import pytest
-from django.core.cache import cache
 from django.test import Client
 
 from apps.accounts.models import ApiToken, CustomUser
 from apps.activity.time.models import TimeEntry
-from apps.ai import selector
-from apps.ai.agent_prompt import build_agent_system
 from apps.ai.agent_tools import build_agent_tools, make_agent_executor
-from apps.ai.context import (
-    assemble_matter_context,
-    assemble_matter_context_with_selection,
-    format_time_entries,
-)
-from apps.ai.models import Conversation
-from apps.ai.selector import build_manifest
 from apps.invoicing.invoices.models import Invoice
 from apps.matters.rates.models import Rate
 
@@ -95,134 +87,7 @@ def assert_time_entry_billing(text, invoice):
     assert f"Invoice #{invoice.id}" in text
 
 
-class TestClassicContext:
-    def test_time_entries_carry_billing_for_every_user(
-        self, billed_matter, invoice, user, no_financial, admin_without_flag
-    ):
-        """The Activity screens show rate and fee to every user, so the
-        context does too, with or without the Financial permission."""
-        for requester in (user, no_financial, admin_without_flag):
-            text = assemble_matter_context(billed_matter, user=requester)
-            assert_time_entry_billing(text, invoice)
-
-    def test_selected_context_carries_billing_without_financial(
-        self, billed_matter, invoice, no_financial
-    ):
-        text = assemble_matter_context_with_selection(
-            billed_matter,
-            user_message="what was billed?",
-            llm="claude-opus",
-            user=no_financial,
-        )
-        assert_time_entry_billing(text, invoice)
-
-    def test_no_user_means_no_money(self, billed_matter):
-        """A run for no user has no one whose permissions could open the
-        money, so it carries none."""
-        for text in (
-            assemble_matter_context(billed_matter, user=None),
-            assemble_matter_context_with_selection(
-                billed_matter, user_message="summarize", llm="claude-opus", user=None
-            ),
-        ):
-            assert "Draft complaint" in text
-            assert "h by " in text
-            assert "$550.00" not in text
-            assert "$275" not in text
-            assert "Invoice #" not in text
-
-    def test_formatter_leaves_billing_out_unless_asked(self, billed_matter, invoice):
-        plain = format_time_entries(billed_matter)
-        assert "Draft complaint" in plain
-        assert "2026-01-05" in plain
-        assert_no_money(plain)
-        assert_time_entry_billing(
-            format_time_entries(billed_matter, include_billing=True), invoice
-        )
-
-    def test_invoices_are_offered_only_with_financial(self, billed_matter):
-        offered, _ = build_manifest(billed_matter, include_invoices=True)
-        withheld, _ = build_manifest(billed_matter)
-        assert [i.item_type for i in offered if i.item_type == "invoice"]
-        assert not [i for i in withheld if i.item_type == "invoice"]
-
-    def test_selection_is_built_for_the_user(
-        self, billed_matter, user, no_financial, monkeypatch
-    ):
-        seen = []
-
-        def fake_manifest(matter, **kwargs):
-            seen.append(kwargs.get("include_invoices"))
-            return [], {}
-
-        monkeypatch.setattr(selector, "build_manifest", fake_manifest)
-        for requester in (user, no_financial, None):
-            assemble_matter_context_with_selection(
-                billed_matter,
-                user_message="billing?",
-                llm="claude-opus",
-                user=requester,
-            )
-        assert seen == [True, False, False]
-
-
-class TestContextReuse:
-    """The assembled context is cached per conversation. One that offered
-    invoices must never be handed to a user who may not see them."""
-
-    @pytest.fixture
-    def conversation(self, billed_matter):
-        cache.clear()
-        return Conversation.objects.create(
-            matter=billed_matter, title="Shared chat", llm="claude-opus"
-        )
-
-    @pytest.fixture
-    def builds(self, monkeypatch):
-        """Each rebuild of the context, by whether it offered invoices."""
-        seen = []
-
-        def fake_manifest(matter, **kwargs):
-            seen.append(kwargs.get("include_invoices"))
-            return [], {}
-
-        monkeypatch.setattr(selector, "build_manifest", fake_manifest)
-        return seen
-
-    def _assemble(self, matter, conversation, user):
-        return assemble_matter_context_with_selection(
-            matter,
-            user_message="what was billed?",
-            llm="claude-opus",
-            user=user,
-            conversation=conversation,
-        )
-
-    def test_second_user_gets_their_own_context(
-        self, billed_matter, conversation, user, no_financial, builds
-    ):
-        self._assemble(billed_matter, conversation, user)
-        self._assemble(billed_matter, conversation, no_financial)
-        assert builds == [True, False]
-
-    def test_same_user_reuses_the_context(
-        self, billed_matter, conversation, user, builds
-    ):
-        self._assemble(billed_matter, conversation, user)
-        self._assemble(billed_matter, conversation, user)
-        assert builds == [True]
-
-    def test_losing_the_permission_drops_the_cached_context(
-        self, billed_matter, conversation, user, builds
-    ):
-        self._assemble(billed_matter, conversation, user)
-        user.perm_financial = False
-        user.save()
-        self._assemble(billed_matter, conversation, user)
-        assert builds == [True, False]
-
-
-class TestAgentMode:
+class TestMatterTools:
     def test_invoice_tool_is_offered_only_with_financial(self):
         with_money = {t["name"] for t in build_agent_tools(include_financial=True)}
         without = {t["name"] for t in build_agent_tools(include_financial=False)}
@@ -302,26 +167,6 @@ class TestAgentMode:
         assert outcome["is_error"]
         _, outcome = run(execute, "read_matter_section", section="rates")
         assert outcome["is_error"]
-
-    def test_index_lists_invoices_only_with_financial(
-        self, billed_matter, invoice, user, no_financial
-    ):
-        conversation = Conversation.objects.create(
-            matter=billed_matter, title="Agent", kind="agent"
-        )
-        handle = f"[inv:{invoice.id}]"
-        segments, _ = build_agent_system(billed_matter, user, conversation, "billing?")
-        assert handle in segments[0]
-        assert "inv: read_invoice" in segments[0]
-
-        segments, _ = build_agent_system(
-            billed_matter, no_financial, conversation, "billing?"
-        )
-        assert handle not in segments[0]
-        assert "balance $" not in segments[0]
-        # The index header names only the tools this user is offered.
-        assert "read_invoice" not in segments[0]
-        assert "conv: read_conversation)" in segments[0]
 
 
 class TestTokenApi:

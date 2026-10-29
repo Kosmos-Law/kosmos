@@ -117,6 +117,9 @@ The documents themselves and their stored files are not touched.
   (2026-10-19)](2026-10-19-the-case-builder-is-a-module-with-its-own-navigation.md):
   superseded in part.
 - [Notes are retired (2026-10-27)](2026-10-27-notes-retired.md).
+- [Firm files live in Dropbox, and the AI reads them in place
+  (2026-10-29)](2026-10-29-firm-files-live-in-dropbox.md): what was built
+  against Dropbox. Not a mirror; the mirror's design above is history.
 - [Drafts](../dev/subsystems/drafts.md), [Case
   building](../dev/subsystems/case-building.md) and [Drafting with
   LibreOffice](../admin/integrations/libreoffice.md).

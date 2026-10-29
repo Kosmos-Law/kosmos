@@ -469,6 +469,45 @@ GOOGLE_CLIENT_SECRET_PATH = GOOGLE_DATA_DIR / "google_tokens.json"
 GOOGLE_EMAIL_TOKEN_PATH = GOOGLE_DATA_DIR / "email_tokens.json"
 LAW_FIRM_ID = env("LAW_FIRM_ID", default="")
 
+# Firm files (apps/drive): the Dropbox tree the Dropbox daemon syncs onto
+# this host. DROPBOX_FIRM_ROOT is the synced Firm folder; empty turns the
+# Files integration off. DROPBOX_MATTER_ROOTS are its subfolders whose
+# direct children are matter folders. The watcher OCRs PDFs lacking a text
+# layer in place, staging the output under FILES_OCR_SCRATCH (same
+# filesystem as the tree for an atomic replace) with FILES_OCR_JOBS
+# tesseract workers per file.
+_files_root = env("DROPBOX_FIRM_ROOT", default="").strip()
+DROPBOX_FIRM_ROOT = Path(_files_root).expanduser() if _files_root else None
+DROPBOX_MATTER_ROOTS = env.list(
+    "DROPBOX_MATTER_ROOTS", default=["Matters - Open", "Matters - Pending"]
+)
+# Top-level folders the watcher leaves alone: no text-layer check, no OCR.
+# Closed matters are an archive the firm does not work in.
+DROPBOX_OCR_EXCLUDE = env.list("DROPBOX_OCR_EXCLUDE", default=["Matters - Closed"])
+FILES_OCR_SCRATCH = Path(
+    env("FILES_OCR_SCRATCH", default=str(BASE_DIR / ".ocr-scratch"))
+).expanduser()
+FILES_OCR_JOBS = env.int("FILES_OCR_JOBS", default=2)
+# Text taken from PDFs and documents for searching inside them
+# (apps/drive/text.py), cached outside the tree.
+FILES_TEXT_CACHE = Path(
+    env("FILES_TEXT_CACHE", default=str(BASE_DIR / ".file-text"))
+).expanduser()
+
+# Claude Code sessions (apps/ai/runtime.py). The harness keeps its own
+# state (transcripts, config) under SESSIONS_HOME, never the service
+# account's ~/.claude; a session with no linked folder runs in a scratch
+# directory of its own. Turns run in the sessions service
+# (manage.py run_sessions), SESSIONS_CONCURRENCY at a time, each capped
+# by the harness's own turn and dollar limits.
+SESSIONS_HOME = Path(env("SESSIONS_HOME", default=str(BASE_DIR / ".claude-sessions")))
+SESSIONS_SCRATCH = Path(
+    env("SESSIONS_SCRATCH", default=str(BASE_DIR / ".claude-sessions" / "scratch"))
+)
+SESSIONS_CONCURRENCY = env.int("SESSIONS_CONCURRENCY", default=2)
+SESSIONS_MAX_TURNS = env.int("SESSIONS_MAX_TURNS", default=80)
+SESSIONS_MAX_BUDGET_USD = env.float("SESSIONS_MAX_BUDGET_USD", default=10.0)
+
 # QuickBooks Online (apps/accounting/intuit.py): the OAuth client of the app
 # registered on developer.intuit.com. Development keys reach only sandbox
 # companies and production keys only real ones, so the environment says

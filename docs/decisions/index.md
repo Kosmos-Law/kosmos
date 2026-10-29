@@ -75,6 +75,8 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [AI writes are fenced blocks, applied at once (2026-08-09)](2026-08-09-fenced-write-blocks.md)
 - [Effort tiers and answer streaming, tried and reverted (2026-08-14)](2026-08-14-effort-tiers-and-streaming-reverted.md)
 - [AI chat runs on threads, research runs on the queue (2026-08-17)](2026-08-17-chat-on-threads-research-on-the-queue.md)
+- [AI chat becomes Claude Code sessions (2026-10-29)](2026-10-29-ai-chat-becomes-claude-code-sessions.md)
+- [The conversation engine is retired (2026-10-29)](2026-10-29-the-conversation-engine-is-retired.md)
 - [The user picks which cases a research run reads (2026-08-18)](2026-08-18-research-selection-gate.md)
 - [The token estimate is 2.5 characters per token (2026-08-20)](2026-08-20-token-estimate-at-two-and-a-half-chars.md)
 - [What the AI says about money follows what the screens show (2026-10-02)](2026-10-02-ai-money-follows-the-screens.md)
@@ -89,6 +91,7 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [The Drive mirror: append-only, PDF-only, read-only on Drive (2026-08-01)](2026-08-01-drive-mirror-contract.md)
 - [Drafts are companion-first over a Drive `.odt` (2026-08-06)](2026-08-06-drafts-are-companion-first.md)
 - [Google Drive is removed (2026-10-27)](2026-10-27-google-drive-removed.md), superseding the two Drive records and, in part, the drafts record
+- [Firm files live in Dropbox, and the AI reads them in place (2026-10-29)](2026-10-29-firm-files-live-in-dropbox.md)
 - [Notes are app-owned and carry no AI knobs (2026-08-11)](2026-08-11-notes-are-app-owned-with-no-ai-knobs.md), replaced by
 - [Notes are retired (2026-10-27)](2026-10-27-notes-retired.md)
 - [The case-law viewer renders CourtListener's HTML unsanitised (2026-10-02)](2026-10-02-opinion-html-rendered-as-is.md)

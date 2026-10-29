@@ -1,0 +1,63 @@
+{% load markdown_extras ai_extras %}
+{% comment %}
+The steps of a turn, live or saved: the model's narration, its reasoning
+when shown, and each tool call as a row. Claude Code's transcript shape:
+a muted call line with an elbow outcome line under it; the call opens to
+show what was asked and what came back. Rows carry an id (the tool call's,
+or the prefix and position for a thought) so the page can keep them open
+across polls. Reasoning comes collapsed, as in the desktop app: a line
+that says how long it took and peeks at the text, opening to all of it.
+{% endcomment %}
+<ol class="session-steps">
+  {% for step in steps %}
+    {% if step.kind == "text" %}
+      <li class="session-step session-step-text{% if step.draft %} session-step-draft{% endif %}">
+        <i class="icon-bot"></i>
+        <div class="ai-markdown">{{ step.text|render_markdown }}</div>
+      </li>
+    {% elif step.kind == "thinking" %}
+      <li class="session-step session-step-thinking{% if step.draft %} session-step-draft{% endif %}"
+          id="think-{{ prefix }}-{{ forloop.counter }}">
+        <i class="icon-brain{% if step.draft %} pulse{% endif %}"></i>
+        <details>
+          <summary>
+            <span class="session-step-call">
+              {% if step.draft %}
+                Thinking
+              {% else %}
+                Thought
+                {% if step.ms and step.ms > 1500 %}for {{ step.ms|ms_short }}{% endif %}
+              {% endif %}
+            </span>
+            <span class="session-thinking-peek">{{ step|session_peek }}</span>
+          </summary>
+          <div class="session-step-body session-thinking-text">{{ step.text|linebreaks }}</div>
+        </details>
+      </li>
+    {% else %}
+      <li class="session-step session-step-tool{% if step.pending %} session-step-pending{% elif step.error %} session-step-error{% endif %}"
+          {% if step.id %}id="step-{{ step.id }}"{% endif %}>
+        <i class="{{ step.name|session_step_icon }}{% if step.pending %} pulse{% endif %}"></i>
+        <details>
+          <summary>
+            <span class="session-step-call">{{ step.summary }}</span>
+            <span class="session-elbow">
+              {% if step.pending %}
+                running
+              {% elif step.error %}
+                {{ step.outcome|default:"error" }}
+              {% else %}
+                {{ step.outcome }}
+                {% if step.ms and step.ms > 1500 %}, {{ step.ms|ms_short }}{% endif %}
+              {% endif %}
+            </span>
+          </summary>
+          <div class="session-step-body">
+            {% if step.input %}<pre class="session-step-input">{{ step.input }}</pre>{% endif %}
+            {% if step.preview %}<pre class="session-step-preview">{{ step.preview }}</pre>{% endif %}
+          </div>
+        </details>
+      </li>
+    {% endif %}
+  {% endfor %}
+</ol>

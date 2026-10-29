@@ -1,9 +1,8 @@
 """Who may read, poll, cancel and change an AI conversation.
 
 The central matter check covers a conversation named in the URL path. These
-guard what it cannot see: a conversation id sent in the query string or the
-body, the chats that have no matter (intake), and the links that
-used to change things on a plain GET.
+guard what it cannot see: the chats that have no matter (intake), and the
+links that used to change things on a plain GET.
 """
 
 import pytest
@@ -68,11 +67,6 @@ def other_conversation(other_matter, user):
 
 
 @pytest.fixture
-def _no_worker(monkeypatch):
-    monkeypatch.setattr("apps.ai.views.process_ai_request", lambda *a, **k: None)
-
-
-@pytest.fixture
 def live_status():
     """Seed a finished run in the status cache; clean up afterwards."""
     keys = []
@@ -101,109 +95,6 @@ class TestAccessibleMatters:
     def test_user_with_all_matters_gets_every_matter(self, user, matter, other_matter):
         ids = set(get_accessible_matters(user).values_list("id", flat=True))
         assert {matter.id, other_matter.id} <= ids
-
-
-class TestConversationIdFromTheRequest:
-    """message_list and send_message take the conversation id from the query
-    string or the body, under the URL of a matter the user may open."""
-
-    def test_message_list_refuses_another_matters_conversation(
-        self, restricted_client, matter, other_conversation
-    ):
-        response = restricted_client.get(
-            reverse("ai:messages", args=[matter.id]),
-            {"conversation_id": other_conversation.id},
-        )
-        assert response.status_code == 404
-        assert b"SECRET" not in response.content
-
-    def test_message_list_serves_the_matters_own_conversation(
-        self, restricted_client, matter, user
-    ):
-        conversation = Conversation.objects.create(matter=matter, title="Mine")
-        Message.objects.create(
-            conversation=conversation, role="user", content="Visible", user=user
-        )
-        response = restricted_client.get(
-            reverse("ai:messages", args=[matter.id]),
-            {"conversation_id": conversation.id},
-        )
-        assert response.status_code == 200
-        assert b"Visible" in response.content
-
-    def test_message_list_with_a_malformed_id_is_not_found(self, client, matter, user):
-        """It used to fall back to the matter's first conversation, as if
-        the id had named it."""
-        first = Conversation.objects.create(matter=matter, title="First", user=user)
-        Message.objects.create(
-            conversation=first, role="user", content="SHOULD NOT SHOW", user=user
-        )
-        response = client.get(
-            reverse("ai:messages", args=[matter.id]), {"conversation_id": "abc"}
-        )
-        assert response.status_code == 404
-        assert b"SHOULD NOT SHOW" not in response.content
-
-    def test_message_list_without_an_id_still_renders(self, client, matter):
-        """A chat with nothing sent yet has no id to give."""
-        response = client.get(
-            reverse("ai:messages", args=[matter.id]), {"conversation_id": ""}
-        )
-        assert response.status_code == 200
-
-    def test_conversation_must_be_on_the_matter_in_the_url(
-        self, client, matter, other_conversation
-    ):
-        """Even a user who can open both matters does not get one matter's
-        conversation rendered under the other's address."""
-        response = client.get(
-            reverse("ai:messages", args=[matter.id]),
-            {"conversation_id": other_conversation.id},
-        )
-        assert response.status_code == 404
-
-    def test_send_refuses_another_matters_conversation(
-        self, restricted_client, matter, other_conversation, _no_worker
-    ):
-        response = restricted_client.post(
-            reverse("ai:send", args=[matter.id]),
-            {"message": "Tell me everything", "conversation_id": other_conversation.id},
-        )
-        assert response.status_code == 404
-        assert other_conversation.messages.count() == 2
-        assert status_cache.get(f"ai_status_{other_conversation.id}") is None
-
-    def test_send_refuses_an_intake_conversation(
-        self, restricted_client, matter, user, _no_worker
-    ):
-        intake_chat = _intake_chat(user)
-        response = restricted_client.post(
-            reverse("ai:send", args=[matter.id]),
-            {"message": "Hello", "conversation_id": intake_chat.id},
-        )
-        assert response.status_code == 404
-        assert intake_chat.messages.count() == 0
-
-    def test_send_to_own_conversation_still_works(
-        self, restricted_client, matter, _no_worker
-    ):
-        conversation = Conversation.objects.create(matter=matter, title="Mine")
-        response = restricted_client.post(
-            reverse("ai:send", args=[matter.id]),
-            {"message": "Hello there", "conversation_id": conversation.id},
-        )
-        assert response.status_code == 200
-        assert conversation.messages.get().content == "Hello there"
-        status_cache.delete(f"ai_status_{conversation.id}")
-
-    def test_send_with_a_malformed_id_is_a_bad_request(
-        self, client, matter, _no_worker
-    ):
-        response = client.post(
-            reverse("ai:send", args=[matter.id]),
-            {"message": "Hello", "conversation_id": "abc"},
-        )
-        assert response.status_code == 400
 
 
 class TestStatusAndCancel:
@@ -248,8 +139,8 @@ class TestStatusAndCancel:
 
 
 class TestChangesNeedPost:
-    """A plain link (or an image tag on another site) must not delete,
-    clone or re-flag a conversation."""
+    """A plain link (or an image tag on another site) must not delete
+    or re-flag a conversation."""
 
     @pytest.fixture
     def conversation(self, matter, user):
@@ -261,13 +152,6 @@ class TestChangesNeedPost:
         assert Conversation.objects.filter(pk=conversation.pk).exists()
         assert client.post(url).status_code == 204
         assert not Conversation.objects.filter(pk=conversation.pk).exists()
-
-    def test_clone_refuses_get(self, client, conversation):
-        url = reverse("ai:clone-conversation", args=[conversation.id])
-        assert client.get(url).status_code == 405
-        assert Conversation.objects.count() == 1
-        assert client.post(url).status_code == 204
-        assert Conversation.objects.count() == 2
 
     def test_set_ai_context_refuses_get(self, client, conversation):
         url = reverse("ai:set-ai-context", args=[conversation.id, "never"])

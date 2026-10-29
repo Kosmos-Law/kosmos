@@ -8,7 +8,7 @@ middleware's patterns go on working; only the URL names moved to the
 
 from django.urls import path
 
-from apps.ai import api, views
+from apps.ai import api, sessions, views
 
 app_name = "ai"
 
@@ -63,32 +63,58 @@ urlpatterns = [
         name="api-create-task",
     ),
     # AI Chat (matter-scoped)
-    path("case/<int:matter_id>/ai/", views.ai_index, name="index"),
-    path("case/<int:matter_id>/ai/list/", views.ai_list, name="list"),
+    path("case/<int:matter_id>/ai/", sessions.sessions_index, name="index"),
+    path("case/<int:matter_id>/ai/list/", sessions.sessions_list, name="list"),
+    path(
+        "case/<int:matter_id>/ai/sessions/launch/",
+        sessions.session_launch,
+        name="session-launch",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/",
+        sessions.session_page,
+        name="session-page",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/messages/",
+        sessions.session_messages,
+        name="session-messages",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/send/",
+        sessions.session_send,
+        name="session-send",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/model/",
+        sessions.session_controls,
+        name="session-controls",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/rename/",
+        sessions.session_rename,
+        name="session-rename",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/delete/",
+        sessions.session_delete,
+        name="session-delete",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/live/",
+        sessions.session_live,
+        name="session-live",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/cancel/",
+        sessions.session_cancel,
+        name="session-cancel",
+    ),
+    # The archive: conversations from the chat that preceded sessions.
+    path("case/<int:matter_id>/ai/archive/", views.ai_index, name="archive"),
+    path("case/<int:matter_id>/ai/archive/list/", views.ai_list, name="archive-list"),
     path("case/<int:matter_id>/ai/sort/<str:order>/", views.ai_sort, name="sort"),
     path("case/<int:matter_id>/ai/filter/", views.ai_filter, name="filter"),
-    path("case/<int:matter_id>/ai/messages/", views.message_list, name="messages"),
-    path("case/<int:matter_id>/ai/send/", views.send_message, name="send"),
-    path(
-        "case/<int:matter_id>/ai/conversations/",
-        views.conversation_list,
-        name="conversations",
-    ),
-    path(
-        "case/<int:matter_id>/ai/conversations/new/",
-        views.new_conversation_view,
-        name="new-conversation-view",
-    ),
-    path(
-        "case/<int:matter_id>/ai/conversations/new/prompt/",
-        views.new_conversation_prompt,
-        name="new-conversation-prompt",
-    ),
-    path(
-        "case/<int:matter_id>/ai/prompt-editor/",
-        views.prompt_editor_modal,
-        name="prompt-editor",
-    ),
     # AI conversation operations
     path(
         "case/ai/status/<int:conv_id>/",
@@ -106,11 +132,6 @@ urlpatterns = [
         name="delete-message",
     ),
     path(
-        "case/ai/conversations/<int:conv_id>/",
-        views.select_conversation,
-        name="select-conversation",
-    ),
-    path(
         "case/ai/conversations/<int:conv_id>/view/",
         views.conversation_view,
         name="conversation-view",
@@ -119,26 +140,6 @@ urlpatterns = [
         "case/ai/conversations/<int:conv_id>/delete/",
         views.delete_conversation,
         name="delete-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/clone/",
-        views.clone_conversation,
-        name="clone-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/append-form/",
-        views.append_conversation_form,
-        name="append-form",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/append/",
-        views.append_conversation,
-        name="append-conversation",
-    ),
-    path(
-        "case/ai/messages/<int:message_id>/split/",
-        views.split_conversation,
-        name="split-conversation",
     ),
     path(
         "case/ai/conversations/<int:conv_id>/set-ai/<str:state>/",

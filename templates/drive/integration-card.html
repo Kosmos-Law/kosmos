@@ -1,0 +1,32 @@
+<h2 class="settings-section">Files</h2>
+<hr />
+<p class="detail-text">
+  The firm's files live in Dropbox and are synced onto this server by the
+  Dropbox daemon. A matter is linked to its folder from its Overview tab;
+  the AI works from that folder. A watcher adds a text layer to any PDF
+  that arrives without one, in place.
+</p>
+<div class="integrations-list">
+  <div class="integrations-item integrations-item-stacked">
+    <div class="integrations-item-row">
+      {% if configured %}
+        <span>Synced tree: <code>{{ root }}</code></span>
+        <a class="btn btn-secondary" href="{% url 'drive:files-status' %}">Status</a>
+      {% else %}
+        <span>Not synced on this server</span>
+        <span class="detail-text">Set <code>DROPBOX_FIRM_ROOT</code> to the synced Firm folder.</span>
+      {% endif %}
+    </div>
+    {% if configured %}
+      <p class="detail-text sync-note">
+        {{ linked_count }} matter{{ linked_count|pluralize }} linked to a folder;
+        {{ unclaimed_count }} folder{{ unclaimed_count|pluralize }} not yet linked to a matter.
+        {% if state.watcher_seen_at %}
+          Watcher last seen {{ state.watcher_seen_at|timesince }} ago.
+        {% else %}
+          The watcher has not reported yet.
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+</div>

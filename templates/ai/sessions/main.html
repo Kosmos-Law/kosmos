@@ -1,0 +1,16 @@
+{% extends "case/index.html" %}
+{% block subcontent %}
+  <div id="ai-sessions"
+       hx-trigger="sessionsChanged from:body"
+       hx-get="{% url 'ai:list' matter.id %}"
+       hx-target="this">{% include "ai/sessions/list.html" %}</div>
+  <script>
+    // A session page in another browser tab says when the list changed.
+    const aiSessionsChannel = new BroadcastChannel('ai-sessions');
+    aiSessionsChannel.onmessage = function(event) {
+      if (event.data.type === 'sessionsChanged' && event.data.matterId === {{ matter.id }}) {
+        document.body.dispatchEvent(new CustomEvent('sessionsChanged'));
+      }
+    };
+  </script>
+{% endblock subcontent %}

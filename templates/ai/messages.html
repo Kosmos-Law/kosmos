@@ -122,16 +122,6 @@
         {% endif %}
       {% else %}
         <div class="ai-message-text">{{ message.content|linebreaks }}</div>
-        {% if not forloop.first %}
-          <button class="ai-message-split"
-                  hx-post="{% url 'ai:split-conversation' message.id %}"
-                  hx-swap="none"
-                  hx-confirm="Split this exchange and all following into a new conversation?"
-                  data-confirm-text="Split"
-                  title="Split from here">
-            <i class="icon-scissors"></i>
-          </button>
-        {% endif %}
         <button class="ai-message-delete"
                 hx-post="{% url 'ai:delete-message' message.id %}"
                 hx-swap="none"
@@ -155,12 +145,8 @@
     {% if intake %}
       <p>Start a conversation about this intake.</p>
       <p class="text-muted">I have access to the intake details, its notes, and the current assessment.</p>
-    {% elif conversation.kind == "agent" %}
-      <p>Start an agentic conversation about this matter.</p>
-      <p class="text-muted">I will read the documents, notes, and timeline I need as I go, and show each step here.</p>
     {% else %}
-      <p>Start a conversation about this matter.</p>
-      <p class="text-muted">I have access to all documents, contacts, timeline, and case information.</p>
+      <p>This conversation has no messages.</p>
     {% endif %}
   </div>
 {% endfor %}

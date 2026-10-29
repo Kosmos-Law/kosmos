@@ -48,14 +48,6 @@
       </div>
     {% else %}
       <div class="filter-tools">
-        <a href="#"
-           class="btn-icon"
-           hx-get="{% url 'ai:new-conversation-prompt' matter.id %}"
-           hx-target="#htmx-modal-container"
-           hx-trigger="click"
-           title="New conversation">
-          <i class="icon-plus"></i>
-        </a>
         <div class="dropdown" x-data="dropdown()">
           <button type="button"
                   id="ai-participant-select"
@@ -104,6 +96,6 @@
       </div>
     {% endif %}
   </div>
-  <div class="toolbar-right">{% include "ai/view-pills.html" with ai_view="conversations" %}</div>
+  <div class="toolbar-right">{% include "ai/view-pills.html" with ai_view="archive" %}</div>
 </div>
 {% include "ai/table.html" %}

@@ -1,213 +1,68 @@
-# AI chat and context
+# The archive and the intake chat
 
-The AI machinery under `apps/ai/` turns a matter's record into a
-system prompt, runs a model call on a background thread, reports progress
-to a polling view, and applies the writes the model was directed to make.
-Two surfaces share it: the case chat (the matter's **AI** tab) and the
-intake chat (`apps/intakes/chat.py`). Agentic-mode internals are on
-[Agentic chat](agent-chat.md). All of it is optional: with no provider
-key configured, none of it is reachable (see
+What is left of the chat that preceded [sessions](sessions.md): the
+`Conversation` and `Message` rows, the archive that shows them on the
+AI tab, the intake chat that still runs on them, and the helpers the
+rest of the AI code shares. The engine itself (the context builder and
+selector, the in-house tool loop, the fenced writes and citation
+vetting after each answer) was retired on 2026-10-29
+([record](../../../decisions/2026-10-29-the-conversation-engine-is-retired.md));
+new questions on a matter are sessions. All of it is optional: with no
+provider key configured, none of it is reachable (see
 [AI is optional](#ai-is-optional)).
 
 ## Where the code is
 
 | Module | Holds |
 |---|---|
-| `apps/ai/models.py` | `Conversation`, `Message` (`MaterialChunk`, the semantic index's rows, stayed with the content in `apps/case/models.py`) |
-| `apps/ai/views.py` | The case chat views: list, send, status poll, cancel, Compose Prompt, context preview |
-| `apps/ai/tasks.py` | `process_ai_request()` (the classic turn), `finalize_response()`, `armed_write_protocols()`, the model dispatch tables, the window-fit guard |
-| `apps/ai/context.py` | The context builders: section formatters, `collect_context_items()`, `assemble_matter_context_with_selection()`, `build_request_info()`, `build_chat_history()` |
-| `apps/ai/selector.py` | The context selector (fast tier): `build_manifest()`, `select_context()`, token estimates and model limits |
+| `apps/ai/models.py` | `Conversation`, `Message`; `Session`, `SessionMessage` (sessions) |
+| `apps/ai/views.py` | The archive: the list under the Archive pill (filter, sort, rename, delete, the AI setting, bulk actions), the read-only conversation window, the citation vetting modal; and `ai_status` / `cancel_request`, the status poll the intake chat uses |
+| `apps/ai/context.py` | The shared helpers: `build_request_info()`, `build_chat_history()`, `load_legal_prompt()`, `SOURCE_LINKING`, and the section formatters (`format_matter_overview()`, `format_contacts()`, …) the session prompt, the matter tools and the MCP API read |
+| `apps/ai/agent_tools.py` | The read-only matter tools (search, documents, email, the matter record, case law); served to sessions by `session_tools.py` |
 | `apps/ai/prompts/legal.md` | The legal system prompt |
-| `apps/llm/status.py` | The cross-process status store and heartbeat |
+| `apps/llm/status.py` | The cross-process status store and heartbeat (the intake chat's turn, the session runtime's live state) |
 | `apps/ai/access.py` | Who may use a conversation and the Financial and Research gates |
-| `apps/llm/anthropic_client.py`, `gemini_client.py` | Provider calls, streaming, prompt caching, the tool loops |
-| `apps/llm/providers.py` | `complete()`, the one call for AI work that is not a matter chat; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
+| `apps/llm/anthropic_client.py`, `gemini_client.py` | `send_to_claude()`, `send_to_gemini_streaming()`: one completion with streaming and prompt caching |
+| `apps/llm/providers.py` | `complete()`, the one call for AI work that is not a session; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
 | `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
 | `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `accounting_enabled` for templates |
-| `apps/ai/fact_blocks.py`, `witness_blocks.py`, `caselaw_blocks.py` | The fenced write blocks |
-| `apps/ai/handles.py`, `citations.py`, `vetting.py` | Leaked `[doc:ID]`-style handles become links; citation extraction and CourtListener verification; the fast-tier vetting job |
+| `apps/ai/fact_blocks.py`, `witness_blocks.py` | The fenced write blocks' parsers, now reached by the MCP API's create routes |
+| `apps/ai/vetting.py` | `has_pending_vetting()`, the reader of stored vetting results |
 | `apps/ai/purge.py` | The closed-matter chat purge |
-| `apps/case/semantic.py`, `apps/llm/embeddings.py` | The pgvector index behind the agent's `search_materials` (the index lives with the content, the embedding call with the providers) |
-| `apps/llm/pricing.py` | Estimated cost for the status bar |
-| `templates/ai/` | The chat window, `status.html` (the poller), `prompt-editor-modal.html`, message partials |
+| `apps/case/semantic.py`, `apps/llm/embeddings.py` | The pgvector index behind `search_materials` |
+| `apps/llm/pricing.py` | Estimated cost per message |
+| `templates/ai/` | The archive list and window, `messages.html` and `message-single.html` (shared with the intake chat), `status.html` (the intake chat's poller), the trail and citation partials; `templates/ai/sessions/` is the session page |
 | `apps/intakes/chat.py` | The intake chat, built on the same models and status protocol |
 
 ## Data model
 
 A `Conversation` belongs to exactly one of a `matter` or an `intake`
 (both `CASCADE`); the code, not the database, keeps that exclusive.
-`user` is who started it (`SET_NULL`). `llm` and `kind` (`classic`, `agent`, or
-the retired `research`) are fixed when the conversation is created.
-`ai_context` (`auto`, `always`, `never`) says whether this conversation is
-offered to other conversations on the matter as a reference, and `summary`
-is the fast-tier précis the selector reads. `vet_citations` turns the
-post-answer vetting job on.
+`user` is who started it (`SET_NULL`). `llm` and `kind` (`classic`,
+`agent`, or the older `research`) say how it was run. `ai_context`
+(`auto`, `always`, `never`) still decides whether the Claude Desktop
+MCP API lists it (`apps/ai/api.py`), and `summary` is the précis the
+engine wrote after each answer.
 
-A `Message` has a `role`, `content`, the sending `user` for user messages,
-token counts, and JSON fields the renderers read: `verified_citations`,
-`activity_log` (the live log preserved on the answer), `agent_run` (agent
-turns) and `research_trail` (old research-kind answers). Both models keep
-`HistoricalRecords`.
+A `Message` has a `role`, `content`, the sending `user` for user
+messages, token counts, and the JSON fields the renderers read:
+`verified_citations`, `activity_log`, `agent_run` (the old agentic
+turns' trails) and `research_trail`. Both models keep
+`HistoricalRecords`. Nothing writes a matter conversation now; the
+intake chat writes its own.
 
-`MaterialChunk` is one embedded chunk of a document,
-email, highlight or fact, unique on `(kind, object_id, chunk_index)`, with
-an HNSW index on its vector; `semantic.py` writes it on save through
-qcluster and `manage.py build_semantic_index` backfills.
+## The intake chat's turn
 
-## How a turn runs
-
-1. **Send.** `views.send_message()` creates the conversation on the first
-   message (title, `llm`, `kind` from the form), stores the user
-   `Message`, seeds `ai_status_<conversation id>` with `starting`, and
-   starts a daemon `threading.Thread` on `tasks.process_ai_request()`.
-   The response is `messages.html` with the poller in it. The intake chat
-   has its own send view and worker (`_process_intake_chat()`) on the
-   same protocol.
-2. **Context.** For a classic matter chat the thread calls
-   `context.assemble_matter_context_with_selection()` (below), appends a
-   linked draft's section when the conversation has one, then
-   `SOURCE_LINKING` (the citing conventions) and whatever write protocols
-   `armed_write_protocols()` returns. An agent conversation branches here
-   to `agent.run_agent_request()` instead.
-3. **History and fit.** `build_chat_history()` prefixes every message
-   with its sent time and, when more than one person has taken part, the
-   sender's name. `fit_prompt_to_window()` drops the oldest messages until
-   the estimate fits 80% of the model window; for a Claude model whose
-   estimate is past half the window it asks the API for an exact count and
-   trims again against 98%. A context that cannot fit on its own raises
-   `PromptTooLargeError`, which becomes the chat's error message.
-4. **Model call.** `GEMINI_MODELS` keys go to
-   `gemini_client.send_to_gemini_streaming()` with thought summaries
-   feeding the status line; everything else goes to
-   `anthropic_client.send_to_claude()`. Fable keys get a higher output
-   ceiling because their thinking cannot be turned off.
-5. **Finalize.** `finalize_response()` applies draft edits, the fenced
-   write blocks, leaked-handle links, and the CourtListener citation check,
-   in that order. It is the one path both modes write through.
-6. **Complete.** The thread writes a `complete` payload (response, tokens,
-   citations, log) under the status key with `FINAL_TTL`, and the next
-   poll stores the assistant `Message`, starts the summary and vetting
-   threads, and deletes the key.
-
-**Compose Prompt** (`views.prompt_editor_modal()`,
-`templates/ai/prompt-editor-modal.html`) is a rich-text editor whose
-markdown is posted to the same `ai-send` route; its hidden `kind` field
-carries the mode the window was opened in, because the first message
-creates the conversation. The draft lives in `localStorage` per conversation.
-
-### What goes into the context
-
-`assemble_matter_context_with_selection()` builds the system prompt in
-this order: `build_request_info()` (today's date, the requesting user,
-the firm roster with titles, so the model never guesses a colleague's
-role), the legal prompt, then `MATTER_CONTEXT_TEMPLATE`: overview,
-contacts, witnesses, proceedings, the always-included items by importance
-tier, tasks, events, time entries and settlement. After the template come
-the selector's **Selected Materials** and an **Also Available** listing of
-what it left out, so the model can name an item and ask for it.
-
-`collect_context_items()` gathers the always-included items: documents,
-saved cases and email threads with `ai_context="always"`, every highlight
-and fact, and other conversations on the matter set to **Always**.
-Items set to **Never** are excluded everywhere.
-
-`format_time_entries(matter, include_billing=...)` lists the work done;
-with `include_billing` each entry also carries its rate, fee, comp flag
-and invoice status. Since 2026-10-02 every requesting user gets that
-detail (the Activity screens show it to anyone who can see the matter).
-Invoices are different: `build_manifest(include_invoices=...)` offers them
-to the selector only when `access.has_financial_access(user)` is true. A
-run with no user sees neither money on time entries nor any invoice.
-
-**Reuse.** The assembled context is cached under `ai_ctx_<conversation id>`
-in the cross-process `ai_status` cache (zlib-compressed, since it is the
-whole system prompt) for `CONTEXT_REUSE_SECONDS` (600) together with a
-fingerprint from `_context_fingerprint()`: count and latest `updated_at`
-per source table, the model, the user and their Financial flag. A follow-up inside ten
-minutes with an unchanged fingerprint skips the selector entirely, which
-also keeps the provider prompt caches warm. Any write to the material,
-including the AI's own fact or witness writes, changes the
-fingerprint. Tasks, events and time entries are deliberately not
-fingerprinted.
-
-**Ceilings.** The selector works to `MODEL_CONTEXT_LIMITS` (about 60% of
-each window) less the fixed sections and a 10k reserve. If the whole
-prompt still estimates past 80% of `MODEL_HARD_LIMITS`, the selected
-items are demoted to the Also Available list; if the always-included
-content alone is still over, tiers are shed reference first, then
-medium, then high (critical items are never dropped) and listed under
-**Omitted Materials**. `estimate_tokens()` uses 2.5 characters per token:
-the folk figure of 4 let a prompt through that the provider rejected.
-
-### The selector
-
-`selector.build_manifest()` lists every candidate as a `ManifestItem`
-(type, id, name, category, date, a description, word count, importance)
-with a `content_map` of the full text, resolved lazily for invoices and
-case law (the opinion is fetched from CourtListener on selection). The
-manifest covers `auto` documents with finished OCR,
-`auto` saved cases, other `auto` conversations (described by their
-`summary`), `auto` email threads as one item per thread, and invoices when
-permitted. With `include_always=True` (the agent's
-index) the `always` items are listed too, flagged `pinned`, each with the
-`handle` the agent tools read by.
-
-`select_context()` skips the model call when the matter items total under
-`SMALL_MATTER_THRESHOLD` (30,000 words) and there are no invoices:
-everything goes in. Otherwise `SELECTOR_SYSTEM_PROMPT` and
-the formatted manifest go to `providers.complete()` at the fast tier,
-which returns a JSON list
-of `{type, id}`; if the call or the parse fails, `_fallback_by_importance()`
-fills the budget by importance. Invoices never ride the short-circuit or the
-fallback: they enter only when the selector names them.
-
-### The system prompt file
-
-`apps/ai/prompts/legal.md` is read fresh on every call by
-`context.load_legal_prompt()` (an edit takes effect without a restart)
-and its `[JURISDICTION]` placeholders are replaced with the matter's
-jurisdiction, else the firm's, else "United States common law". The same
-text heads the agent's orientation. The operator page
-[AI providers and research](../../../admin/integrations/ai.md) describes
-what to edit in it.
-
-### Providers
-
-The picker keys in `Conversation.LLM_CHOICES` map to provider model ids
-in `tasks.CLAUDE_MODELS` and `tasks.GEMINI_MODELS`; retired keys stay in
-the tables so old conversations still send, and
-`views.available_llm_choices()` offers only the models whose provider is
-in `configured_providers()`. The clients read their key through
-`apps.settings.ai.gemini_key()` and `anthropic_key()`, never from
-`settings` directly: the `ANTHROPIC_API_KEY` and `GEMINI_API_KEY`
-settings from `config/.env` (see the
-[environment reference](../../../reference/environment.md)) first, then
-a key an admin stored under Settings > Integrations. Every model in
-both tables has a one-million-token window. Each client marks the system
-prompt cacheable (Anthropic's `cache_control`; a Gemini `cachedContents`
-object held ten minutes for prompts over 130k characters) and streams so
-a cancel stops the bill. Fable keys carry Anthropic's server-side refusal
-fallback to Opus 5 (`anthropic_client.FALLBACK_MODELS`).
-
-Everything else goes through `providers.complete(system, messages,
-tier)`: the selector, conversation, document and case summaries,
-citation vetting, intake extraction and assessment, the intake chat and
-AI quick-add. A tier maps to one model per provider (`MODELS`: `fast` is
-`gemini-2.5-flash` or `claude-sonnet-4-6`, `deep` is `gemini-pro-latest`
-or `claude-sonnet-5`), and `provider(prefer)` picks the preferred
-provider when it has a key, else the first configured one, Gemini first.
-So either key alone runs every feature. The intake chat stores
-`chat_llm(DEEP)` as its `Conversation.llm` and passes the matching
-`prefer` on each turn, so a chat stays on the provider it started on;
-quick-add passes the firm's model choice as `prefer`. With no provider,
-`complete()` raises `AINotConfigured`, which callers never reach in
-practice because the gates below stop them first.
-
-Embeddings are the exception: `embeddings.py` is Gemini-only. Without
-`gemini_key()`, `semantic._enqueue()` queues nothing and
-`semantic_entries()` returns an empty list, so search is keyword-only
-with no error.
+`apps/intakes/chat.py` runs a turn on a thread: it seeds the run's entry
+in the status cache, calls `providers.complete()` with the intake's
+prompt, and writes the finished answer into the entry. The window polls
+`ai_status` (`ai/status.html`, every second with an idiomorph swap);
+when the entry says complete or error, the view writes the answer as a
+`Message` and answers with `message-single.html` under a different
+root, which ends the poll. A missing entry while a reply is outstanding
+means the thread died with its process, and the view writes an
+"interrupted" note instead of polling forever. `cancel_request` marks
+the entry cancelled and deletes the pending question.
 
 ### AI is optional
 
@@ -261,115 +116,37 @@ instead of spending. Request the `ai_off` or `courtlistener_off` fixture
 to test the unset case; `apps/case/tests/test_ai_optional.py` and
 `apps/settings/tests/test_ai_keys.py` are the examples.
 
-### Status and the poller
-
-`status.py` holds the run status under `ai_status_<conversation id>` in
-the `ai_status` cache, a `DatabaseCache` on the `ai_status_cache` table
-(`config/settings.py`; `manage.py createcachetable` creates it, not a
-migration). It replaced the per-process `LocMemCache` on 2026-08-17:
-production runs several gunicorn workers, a poll usually lands in a
-different worker from the run thread, and each worker's private view made
-most first polls find nothing and fabricate "server restarted" replies.
-
-Liveness is TTL-based. In-flight writes carry `RUNNING_TTL` (180 s) and a
-`RunHeartbeat` thread re-touches the entry every `HEARTBEAT_SECONDS`
-(30). Terminal payloads carry `FINAL_TTL` (600 s) so a poller that arrives
-late can still collect them. `views.ai_status()` is shared by the two
-chats: a missing key while the latest message is still the user's means
-the process died, and the view writes the "interrupted" assistant message
-itself; `complete` and `error` are stored as messages; `cancelled` is left
-in place so the thread's `is_cancelled()` keeps seeing it.
-
-`templates/ai/status.html` polls every second with `hx-swap="morph"`
-(idiomorph) so the box is patched, not replaced; a page that hosts it
-must load idiomorph. The interval ends when a terminal reply swaps in a
-different root element, and `views._terminal()` adds `HX-Reswap: outerHTML`
-so that swap also works without idiomorph: before it, the intake window's
-poller ran on forever and wrote an "interrupted" message every second
-(2026-08-23).
-
-### Fenced write blocks
-
-The model writes to the record only through fenced blocks in its reply:
-`create-facts` and `create-witnesses` (lists) and `save-caselaw` (agent
-conversations only). The intake chat has its own `update-intake` block. A protocol is added to the system prompt
-only when the last few user messages (the current one and the three
-before it) match its trigger pattern (`FACTS_TRIGGER_RE` and the like),
-so an ordinary chat carries no standing write instructions to misfire
-on, and a follow-up ("also add the crash date") keeps the protocol armed.
-
-`finalize_response()` applies each block with a regex substitution over
-the reply (`apply_fact_blocks()`, `apply_witness_blocks()`,
-`apply_caselaw_blocks()`), replacing the block with
-confirmation lines so the user and the model's later turns both see what
-happened. Nothing is confirmed first: the row exists by the time the
-answer renders. A block that is not valid JSON is left as text and writes
-nothing. Entry creators are forgiving on optional fields and strict on
-the row itself (a fact's description, a witness's name); cited document
-and highlight ids are filtered to the matter, so a guessed id links
-nothing; a same-named witness is reused; a case already saved gets the
-proposition appended to its notes rather than a duplicate row
-(`(matter, cluster_id)` is unique). Each creator is also what the MCP
-server's write tools call (see [MCP](../mcp.md)).
-
-## Background work
-
-Chat turns are not qcluster jobs: they run on daemon threads inside the
-web worker, so a deploy or a `.py` reload kills them, the heartbeat
-stops, the key expires and the next poll reports the interruption. So do
-the conversation summary (`tasks.generate_conversation_summary()`) and
-the vetting job, started from the status view.
-
-`purge.purge_closed_chats()` deletes every matter conversation, its
-messages and their history rows once the matter's current Closed streak
-(read from the matter's history) is older than `CHAT_RETENTION_DAYS`
-(180; 0 keeps chats), from the weekly `chat-purge-weekly` schedule or the
-`purge_closed_chats` command. Intake chats are not in scope: they are
-deleted when ended or discarded.
-
 ## Access
 
 Routes under `/case/<matter id>/...` are checked for matter membership by
 `PermissionMiddleware.process_view()` in `apps/accounts/middleware.py`.
-That check never sees a conversation id in the query string or the body,
-and the status, cancel and intake routes name no matter, so `access.py`
-fills the gaps: `conversation_for_user()` (a matter chat needs the
-matter, an intake chat the Intakes permission) guards the poll and cancel views, and
-`matter_conversation_for_user()` ties a posted conversation id to the
-matter in the URL with a 404, so a wrong id confirms nothing.
+The status, cancel and intake routes name no matter, so `access.py`
+fills the gap: `conversation_for_user()` (a matter chat needs the
+matter, an intake chat the Intakes permission) guards the poll and
+cancel views. The session views check the matter themselves
+(`sessions._session_for`).
 
-The reply is built for the user who asks (tightened 2026-10-02):
-`has_financial_access()` (admin or `perm_financial`) decides whether
-invoices are offered, and `has_research_access()` (admin or
-`perm_research`) whether the agent gets the case-law tools and the save
-protocol. The matrix is in the
+`has_financial_access()` (admin or `perm_financial`) decides whether a
+session's tools offer invoices, and `has_research_access()` (admin or
+`perm_research`) whether they offer case law. The matrix is in the
 [permissions reference](../../../reference/permissions.md).
 
 ## Things that bite
 
-- **Never edit a `.py` while a run may be in flight.** The worker reloads,
-  the daemon thread dies with it, and the user gets the "interrupted"
-  reply. Agent runs are minutes long.
-- **Order inside `finalize_response()` is fixed.** Draft edits first;
-  handles after the blocks that consume them; citations last.
-- **The model tables must stay in step.** A new picker key needs
-  `LLM_CHOICES` (and a migration for the choices), `CLAUDE_MODELS` or
-  `GEMINI_MODELS`, `MODEL_CONTEXT_LIMITS`, `MODEL_HARD_LIMITS` and the
-  `pricing.py` rates. Anthropic publishes no "latest" alias, so each
-  version is a new key.
 - **The intake chat tests monkeypatch `threading.Thread`** to
   run the worker inline; `status.py` binds `Thread` at import so the
   heartbeat stays a real thread, or that patch turns its wait loop into a
   hang.
+- **`message-single.html` and `messages.html` are shared** by the
+  archive window and the intake chat; a change to one shape shows in
+  both.
 
 ## Related
 
+- [Sessions](sessions.md), the engine of new questions on a matter.
 - [AI chat](../../../guide/ai-chat.md) in the user guide shows the screens.
 - [AI providers and research](../../../admin/integrations/ai.md) covers
   keys, the prompt file and retention for operators;
   [Background worker](../../../admin/worker.md) covers qcluster.
-- Neighbouring pages: [Agentic chat](agent-chat.md),
-  [MCP server and JSON APIs](../mcp.md),
-  [Case building](../case-building.md),
-  [Drafts](../drafts.md),
+- Neighbouring pages: [MCP server and JSON APIs](../mcp.md),
   [Email and intakes](../email-and-intakes.md).
