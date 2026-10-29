@@ -80,16 +80,7 @@
                 <i class="icon-folder-x with-text"></i>No folder linked
               </a>
             {% endif %}
-            <select name="model"
-                    class="session-model"
-                    title="Model for the next turn"
-                    hx-post="{% url 'ai:session-model' session.id %}"
-                    hx-trigger="change"
-                    hx-swap="none">
-              {% for key, label in model_choices %}
-                <option value="{{ key }}" {% if key == session.model %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
+            {% include "ai/sessions/model.html" %}
           </span>
         </header>
         <div class="ai-chat-scroll">
@@ -100,26 +91,25 @@
             <form id="chatForm"
                   hx-post="{% url 'ai:session-send' session.id %}"
                   hx-target="#messageContainer"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="find button[type='submit']">
+                  hx-swap="innerHTML">
               <textarea name="message"
                         id="aiMessageInput"
-                        placeholder="Ask about this matter..."
+                        placeholder="Ask about this matter... (Enter sends, Shift+Enter for a new line)"
                         rows="2"
                         required
                         autofocus
                         onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"></textarea>
-              <button type="submit" class="ai-send-btn" title="Send">
-                <i class="icon-send"></i>
-              </button>
             </form>
           </div>
         </div>
       </main>
     </div>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+    <script src="{% static_v 'js/alpine-components.js' %}"></script>
     <script src="{% static_v 'js/ai-history-panel.js' %}"></script>
     <script src="{% static_v 'js/sessions.js' %}"></script>
     <script>window.aiSessionMatterId = {{ matter.id }};</script>
+    <script src="{% static_v 'js/theme.js' %}"></script>
   </body>
 </html>

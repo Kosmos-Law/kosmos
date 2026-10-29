@@ -146,3 +146,9 @@ STEP_ICONS = {
 @register.filter
 def session_step_icon(name):
     return STEP_ICONS.get(str(name).split("__")[-1], "icon-wrench")
+
+
+@register.filter
+def session_step_count(trail):
+    """The tool calls in a turn's trail (narration and reasoning are not steps)."""
+    return sum(1 for step in trail or [] if step.get("kind", "tool") == "tool")

@@ -1,7 +1,9 @@
-// The session page: keep the history rail in step with the transcript, and
-// tell the AI tab in another browser tab when this session changed.
+// The session page: keep the history rail in step with the transcript,
+// follow the live turn without fighting the reader, and tell the AI tab
+// in another browser tab when this session changed.
 (function () {
   const channel = new BroadcastChannel("ai-sessions");
+  let stickToBottom = true;
 
   function scrollToMessage(id) {
     const el = document.getElementById(id);
@@ -37,29 +39,86 @@
     }
   }
 
+  function scroller() {
+    return document.querySelector(".ai-chat-scroll");
+  }
+
   function scrollToBottom() {
-    const container = document.querySelector(".ai-chat-scroll");
+    const container = scroller();
     if (container) container.scrollTop = container.scrollHeight;
+  }
+
+  // The live block replaces the transcript every second. A step the
+  // reader opened stays open across the swap, and the view follows the
+  // bottom only while the reader is already there.
+  let openSteps = new Set();
+
+  function rememberOpenSteps() {
+    openSteps = new Set(
+      Array.from(document.querySelectorAll("#messageContainer details[open][id]")).map((d) => d.id)
+    );
+  }
+
+  function restoreOpenSteps() {
+    openSteps.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.open = true;
+    });
+  }
+
+  function stopTurn() {
+    const stop = document.querySelector(".session-stop");
+    if (stop) { stop.click(); return true; }
+    return false;
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     updatePromptList();
     scrollToBottom();
+    const container = scroller();
+    if (container) {
+      container.addEventListener("scroll", () => {
+        stickToBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+      });
+    }
     const form = document.getElementById("chatForm");
+    const input = document.getElementById("aiMessageInput");
     form.addEventListener("htmx:afterRequest", (event) => {
       if (event.detail.successful) {
-        document.getElementById("aiMessageInput").value = "";
+        input.value = "";
+        stickToBottom = true;
         channel.postMessage({ type: "sessionsChanged", matterId: window.aiSessionMatterId });
       }
     });
+    document.body.addEventListener("htmx:beforeSwap", (e) => {
+      if (e.detail.target && e.detail.target.id === "messageContainer") rememberOpenSteps();
+    });
     document.body.addEventListener("htmx:afterSwap", (e) => {
       if (e.target.id === "messageContainer") {
+        restoreOpenSteps();
         updatePromptList();
-        scrollToBottom();
+        if (stickToBottom) scrollToBottom();
+        if (!document.querySelector(".session-live")) {
+          channel.postMessage({ type: "sessionsChanged", matterId: window.aiSessionMatterId });
+        }
       }
       if (e.target.id === "sessionTitle") {
         document.title = e.target.innerText.trim().substring(0, 40) + " - AI";
         channel.postMessage({ type: "sessionsChanged", matterId: window.aiSessionMatterId });
+      }
+    });
+    // Esc stops the turn in progress; pressed twice within half a second
+    // it empties the message box.
+    let lastEscape = 0;
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const now = Date.now();
+      if (now - lastEscape < 500) {
+        input.value = "";
+        lastEscape = 0;
+      } else {
+        stopTurn();
+        lastEscape = now;
       }
     });
     document.getElementById("promptList").addEventListener("mouseover", (e) => {

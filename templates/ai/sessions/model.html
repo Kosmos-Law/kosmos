@@ -1,0 +1,28 @@
+{% comment %}
+The model picker in the session page's header: a badge that opens a
+menu, like the toolbar filters. Choosing one posts and this fragment
+comes back with the new label; the choice applies from the next prompt.
+{% endcomment %}
+<div class="dropdown session-model" id="sessionModel" x-data="dropdown()">
+  <button type="button"
+          class="app-badge session-model-btn"
+          x-ref="button"
+          @click="toggle()"
+          :aria-expanded="open"
+          title="Model for the next prompt">
+    <i class="icon-sparkles with-text"></i>{{ session.get_model_display }}
+    <small><i class="icon-chevron-down"></i></small>
+  </button>
+  <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+    {% for key, label in model_choices %}
+      <li>
+        <a class="dropdown-item{% if key == session.model %} active{% endif %}"
+           href="#"
+           hx-post="{% url 'ai:session-model' session.id %}"
+           hx-vals='{"model": "{{ key }}"}'
+           hx-target="#sessionModel"
+           hx-swap="outerHTML">{{ label }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>

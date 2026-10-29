@@ -80,6 +80,7 @@ def _page_context(request, session):
     totals = session.messages.aggregate(
         cost=Sum("cost_usd"),
         input=Sum("input_tokens"),
+        cached=Sum("cache_read_tokens"),
         output=Sum("output_tokens"),
     )
     return {
@@ -186,7 +187,11 @@ def session_model(request, session_id):
         return HttpResponse("That model is not available to you.", status=403)
     session.model = model
     session.save(update_fields=["model", "updated_at"])
-    response = HttpResponse(status=204)
+    response = render(
+        request,
+        "ai/sessions/model.html",
+        {"session": session, "model_choices": Session.model_choices_for(request.user)},
+    )
     response["HX-Trigger"] = "sessionsChanged"
     return response
 

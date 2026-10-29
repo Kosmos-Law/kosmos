@@ -11,7 +11,7 @@ firm's files. Record: [AI chat becomes Claude Code sessions
 1. `session_send` records the prompt as a `SessionMessage` (role user)
    and creates the answer's row (role assistant, status `pending`). The
    first prompt names the session. The page's transcript partial now
-   ends in a live block that polls `session_live` every two seconds.
+   ends in a live block that polls `session_live` every second.
 2. The sessions service (`manage.py run_sessions`,
    `deploy/systemd/sessions.service`) polls for pending answers and runs
    each on a pool thread, `SESSIONS_CONCURRENCY` at a time. A heartbeat
@@ -28,16 +28,39 @@ firm's files. Record: [AI chat becomes Claude Code sessions
    `SESSIONS_HOME`, where the harness keeps its transcripts; `resume`
    is the session's `sdk_session_id` from the previous turn. Caps:
    `SESSIONS_MAX_TURNS` and `SESSIONS_MAX_BUDGET_USD` per turn.
-4. As messages arrive, `Turn` keeps the text and the trail (one entry
-   per tool call, with a readable summary, marked done or error when
-   its result comes back) and flushes them to the cache every half
-   second; a cancel flag in the cache (`session_cancel`) interrupts
-   the harness. The cache is a database table, so the writes hop to a
-   thread from the event loop.
+4. As messages arrive, `Turn` keeps the turn's events in order: the
+   model's narration (`text`), its reasoning when the harness shows it
+   (`thinking`), and each tool call (`tool`: a readable summary, what
+   it asked for with the folder path stripped, and, once the result
+   comes back, an outcome line, a 600-character preview, the error
+   flag and the duration). With `include_partial_messages` the text
+   being streamed rides along as a draft event ahead of its block, and
+   the name of the call being prepared gives the activity line
+   ("Read ...", "Writing", "Thinking"). The state flushes to the cache
+   every half second; a cancel flag in the cache (`session_cancel`)
+   interrupts the harness. The cache is a database table, so the
+   writes hop to a thread from the event loop.
 5. On the result the answer is saved: the final text (the harness's
-   `result`, or the accumulated text), the trail, tokens, cost,
-   duration, the status (`done`, `failed`, `cancelled`), and the
-   session's `sdk_session_id`.
+   `result`, or the accumulated narration), the events as the trail
+   (less the final text, which is the answer), tokens (uncached plus
+   cache writes as input, cache reads apart), cost, duration, the
+   status (`done`, `failed`, `cancelled`), and the session's
+   `sdk_session_id`.
+
+## The page
+
+`templates/ai/sessions/`. `steps.html` renders the same event list
+live and from a saved trail, Claude Code's transcript shape: a muted
+call line with an elbow outcome line under it, opening to what was
+asked and what came back; narration in full strength between the
+calls. While a turn is open the live block shows the rows as they
+happen under an activity line with a Stop button; once saved, the rows
+fold into a "Worked for 8s · 3 steps" line above the answer.
+`sessions.js` keeps a row the reader opened open across the polls and
+follows the bottom only while the reader is already there. The model
+is a badge-styled dropdown (`model.html`, Alpine's `dropdown()`) that
+posts and comes back with the new label; the composer is the box
+alone, Enter sends.
 
 ## The tools
 

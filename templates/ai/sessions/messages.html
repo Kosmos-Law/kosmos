@@ -1,9 +1,10 @@
 {% load humanize markdown_extras ai_extras %}
 {% comment %}
-The session's transcript. The agent's answer renders as markdown with the
-trail of what it did above it; a prompt is plain text. While a turn is
-open the tail is the live block, fed from the status cache, and this
-partial polls itself until the turn closes.
+The session's transcript. A prompt is plain text; an answer shows what
+the agent did (folded into a "Worked for" line) above the answer. While
+a turn is open, the tail is the live block, fed from the status cache:
+the steps as they happen, the text as it streams, and a line saying what
+the agent is doing now. The partial polls itself until the turn closes.
 {% endcomment %}
 {% for message in messages %}
   {% if message.role == "user" %}
@@ -28,17 +29,33 @@ partial polls itself until the turn closes.
         {% if message.status == "failed" %}
           <span class="session-turn-failed"><i class="icon-alert-triangle with-text"></i>Failed</span>
         {% elif message.status == "cancelled" %}
-          <span class="session-turn-cancelled">Cancelled</span>
+          <span class="session-turn-cancelled">Stopped</span>
         {% endif %}
       </div>
       <div class="ai-message-content">
-        {% include "ai/sessions/trail.html" with trail=message.trail open=False %}
-        {% if message.content %}<div class="ai-message-text">{{ message.content|render_markdown }}</div>{% endif %}
+        {% if message.trail %}
+          <details class="session-work" id="work-{{ message.id }}">
+            <summary>
+              <i class="icon-workflow"></i>
+              Worked for {{ message.duration_ms|ms_short|default:"a moment" }}
+              {% with n=message.trail|session_step_count %}
+                {% if n %}· {{ n }} step{{ n|pluralize }}{% endif %}
+              {% endwith %}
+            </summary>
+            {% include "ai/sessions/steps.html" with steps=message.trail %}
+          </details>
+        {% endif %}
+        {% if message.content %}
+          <div class="ai-message-text ai-markdown">{{ message.content|render_markdown }}</div>
+        {% endif %}
         {% if message.error %}<div class="session-turn-error">{{ message.error }}</div>{% endif %}
         {% if message.status == "done" %}
           <div class="session-turn-meta">
-            {% if message.duration_ms %}<span>{{ message.duration_ms|ms_short }}</span>{% endif %}
-            {% if message.input_tokens %}<span>{{ message.input_tokens|ktokens }} in</span>{% endif %}
+            {% if message.input_tokens %}
+              <span>{{ message.input_tokens|ktokens }} in
+                {% if message.cache_read_tokens %}+ {{ message.cache_read_tokens|ktokens }} cached{% endif %}
+              </span>
+            {% endif %}
             {% if message.output_tokens %}<span>{{ message.output_tokens|ktokens }} out</span>{% endif %}
             {% if message.cost_usd %}<span>{{ message.cost_usd|usd }}</span>{% endif %}
           </div>
@@ -62,42 +79,46 @@ partial polls itself until the turn closes.
   <div class="ai-message ai-message-assistant session-live"
        id="message-{{ open_turn.id }}"
        hx-get="{% url 'ai:session-live' session.id %}"
-       hx-trigger="every 2s"
+       hx-trigger="every 1s"
+       hx-sync="this:drop"
        hx-target="#messageContainer"
        hx-swap="innerHTML">
     <div class="ai-message-header">
       <i class="icon-bot"></i>
       <span>Claude</span>
-      {% if live %}
-        <span class="ai-message-time">{{ live.elapsed|duration_short }}
-          {% if live.steps %}· {{ live.steps }} step{{ live.steps|pluralize }}{% endif %}
-        </span>
-      {% endif %}
-      <button type="button"
-              class="ai-cancel-btn"
-              hx-post="{% url 'ai:session-cancel' session.id %}"
-              hx-swap="none"
-              title="Stop this turn">
-        <i class="icon-x"></i>
-      </button>
     </div>
     <div class="ai-message-content">
       {% if live %}
-        {% include "ai/sessions/trail.html" with trail=live.trail open=True %}
-        {% if live.text %}
-          <div class="ai-message-text">{{ live.text|render_markdown }}</div>
-        {% else %}
-          <div class="session-working">
-            <i class="icon-hourglass spin"></i> Working...
-          </div>
+        {% if live.events %}
+          {% include "ai/sessions/steps.html" with steps=live.events %}
         {% endif %}
+        <div class="session-activity">
+          <span class="session-activity-dot"></span>
+          <span class="session-activity-text">{{ live.activity|default:"Working" }}</span>
+          <span class="session-activity-elapsed">{{ live.elapsed|duration_short }}</span>
+          <button type="button"
+                  class="session-stop"
+                  hx-post="{% url 'ai:session-cancel' session.id %}"
+                  hx-swap="none"
+                  title="Stop this turn (Esc)">
+            <i class="icon-square with-text"></i>Stop
+          </button>
+        </div>
       {% elif not service_alive %}
         <div class="session-note">
           <i class="icon-alert-triangle with-text"></i>The sessions service is not running on the server, so this prompt is waiting. An administrator can start it; the prompt is kept.
         </div>
       {% else %}
-        <div class="session-working">
-          <i class="icon-hourglass spin"></i> Starting...
+        <div class="session-activity">
+          <span class="session-activity-dot"></span>
+          <span class="session-activity-text">Starting</span>
+          <button type="button"
+                  class="session-stop"
+                  hx-post="{% url 'ai:session-cancel' session.id %}"
+                  hx-swap="none"
+                  title="Stop this turn (Esc)">
+            <i class="icon-square with-text"></i>Stop
+          </button>
         </div>
       {% endif %}
     </div>
@@ -105,7 +126,11 @@ partial polls itself until the turn closes.
 {% endif %}
 {% if totals and not open_turn %}
   <div class="session-totals">
-    {% if totals.input %}<span>{{ totals.input|ktokens }} in · {{ totals.output|ktokens }} out</span>{% endif %}
+    {% if totals.input %}
+      <span>{{ totals.input|ktokens }} in
+        {% if totals.cached %}+ {{ totals.cached|ktokens }} cached{% endif %}
+      · {{ totals.output|ktokens }} out</span>
+    {% endif %}
     {% if totals.cost %}<span>{{ totals.cost|usd }} this session</span>{% endif %}
   </div>
 {% endif %}

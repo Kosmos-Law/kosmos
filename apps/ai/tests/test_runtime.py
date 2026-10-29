@@ -167,11 +167,18 @@ def test_a_turn_records_the_answer_trail_usage_and_harness_session(harness, matt
     session.refresh_from_db()
     assert answer.status == "done"
     assert answer.content == "The discovery deadline is **2026-12-01**."
-    assert [s["summary"] for s in answer.trail] == [
+    # The trail is the turn in order: narration, then each call with its
+    # outcome; the final text is the answer, not a step.
+    assert [e["kind"] for e in answer.trail] == ["text", "tool", "tool"]
+    assert answer.trail[0]["text"] == "Let me look at the evidence folder."
+    assert [e["summary"] for e in answer.trail[1:]] == [
         "Glob Evidence/*.pdf",
         "Search: deadline; scheduling order",
     ]
-    assert answer.trail[1]["error"] is True and answer.trail[0]["pending"] is False
+    glob, search = answer.trail[1:]
+    assert glob["pending"] is False and glob["outcome"] == "a.pdf"
+    assert glob["input"] == "pattern: Evidence/*.pdf"
+    assert search["error"] is True and search["outcome"] == "{}"
     assert (answer.input_tokens, answer.output_tokens, answer.cache_read_tokens) == (
         5000,
         300,
@@ -258,19 +265,20 @@ def test_send_opens_a_turn_and_the_page_polls_until_it_closes(harness, matter):
     session = Session.objects.create(matter=matter, user=client.user)
     send = reverse("ai:session-send", args=[session.id])
     html = client.post(send, {"message": "Deadlines?"}).content.decode()
-    assert "session-live" in html and 'hx-trigger="every 2s"' in html
+    assert "session-live" in html and 'hx-trigger="every 1s"' in html
     assert "sessions service is not running" in html  # no heartbeat yet
     assert client.post(send, {"message": "again"}).status_code == 409
 
     runtime.service_heartbeat()
     html = client.get(reverse("ai:session-live", args=[session.id])).content.decode()
-    assert "Starting..." in html
+    assert "Starting" in html
 
     answer = session.messages.get(role="assistant")
     runtime.run_turn(answer.id)
     html = client.get(reverse("ai:session-live", args=[session.id])).content.decode()
     assert "session-live" not in html
-    assert "2026-12-01" in html and "2 steps" in html
+    assert "2026-12-01" in html and "Worked for 4s" in html and "2 steps" in html
+    assert "Let me look at the evidence folder." in html  # the narration, in the fold
     assert "this session" in html  # totals line
 
 
@@ -284,3 +292,93 @@ def test_cancel_before_pickup_closes_the_turn_without_the_harness(harness, matte
         client.post(reverse("ai:session-cancel", args=[session.id])).status_code == 204
     )
     assert session.messages.get(role="assistant").status == "cancelled"
+
+
+def _event(**event):
+    from claude_agent_sdk import StreamEvent
+
+    return StreamEvent(uuid="u", session_id="s", event=event)
+
+
+def test_the_live_state_streams_text_and_shows_the_current_call(harness, matter):
+    """Stream events put the text being written ahead of its block, and
+    name the call being prepared; the full block replaces the draft."""
+    client = _login("ada", role="ADMIN")
+    session, answer = _turn(matter, client.user)
+    turn = runtime.Turn(answer, cwd="/x")
+
+    turn.on_message(
+        _event(
+            type="content_block_start",
+            index=0,
+            content_block={"type": "text", "text": ""},
+        )
+    )
+    turn.on_message(
+        _event(
+            type="content_block_delta",
+            index=0,
+            delta={"type": "text_delta", "text": "Looking at "},
+        )
+    )
+    turn.on_message(
+        _event(
+            type="content_block_delta",
+            index=0,
+            delta={"type": "text_delta", "text": "the folder."},
+        )
+    )
+    state = turn.state()
+    assert state["events"][-1] == {
+        "kind": "text",
+        "text": "Looking at the folder.",
+        "draft": True,
+    }
+    assert state["activity"] == "Writing"
+
+    turn.on_message(
+        _event(
+            type="content_block_start",
+            index=1,
+            content_block={"type": "tool_use", "id": "t9", "name": "Read", "input": {}},
+        )
+    )
+    assert turn.state()["activity"] == "Read ..."
+
+    turn.on_message(
+        AssistantMessage(
+            content=[
+                TextBlock(text="Looking at the folder."),
+                ToolUseBlock(
+                    id="t9", name="Read", input={"file_path": "/x/Evidence/TRO.pdf"}
+                ),
+            ],
+            model="claude-opus-5-5",
+        )
+    )
+    state = turn.state()
+    assert [e["kind"] for e in state["events"]] == ["text", "tool"]  # the draft is gone
+    assert state["events"][1]["input"] == "file_path: Evidence/TRO.pdf"
+    assert state["activity"] == "Read TRO.pdf" and state["steps"] == 1
+
+    turn.on_message(
+        UserMessage(
+            content=[
+                ToolResultBlock(tool_use_id="t9", content="line\n" * 40, is_error=False)
+            ]
+        )
+    )
+    assert turn.state()["events"][1]["outcome"] == "40 lines"
+    assert turn.state()["activity"] == "Thinking"
+
+
+def test_the_harness_pdf_notice_becomes_a_size_and_the_folder_path_is_dropped():
+    cwd = "/home/x/Dropbox/Firm/Matters/Emling"
+    notice = f"PDF file read: {cwd}/Record/Order.pdf (103.3KB)"
+    assert runtime._tool_outcome("Read", notice, False, cwd) == "PDF, 103.3KB"
+    pages = f"PDF pages extracted: 3 page(s) from {cwd}/Record/Mot.pdf (13.5MB)"
+    assert runtime._tool_outcome("Read", pages, False, cwd) == "3 pages, 13.5MB"
+    error = f"File does not exist. Note: your current working directory is {cwd}."
+    assert runtime._tool_outcome("Read", error, True, cwd) == "File does not exist."
+    assert runtime._tool_outcome("Grep", "No files found", False) == "No files found"
+    assert runtime._tool_outcome("Grep", "a\nb\nc\nd", False) == "4 lines"

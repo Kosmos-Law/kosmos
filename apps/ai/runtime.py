@@ -8,14 +8,17 @@ The transcript is the harness's (resumed by ``sdk_session_id`` on the
 next turn); Kosmos keeps the prompt, the answer, the readable trail and
 the cost.
 
-Live progress goes to the ``ai_status`` cache under the message's key,
-which the page polls; a cancel flag in the same cache interrupts the
-turn. The sessions service (``manage.py run_sessions``) is what calls
+Live progress (the turn's events: narration, reasoning, each tool call
+with its outcome, and the text being streamed) goes to the ``ai_status``
+cache under the message's key, which the page polls; a cancel flag in
+the same cache interrupts the turn. The sessions service (``manage.py run_sessions``) is what calls
 this, on a thread per turn.
 """
 
 import asyncio
+import json
 import logging
+import re
 import time
 from pathlib import Path
 
@@ -105,14 +108,92 @@ def _step_summary(name: str, tool_input: dict) -> str:
     return short
 
 
-class Turn:
-    """The state of one running turn, flushed to the cache as it goes."""
+def _text_of(content) -> str:
+    """The text of a tool result: a string, or text blocks."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(
+            str(block.get("text", "")) for block in content if isinstance(block, dict)
+        )
+    return ""
 
-    def __init__(self, message):
+
+def _tool_input(name: str, tool_input: dict, cwd: str) -> str:
+    """What the call asked for, in one short line, for the step's detail."""
+    short = name.split("__")[-1]
+    if short in ("Read", "Grep", "Glob"):
+        parts = []
+        for key in ("file_path", "pattern", "path", "glob"):
+            value = tool_input.get(key)
+            if value:
+                value = str(value)
+                if cwd and value.startswith(cwd):
+                    value = value[len(cwd) :].lstrip("/") or "."
+                parts.append(f"{key}: {value}")
+        return "  ".join(parts)[:300]
+    try:
+        return json.dumps(tool_input, ensure_ascii=False)[:300]
+    except (TypeError, ValueError):
+        return str(tool_input)[:300]
+
+
+_PDF_NOTICE = re.compile(
+    r"^PDF (?:file read|pages extracted): (?:(\d+) page\(s\) from )?.*\(([\d.]+ ?[KMG]?B)\)$",
+    re.S,
+)
+
+
+def _tool_outcome(name: str, text: str, is_error: bool, cwd: str = "") -> str:
+    """The elbow line under a finished call: an error, a size, or the
+    text itself when it is short."""
+    text = text.strip()
+    if cwd:
+        text = text.replace(cwd + "/", "").replace(cwd, ".")
+    if is_error:
+        # The harness appends its working directory to a missing-file
+        # error; the reader knows the folder.
+        text = re.sub(
+            r"\s*Note: your current working directory is .*$", "", text, flags=re.S
+        )
+        return (text.splitlines() or ["error"])[0][:200]
+    if not text:
+        return "nothing"
+    # The harness answers a PDF read with a notice (the pages travel as a
+    # document block); its size and page count are the outcome.
+    notice = _PDF_NOTICE.match(text)
+    if notice:
+        pages, size = notice.groups()
+        return f"{pages} pages, {size}" if pages else f"PDF, {size}"
+    lines = text.count("\n") + 1
+    # A one-line answer ("No files found", a number, a short value) is
+    # its own outcome; longer results are counted.
+    if lines == 1 and len(text) <= 160:
+        return text
+    short = name.split("__")[-1]
+    if short == "Glob":
+        return f"{lines} files"
+    return f"{lines} lines"
+
+
+class Turn:
+    """The state of one running turn, flushed to the cache as it goes.
+
+    ``events`` is the turn's transcript so far, in order: the model's
+    narration (``text``), its reasoning when the harness shows it
+    (``thinking``) and each tool call (``tool``) with what it asked for
+    and what came back. The page renders the same list live and, once
+    the turn is saved, from the message's trail. ``draft`` is the text
+    of the block being streamed, shown ahead of its full block.
+    """
+
+    def __init__(self, message, cwd=""):
         self.message = message
         self.session = message.session
-        self.text = ""
-        self.trail = []
+        self.cwd = cwd
+        self.events = []
+        self.draft = ""
+        self.draft_tool = None
         self.started = time.monotonic()
         self.usage = {}
         self.cost = None
@@ -120,14 +201,36 @@ class Turn:
         self.cancelled = False
         self.prompt = ""
         self.result = None
+        self._tool_started = {}
         self._last_flush = 0.0
 
+    @property
+    def text(self) -> str:
+        """The narration so far, for a turn that ends without a result."""
+        return "\n\n".join(e["text"] for e in self.events if e["kind"] == "text")
+
+    def activity(self) -> str:
+        for event in reversed(self.events):
+            if event["kind"] == "tool" and event.get("pending"):
+                return event["summary"]
+            break
+        if self.draft_tool:
+            return _step_summary(self.draft_tool["name"], {}) + "..."
+        if self.draft:
+            return "Writing"
+        return "Thinking"
+
     def state(self, status="running"):
+        events = self.events[-80:]
+        if self.draft.strip():
+            events = events + [
+                {"kind": "text", "text": self.draft[-20_000:], "draft": True}
+            ]
         return {
             "status": status,
-            "text": self.text[-20_000:],
-            "trail": self.trail[-60:],
-            "steps": len(self.trail),
+            "events": events,
+            "steps": sum(1 for e in self.events if e["kind"] == "tool"),
+            "activity": self.activity(),
             "elapsed": int(time.monotonic() - self.started),
             "usage": self.usage,
             "cost": self.cost,
@@ -143,28 +246,47 @@ class Turn:
         from claude_agent_sdk import (
             AssistantMessage,
             ResultMessage,
+            StreamEvent,
             SystemMessage,
             TextBlock,
+            ThinkingBlock,
             ToolResultBlock,
             ToolUseBlock,
             UserMessage,
         )
 
-        if isinstance(msg, SystemMessage):
+        if isinstance(msg, StreamEvent):
+            self._on_stream_event(msg.event or {})
+        elif isinstance(msg, SystemMessage):
             if msg.subtype == "init":
                 self.sdk_session_id = msg.data.get("session_id") or self.sdk_session_id
         elif isinstance(msg, AssistantMessage):
+            self.draft = ""
+            self.draft_tool = None
             for block in msg.content:
-                if isinstance(block, TextBlock) and block.text.strip():
-                    self.text = (self.text + "\n\n" + block.text).strip()[-TEXT_CAP:]
+                if isinstance(block, TextBlock):
+                    if block.text.strip():
+                        self.events.append({"kind": "text", "text": block.text.strip()})
+                elif isinstance(block, ThinkingBlock):
+                    if block.thinking.strip():
+                        self.events.append(
+                            {"kind": "thinking", "text": block.thinking.strip()[:4000]}
+                        )
                 elif isinstance(block, ToolUseBlock):
-                    self.trail.append(
+                    tool_input = block.input or {}
+                    self._tool_started[block.id] = time.monotonic()
+                    self.events.append(
                         {
+                            "kind": "tool",
                             "id": block.id,
                             "name": block.name,
-                            "summary": _step_summary(block.name, block.input or {}),
+                            "summary": _step_summary(block.name, tool_input),
+                            "input": _tool_input(block.name, tool_input, self.cwd),
+                            "outcome": "",
+                            "preview": "",
                             "pending": True,
                             "error": False,
+                            "ms": None,
                         }
                     )
             if msg.usage:
@@ -172,16 +294,46 @@ class Turn:
         elif isinstance(msg, UserMessage) and isinstance(msg.content, list):
             for block in msg.content:
                 if isinstance(block, ToolResultBlock):
-                    for step in self.trail:
-                        if step["id"] == block.tool_use_id:
-                            step["pending"] = False
-                            step["error"] = bool(block.is_error)
+                    self._on_tool_result(block)
         elif isinstance(msg, ResultMessage):
             self.sdk_session_id = msg.session_id or self.sdk_session_id
             if msg.usage:
                 self.usage = _merge_usage({}, msg.usage)
             self.cost = msg.total_cost_usd
             self.result = msg
+
+    def _on_stream_event(self, event: dict):
+        kind = event.get("type")
+        if kind == "content_block_start":
+            block = event.get("content_block") or {}
+            if block.get("type") == "tool_use":
+                self.draft_tool = {"id": block.get("id"), "name": block.get("name", "")}
+            elif block.get("type") == "text":
+                self.draft = ""
+        elif kind == "content_block_delta":
+            delta = event.get("delta") or {}
+            if delta.get("type") == "text_delta":
+                self.draft += delta.get("text", "")
+        elif kind == "content_block_stop":
+            self.draft_tool = None
+
+    def _on_tool_result(self, block):
+        text = _text_of(block.content)
+        for step in self.events:
+            if step["kind"] == "tool" and step["id"] == block.tool_use_id:
+                started = self._tool_started.get(block.tool_use_id)
+                step["pending"] = False
+                step["error"] = bool(block.is_error)
+                step["outcome"] = _tool_outcome(
+                    step["name"], text, bool(block.is_error), self.cwd
+                )
+                preview = text.strip()
+                if self.cwd:
+                    preview = preview.replace(self.cwd + "/", "")
+                step["preview"] = preview[:600]
+                step["ms"] = (
+                    int((time.monotonic() - started) * 1000) if started else None
+                )
 
 
 def _merge_usage(total: dict, usage: dict) -> dict:
@@ -225,6 +377,10 @@ def _options(session, user, folder_path, linked, server, tool_names):
         max_turns=settings.SESSIONS_MAX_TURNS,
         max_budget_usd=settings.SESSIONS_MAX_BUDGET_USD,
         effort="high",
+        include_partial_messages=True,
+        # A tool result travels as one JSON line on the harness's stdout;
+        # a long PDF read overflows the SDK's 1 MB default.
+        max_buffer_size=64 * 1024 * 1024,
         env=env,
         stderr=lambda line: logger.debug("claude: %s", line.rstrip()),
     )
@@ -278,13 +434,13 @@ def run_turn(message_id: int):
     message.started_at = timezone.now()
     message.save(update_fields=["status", "started_at", "updated_at"])
 
-    turn = Turn(message)
+    folder_path, linked = _working_directory(session)
+    turn = Turn(message, cwd=str(folder_path))
     turn.prompt = prompt_row.content if prompt_row else ""
     turn.flush(force=True)
     try:
         from .session_tools import build_session_server
 
-        folder_path, linked = _working_directory(session)
         server, tool_names = build_session_server(session, user)
         options = _options(session, user, folder_path, linked, server, tool_names)
         asyncio.run(_run(turn, options))
@@ -294,8 +450,9 @@ def run_turn(message_id: int):
         message.status = "failed"
         message.error = f"{type(exc).__name__}: {exc}"[:2000]
         message.content = turn.text
-        message.trail = turn.trail
+        message.trail = turn.events
         message.finished_at = timezone.now()
+        message.duration_ms = int((time.monotonic() - turn.started) * 1000)
         message.save()
         status_cache.set(
             live_key(message.id),
@@ -326,11 +483,27 @@ def _finish(message, turn: Turn):
     else:
         message.status = "done"
     final_text = (result.result if result and result.result else "") or turn.text
+    events = list(turn.events)
+    # The answer is the last thing the model said; it is shown as the
+    # message, not repeated at the end of the steps.
+    if (
+        events
+        and events[-1]["kind"] == "text"
+        and events[-1]["text"] == final_text.strip()
+    ):
+        events.pop()
     message.content = final_text[:TEXT_CAP]
-    message.trail = turn.trail
-    message.input_tokens = turn.usage.get("input_tokens")
-    message.output_tokens = turn.usage.get("output_tokens")
-    message.cache_read_tokens = turn.usage.get("cache_read_input_tokens")
+    message.trail = events
+    # The harness reports the uncached input, the cache writes and the
+    # cache reads apart; the message keeps what was sent (uncached plus
+    # written) as its input, and the cache reads beside it.
+    usage = turn.usage
+    if usage:
+        message.input_tokens = (usage.get("input_tokens") or 0) + (
+            usage.get("cache_creation_input_tokens") or 0
+        )
+        message.output_tokens = usage.get("output_tokens")
+        message.cache_read_tokens = usage.get("cache_read_input_tokens")
     message.cost_usd = turn.cost
     message.duration_ms = (
         result.duration_ms if result else int((time.monotonic() - turn.started) * 1000)

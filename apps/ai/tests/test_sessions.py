@@ -112,10 +112,11 @@ def test_fable_is_for_administrators(admin, staff, matter):
     assert "Claude Sonnet 5" in page
     url = reverse("ai:session-model", args=[session.id])
     assert staff.post(url, {"model": "claude-fable-5-1"}).status_code == 403
-    assert staff.post(url, {"model": "claude-sonnet-5"}).status_code == 204
+    response = staff.post(url, {"model": "claude-sonnet-5"})
+    assert response.status_code == 200 and b"Claude Sonnet" in response.content
     session.refresh_from_db()
     assert session.model == "claude-sonnet-5"
-    assert admin.post(url, {"model": "claude-fable-5-1"}).status_code == 204
+    assert admin.post(url, {"model": "claude-fable-5-1"}).status_code == 200
 
 
 def test_rename_and_delete(admin, matter):
