@@ -37,12 +37,16 @@ of every session; the harness supplies the loop.
   (2026-10-29)](2026-10-29-firm-files-live-in-dropbox.md)), with the
   harness's own Read, Grep and Glob. The folder link lives in the AI
   tab's toolbar and the session page says when there is none.
-- **The runtime is the next record.** This one puts the model, the tab
-  and the page in place; the SDK, the in-process MCP server that
-  exposes the existing read-only matter tools, the system prompt, the
-  streaming of a turn and the service that runs turns off the web
-  workers follow. Until then a session records prompts and says the
-  agent is not connected.
+- **Turns run in a service, through the SDK.** The sessions service
+  (`manage.py run_sessions`) picks up each prompt and runs the harness
+  from the matter folder with the session's model: the built-in Read,
+  Grep and Glob only, the existing read-only matter tools as an
+  in-process MCP server, a custom system prompt, no file writes, no
+  shell, no web. Progress streams to the page through the status
+  cache; a turn can be stopped; the answer, the trail of tool calls,
+  tokens and cost are recorded on the message. The harness's own
+  transcript, kept under a directory of the application's own, is
+  what the next turn resumes. Details: [Sessions](../dev/subsystems/ai/sessions.md).
 - **Billing is by API key.** Anthropic's terms do not allow a
   third-party application to bill a user's Claude subscription. The
   desktop subscriptions stay for work outside a matter.

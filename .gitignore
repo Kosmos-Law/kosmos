@@ -38,3 +38,6 @@ logs/*
 
 # The files watcher stages OCR output here (FILES_OCR_SCRATCH)
 .ocr-scratch/
+
+# Claude Code sessions: harness state and scratch folders (SESSIONS_HOME)
+.claude-sessions/

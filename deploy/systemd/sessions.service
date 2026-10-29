@@ -1,0 +1,15 @@
+[Unit]
+Description=Kosmos sessions service: runs Claude Code turns for AI sessions
+After=network-online.target postgresql.service
+
+[Service]
+User=james
+WorkingDirectory=/home/james/law
+ExecStart=/home/james/law/.venv/bin/python manage.py run_sessions
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

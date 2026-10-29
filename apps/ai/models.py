@@ -287,6 +287,16 @@ class SessionMessage(AuditMixin, models.Model):
     """
 
     ROLE_CHOICES = [("user", "User"), ("assistant", "Assistant")]
+    # An assistant message is created with the prompt and filled by the
+    # runtime: pending until the sessions service picks it up, running
+    # while the turn streams, then done, failed or cancelled.
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("running", "Running"),
+        ("done", "Done"),
+        ("failed", "Failed"),
+        ("cancelled", "Cancelled"),
+    ]
 
     session = models.ForeignKey(
         Session, on_delete=models.CASCADE, related_name="messages"
@@ -300,6 +310,11 @@ class SessionMessage(AuditMixin, models.Model):
         blank=True,
         related_name="ai_session_messages",
     )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="done")
+    error = models.TextField(blank=True, default="")
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    duration_ms = models.IntegerField(null=True, blank=True)
     trail = models.JSONField(default=list, blank=True)
     input_tokens = models.IntegerField(null=True, blank=True)
     output_tokens = models.IntegerField(null=True, blank=True)
@@ -314,3 +329,7 @@ class SessionMessage(AuditMixin, models.Model):
 
     def __str__(self):
         return f"{self.role}: {self.content[:50]}"
+
+    @property
+    def is_open(self):
+        return self.status in ("pending", "running")

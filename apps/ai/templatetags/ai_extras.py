@@ -108,3 +108,36 @@ def ai_archive_count(matter):
     from apps.ai.models import Conversation
 
     return Conversation.objects.filter(matter=matter).count()
+
+
+@register.filter
+def ms_short(value):
+    """Milliseconds as a short duration: 4s, 1m 20s."""
+    try:
+        seconds = int(value) // 1000
+    except (TypeError, ValueError):
+        return ""
+    if seconds < 60:
+        return f"{seconds}s"
+    return f"{seconds // 60}m {seconds % 60}s"
+
+
+STEP_ICONS = {
+    "Read": "icon-file-text",
+    "Grep": "icon-search",
+    "Glob": "icon-folder-search",
+    "search_materials": "icon-search",
+    "read_document": "icon-file-text",
+    "read_email_thread": "icon-mail",
+    "read_matter_section": "icon-briefcase",
+    "search_caselaw": "icon-scale",
+    "read_opinion": "icon-scale",
+    "read_session": "icon-message-circle",
+    "list_sessions": "icon-message-circle",
+    "read_conversation": "icon-message-circle",
+}
+
+
+@register.filter
+def session_step_icon(name):
+    return STEP_ICONS.get(str(name).split("__")[-1], "icon-wrench")

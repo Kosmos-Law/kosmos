@@ -10,7 +10,7 @@ job (the next record), and until it is connected the page says so.
 """
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -20,9 +20,7 @@ from django.views.decorators.http import require_POST
 from apps.case.services import get_matter_from_url, matter_folder, set_last_tab
 
 from .models import Conversation, Session, SessionMessage
-
-# Flipped by the runtime record; until then the page is honest about it.
-RUNTIME_CONNECTED = False
+from .runtime import live_state, request_cancel, service_alive
 
 
 def session_queryset(matter):
@@ -77,13 +75,23 @@ def _session_for(request, session_id):
 
 def _page_context(request, session):
     folder = matter_folder(session.matter)
+    messages = list(session.messages.select_related("user"))
+    open_turn = next((m for m in reversed(messages) if m.is_open), None)
+    totals = session.messages.aggregate(
+        cost=Sum("cost_usd"),
+        input=Sum("input_tokens"),
+        output=Sum("output_tokens"),
+    )
     return {
         "session": session,
         "matter": session.matter,
         "folder": folder,
-        "messages": list(session.messages.select_related("user")),
+        "messages": messages,
+        "open_turn": open_turn,
+        "live": live_state(open_turn.id) if open_turn else None,
+        "service_alive": service_alive(),
+        "totals": totals if totals["cost"] or totals["input"] else None,
         "model_choices": Session.model_choices_for(request.user),
-        "runtime_connected": RUNTIME_CONNECTED,
     }
 
 
@@ -130,8 +138,20 @@ def session_send(request, session_id):
     text = request.POST.get("message", "").strip()
     if not text:
         return HttpResponseBadRequest("Nothing to send.")
+    if session.messages.filter(
+        role="assistant", status__in=("pending", "running")
+    ).exists():
+        return HttpResponse("The agent is still answering the last prompt.", status=409)
     SessionMessage.objects.create(
         session=session, role="user", content=text, user=request.user
+    )
+    # The answer's row, for the service to fill.
+    SessionMessage.objects.create(
+        session=session,
+        role="assistant",
+        content="",
+        user=request.user,
+        status="pending",
     )
     response_parts = []
     if not session.title:
@@ -190,3 +210,31 @@ def session_delete(request, session_id):
     response = HttpResponse(status=204)
     response["HX-Trigger"] = "sessionsChanged"
     return response
+
+
+@login_required
+def session_live(request, session_id):
+    """The transcript while a turn runs: polled by the page every two
+    seconds until no turn is open."""
+    session = _session_for(request, session_id)
+    return render(request, "ai/sessions/messages.html", _page_context(request, session))
+
+
+@login_required
+@require_POST
+def session_cancel(request, session_id):
+    session = _session_for(request, session_id)
+    open_turn = (
+        session.messages.filter(role="assistant", status__in=("pending", "running"))
+        .order_by("-id")
+        .first()
+    )
+    if open_turn is None:
+        return HttpResponse(status=204)
+    if open_turn.status == "pending":
+        # Not picked up yet: nothing to interrupt.
+        open_turn.status = "cancelled"
+        open_turn.save(update_fields=["status", "updated_at"])
+    else:
+        request_cancel(open_turn.id)
+    return HttpResponse(status=204)

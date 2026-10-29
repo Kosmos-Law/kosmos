@@ -60,3 +60,42 @@
 [x-cloak] {
   display: none !important;
 }
+
+.session-trail ol {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.session-trail li.pending {
+  opacity: 0.7;
+}
+
+.session-trail li.error {
+  color: var(--urgent);
+}
+
+.session-working,
+.session-turn-meta,
+.session-totals {
+  color: var(--color-muted);
+  display: flex;
+  gap: 1rem;
+}
+
+.session-turn-meta {
+  margin-top: 0.5rem;
+}
+
+.session-totals {
+  justify-content: flex-end;
+  padding: 0.5rem 1rem;
+}
+
+.session-turn-failed {
+  color: var(--urgent);
+}
+
+.session-turn-error {
+  color: var(--urgent);
+  margin-top: 0.5rem;
+}

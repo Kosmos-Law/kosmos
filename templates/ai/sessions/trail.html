@@ -1,0 +1,17 @@
+{% load ai_extras %}
+{% comment %}
+What the agent did in a turn: one line per tool call. Open (expanded)
+while the turn runs; collapsed on a finished answer.
+{% endcomment %}
+{% if trail %}
+  <details class="session-trail" {% if open %}open{% endif %}>
+    <summary>{{ trail|length }} step{{ trail|length|pluralize }}</summary>
+    <ol>
+      {% for step in trail %}
+        <li class="{% if step.pending %}pending{% elif step.error %}error{% endif %}">
+          <i class="{{ step.name|session_step_icon }}"></i> {{ step.summary }}
+        </li>
+      {% endfor %}
+    </ol>
+  </details>
+{% endif %}

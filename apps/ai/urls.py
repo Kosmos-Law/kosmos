@@ -100,6 +100,16 @@ urlpatterns = [
         sessions.session_delete,
         name="session-delete",
     ),
+    path(
+        "case/ai/sessions/<int:session_id>/live/",
+        sessions.session_live,
+        name="session-live",
+    ),
+    path(
+        "case/ai/sessions/<int:session_id>/cancel/",
+        sessions.session_cancel,
+        name="session-cancel",
+    ),
     # The archive: conversations from the chat that preceded sessions.
     path("case/<int:matter_id>/ai/archive/", views.ai_index, name="archive"),
     path("case/<int:matter_id>/ai/archive/list/", views.ai_list, name="archive-list"),

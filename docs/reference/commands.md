@@ -29,6 +29,7 @@ Which of these an operator needs, and when, is covered in
 | Command | What it does |
 |---|---|
 | `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in the firm's file store and Gmail. Scheduled weekly by setup_schedules. |
+| `run_sessions` | Run Claude Code session turns as they are requested. |
 
 ## calendar
 

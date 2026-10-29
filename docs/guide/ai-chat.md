@@ -38,11 +38,31 @@ Conversations from before sessions are under the **Archive** pill at
 the right of the toolbar. They open and read as before, but new chats
 are sessions.
 
-## Start a conversation on a matter (archive)
+## What happens when you send a prompt
 
-Until the sessions engine is connected, a session saves your prompts
-and says so. The rest of this page describes the earlier chat, which
-the archive still uses.
+Claude answers in the session page as it works. Above the answer, the
+**steps** line lists what it did: which files it read with Read, Grep
+and Glob, which Kosmos tools it called (the matter record, synced
+email, highlights, earlier sessions, case law). Click it to open the
+list. Below a finished answer are the time it took, the tokens and the
+cost; the session's running total sits under the transcript.
+
+Click the **x** beside "Claude" while it is working to stop the turn.
+A stopped or failed turn stays in the transcript, marked as such, and
+you can send the prompt again.
+
+If the sessions service is not running on the server, the page says
+so and keeps the prompt; it is answered when the service starts. Ask
+an administrator.
+
+Claude reads the matter's folder in the firm's files and the matter's
+record. It cannot write files, run programs or browse the web, and it
+reaches CourtListener only for users with the Research permission.
+
+## The earlier chat (archive)
+
+The rest of this page describes the earlier chat, which the archive
+still uses to show its conversations.
 
 1. Open the matter, click **Case**, then **AI**, then **Archive**.
 2. (Historic) Click the plus button at the left of the toolbar. **New

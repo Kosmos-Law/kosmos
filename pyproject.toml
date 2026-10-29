@@ -54,6 +54,7 @@ dependencies = [
     "segno>=1.6.6",
     "holidays>=0.86",
     "icalendar==7.3.0",
+    "claude-agent-sdk==0.2.174",
 ]
 
 [dependency-groups]

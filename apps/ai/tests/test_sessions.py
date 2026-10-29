@@ -93,7 +93,7 @@ def test_the_first_prompt_names_the_session(admin, matter):
     assert SessionMessage.objects.filter(session=session, role="user").count() == 1
     content = response.content.decode()
     assert "hx-swap-oob" in content  # the header title is sent out of band
-    assert "not connected yet" in content
+    assert "session-live" in content  # the answer's turn is open
 
     admin.post(url, {"message": "and the parties?"})
     session.refresh_from_db()
