@@ -36,7 +36,16 @@ MIN_CHARS = 40
 
 
 class OcrError(Exception):
-    """OCR did not produce a replacement file; the original is untouched."""
+    """OCR did not produce a replacement file; the original is untouched.
+
+    ``permanent`` says a retry cannot help: the file is one OCRmyPDF
+    refuses on principle, such as a digitally signed PDF, which OCR would
+    invalidate.
+    """
+
+    def __init__(self, message: str, permanent: bool = False):
+        super().__init__(message)
+        self.permanent = permanent
 
 
 def text_chars(path: Path, pages: int = SAMPLE_PAGES) -> int | None:
@@ -94,7 +103,15 @@ def ocr_in_place(path: Path, jobs: int | None = None) -> None:
                 progress_bar=False,
             )
         except Exception as exc:
-            raise OcrError(f"{type(exc).__name__}: {exc}") from exc
+            permanent = isinstance(
+                exc,
+                (
+                    ocrmypdf.exceptions.DigitalSignatureError,
+                    ocrmypdf.exceptions.EncryptedPdfError,
+                    ocrmypdf.exceptions.InputFileError,
+                ),
+            )
+            raise OcrError(f"{type(exc).__name__}: {exc}", permanent) from exc
         if tmp.stat().st_size == 0:
             raise OcrError("OCR produced an empty file")
         shutil.copymode(path, tmp)

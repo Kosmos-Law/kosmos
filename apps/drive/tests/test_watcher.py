@@ -235,3 +235,16 @@ def test_scan_lists_empty_files_of_any_type_and_flags_new_ones(firm_root, fake_o
     state = FilesState.get()
     assert state.new_empty_files == [f"{SMITH}/late.odt"]
     assert len(state.empty_files) == 3
+
+
+def test_a_signed_pdf_is_not_retried(firm_root, monkeypatch):
+    def refuse(path, jobs=None):
+        raise ocr.OcrError("DigitalSignatureError: signed", permanent=True)
+
+    monkeypatch.setattr(ocr, "ocr_in_place", refuse)
+    signed = firm_root / SMITH / "signed.pdf"
+    signed.write_bytes(blank_pdf_bytes())
+    assert watcher.check_pdf(signed) == "ocr_failed"
+    assert watcher.check_pdf(signed) == "unchanged"
+    row = PdfFile.objects.get(path=f"{SMITH}/signed.pdf")
+    assert row.attempts == watcher.MAX_ATTEMPTS and row.ocr_status == "failed"

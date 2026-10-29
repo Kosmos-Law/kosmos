@@ -112,6 +112,8 @@ def check_pdf(abs_path: Path, *, run_ocr: bool = True) -> str:
         ocr.ocr_in_place(abs_path)
     except ocr.OcrError as exc:
         row.ocr_status, row.ocr_error = "failed", str(exc)[:2000]
+        if exc.permanent:
+            row.attempts = MAX_ATTEMPTS
         row.save()
         logger.warning("OCR failed for %s: %s", rel_path, exc)
         return "ocr_failed"
