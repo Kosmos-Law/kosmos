@@ -24,32 +24,41 @@
   min-width: 20rem;
 }
 
-.session-folder {
-  color: var(--color-muted);
+.session-folder-missing {
+  color: var(--warning);
   text-decoration: none;
 }
 
-.session-folder-missing {
-  color: var(--warning);
+/* The controls: the model and the effort, each a badge that opens a
+   menu sized to match it. */
+.session-controls {
+  display: inline-flex;
+  gap: 0.5rem;
 }
 
-/* The model picker: a badge that opens a menu. */
-.session-model {
+.session-control {
   position: relative;
 }
 
-.session-model-btn {
+.session-control-btn {
   cursor: pointer;
   font: inherit;
   font-size: 0.8125rem;
 }
 
-.session-model-btn small {
+.session-control-btn small {
   margin-left: 0.25rem;
 }
 
-.session-model .dropdown-menu {
-  min-width: 10rem;
+.session-control .dropdown-menu {
+  min-width: 100%;
+  right: 0;
+}
+
+.session-control .dropdown-item {
+  font-size: 0.8125rem;
+  padding: 0.3125rem 0.625rem;
+  white-space: nowrap;
 }
 
 /* The composer: the box alone; Enter sends. */
@@ -124,9 +133,40 @@
   margin-left: 0.125rem;
 }
 
-.session-step-thinking {
+/* A thought: collapsed to one line, as in the desktop app. */
+.session-step-thinking summary {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.session-step-thinking .session-step-call {
+  flex: 0 0 auto;
+}
+
+.session-thinking-peek {
+  color: var(--color-muted-more);
+  font-style: italic;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-step-thinking[open] .session-thinking-peek,
+.session-step-thinking details[open] .session-thinking-peek {
+  display: none;
+}
+
+.session-thinking-text {
   color: var(--color-muted);
   font-style: italic;
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.session-thinking-text p {
+  margin: 0 0 0.5rem;
 }
 
 .session-step-tool summary,

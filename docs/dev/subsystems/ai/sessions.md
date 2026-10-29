@@ -27,10 +27,16 @@ firm's files. Record: [AI chat becomes Claude Code sessions
    own Claude Code configuration leaks in; `CLAUDE_CONFIG_DIR` is
    `SESSIONS_HOME`, where the harness keeps its transcripts; `resume`
    is the session's `sdk_session_id` from the previous turn. Caps:
-   `SESSIONS_MAX_TURNS` and `SESSIONS_MAX_BUDGET_USD` per turn.
+   `SESSIONS_MAX_TURNS` and `SESSIONS_MAX_BUDGET_USD` per turn. The
+   model and the effort are the session's (`Session.model`,
+   `Session.effort`, set from the page's header badges; a session on an
+   admin-only model that someone else continues falls back to the
+   default at send). Thinking is adaptive with `display: "summarized"`,
+   since the newer models send only a signature unless asked.
 4. As messages arrive, `Turn` keeps the turn's events in order: the
    model's narration (`text`), its reasoning when the harness shows it
-   (`thinking`), and each tool call (`tool`: a readable summary, what
+   (`thinking`, summarized, streamed as a draft while it is written,
+   with how long it took), and each tool call (`tool`: a readable summary, what
    it asked for with the folder path stripped, and, once the result
    comes back, an outcome line, a 600-character preview, the error
    flag and the duration). With `include_partial_messages` the text
@@ -53,14 +59,15 @@ firm's files. Record: [AI chat becomes Claude Code sessions
 live and from a saved trail, Claude Code's transcript shape: a muted
 call line with an elbow outcome line under it, opening to what was
 asked and what came back; narration in full strength between the
-calls. While a turn is open the live block shows the rows as they
+calls; a thought collapsed to "Thought for 4s" and a one-line peek, as
+in the desktop app. While a turn is open the live block shows the rows as they
 happen under an activity line with a Stop button; once saved, the rows
 fold into a "Worked for 8s · 3 steps" line above the answer.
 `sessions.js` keeps a row the reader opened open across the polls and
 follows the bottom only while the reader is already there. The model
-is a badge-styled dropdown (`model.html`, Alpine's `dropdown()`) that
-posts and comes back with the new label; the composer is the box
-alone, Enter sends.
+and the effort are badge-styled dropdowns (`controls.html`, Alpine's
+`dropdown()`) that post to `session_controls` and come back with the
+new labels; the composer is the box alone, Enter sends.
 
 ## The tools
 
@@ -68,14 +75,23 @@ alone, Enter sends.
 `agent_tools.build_agent_tools` into MCP tools, running each call
 through `make_agent_executor`'s `execute_one` on a worker thread, so
 the earlier loop's handlers, permissions (financial, research) and
-caps are reused unchanged. Two tools are added for the new table,
-`list_sessions` and `read_session`. Names reach the model as
-`mcp__kosmos__<name>`.
+caps are reused unchanged. Added: `list_sessions` and `read_session`
+for the new table; `search_files`, which searches inside the matter
+folder's PDFs (their text layer), ODT and DOCX documents and plain text,
+because the harness's Grep is ripgrep and reads bytes, so a PDF is
+invisible to it (`apps/drive/text.py` through
+`apps.case.services.search_folder_text`: text taken by `pdftotext` or
+from the document's XML, cached outside the tree under
+`FILES_TEXT_CACHE`, keyed by path and validated by size and mtime; the
+watcher warms the cache for each PDF it checks and `manage.py
+index_file_text` fills it for a tree); and `save_caselaw` for a user who
+may research. Names reach the model as `mcp__kosmos__<name>`.
 
 ## The prompt
 
 `session_prompt.build_session_system`: the legal prompt, a working
-method (files by Read/Grep/Glob, Kosmos tools for the rest, cite what
+method (files by Glob, search_files and Read, Grep only on plain
+text, Kosmos tools for the rest, cite what
 you rely on, no writes), the research note when CourtListener is
 available to the user, the source-linking rules, the matter overview,
 contacts, witnesses and proceedings, and the top level of the matter

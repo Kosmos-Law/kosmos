@@ -126,6 +126,7 @@ STEP_ICONS = {
     "Read": "icon-file-text",
     "Grep": "icon-search",
     "Glob": "icon-folder-search",
+    "search_files": "icon-file-search",
     "search_materials": "icon-search",
     "read_document": "icon-file-text",
     "read_email_thread": "icon-mail",
@@ -152,3 +153,16 @@ def session_step_icon(name):
 def session_step_count(trail):
     """The tool calls in a turn's trail (narration and reasoning are not steps)."""
     return sum(1 for step in trail or [] if step.get("kind", "tool") == "tool")
+
+
+@register.filter
+def session_peek(step):
+    """One line of a thought for its collapsed row: the latest line while
+    it is being written, the first once it is done."""
+    text = step.get("text", "") if isinstance(step, dict) else str(step or "")
+    draft = isinstance(step, dict) and step.get("draft")
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    line = lines[-1] if draft else lines[0]
+    return line if len(line) <= 140 else line[:140] + "..."

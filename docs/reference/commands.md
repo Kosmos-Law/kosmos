@@ -61,6 +61,7 @@ Which of these an operator needs, and when, is covered in
 
 | Command | What it does |
 |---|---|
+| `index_file_text` | Extract and cache the text of PDFs and documents under the matter roots. |
 | `watch_files` | Watch the synced Firm tree: OCR new PDFs in place, follow folder renames. |
 
 ## intakes

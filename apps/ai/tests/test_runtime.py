@@ -7,6 +7,7 @@ from claude_agent_sdk import (
     ResultMessage,
     SystemMessage,
     TextBlock,
+    ThinkingBlock,
     ToolResultBlock,
     ToolUseBlock,
     UserMessage,
@@ -38,6 +39,10 @@ def scripted_messages():
         SystemMessage(subtype="init", data={"session_id": "sdk-abc"}),
         AssistantMessage(
             content=[
+                ThinkingBlock(
+                    thinking="The deadlines will be in the scheduling order.",
+                    signature="s",
+                ),
                 TextBlock(text="Let me look at the evidence folder."),
                 ToolUseBlock(id="t1", name="Glob", input={"pattern": "Evidence/*.pdf"}),
             ],
@@ -135,7 +140,7 @@ def harness(monkeypatch, settings, tmp_path):
     monkeypatch.setattr(runtime, "status_cache", FakeClient.cache)
     monkeypatch.setattr(
         "apps.ai.session_tools.build_session_server",
-        lambda session, user: (
+        lambda session, user, folder=None: (
             {"type": "sdk", "name": "kosmos", "instance": None},
             ["mcp__kosmos__x"],
         ),
@@ -169,13 +174,13 @@ def test_a_turn_records_the_answer_trail_usage_and_harness_session(harness, matt
     assert answer.content == "The discovery deadline is **2026-12-01**."
     # The trail is the turn in order: narration, then each call with its
     # outcome; the final text is the answer, not a step.
-    assert [e["kind"] for e in answer.trail] == ["text", "tool", "tool"]
-    assert answer.trail[0]["text"] == "Let me look at the evidence folder."
-    assert [e["summary"] for e in answer.trail[1:]] == [
+    assert [e["kind"] for e in answer.trail] == ["thinking", "text", "tool", "tool"]
+    assert answer.trail[1]["text"] == "Let me look at the evidence folder."
+    assert [e["summary"] for e in answer.trail[2:]] == [
         "Glob Evidence/*.pdf",
         "Search: deadline; scheduling order",
     ]
-    glob, search = answer.trail[1:]
+    glob, search = answer.trail[2:]
     assert glob["pending"] is False and glob["outcome"] == "a.pdf"
     assert glob["input"] == "pattern: Evidence/*.pdf"
     assert search["error"] is True and search["outcome"] == "{}"
@@ -278,6 +283,10 @@ def test_send_opens_a_turn_and_the_page_polls_until_it_closes(harness, matter):
     html = client.get(reverse("ai:session-live", args=[session.id])).content.decode()
     assert "session-live" not in html
     assert "2026-12-01" in html and "Worked for 4s" in html and "2 steps" in html
+    # The thought is a collapsed row with a peek at its first line.
+    assert (
+        "Thought" in html and "The deadlines will be in the scheduling order." in html
+    )
     assert "Let me look at the evidence folder." in html  # the narration, in the fold
     assert "this session" in html  # totals line
 
@@ -381,4 +390,58 @@ def test_the_harness_pdf_notice_becomes_a_size_and_the_folder_path_is_dropped():
     error = f"File does not exist. Note: your current working directory is {cwd}."
     assert runtime._tool_outcome("Read", error, True, cwd) == "File does not exist."
     assert runtime._tool_outcome("Grep", "No files found", False) == "No files found"
+    report = "6 hits in 1 of 33 files for 'the lender' under Record:\n\nRecord/x.pdf\n  p.2: ..."
+    assert (
+        runtime._tool_outcome("search_files", report, False)
+        == "6 hits in 1 of 33 files under Record"
+    )
+    assert (
+        runtime._tool_outcome("search_files", "No hits for 'zebra' in 33 files.", False)
+        == "No hits in 33 files."
+    )
     assert runtime._tool_outcome("Grep", "a\nb\nc\nd", False) == "4 lines"
+
+
+def test_reasoning_streams_as_a_collapsed_thought(harness, matter):
+    from claude_agent_sdk import ThinkingBlock
+
+    client = _login("ada", role="ADMIN")
+    session, answer = _turn(matter, client.user)
+    turn = runtime.Turn(answer, cwd="/x")
+    turn.on_message(
+        _event(
+            type="content_block_start",
+            index=0,
+            content_block={"type": "thinking", "thinking": ""},
+        )
+    )
+    turn.on_message(
+        _event(
+            type="content_block_delta",
+            index=0,
+            delta={
+                "type": "thinking_delta",
+                "thinking": "The user wants the deadlines.\nI should read the order.",
+            },
+        )
+    )
+    state = turn.state()
+    assert (
+        state["events"][-1]["kind"] == "thinking"
+        and state["events"][-1]["draft"] is True
+    )
+    assert state["activity"] == "Thinking"
+    turn.on_message(
+        AssistantMessage(
+            content=[
+                ThinkingBlock(
+                    thinking="The user wants the deadlines.\nI should read the order.",
+                    signature="s",
+                )
+            ],
+            model="claude-opus-5-5",
+        )
+    )
+    state = turn.state()
+    assert [e["kind"] for e in state["events"]] == ["thinking"]
+    assert state["events"][0]["ms"] is not None and "draft" not in state["events"][0]

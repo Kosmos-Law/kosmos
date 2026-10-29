@@ -73,6 +73,15 @@ def _session_for(request, session_id):
     )
 
 
+def _controls_context(request, session, oob=False):
+    return {
+        "session": session,
+        "model_choices": Session.model_choices_for(request.user),
+        "effort_choices": Session.EFFORT_CHOICES,
+        "oob": oob,
+    }
+
+
 def _page_context(request, session):
     folder = matter_folder(session.matter)
     messages = list(session.messages.select_related("user"))
@@ -93,6 +102,7 @@ def _page_context(request, session):
         "service_alive": service_alive(),
         "totals": totals if totals["cost"] or totals["input"] else None,
         "model_choices": Session.model_choices_for(request.user),
+        "effort_choices": Session.EFFORT_CHOICES,
     }
 
 
@@ -143,6 +153,19 @@ def session_send(request, session_id):
         role="assistant", status__in=("pending", "running")
     ).exists():
         return HttpResponse("The agent is still answering the last prompt.", status=409)
+    response_parts = []
+    # A session an administrator set to an admin-only model runs on the
+    # default for anyone else who continues it.
+    if not Session.user_may_pick(request.user, session.model):
+        session.model = Session.DEFAULT_MODEL
+        session.save(update_fields=["model", "updated_at"])
+        response_parts.append(
+            render_to_string(
+                "ai/sessions/controls.html",
+                _controls_context(request, session, oob=True),
+                request=request,
+            )
+        )
     SessionMessage.objects.create(
         session=session, role="user", content=text, user=request.user
     )
@@ -154,7 +177,6 @@ def session_send(request, session_id):
         user=request.user,
         status="pending",
     )
-    response_parts = []
     if not session.title:
         session.title = Session.title_from(text)
         session.save(update_fields=["title", "updated_at"])
@@ -178,19 +200,27 @@ def session_send(request, session_id):
 
 @login_required
 @require_POST
-def session_model(request, session_id):
-    """Set the model for the next turn; a model the user may not pick is
-    refused."""
+def session_controls(request, session_id):
+    """Set the model or the effort for the next turn; a model the user
+    may not pick is refused."""
     session = _session_for(request, session_id)
-    model = request.POST.get("model", "")
-    if not Session.user_may_pick(request.user, model):
-        return HttpResponse("That model is not available to you.", status=403)
-    session.model = model
-    session.save(update_fields=["model", "updated_at"])
+    fields = []
+    model = request.POST.get("model")
+    if model is not None:
+        if not Session.user_may_pick(request.user, model):
+            return HttpResponse("That model is not available to you.", status=403)
+        session.model = model
+        fields.append("model")
+    effort = request.POST.get("effort")
+    if effort is not None:
+        if effort not in dict(Session.EFFORT_CHOICES):
+            return HttpResponseBadRequest("No such effort level.")
+        session.effort = effort
+        fields.append("effort")
+    if fields:
+        session.save(update_fields=[*fields, "updated_at"])
     response = render(
-        request,
-        "ai/sessions/model.html",
-        {"session": session, "model_choices": Session.model_choices_for(request.user)},
+        request, "ai/sessions/controls.html", _controls_context(request, session)
     )
     response["HX-Trigger"] = "sessionsChanged"
     return response

@@ -66,3 +66,13 @@ def matter_folder(matter):
     if not tree.configured():
         return None
     return MatterFolder.objects.filter(matter=matter).first()
+
+
+def search_folder_text(folder, pattern, *, subpath="", regex=False) -> str:
+    """Matches of ``pattern`` inside the documents under ``folder`` (PDF
+    text layers, ODT, DOCX, plain text), as the agent reads them."""
+    from apps.drive import text
+
+    return text.format_search(
+        text.search(folder, pattern, subpath=subpath, regex=regex)
+    )

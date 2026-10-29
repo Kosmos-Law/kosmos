@@ -488,6 +488,11 @@ FILES_OCR_SCRATCH = Path(
     env("FILES_OCR_SCRATCH", default=str(BASE_DIR / ".ocr-scratch"))
 ).expanduser()
 FILES_OCR_JOBS = env.int("FILES_OCR_JOBS", default=2)
+# Text taken from PDFs and documents for searching inside them
+# (apps/drive/text.py), cached outside the tree.
+FILES_TEXT_CACHE = Path(
+    env("FILES_TEXT_CACHE", default=str(BASE_DIR / ".file-text"))
+).expanduser()
 
 # Claude Code sessions (apps/ai/runtime.py). The harness keeps its own
 # state (transcripts, config) under SESSIONS_HOME, never the service

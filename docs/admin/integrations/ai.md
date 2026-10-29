@@ -159,8 +159,18 @@ The models a session can use are a fixed list in the code
 (`MODEL_CHOICES` in
 [`apps/ai/models.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/ai/models.py)):
 Claude Opus (the default), Claude Sonnet, and Claude Fable, which is
-offered to administrators only. A user's choice is remembered for
-their next session, and the model can be changed between prompts.
+offered to administrators only. The model and the effort (how hard the
+model thinks: low, medium, high or max, high by default) are set on the
+session page and can be changed between prompts. A session an
+administrator set to Claude Fable runs on Claude Opus when anyone else
+continues it.
+
+Searching inside the matter's PDFs and documents keeps a copy of each
+file's text under `FILES_TEXT_CACHE` (`.file-text` under the
+application directory by default), outside the Dropbox tree. It fills
+itself as files are searched and as the files watcher checks new PDFs;
+`manage.py index_file_text` fills it for the whole tree at once, which
+is worth running once after the Dropbox folder first syncs.
 
 ## Cost
 

@@ -110,3 +110,23 @@ def test_save_caselaw_builds_the_row_from_the_cluster(matter, monkeypatch):
 
     text, is_error = _call(tools["save_caselaw"], cluster_id=0, proposition="x")
     assert is_error
+
+
+def test_search_files_searches_the_linked_folder(matter, tmp_path, settings):
+    settings.FILES_TEXT_CACHE = tmp_path / "cache"
+    folder = tmp_path / "Emling"
+    (folder / "Corr").mkdir(parents=True)
+    (folder / "Corr" / "letter.txt").write_text("Dear counsel, the lender objects.")
+    client = _login("ada", role="ADMIN")
+    session = Session.objects.create(matter=matter, user=client.user)
+
+    tools = {t.name: t for t in build_session_tools(session, client.user, folder)}
+    assert "search_files" in tools
+    text, is_error = _call(tools["search_files"], pattern="lender", path="Corr")
+    assert not is_error and "Corr/letter.txt" in text and "the lender objects" in text
+    text, is_error = _call(tools["search_files"], pattern="")
+    assert is_error
+
+    unlinked = {t.name: t for t in build_session_tools(session, client.user, None)}
+    text, is_error = _call(unlinked["search_files"], pattern="lender")
+    assert is_error and "No folder" in text

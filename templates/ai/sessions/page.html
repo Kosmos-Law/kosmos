@@ -68,19 +68,15 @@
           <span class="app-badge badge-purple">{{ matter.name }}</span>
           <span id="sessionTitle">{% include "ai/sessions/title.html" %}</span>
           <span class="session-header-right">
-            {% if folder %}
-              <span class="app-badge session-folder" title="{{ folder.path }}">
-                <i class="icon-folder with-text"></i>{{ folder.name }}
-              </span>
-            {% else %}
-              <a class="app-badge session-folder session-folder-missing"
+            {% if not folder %}
+              <a class="app-badge session-folder-missing"
                  href="{% url 'ai:index' matter.id %}"
                  target="_blank"
                  title="The agent cannot read this matter's files until the matter is linked to its folder, on the AI tab.">
                 <i class="icon-folder-x with-text"></i>No folder linked
               </a>
             {% endif %}
-            {% include "ai/sessions/model.html" %}
+            {% include "ai/sessions/controls.html" %}
           </span>
         </header>
         <div class="ai-chat-scroll">

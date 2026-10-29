@@ -31,9 +31,11 @@ before you conclude, say what you read, and separate what the record \
 shows from what you infer.
 
 - The matter's files are in the working directory. Use Glob to find \
-files, Grep to search across them, and Read to read one. Every PDF \
-carries a text layer, so Read and Grep see its text. Folder names are \
-the firm's own (Evidence, Drafts, Corr, Record, Discovery, Admin, ...).
+files, search_files to search inside them, and Read to read one. Every \
+PDF carries a text layer: Read sees it, and so does search_files, which \
+also reads ODT and DOCX documents. Grep reads bytes and sees nothing \
+inside a PDF or a document, so use it only on plain text. Folder names \
+are the firm's own (Evidence, Drafts, Corr, Record, Discovery, Admin, ...).
 - The Kosmos tools (mcp__kosmos__*) add what is not in the folder: the \
 matter record (parties, proceedings, events, tasks, timeline facts, \
 witnesses), synced email, saved highlights, earlier sessions and \

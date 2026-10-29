@@ -24,7 +24,7 @@ from django.db import close_old_connections
 from django.db.models import Q
 from django.utils import timezone
 
-from . import ocr, tree
+from . import ocr, text, tree
 from .models import FilesState, MatterFolder, PdfFile
 
 logger = logging.getLogger(__name__)
@@ -94,6 +94,7 @@ def check_pdf(abs_path: Path, *, run_ocr: bool = True) -> str:
     if row.has_text:
         row.ocr_status, row.ocr_error = "none", ""
         row.save()
+        text.warm(abs_path)
         return "has_text"
     if not run_ocr:
         row.ocr_status = "pending"
@@ -124,6 +125,7 @@ def check_pdf(abs_path: Path, *, run_ocr: bool = True) -> str:
     row.ocr_status, row.ocr_error = "done", ""
     row.ocr_at = timezone.now()
     row.save()
+    text.warm(abs_path)
     return "ocr_done"
 
 

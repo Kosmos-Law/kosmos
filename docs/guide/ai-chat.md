@@ -28,10 +28,15 @@ needs as it goes.
 1. Open the matter, click **Case**, then **AI**.
 2. Click the plus button at the left of the toolbar. The session opens
    in a new browser tab at once; there is nothing to fill in first.
-3. Choose the model at the top right of the session page if you want a
-   different one. **Claude Opus** is the default; **Claude Sonnet** is
-   faster and cheaper; **Claude Fable** is offered to administrators.
-   The choice applies from the next prompt.
+3. Choose the model and the effort at the top right of the session
+   page if you want different ones. **Claude Opus** is the default;
+   **Claude Sonnet** is faster and cheaper; **Claude Fable** is offered
+   to administrators. The effort is how hard the model thinks before it
+   answers: **High** is the default; **Max** for a hard question, **Low**
+   for a quick lookup. Both apply from the next prompt, and both can be
+   changed as often as you like in a session. (A session set to Claude
+   Fable goes back to Claude Opus when someone who is not an
+   administrator continues it.)
 4. Type your first prompt. It becomes the session's name; click the
    name to change it.
 
@@ -45,7 +50,9 @@ the session page as you watch: each file it opens, each search it runs
 and each Kosmos tool it calls (the matter record, synced email,
 highlights, earlier sessions, case law) appears as a row as it
 happens, with what it was looking for and a line of what came back,
-and the narration between them. The line under the transcript says
+and the narration between them. When Claude stops to think, the
+thought appears as a collapsed row with a glimpse of its first line;
+click it to read the reasoning in full. The line under the transcript says
 what it is doing now and how long it has been at it. When the answer
 is finished the rows fold into a **Worked for** line above it; click
 the line to open them again. Below the answer are the tokens and the
@@ -63,7 +70,9 @@ Claude starts with the matter's details, contacts, witnesses and
 proceedings, the names and titles of the firm's users, and a map of
 the matter's folder. From there it reads what it needs: the files in
 the folder (every PDF has a text layer, so a scan reads like a
-document), and through the Kosmos tools the matter's record (facts,
+document, and Claude can search for a word or phrase inside every PDF
+and document in the folder at once), and through the Kosmos tools the
+matter's record (facts,
 highlights, tasks, events, time entries, the settlement log), synced
 email, saved case law and earlier sessions and conversations on the
 matter. Invoices and the matter's rates are given only if you have the

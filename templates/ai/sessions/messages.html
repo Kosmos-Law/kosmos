@@ -42,7 +42,7 @@ the agent is doing now. The partial polls itself until the turn closes.
                 {% if n %}· {{ n }} step{{ n|pluralize }}{% endif %}
               {% endwith %}
             </summary>
-            {% include "ai/sessions/steps.html" with steps=message.trail %}
+            {% include "ai/sessions/steps.html" with steps=message.trail prefix=message.id %}
           </details>
         {% endif %}
         {% if message.content %}
@@ -90,7 +90,7 @@ the agent is doing now. The partial polls itself until the turn closes.
     <div class="ai-message-content">
       {% if live %}
         {% if live.events %}
-          {% include "ai/sessions/steps.html" with steps=live.events %}
+          {% include "ai/sessions/steps.html" with steps=live.events prefix="live" %}
         {% endif %}
         <div class="session-activity">
           <span class="session-activity-dot"></span>

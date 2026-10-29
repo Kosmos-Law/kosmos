@@ -221,6 +221,15 @@ class Session(AuditMixin, models.Model):
     ]
     ADMIN_ONLY_MODELS = {"claude-fable-5-1"}
     DEFAULT_MODEL = "claude-opus-5-5"
+    # The harness's reasoning effort for the model; the levels the SDK
+    # accepts, less "xhigh".
+    EFFORT_CHOICES = [
+        ("low", "Low effort"),
+        ("medium", "Medium effort"),
+        ("high", "High effort"),
+        ("max", "Max effort"),
+    ]
+    DEFAULT_EFFORT = "high"
 
     matter = models.ForeignKey(
         Matter, on_delete=models.CASCADE, related_name="ai_sessions"
@@ -236,6 +245,9 @@ class Session(AuditMixin, models.Model):
     title = models.CharField(max_length=255, blank=True, default="")
     model = models.CharField(
         max_length=40, choices=MODEL_CHOICES, default=DEFAULT_MODEL
+    )
+    effort = models.CharField(
+        max_length=10, choices=EFFORT_CHOICES, default=DEFAULT_EFFORT
     )
     # The harness's session id, set by the first turn; empty until then.
     sdk_session_id = models.CharField(max_length=64, blank=True, default="")

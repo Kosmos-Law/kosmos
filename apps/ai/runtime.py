@@ -76,6 +76,11 @@ def _step_summary(name: str, tool_input: dict) -> str:
         )
     if short == "Glob":
         return f"Glob {tool_input.get('pattern', '')}"
+    if short == "search_files":
+        where = tool_input.get("path") or ""
+        return f"Search files for '{tool_input.get('pattern', '')}'" + (
+            f" in {where}" if where else ""
+        )
     if short == "search_materials":
         queries = tool_input.get("queries") or [tool_input.get("query", "")]
         return "Search: " + "; ".join(str(q) for q in queries if q)
@@ -166,11 +171,16 @@ def _tool_outcome(name: str, text: str, is_error: bool, cwd: str = "") -> str:
         pages, size = notice.groups()
         return f"{pages} pages, {size}" if pages else f"PDF, {size}"
     lines = text.count("\n") + 1
+    short = name.split("__")[-1]
+    # A file search reports itself on its first line: the counts, less
+    # the pattern the call line already shows.
+    if short == "search_files":
+        first = text.splitlines()[0].rstrip(":")
+        return re.sub(r" for '.*?'(?= under | in | *$)", "", first)[:160]
     # A one-line answer ("No files found", a number, a short value) is
     # its own outcome; longer results are counted.
     if lines == 1 and len(text) <= 160:
         return text
-    short = name.split("__")[-1]
     if short == "Glob":
         return f"{lines} files"
     return f"{lines} lines"
@@ -193,7 +203,9 @@ class Turn:
         self.cwd = cwd
         self.events = []
         self.draft = ""
+        self.draft_thinking = ""
         self.draft_tool = None
+        self._thinking_started = None
         self.started = time.monotonic()
         self.usage = {}
         self.cost = None
@@ -216,12 +228,16 @@ class Turn:
             break
         if self.draft_tool:
             return _step_summary(self.draft_tool["name"], {}) + "..."
-        if self.draft:
+        if self.draft and not self.draft_thinking:
             return "Writing"
         return "Thinking"
 
     def state(self, status="running"):
         events = self.events[-80:]
+        if self.draft_thinking.strip():
+            events = events + [
+                {"kind": "thinking", "text": self.draft_thinking[-4000:], "draft": True}
+            ]
         if self.draft.strip():
             events = events + [
                 {"kind": "text", "text": self.draft[-20_000:], "draft": True}
@@ -262,6 +278,7 @@ class Turn:
                 self.sdk_session_id = msg.data.get("session_id") or self.sdk_session_id
         elif isinstance(msg, AssistantMessage):
             self.draft = ""
+            self.draft_thinking = ""
             self.draft_tool = None
             for block in msg.content:
                 if isinstance(block, TextBlock):
@@ -269,8 +286,16 @@ class Turn:
                         self.events.append({"kind": "text", "text": block.text.strip()})
                 elif isinstance(block, ThinkingBlock):
                     if block.thinking.strip():
+                        ms = None
+                        if self._thinking_started is not None:
+                            ms = int((time.monotonic() - self._thinking_started) * 1000)
+                            self._thinking_started = None
                         self.events.append(
-                            {"kind": "thinking", "text": block.thinking.strip()[:4000]}
+                            {
+                                "kind": "thinking",
+                                "text": block.thinking.strip()[:8000],
+                                "ms": ms,
+                            }
                         )
                 elif isinstance(block, ToolUseBlock):
                     tool_input = block.input or {}
@@ -310,10 +335,15 @@ class Turn:
                 self.draft_tool = {"id": block.get("id"), "name": block.get("name", "")}
             elif block.get("type") == "text":
                 self.draft = ""
+            elif block.get("type") == "thinking":
+                self.draft_thinking = ""
+                self._thinking_started = time.monotonic()
         elif kind == "content_block_delta":
             delta = event.get("delta") or {}
             if delta.get("type") == "text_delta":
                 self.draft += delta.get("text", "")
+            elif delta.get("type") == "thinking_delta":
+                self.draft_thinking += delta.get("thinking", "")
         elif kind == "content_block_stop":
             self.draft_tool = None
 
@@ -376,8 +406,11 @@ def _options(session, user, folder_path, linked, server, tool_names):
         resume=session.sdk_session_id or None,
         max_turns=settings.SESSIONS_MAX_TURNS,
         max_budget_usd=settings.SESSIONS_MAX_BUDGET_USD,
-        effort="high",
+        effort=session.effort or "high",
         include_partial_messages=True,
+        # The model's reasoning, summarized, so the page can show it; the
+        # newer models send only a signature unless asked.
+        thinking={"type": "adaptive", "display": "summarized"},
         # A tool result travels as one JSON line on the harness's stdout;
         # a long PDF read overflows the SDK's 1 MB default.
         max_buffer_size=64 * 1024 * 1024,
@@ -441,7 +474,9 @@ def run_turn(message_id: int):
     try:
         from .session_tools import build_session_server
 
-        server, tool_names = build_session_server(session, user)
+        server, tool_names = build_session_server(
+            session, user, folder_path if linked else None
+        )
         options = _options(session, user, folder_path, linked, server, tool_names)
         asyncio.run(_run(turn, options))
         _finish(message, turn)

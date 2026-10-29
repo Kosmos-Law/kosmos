@@ -119,6 +119,7 @@ variable belongs to stays off or falls back until it is set.
 | `DROPBOX_OCR_EXCLUDE` | `['Matters - Closed']` | Top-level folders the watcher never checks or OCRs, comma-separated. (comma-separated list) |
 | `FILES_OCR_SCRATCH` | `.ocr-scratch/` in the repository | Where the watcher stages an OCR'd PDF before replacing the original in one rename. Keep it on the same filesystem as the tree. Default: .ocr-scratch under the application directory. |
 | `FILES_OCR_JOBS` | `2` | Tesseract workers per PDF when the watcher adds a text layer. (integer) |
+| `FILES_TEXT_CACHE` | `.file-text/` in the repository | Where the text of PDFs and documents is cached for the sessions' search inside files. Outside the Dropbox tree. Default: .file-text under the application directory. |
 | `SESSIONS_HOME` | `.claude-sessions/` in the repository | Claude Code sessions (apps/ai/runtime.py; manage.py run_sessions). Where the harness keeps transcripts and config for sessions. Default: .claude-sessions under the application directory. |
 | `SESSIONS_SCRATCH` | `.claude-sessions' / 'scratch/` in the repository | Working directory for a session whose matter has no linked folder. Default: scratch/ under SESSIONS_HOME. |
 | `SESSIONS_CONCURRENCY` | `2` | Turns the sessions service runs at once (each is a Claude Code process). (integer) |

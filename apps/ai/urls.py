@@ -87,8 +87,8 @@ urlpatterns = [
     ),
     path(
         "case/ai/sessions/<int:session_id>/model/",
-        sessions.session_model,
-        name="session-model",
+        sessions.session_controls,
+        name="session-controls",
     ),
     path(
         "case/ai/sessions/<int:session_id>/rename/",

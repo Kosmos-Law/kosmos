@@ -110,13 +110,46 @@ def test_fable_is_for_administrators(admin, staff, matter):
     page = staff.get(reverse("ai:session-page", args=[session.id])).content.decode()
     assert "Claude Fable 5.1" not in page
     assert "Claude Sonnet 5" in page
-    url = reverse("ai:session-model", args=[session.id])
+    url = reverse("ai:session-controls", args=[session.id])
     assert staff.post(url, {"model": "claude-fable-5-1"}).status_code == 403
     response = staff.post(url, {"model": "claude-sonnet-5"})
     assert response.status_code == 200 and b"Claude Sonnet" in response.content
     session.refresh_from_db()
     assert session.model == "claude-sonnet-5"
     assert admin.post(url, {"model": "claude-fable-5-1"}).status_code == 200
+
+
+def test_the_effort_is_picked_on_the_page(admin, matter):
+    session = Session.objects.create(matter=matter, user=admin.user)
+    assert session.effort == "high"
+    page = admin.get(reverse("ai:session-page", args=[session.id])).content.decode()
+    assert (
+        page.count("Max effort") == 1 and page.count("High effort") == 2
+    )  # badge + menu
+    url = reverse("ai:session-controls", args=[session.id])
+    response = admin.post(url, {"effort": "max"})
+    assert response.status_code == 200 and b"Max effort" in response.content
+    session.refresh_from_db()
+    assert session.effort == "max"
+    assert admin.post(url, {"effort": "silly"}).status_code == 400
+
+
+def test_an_admin_only_model_falls_back_when_someone_else_continues(admin, matter):
+    """An administrator's Fable session continued by a staff member runs
+    on the default model, and the page's badge says so."""
+    staff = _login("staff", role="STAFF")
+    session = Session.objects.create(
+        matter=matter, user=admin.user, model="claude-fable-5-1", title="Deadlines"
+    )
+    response = staff.post(
+        reverse("ai:session-send", args=[session.id]), {"message": "hi"}
+    )
+    assert response.status_code == 200
+    session.refresh_from_db()
+    assert session.model == Session.DEFAULT_MODEL
+    assert (
+        b'hx-swap-oob="true"' in response.content and b"Claude Opus" in response.content
+    )
 
 
 def test_rename_and_delete(admin, matter):
