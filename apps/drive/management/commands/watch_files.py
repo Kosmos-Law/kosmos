@@ -36,8 +36,12 @@ class Command(BaseCommand):
                 "DROPBOX_FIRM_ROOT is not set or is not a directory "
                 f"({tree.root() or 'unset'})."
             )
+        # A dedicated process: log to stderr (the journal) instead of Django's
+        # handlers, and at INFO so each OCR and scan is recorded.
         logging.basicConfig(
-            level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+            level=logging.INFO,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+            force=True,
         )
         run_ocr = not options["no_ocr"]
         if options["scan"]:

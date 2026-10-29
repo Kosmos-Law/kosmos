@@ -349,7 +349,10 @@ class Watcher:
         worker.start()
         self._last_scan = time.monotonic() if not self.scan_on_start else 0.0
         try:
-            for event in watch.event_gen(yield_nones=True, timeout_s=1):
+            # No timeout_s: in this library it is an idle timeout that ends the
+            # generator. With yield_nones the loop wakes about once a second
+            # regardless, which drives flush, heartbeat and the daily scan.
+            for event in watch.event_gen(yield_nones=True):
                 if self._stop.is_set():
                     break
                 now = time.monotonic()
