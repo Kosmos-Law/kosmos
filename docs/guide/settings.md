@@ -25,7 +25,7 @@ permissions.
 | **Contacts** | Administrators | The groups, roles and relationship types offered for contacts. |
 | **Practice Areas** | Administrators | The practice areas offered on matters and intakes. |
 | **Tasks** | Administrators, once AI is set up | How the quick task line reads what you type. |
-| **Integrations** | Everyone | Gmail, Google Contacts, AI providers and the firm's files. A user who is not an administrator sees only **Case Email** and **Google Contacts**. Administrators also get **Files**, with a **Status** page showing whether the files watcher is running, which PDFs it could not OCR, and which folders are not yet linked to a matter. |
+| **Integrations** | Everyone | Gmail, Google Contacts, AI providers and the firm's files. A user who is not an administrator sees only **Case Email** and **Google Contacts**. Administrators also get **Files**, with a **Status** page showing whether the files watcher is running, which PDFs it could not OCR, and which folders are not yet linked to a matter (linking is done from a matter's **AI** tab). |
 | **Claude Desktop** | Everyone | Connecting the Claude Desktop app to Kosmos. |
 | **Intake Forms** | Administrators and users with the Intakes permission | Forms sent to prospective clients. |
 | **Intake Emails** | Administrators and users with the Intakes permission | Ready-made emails for intakes. |

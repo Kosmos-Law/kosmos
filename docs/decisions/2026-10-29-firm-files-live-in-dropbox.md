@@ -19,8 +19,9 @@ the database.
   folder on disk. Its matter roots (`Matters - Open`, `Matters - Pending`)
   hold one folder per matter; `Matters - Closed` is bucketed by year and
   gets no per-matter links.
-- **A person links a matter to its folder.** The Overview tab's Files row
-  opens a picker of the folders under the matter roots that no matter
+- **A person links a matter to its folder.** The AI tab's toolbar shows
+  the folder, or "No folder linked" where the agent would otherwise have
+  nothing to read; it opens a picker of the folders under the matter roots that no matter
   holds. The best name match is shown first as a suggestion; nothing is
   stored until the user clicks Link. The app never infers a link, because
   a wrong one puts one client's files in another client's matter.
@@ -81,7 +82,7 @@ the database.
   their own Dropbox client. The read-only rule of the Drive mirror
   record does not carry over.
 - Links are by path. The watcher follows renames it sees; a rename made
-  while the watcher is down shows as "folder not found" on the Overview
+  while the watcher is down shows as "Folder not found" on the AI tab
   and under Settings > Files until someone relinks.
 - Each host needs the Dropbox daemon running under the same account as
   the watcher, `fs.inotify.max_user_watches` raised (the tree has over

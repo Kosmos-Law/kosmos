@@ -1,14 +1,14 @@
-/* Firm files (apps/drive): the Overview's Files row, the Link Folder modal
+/* Firm files (apps/drive): the AI tab's folder chip, the Link Folder modal
    and Settings > Files. The folder picker itself reuses the
    .folder-picker-* rules in apps/mail.css. */
 
-.folder-link-name {
-  margin-right: 0.5rem;
-}
-
-.folder-link-missing {
-  color: var(--color-warning, var(--color-muted));
-  margin-right: 0.5rem;
+/* The AI tab's toolbar chip. Unlinked and missing are the states to
+   notice, so they carry the warning colour; a linked folder is quiet. */
+/* .toolbar's button rule is (0,2,1); this must outrank it. */
+.toolbar .folder-chip-btn.folder-chip-unlinked,
+.toolbar .folder-chip-btn.folder-chip-missing {
+  border-color: var(--warning);
+  color: var(--warning);
 }
 
 .folder-picker-option.suggested {
@@ -62,9 +62,9 @@ h3.settings-subsection {
 }
 
 .files-ok {
-  color: var(--color-success, inherit);
+  color: var(--success);
 }
 
 .files-warn {
-  color: var(--color-warning, inherit);
+  color: var(--warning);
 }

@@ -40,8 +40,8 @@ has over ten thousand directories.
 - `views.py`: the Link Folder modal and its link/unlink posts (matter
   access required; another matter's folder is shown taken, named only if
   the user is on that matter), and Settings > Files for admins.
-- `templatetags/drive_tags.py`: `matter_folder_row` (the Overview's Files
-  row) and `files_integration_card` (Settings > Integrations). The core
+- `templatetags/drive_tags.py`: `matter_folder_chip` (the AI tab's
+  toolbar chip) and `files_integration_card` (Settings > Integrations). The core
   loads these by name, which keeps the import-linter boundary intact.
 
 ## Running it

@@ -106,19 +106,16 @@ def test_a_user_off_the_matter_cannot_open_the_dialog(
     assert response.status_code == 403
 
 
-def test_overview_shows_the_files_row_only_when_configured(
+def test_the_ai_tab_shows_the_folder_chip_only_when_configured(
     admin_client, firm_root, matter, settings
 ):
     MatterFolder.objects.create(matter=matter, path=SMITH)
-    content = admin_client.get(
-        reverse("matters:overview-content", args=[matter.id])
-    ).content.decode()
-    assert "Matters - Open &rsaquo; Smith v Jones" in content
+    content = admin_client.get(reverse("ai:list", args=[matter.id])).content.decode()
+    assert "folder-chip-unlinked" not in content
+    assert "Smith v Jones" in content
     settings.DROPBOX_FIRM_ROOT = None
-    content = admin_client.get(
-        reverse("matters:overview-content", args=[matter.id])
-    ).content.decode()
-    assert "overview-folder" not in content
+    content = admin_client.get(reverse("ai:list", args=[matter.id])).content.decode()
+    assert "ai-folder" not in content
 
 
 def test_status_page_is_for_admins_and_lists_what_the_watcher_found(

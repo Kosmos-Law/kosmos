@@ -10,9 +10,9 @@ from apps.drive.models import FilesState, MatterFolder
 register = template.Library()
 
 
-@register.inclusion_tag("drive/folder-row.html")
-def matter_folder_row(matter):
-    """The Overview table's Files row: the linked folder, or the link button.
+@register.inclusion_tag("drive/folder-chip.html")
+def matter_folder_chip(matter):
+    """The AI tab's toolbar chip: the linked folder, or "No folder linked".
     Renders nothing when the Files integration is off."""
     configured = tree.configured()
     folder = MatterFolder.objects.filter(matter=matter).first() if configured else None

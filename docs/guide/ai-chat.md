@@ -47,6 +47,19 @@ Good to know:
   the matter can read it and add to it, and each question shows who asked
   it.
 
+## Link the matter to its folder
+
+When the firm's files are synced to the server, the toolbar of the
+**AI** tab shows the matter's folder in the firm's Dropbox. The AI
+works from that folder, so a matter without one shows **No folder
+linked** in the toolbar until someone links it. Click it to pick the
+folder from those under **Matters - Open** and **Matters - Pending**
+that no other matter holds; the closest name match is listed first as a
+suggestion, and nothing is linked until you click **Link**. Click the
+folder's name later to change it. A folder that is renamed in Dropbox
+keeps its link; one the server can no longer find shows **Folder not
+found** until you link the matter to its new folder.
+
 ## Ask a question
 
 1. Type in **Ask about this matter...** and press Enter. Shift+Enter

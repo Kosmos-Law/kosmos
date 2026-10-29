@@ -1,4 +1,4 @@
-{% load humanize %}
+{% load humanize drive_tags %}
 <div class="toolbar ai-toolbar">
   <div class="toolbar-left">
     {% if selected_conversations %}
@@ -103,6 +103,7 @@
                hx-target="#ai-table">
       </div>
     {% endif %}
+    {% matter_folder_chip matter %}
   </div>
   <div class="toolbar-right">{% include "ai/view-pills.html" with ai_view="conversations" %}</div>
 </div>
