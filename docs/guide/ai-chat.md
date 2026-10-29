@@ -1,22 +1,23 @@
 # AI chat
 
-This page is for attorneys and paralegals who want to ask an AI model
-about a matter. It covers starting a conversation, what the AI is and is
-not given, what it can add to the matter for you, and how to check what
-it tells you. It also covers the smaller chat on an intake.
+This page is for attorneys and paralegals who want to ask Claude
+about a matter. It covers starting a session, what Claude is given and
+how it works, the archive of the earlier chat, and the smaller chat on
+an intake.
 
 ## Where AI chat appears
 
 | Place | What it is for |
 |---|---|
-| A matter's **AI** tab, on the **Case** side | Questions about one matter, answered from its case file. Most of this page is about this chat. |
+| A matter's **AI** tab, on the **Case** side | **Sessions**: questions about one matter, answered by Claude from the matter's folder and record. Most of this page is about these. |
 | **Chat** on an intake | **Intake Chat**, a chat about a prospective client. See [The intake chat](#the-intake-chat). |
 
 Kosmos has no AI of its own, and AI is optional. An administrator
-connects it to Anthropic (the Claude models), to Google (the Gemini
-models) or to both, under **Settings → Integrations** (see
-[AI](settings.md#ai)). Until one is connected, none of the places above
-appear: there is no **AI** tab on matters and no **Chat** on intakes.
+connects it to Anthropic (the Claude models) and, for the intake chat
+and background work, optionally to Google (the Gemini models), under
+**Settings → Integrations** (see [AI](settings.md#ai)). Sessions need
+the Anthropic key. Until a key is set, none of the places above appear:
+there is no **AI** tab on matters and no **Chat** on intakes.
 
 ## Start a session on a matter
 
@@ -35,60 +36,51 @@ needs as it goes.
    name to change it.
 
 Conversations from before sessions are under the **Archive** pill at
-the right of the toolbar. They open and read as before, but new chats
-are sessions.
+the right of the toolbar (see [The archive](#the-archive)).
 
 ## What happens when you send a prompt
 
-Claude answers in the session page as it works. Above the answer, the
-**steps** line lists what it did: which files it read with Read, Grep
-and Glob, which Kosmos tools it called (the matter record, synced
-email, highlights, earlier sessions, case law). Click it to open the
-list. Below a finished answer are the time it took, the tokens and the
+Press Enter to send; Shift+Enter starts a new line. Claude works in
+the session page as you watch: each file it opens, each search it runs
+and each Kosmos tool it calls (the matter record, synced email,
+highlights, earlier sessions, case law) appears as a row as it
+happens, with what it was looking for and a line of what came back,
+and the narration between them. The line under the transcript says
+what it is doing now and how long it has been at it. When the answer
+is finished the rows fold into a **Worked for** line above it; click
+the line to open them again. Below the answer are the tokens and the
 cost; the session's running total sits under the transcript.
 
-Click the **x** beside "Claude" while it is working to stop the turn.
-A stopped or failed turn stays in the transcript, marked as such, and
-you can send the prompt again.
+Click **Stop** while Claude is working to end the turn. A stopped or
+failed turn stays in the transcript, marked as such, and you can send
+the prompt again.
 
 If the sessions service is not running on the server, the page says
 so and keeps the prompt; it is answered when the service starts. Ask
 an administrator.
 
-Claude reads the matter's folder in the firm's files and the matter's
-record. It cannot write files, run programs or browse the web, and it
-reaches CourtListener only for users with the Research permission.
+Claude starts with the matter's details, contacts, witnesses and
+proceedings, the names and titles of the firm's users, and a map of
+the matter's folder. From there it reads what it needs: the files in
+the folder (every PDF has a text layer, so a scan reads like a
+document), and through the Kosmos tools the matter's record (facts,
+highlights, tasks, events, time entries, the settlement log), synced
+email, saved case law and earlier sessions and conversations on the
+matter. Invoices and the matter's rates are given only if you have the
+Financial permission, and published case law is searched only if you
+have the Research permission (see
+[Permissions](settings.md#permissions)). Nothing from another matter
+is given to it, and a document or email set to **Never** stays out.
 
-## The earlier chat (archive)
+Claude cannot write files, run programs or browse the web. It answers
+in prose; it does not add to the timeline or the witness list.
 
-The rest of this page describes the earlier chat, which the archive
-still uses to show its conversations.
+!!! note
 
-1. Open the matter, click **Case**, then **AI**, then **Archive**.
-2. (Historic) Click the plus button at the left of the toolbar. **New
-   Conversation** opens.
-3. Choose a **Mode** and a **Model**, type a **Name** and click
-   **Submit**.
-
-The conversation opens in a new browser tab, with the matter, the name
-and the model across the top. It joins the list on the **AI** tab when
-you send your first question.
-
-| Mode | How it works | Pick it when |
-|---|---|---|
-| **Classic** | Kosmos loads the case file into your question before the AI sees it, and the AI answers in one pass. | You want a quick answer, or the question ranges over the whole matter. |
-| **Agentic** | The AI starts from an index of the case file, then searches and opens documents and emails one step at a time, and shows each step. With the Research permission, it can also search published case law. | The matter is large, or the answer turns on reading particular documents closely. A reply can take several minutes. |
-
-**Model** lists the Claude and Gemini models of the providers your server
-is connected to. The mode and the model are fixed once the conversation
-exists. An **Agentic** badge marks those conversations in the list and in
-the chat window.
-
-Good to know:
-
-- A conversation belongs to the matter, not to you. Everyone who can open
-  the matter can read it and add to it, and each question shows who asked
-  it.
+    A reply can be wrong: it can misread a document, miss one it did
+    not open, or cite a case for something the case does not say.
+    Check anything that will go to a client or a court against the
+    documents and the opinions themselves.
 
 ## Link the matter to its folder
 
@@ -103,219 +95,29 @@ folder's name later to change it. A folder that is renamed in Dropbox
 keeps its link; one the server can no longer find shows **Folder not
 found** until you link the matter to its new folder.
 
-## Ask a question
+## The archive
 
-1. Type in **Ask about this matter...** and press Enter. Shift+Enter
-   starts a new line. For a long question, click the expand button beside
-   the box: **Compose Prompt** opens with formatting buttons, and **Send
-   to AI** sends it.
-2. Watch the status under your question while the AI works.
-3. Read the reply. Ask a follow-up in the same box: the AI is given the
-   conversation so far.
+Conversations from the chat that preceded sessions are under the
+**Archive** pill at the right of the **AI** tab's toolbar. The pill
+appears only on a matter that has some. They can be read, not
+continued: new questions are sessions.
 
-In a **Classic** conversation the status is one line that changes as the
-work moves on ("Building context...", "Connecting to AI...",
-"Thinking..." or "Generating response...", "Verifying citations..."),
-with the seconds elapsed and a list of what was gathered and selected. In
-an **Agentic** conversation each step is a row ("Read", "Searched"), and
-the bar above the message box shows the time, the size of the request and
-how many lookups are used, for example "7/40 tools".
+The list shows each conversation's **Date**, name, **Model**, number of
+**Messages**, **Participants**, **Last Activity** and **AI** setting.
+Type in **Filter conversations . . .** to match names and the text of
+messages, or choose a person under **All participants**. Click a
+conversation's name for its menu: **Open** shows it in a new browser
+tab, with an **Archived** badge in its header; **Rename** and
+**Delete** do what they say. Tick several and the toolbar offers the
+**AI** setting and a trash button.
 
-To stop, click the x button beside the status or press Esc. Stopping
-also removes the question you asked.
-
-Above the reply, **Activity** (Classic) or **Agent run** (Agentic) lists
-the steps behind it. The bar above the message box shows the size of the
-conversation and an estimated cost for the last reply and for the whole
-conversation. **History**, at the left, lists the questions asked:
-click one to jump to it. The copy button on a reply copies it with its
-formatting. On a question, the delete button removes that question and
-its reply, and the scissors button moves that question and everything
-after it into a new conversation.
-
-Good to know:
-
-- Keep the chat tab open until the reply appears. The work carries on if
-  you close the tab, and **Resume** shows it again, but a reply that has
-  been finished for more than ten minutes without being shown is lost:
-  your question stays, with no answer and no message. Anything the AI
-  added to the matter in that reply is still there.
-- "This request was interrupted before it finished (the server restarted
-  mid-run). Please re-send your message." means the server was restarted
-  while the AI was working. Send the question again.
-- A reply that starts "Error: Unable to get response." gives the reason
-  after it. Send the question again, or start a conversation with another
-  model.
-
-## What the AI is given
-
-A chat on a matter works from that matter's record. Nothing from another
-matter is given to it. One thing comes from outside the matter: the
-names and titles of the firm's users, with your own name and email
-address.
-
-What it is given also depends on who asks. Time entries, with their rates
-and fees, are given for every user who can open the matter, as the
-matter's **Activity** tab shows them. Invoices and the matter's rates are
-given only if you have the Financial permission, and published case law
-is searched only if you have the Research permission (see
-[Permissions](settings.md#permissions)). Ask your administrator.
-
-### In a Classic conversation
-
-Given with every question:
-
-- the matter's name, status, work status, practice area, description,
-  open date and client;
-- its contacts (name, role, company and email), its witnesses and its
-  proceedings;
-- every highlight and every timeline fact (see
-  [Timeline, witnesses and highlights](facts.md));
-- up to 20 tasks (open ones first), the next 15 events and the last 5
-  past events;
-- every time entry, with its hours, rate, amount and invoice status, and
-  the settlement log;
-- in full, each document, saved case and conversation whose **AI**
-  setting is **Always**.
-
-Chosen for each question:
-
-- documents set to **Auto** whose text has been extracted (see
-  [Documents](documents.md));
-- the matter's synced email threads, with the text of their
-  attachments (see [Email](email.md));
-- saved cases (the **Case Law** view of the **AI** tab, see
-  [Case law](research.md)) and other conversations set to **Auto**;
-- invoices, only when the question is about billing and you have the
-  Financial permission.
-
-If these items come to less than about 30,000 words, and there are no
-invoices to consider, all of them are loaded.
-Otherwise a first AI step is shown your question and a list of the items
-(name, category, date, a short summary, size and importance) and picks
-the ones to load in full. The rest are given by name only, so the AI can
-tell you that a document exists which it has not read.
-
-### In an Agentic conversation
-
-The AI starts with the matter's details, contacts, witnesses and
-proceedings, the highlights and timeline when they are short, and an
-index with one line for each document, email thread, saved case and
-earlier conversation. From there it opens what it needs,
-up to 40 lookups for each question. It can also read the matter's tasks,
-events, settlement log, and time, expense and flat-fee entries. With the
-Financial permission, the index lists the matter's invoices as well, and
-the AI can read them and the matter's rates. With the Research
-permission, it can search published case law on CourtListener. Without
-it, the AI works from the cases saved on the matter. What it has read
-stays with the conversation for your later questions.
-
-### The AI setting
-
-Documents, saved cases and conversations each have an **AI** column.
-
-| Setting | Effect |
-|---|---|
-| **Auto** | The item is loaded when it is relevant to the question. New items start here. |
-| **Always** | Classic: loaded in full with every question. Agentic: marked for the AI to read first when it bears on the question. |
-| **Never** | Never given to the AI. |
-
-### What it is never given
-
-- Records of any other matter.
-- The matter's ledger and the client's trust records.
-- Invoices and the matter's rates, unless you have the Financial
-  permission.
-- Anything set to **Never**, and the contents of a document whose text
-  has not been extracted.
-
-Good to know:
-
-- Permissions are checked when a question is asked, not when a
-  conversation is read. A reply to a colleague who has the Financial
-  permission can quote invoices and rates, and everyone who can open the
-  matter can read that conversation.
-- In a Classic conversation, a follow-up sent within ten minutes works
-  from the items chosen for the earlier question, unless the case file
-  changed in between. If the AI says it has not seen a document, ask
-  again later or set the document's **AI** to **Always**.
-
-## Have the AI add to the matter
-
-The AI answers in prose unless you tell it to record something. Use the
-word "timeline" or "witness" in the request: one that leaves the
-word out may be answered in prose only.
-
-| You say, for example | The reply shows | Where it lands |
-|---|---|---|
-| "Add these dates to the timeline." | "Added to timeline:" and each fact, with its date and source | The matter's **Timeline** tab, linked to the source highlight or document when there is one |
-| "Add her as a witness." | "Added witness:" and the name, or "Already on the witness list:" | The **Witnesses** tab |
-| "Save these cases." (Agentic only, with the Research permission) | "Saved to case law:" and each case | The **Case Law** view of the **AI** tab, with what the case was cited for |
-
-A matter chat does not create tasks. Add them yourself (see
-[Tasks](tasks.md)).
-In a conversation with a linked draft, the AI edits the document as
-tracked changes in LibreOffice Writer (see [Drafts](drafts.md)).
-
-Good to know:
-
-- Nothing is confirmed first. The items exist as soon as the reply
-  appears, so read each line and correct mistakes on the tab where the
-  item landed.
-
-## Check sources and citations
-
-A reply links the documents and highlights it relies on. The link text is
-the document's name or the highlight's citation. Click it to open the
-document, at the highlighted passage when the link is to a highlight. The
-link opens in the chat's own tab: use your browser's command to open it
-in a new tab if you want to keep the chat on screen.
-
-Each case citation in a reply has a small badge after it. It spins while
-Kosmos looks the case up on CourtListener and reads the opinion against
-what the AI said about it, then shows a check mark (the case supports the
-point), a minus (it supports part of it), a warning triangle (it
-contradicts it) or a question mark (unclear). Click the badge to open
-**Citation Check**, with what the AI used the case for, the rationale, a
-quote from the opinion and a link to the opinion. The bar above the
-message box shows "checking cites", then "cites ok" or the number that
-could not be found.
-
-!!! note
-
-    A reply can be wrong: it can misread a document, miss one it was not
-    given, or cite a case for something the case does not say. Check
-    anything that will go to a client or a court against the documents
-    and the opinions themselves.
-
-## Manage conversations
-
-The **AI** tab lists each conversation with its **Date**, name, **Model**,
-number of **Messages**, **Participants**, **Last Activity** and **AI**
-setting. Type in **Filter conversations . . .** to match names and the
-text of messages, or choose a person under **All participants**.
-
-Click a conversation's name for its menu:
-
-| Choice | What it does |
-|---|---|
-| **Resume** | Opens the conversation in a new browser tab. |
-| **Rename** | Opens **Rename Conversation**. Change the **Title** and click **Save**. |
-| **Clone** | Makes a copy, with "(Copy)" after the name. |
-| **Append to...** | Moves every message into another conversation on the matter and deletes this one. |
-| **Delete** | Deletes the conversation after you confirm. This cannot be undone. |
-
-To act on several at once, tick their boxes: the toolbar then offers
-**AI** (to set them to **Auto**, **Always** or **Never**) and a trash
-button. A conversation's **AI** setting decides whether later chats on
-the matter are given it, as described above.
-
-## Summaries
-
-After each reply, Kosmos writes a summary of about 100 words of the
-conversation so far. It appears as **Conversation Summary** at the top of
-the chat window the next time you open it, and it is what describes the
-conversation when a later chat chooses what to load.
+An archived reply still shows what the earlier chat recorded: the
+**Activity** or **Agent run** list above it, the links to documents
+and highlights it relied on, and the badge after each case citation
+(a check mark, a minus, a warning triangle or a question mark; click
+it for **Citation Check**). The **AI** setting (**Auto**, **Always**,
+**Never**) still decides whether the conversation is offered to Claude
+Desktop through the Kosmos MCP server; **Never** keeps it out.
 
 ## The intake chat
 
@@ -329,23 +131,21 @@ conclusions to the intake's notes. See
 
 ## How long chats are kept
 
-Conversations on a matter stay until someone deletes them, with one
-exception: once a matter has been **Closed** for a retention period (180
-days unless your administrator has changed it), its AI conversations are
-deleted. See [Close a matter](matters.md#close-a-matter). Timeline facts,
-witnesses and saved cases that the AI added are part of the matter
-and are not deleted with the chats.
+Sessions and archived conversations stay until someone deletes them,
+with one exception: once a matter has been **Closed** for a retention
+period (180 days unless your administrator has changed it), its
+archived conversations are deleted. See
+[Close a matter](matters.md#close-a-matter). Sessions are not purged
+yet.
 
 ## What leaves the firm
 
-Each question is sent, with the parts of the matter described above, to
-the provider of the model you chose: Anthropic for a Claude model, Google
-for a Gemini model. Whichever model you choose, the supporting work
-(choosing what to load, writing summaries and checking citations) goes to
-Google's Gemini when it is connected, and to Anthropic when only Anthropic
-is. The text of each reply is sent to
-CourtListener to look up the cases it cites, and so are the case law
-searches of an Agentic conversation. Whether that is acceptable for a
-given client is a decision for the firm:
+Each prompt in a session goes to Anthropic, with the matter details
+Claude starts with and whatever it reads during the turn: files from
+the matter's folder, and what the Kosmos tools return. The intake chat
+and the supporting work (summaries, intake extraction, quick task
+entry) go to Google's Gemini when it is connected, and to Anthropic
+when only Anthropic is. Case law searches go to CourtListener. Whether
+that is acceptable for a given client is a decision for the firm:
 [AI providers and research](../admin/integrations/ai.md#what-is-sent-to-the-providers)
-lists exactly what is sent.
+sets out what is sent.

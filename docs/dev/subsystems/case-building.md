@@ -243,8 +243,8 @@ CourtListener token, and an admin or a `perm_research` user).
 the AI tab marked active in the case navigation. Without AI the list is
 its own Case Law tab, with no AI column, bulk AI menu or summary.
 Without a CourtListener token the list, lookup and viewer 404
-(`CASELAW_PATTERN` in `PermissionMiddleware`). Cases also arrive from the agentic chat's `save-caselaw`
-block (see [Agentic chat](ai/agent-chat.md)), which builds the row from
+(`CASELAW_PATTERN` in `PermissionMiddleware`). Cases also arrive from a session's `save_caselaw`
+tool (see [Sessions](ai/sessions.md)), which builds the row from
 `fetch_cluster()` so a citation-less slip opinion saves too.
 
 Jurisdictions (`apps/case/jurisdictions.py`) feed the agent's
@@ -336,7 +336,7 @@ matrix is in the [permissions reference](../../reference/permissions.md).
   and highlights](../../guide/facts.md), [Case law](../../guide/research.md)
 - Admin: [Storage](../../admin/integrations/storage.md)
 - Subsystems: [Matters](matters.md), [AI context](ai/context.md),
-  [Agentic chat](ai/agent-chat.md), [Drafts](drafts.md),
+  [Sessions](ai/sessions.md), [Drafts](drafts.md),
   [Email and intakes](email-and-intakes.md) (the Emails tab),
   [MCP](mcp.md) (the case JSON API), [Operations](operations.md)
 - Conventions: [HTMX and Alpine](../conventions/htmx-alpine.md),

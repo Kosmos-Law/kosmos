@@ -54,8 +54,7 @@ access, and the things that bite.
 | [Trust and payments](subsystems/trust-and-payments.md) | The trust ledger, payments and their trust withdrawals, online payments, payment requests |
 | [Case building](subsystems/case-building.md) | Documents, OCR, highlights, facts, witnesses, labels, search |
 | [Sessions](subsystems/ai/sessions.md) | Claude Code sessions on a matter: the runtime over the Agent SDK, the tools, the prompt, the service |
-| [The AI context system](subsystems/ai/context.md) | The archive's engine: conversations, context builders, the selector, status, fenced writes |
-| [Agentic chat](subsystems/ai/agent-chat.md) | The tool-loop chat mode |
+| [The archive and the intake chat](subsystems/ai/context.md) | The conversations of the earlier chat, the intake chat's turn, the shared AI helpers |
 | [Drafts](subsystems/drafts.md) | Draft links and the LibreOffice companion |
 | [Files](subsystems/files.md) | The Dropbox-synced Firm tree: matter folder links, the watcher, OCR in place |
 | [Email and intakes](subsystems/email-and-intakes.md) | Gmail sync, inbound email, intakes, client forms |

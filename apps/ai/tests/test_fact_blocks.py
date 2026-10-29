@@ -6,8 +6,6 @@ import json
 import pytest
 
 from apps.ai.fact_blocks import FACTS_PROTOCOL, apply_fact_blocks
-from apps.ai.models import Conversation
-from apps.ai.tasks import process_ai_request
 from apps.case.models import Fact
 
 pytestmark = pytest.mark.django_db
@@ -184,81 +182,6 @@ def test_multiple_entries_in_order(user, matter):
     )
     assert Fact.objects.count() == 2
     assert text.index("Contract signed") < text.index("First missed payment")
-
-
-def test_context_exposes_source_handles(matter, document, highlight):
-    from apps.ai.context import collect_context_items
-
-    document.ai_context = "always"
-    document.save(update_fields=["ai_context"])
-    items = collect_context_items(matter)
-    joined = "\n".join(item.content for item in items)
-    assert f"[doc:{document.id}]" in joined
-    assert f"[hl:{highlight.id}]" in joined
-
-
-# ── Worker wiring ────────────────────────────────────────────────────────────
-
-
-def test_classic_chat_applies_fact_blocks(user, matter, monkeypatch):
-    """process_ai_request appends the protocol and applies the block."""
-    from apps.llm.status import status_cache as cache
-
-    conversation = Conversation.objects.create(
-        matter=matter, user=user, llm="claude-opus", kind="classic"
-    )
-    conversation.messages.create(role="user", user=user, content="Record the filing")
-
-    captured = {}
-
-    def fake_send(context_text, chat_history, model, **kwargs):
-        captured["context"] = context_text
-        return (
-            block([{"date": "2024-03-15", "description": "Complaint filed"}]),
-            10,
-            10,
-        )
-
-    monkeypatch.setattr("apps.ai.tasks.send_to_claude", fake_send)
-
-    process_ai_request(
-        conversation.id, matter.id, "Record the filing", user.id, "claude-opus"
-    )
-
-    assert "RECORDING TIMELINE FACTS" in captured["context"]
-    assert "CITING SOURCES" in captured["context"]
-    fact = Fact.objects.get()
-    assert fact.description == "Complaint filed"
-    assert fact.matter_id == matter.id
-
-    status = cache.get(f"ai_status_{conversation.id}")
-    assert status["status"] == "complete"
-    assert "Added to timeline: **Complaint filed**" in status["response"]
-    assert "```create-facts" not in status["response"]
-
-
-def test_unrelated_chat_gets_no_write_protocols(user, matter, monkeypatch):
-    """A conversation that never mentions timeline or witness work
-    carries no standing write instructions (SOURCE_LINKING stays)."""
-    conversation = Conversation.objects.create(
-        matter=matter, user=user, llm="claude-opus", kind="classic"
-    )
-    message = "What are our chances on summary judgment?"
-    conversation.messages.create(role="user", user=user, content=message)
-
-    captured = {}
-
-    def fake_send(context_text, chat_history, model, **kwargs):
-        captured["context"] = context_text
-        return "Decent, given the contract terms.", 10, 10
-
-    monkeypatch.setattr("apps.ai.tasks.send_to_claude", fake_send)
-
-    process_ai_request(conversation.id, matter.id, message, user.id, "claude-opus")
-
-    assert "CITING SOURCES" in captured["context"]
-    assert "RECORDING TIMELINE FACTS" not in captured["context"]
-    assert "RECORDING WITNESSES" not in captured["context"]
 
 
 def test_protocol_mentions_only_valid_colors():

@@ -6,7 +6,8 @@ the CourtListener research tools and so on) are reused as they are: their
 provider-neutral specs become MCP tools and their executor runs each call
 on a worker thread, since the handlers use the ORM synchronously. Two
 tools are added for the new table, so a session can read earlier
-sessions on the matter the way it reads archived conversations.
+sessions on the matter the way it reads archived conversations, and one
+write tool, save_caselaw, for a user who may research.
 
 Tool names reach the model as ``mcp__kosmos__<name>``.
 """
@@ -17,7 +18,13 @@ import anyio
 from claude_agent_sdk import create_sdk_mcp_server, tool
 
 from .access import has_financial_access, has_research_access
-from .agent_tools import DEFAULT_BUDGET, build_agent_tools, make_agent_executor
+from .agent_tools import (
+    DEFAULT_BUDGET,
+    build_agent_tools,
+    courtlistener_configured,
+    make_agent_executor,
+)
+from .caselaw_save import save_authority
 from .models import Session
 
 SERVER_NAME = "kosmos"
@@ -102,10 +109,67 @@ def _session_tools(session, user):
     return [list_sessions, read_session]
 
 
-def build_session_server(session, user):
-    """The in-process MCP server for one turn, built for ``user``: the
-    financial and research tools appear only with those permissions, as
-    in the earlier loop. Returns (server_config, tool_names)."""
+def _research_tools(session, user):
+    """save_caselaw: the write half of the research tools, for a user
+    who may research (the search and read tools come from agent_tools)."""
+
+    @tool(
+        "save_caselaw",
+        "Save an opinion you read in this session to the matter's case law "
+        "library, with the proposition it is cited for (one sentence). Only "
+        "when the user asks to save; never a case you did not read here.",
+        {
+            "type": "object",
+            "properties": {
+                "cluster_id": {
+                    "type": "integer",
+                    "description": "The CourtListener cluster id from the research tools.",
+                },
+                "proposition": {
+                    "type": "string",
+                    "description": "The rule or holding the case is cited for.",
+                },
+                "court": {
+                    "type": "string",
+                    "description": "The court's display name as the search hit showed it.",
+                },
+            },
+            "required": ["cluster_id", "proposition"],
+        },
+    )
+    async def save_caselaw(args):
+        def run():
+            try:
+                cluster_id = int(args.get("cluster_id") or 0)
+            except (TypeError, ValueError):
+                cluster_id = 0
+            if not cluster_id:
+                return "cluster_id is required.", True
+            case_law = save_authority(
+                session.matter,
+                cluster_id,
+                args.get("proposition"),
+                args.get("court"),
+                user,
+            )
+            if case_law is None:
+                return (
+                    f"Cluster {cluster_id} could not be fetched from CourtListener.",
+                    True,
+                )
+            cite = f", {case_law.citation}" if case_law.citation else ""
+            return f"Saved to case law: {case_law.case_name}{cite}", False
+
+        text, is_error = await anyio.to_thread.run_sync(run)
+        return _text_result(text, is_error)
+
+    return [save_caselaw]
+
+
+def build_session_tools(session, user):
+    """The tools of one turn, built for ``user``: the financial and
+    research tools appear only with those permissions, as in the
+    earlier loop."""
     specs = build_agent_tools(
         DEFAULT_BUDGET,
         include_financial=has_financial_access(user),
@@ -114,10 +178,17 @@ def build_session_server(session, user):
     executor = make_agent_executor(
         session.matter, None, DEFAULT_BUDGET, on_event=None, user=user
     )
-    tools = []
-    for spec in specs:
-        tools.append(_wrap(spec, executor.execute_one))
+    tools = [_wrap(spec, executor.execute_one) for spec in specs]
     tools.extend(_session_tools(session, user))
+    if has_research_access(user) and courtlistener_configured():
+        tools.extend(_research_tools(session, user))
+    return tools
+
+
+def build_session_server(session, user):
+    """The in-process MCP server for one turn. Returns (server_config,
+    tool_names), the names as the model sees them."""
+    tools = build_session_tools(session, user)
     server = create_sdk_mcp_server(SERVER_NAME, version="1.0.0", tools=tools)
     return server, [tool_name(t.name) for t in tools]
 

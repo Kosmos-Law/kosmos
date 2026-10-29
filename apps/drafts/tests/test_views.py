@@ -48,7 +48,7 @@ def test_a_linked_draft_shows_and_unlinks(client, conversation, link):
 
 
 def test_conversation_list_shows_draft_badge(client, link, matter):
-    response = client.get(f"/case/{matter.id}/ai/")
+    response = client.get(f"/case/{matter.id}/ai/archive/")
     assert response.status_code == 200
     assert b"ai-draft-badge" in response.content
 
@@ -58,13 +58,6 @@ def test_standalone_chat_shows_chip(client, link, matter):
     assert response.status_code == 200
     assert b"draftChip" in response.content
     assert b"motion.odt" in response.content
-
-
-def test_new_chat_window_offers_no_draft_link(client, matter):
-    response = client.get(f"/case/{matter.id}/ai/conversations/new/")
-    assert response.status_code == 200
-    assert b"linkDraftForNewChat" not in response.content
-    assert b"icon-wifi-pen" not in response.content
 
 
 def test_companion_setup_modal(client):

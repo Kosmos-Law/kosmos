@@ -9,7 +9,7 @@ matter.
 import pytest
 from django.utils import timezone
 
-from apps.ai.context import assemble_matter_context, build_request_info
+from apps.ai.context import build_request_info
 from apps.settings.models import Firm
 
 pytestmark = pytest.mark.django_db
@@ -57,13 +57,22 @@ class TestRequestInfo:
 
 
 class TestJurisdiction:
+    """The session prompt's jurisdiction: the matter's, else the firm's,
+    else United States common law."""
+
+    def _prompt(self, matter, user):
+        from apps.ai.models import Session
+        from apps.ai.session_prompt import build_session_system
+
+        return build_session_system(Session(matter=matter, user=user), user, None)
+
     def test_uses_company_jurisdiction(self, user, matter):
         company = Firm.objects.first()
         company.jurisdiction = "Georgia"
         company.save()
         matter.jurisdiction = ""
         matter.save()
-        text = assemble_matter_context(matter, user=user)
+        text = self._prompt(matter, user)
         assert "jurisdiction of Georgia" in text
         assert "[JURISDICTION]" not in text
 
@@ -73,7 +82,7 @@ class TestJurisdiction:
         company.save()
         matter.jurisdiction = "Florida"
         matter.save()
-        text = assemble_matter_context(matter, user=user)
+        text = self._prompt(matter, user)
         assert "jurisdiction of Florida" in text
         assert "jurisdiction of Georgia" not in text
 
@@ -83,6 +92,6 @@ class TestJurisdiction:
         company.save()
         matter.jurisdiction = ""
         matter.save()
-        text = assemble_matter_context(matter, user=user)
+        text = self._prompt(matter, user)
         assert "United States common law" in text
         assert "[JURISDICTION]" not in text

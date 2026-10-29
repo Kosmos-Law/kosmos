@@ -76,6 +76,7 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [Effort tiers and answer streaming, tried and reverted (2026-08-14)](2026-08-14-effort-tiers-and-streaming-reverted.md)
 - [AI chat runs on threads, research runs on the queue (2026-08-17)](2026-08-17-chat-on-threads-research-on-the-queue.md)
 - [AI chat becomes Claude Code sessions (2026-10-29)](2026-10-29-ai-chat-becomes-claude-code-sessions.md)
+- [The conversation engine is retired (2026-10-29)](2026-10-29-the-conversation-engine-is-retired.md)
 - [The user picks which cases a research run reads (2026-08-18)](2026-08-18-research-selection-gate.md)
 - [The token estimate is 2.5 characters per token (2026-08-20)](2026-08-20-token-estimate-at-two-and-a-half-chars.md)
 - [What the AI says about money follows what the screens show (2026-10-02)](2026-10-02-ai-money-follows-the-screens.md)

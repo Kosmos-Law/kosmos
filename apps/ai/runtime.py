@@ -86,6 +86,16 @@ def _step_summary(name: str, tool_input: dict) -> str:
         return f"Search case law: {tool_input.get('query', '')}"
     if short == "read_opinion":
         return f"Read opinion {tool_input.get('cluster_id', '')}"
+    if short == "save_caselaw":
+        return f"Save case law {tool_input.get('cluster_id', '')}"
+    if short == "lookup_citation":
+        return f"Look up {tool_input.get('citation', '')}"
+    if short == "search_in_opinions":
+        return f"Search opinions for '{tool_input.get('query', tool_input.get('pattern', ''))}'"
+    if short == "read_caselaw":
+        return f"Read saved case {tool_input.get('caselaw_id', '')}"
+    if short == "read_invoice":
+        return f"Read invoice {tool_input.get('invoice_id', '')}"
     if short == "read_session":
         return f"Read session {tool_input.get('session_id', '')}"
     if short == "list_sessions":

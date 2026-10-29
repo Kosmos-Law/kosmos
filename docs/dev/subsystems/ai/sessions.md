@@ -72,6 +72,15 @@ The SDK ships its own Claude Code binary and uses it (the log says
 install. It needs an Anthropic API key (`ANTHROPIC_API_KEY` or
 Settings) and the Dropbox-synced tree.
 
+## What sessions replaced
+
+The chat that preceded sessions (a context builder and selector, an
+in-house tool loop over the same matter tools, fenced writes and
+citation vetting after each answer) was retired on 2026-10-29
+([record](../../../decisions/2026-10-29-the-conversation-engine-is-retired.md)).
+Its conversations stay readable under the Archive pill; what remains
+of its code is on [The archive and the intake chat](context.md).
+
 ## Tests
 
 `apps/ai/tests/test_runtime.py` runs a turn against a scripted fake of

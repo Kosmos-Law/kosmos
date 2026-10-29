@@ -19,37 +19,36 @@ All variables named here are described in the
 
 | Key | Provider | Enables |
 |---|---|---|
-| Gemini (`GEMINI_API_KEY`) | Google Gemini | Every AI feature, the Gemini models in matter chat, and [semantic search](#semantic-search). |
-| Anthropic (`ANTHROPIC_API_KEY`) | Anthropic | Every AI feature, and the Claude models in matter chat. |
-| `COURTLISTENER_API_KEY` | CourtListener | Saved case law, case law search and citation checking. See [CourtListener](#courtlistener). |
+| Anthropic (`ANTHROPIC_API_KEY`) | Anthropic | Sessions on a matter (Claude Code through the Agent SDK), and every background AI feature. |
+| Gemini (`GEMINI_API_KEY`) | Google Gemini | Every background AI feature, and [semantic search](#semantic-search). |
+| `COURTLISTENER_API_KEY` | CourtListener | Saved case law and case law search. See [CourtListener](#courtlistener). |
 
-One AI key is enough: either provider runs every AI feature. Besides the
-matter chat, these are:
+Sessions need the Anthropic key: a session is Claude Code run on the
+server against the matter's folder, and it bills the firm's Anthropic
+account by use. The AI tab appears with either key, but without the
+Anthropic key a session's prompt fails with the harness's error.
 
-- choosing which documents and emails to load into a Classic chat
-  on a large matter (if this call fails, Kosmos falls back to picking by
-  importance rating);
-- the short summaries written for each document after text extraction,
-  for each chat and for each saved case;
-- the per-citation check of whether a cited case supports what the AI
-  said about it;
+Either key runs the background features:
+
+- the short summaries written for each document after text extraction
+  and for each saved case;
 - the intake assistant: the intake chat, the assessment, and reading
   forwarded email into intakes
   (see [Intakes from forwarded email](inbound-email.md));
 - AI quick task entry.
 
 These features ask for a model tier rather than a model. The "fast" tier
-(summaries, the selector, citation checks, forwarded email, quick task
-entry) is Gemini 2.5 Flash or Claude Sonnet 4.6; the "deep" tier (the
-intake chat) is Gemini Pro or Claude Sonnet 5. With both keys set they run
-on Gemini, the cheaper of the two for background work. An intake chat
-records the model it started on and stays on it. AI quick task entry
-uses the model chosen under **Settings → Tasks** when that provider has a
-key, and the other one when it does not.
+(summaries, forwarded email, quick task entry) is Gemini 2.5 Flash or
+Claude Sonnet 4.6; the "deep" tier (the intake chat) is Gemini Pro or
+Claude Sonnet 5. With both keys set they run on Gemini, the cheaper of
+the two for background work. An intake chat records the model it
+started on and stays on it. AI quick task entry uses the model chosen
+under **Settings → Tasks** when that provider has a key, and the other
+one when it does not.
 
 Only semantic search needs Gemini in particular, because the embeddings
-come from Gemini. Without a Gemini key, matter search and the Agentic
-chat's search tool match by keyword alone, and nothing says so.
+come from Gemini. Without a Gemini key, matter search and a session's
+search tool match by keyword alone, and nothing says so.
 
 ## Set the keys
 
@@ -143,9 +142,8 @@ retroactively for material added while AI was off; see
 
 ### Turning AI on later
 
-Material added while no key was set has no summary, and the Classic
-chat's selector reads summaries to choose what to load. Once a key is
-set:
+Material added while no key was set has no summary, which the search
+tool's results show. Once a key is set:
 
 - semantic search: run `build_semantic_index` (see
   [Semantic search](#semantic-search));
@@ -155,39 +153,29 @@ set:
 - saved cases added while AI was off keep no summary. There is no
   backfill for them.
 
-## The model list in matter chat
+## The models in a session
 
-The models offered when a user starts a conversation are a fixed list in
-the code (`LLM_CHOICES` in
+The models a session can use are a fixed list in the code
+(`MODEL_CHOICES` in
 [`apps/ai/models.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/ai/models.py)):
-three Claude models and two Gemini models. The list itself is not
-configurable, but the new-conversation dialog offers only the models
-whose provider has a key: with only a Gemini key, users see the Gemini
-models and no others. Gemini Pro is preselected when it is available.
-
-A conversation keeps the model it was started with. If that provider's
-key is later removed, the conversation's next reply is "Error: Unable to
-get response." followed by the provider's error text. The same reply
-appears when a key is set but wrong.
+Claude Opus (the default), Claude Sonnet, and Claude Fable, which is
+offered to administrators only. A user's choice is remembered for
+their next session, and the model can be changed between prompts.
 
 ## Cost
 
-Every request is billed by the provider to your account. Chats on a large
-matter send a large prompt: the models used accept up to about a million
-tokens of context, and a Classic chat loads the matter record up to a
-budget below that.
-
-The chat window shows an estimated cost for each exchange and for the
-conversation. The estimate comes from a price table in the code
-([`apps/llm/pricing.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/llm/pricing.py)).
-It is for orientation only: it can lag behind the providers' prices and
-is not what you are billed. Use the providers' own consoles for spending
-limits and alerts.
+Every turn is billed by Anthropic to the firm's account. A session
+reads what it needs as it goes, so a turn's cost depends on how much
+Claude opened; the page shows each turn's tokens and cost as the
+harness reports them, and the session's running total. Two settings
+cap a turn: `SESSIONS_MAX_TURNS` (model and tool rounds) and
+`SESSIONS_MAX_BUDGET_USD` (dollars), in `config/.env`. Use Anthropic's
+console for spending limits and alerts.
 
 ## Semantic search
 
 Semantic search finds material by meaning as well as by keyword. It is
-used by matter search and by the search tool of the Agentic chat. Kosmos
+used by matter search and by a session's search tool. Kosmos
 splits documents, emails, highlights and timeline facts into chunks, asks Gemini for an embedding of each chunk, and stores
 the vectors in PostgreSQL.
 
@@ -225,8 +213,8 @@ Things to know:
   templates set it to `False`. With it on and no Gemini key, saves queue
   nothing, so turning it on early is harmless; it does nothing until the
   key is set.
-- Without a Gemini key, search inside a matter and the Agentic chat's
-  search tool match by keyword only. Nothing on the screen says so.
+- Without a Gemini key, search inside a matter and a session's search
+  tool match by keyword only. Nothing on the screen says so.
 - A document is indexed only once its text has been extracted. Documents
   and emails marked "Never" for AI context are not indexed.
 - Closed matters are not covered by `build_semantic_index` unless you
@@ -259,13 +247,10 @@ Without the token, Kosmos makes no CourtListener requests at all:
 - saved case law is hidden on every matter, and its addresses (the list,
   adding by citation, the case viewer) answer 404. Cases already saved
   stay in the database and reappear when the token is set again;
-- Agentic chat is not offered the case law search tools, and its
-  research method is left out of the AI's instructions;
-- the text of case law already saved cannot be fetched, so it is missing
-  from the AI's context;
-- case citations in AI replies are not verified. Each still gets a link
-  to a CourtListener search so a person can check it by hand. Statute
-  citations still get links, which do not depend on CourtListener.
+- a session is not offered the case law search tools, and its research
+  method is left out of Claude's instructions;
+- the text of case law already saved cannot be fetched, so a session
+  reads only what was saved with it.
 
 Restart both services after setting the token. The search tools
 are offered from the next question on.
@@ -277,7 +262,7 @@ heavy research session can still run into the account's hourly or daily
 limit, and results will be thinner until it resets. The limits are set by
 CourtListener for your account, not by Kosmos.
 
-The court filter for Agentic chat's case law searches is a list of
+The court filter for a session's case law searches is a list of
 states maintained in the code
 ([`apps/case/jurisdictions.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/jurisdictions.py)),
 and a search defaults to the state named in the matter's Jurisdiction
@@ -345,35 +330,27 @@ with clients. This section states what Kosmos sends. It cannot tell you
 what each provider does with it: read their terms, and the data handling
 options of the plan you buy.
 
-**To Anthropic or Google, with a chat message on a matter:**
+**To Anthropic, with a prompt in a session on a matter:**
 
-- the name, email address and title of the user asking, the firm's name,
-  and the names and titles of all active users;
-- the matter overview, its contacts and parties, witnesses, court
-  proceedings, tasks, upcoming events, time entries and settlement
-  information;
-- every highlight and timeline fact on the matter;
-- the extracted text of documents, synced email
-  threads with the text extracted from their attachments, saved case law,
-  and earlier AI conversations marked for reference. On a small matter
-  all of it is sent. On a large one a selection is sent, chosen by a
-  first call that sees a list of every item with its name, description
-  and summary;
-- invoices, when the question is about billing;
-- the linked draft document, when a draft is linked to the chat (see
-  [Drafting with LibreOffice](libreoffice.md));
-- the conversation so far.
-
-In Agentic mode the model starts from an index of the matter and reads
-items on request, so less is sent up front, but anything on the matter
-can be read during the conversation.
+- the name and title of the user asking, the firm's name and
+  jurisdiction;
+- the matter overview, its contacts and parties, witnesses and court
+  proceedings, and the top level of the matter's folder;
+- the session so far (the harness keeps its own transcript on the
+  server and resumes it);
+- whatever Claude reads during the turn: files from the matter's
+  folder, and what the Kosmos tools return (facts, highlights, tasks,
+  events, time entries, the settlement log, synced email with the text
+  of attachments, saved case law, earlier sessions and conversations;
+  invoices and rates only for a user with the Financial permission).
+  Anything on the matter can be read during a turn; a document or
+  email set to **Never** cannot.
 
 **To the background provider (Google when a Gemini key is set, otherwise
 Anthropic), by the background features:** intake details and the full
-text of forwarded emails for the intake assistant; document and chat
-text for summaries, and the opinion text of each saved case for
-its summary; the manifest of a matter's materials for the Classic chat's
-selector; and the text of quick task entries.
+text of forwarded emails for the intake assistant; document text for
+summaries, and the opinion text of each saved case for its summary;
+and the text of quick task entries.
 
 **To Google only, by semantic search:** chunks of documents,
 emails, highlights and facts for the embeddings, and the words of each
@@ -381,26 +358,30 @@ matter search. Without a Gemini key none of this is sent.
 
 With no AI key at all, nothing is sent to either provider.
 
-**To CourtListener, when its token is set:** search queries, citations to
-look up, and the text of each AI chat reply (up to its first 60,000
-characters), which is posted to the citation lookup service to verify the
-cases it cites. A reply can restate facts of the matter.
+**To CourtListener, when its token is set:** the search queries and
+opinion lookups a session makes for a user with the Research
+permission.
 
-Users can keep individual items out: documents, emails and conversations
-have an AI context setting, and "Never" excludes the item from chat
-context and from the semantic index. There is no switch that excludes a
-whole matter.
+Users can keep individual items out: documents, emails and archived
+conversations have an AI context setting, and "Never" excludes the item
+from the matter tools and from the semantic index. There is no switch
+that excludes a whole matter, but a matter with no linked folder gives
+a session no files.
 
 ## Check that it works
 
 1. As an administrator, open **Settings → Integrations**. Each provider
    you set up shows "Set in config/.env" or a **Remove** button. A row
    that still shows **API key** and **Save** has no key.
-2. Open a matter, start a conversation with a Gemini model and ask a
-   question. A reply with no "Error:" prefix confirms the Gemini key.
-3. Start another with a Claude model to confirm the Anthropic key.
-4. Ask for a well-known case by citation. With the CourtListener token
-   set, the citation in the reply is marked as verified.
+2. Open a matter, start a session and ask a question. An answer
+   confirms the Anthropic key and the sessions service. A prompt that
+   waits with "The sessions service is not running" means the service
+   is down: see [Sessions](../../dev/subsystems/ai/sessions.md).
+3. Open an intake and start its chat, which runs on Gemini when that
+   key is set. A reply with no "Error:" prefix confirms the Gemini key.
+4. As a user with the Research permission, ask a session to search
+   case law. A search in the turn's steps confirms the CourtListener
+   token.
 5. Upload a PDF, wait for text extraction, and search the matter for a
    phrase that paraphrases its content without using its words. A hit
    confirms semantic search.

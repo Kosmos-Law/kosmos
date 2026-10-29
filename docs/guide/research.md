@@ -33,11 +33,11 @@ Without the Research permission neither is shown.
 
 ## Find cases with the AI
 
-Research happens in an Agentic conversation on the matter's **AI** tab
-(see [AI chat](ai-chat.md)). Ask your question as you would put it to a
+Research happens in a session on the matter's **AI** tab (see
+[AI chat](ai-chat.md)). Ask your question as you would put it to a
 colleague, with the procedural setting: "If I move to compel and the
 other side then supplements its responses, can I still recover fees?"
-With the Research permission, the AI can search CourtListener, look up a
+With the Research permission, Claude can search CourtListener, look up a
 citation, read whole opinions and search inside them for a phrase, and
 the steps it takes are shown as it works. It also reads the cases
 already saved on the matter.
@@ -47,19 +47,19 @@ Good to know:
 - The search starts from the state in the matter's **Jurisdiction**
   field. Tell the AI if you want another state, federal courts as well,
   or only decisions after a date.
-- Each case citation in the reply is checked against the opinion and
-  gets a badge (see
-  [Check sources and citations](ai-chat.md#check-sources-and-citations)).
+- Claude quotes opinions from what it read, and gives each citation as
+  CourtListener reports it. Check anything that will go to a court
+  against the opinion itself.
 
 ## Save cases to the matter
 
 Saved cases belong to the matter and are shared by everyone who works on
 it. There are two ways to add one.
 
-- **From a chat.** In an Agentic conversation, ask the AI to save the
-  cases: "Save these cases." The reply shows "Saved to case law:" and
-  each case. What the case was cited for goes into its notes. A case
-  that is already saved keeps its place and gets the new point added.
+- **From a session.** Ask Claude to save the cases: "Save these
+  cases." It saves each one with what the case was cited for in its
+  notes, and says so. A case that is already saved keeps its place and
+  gets the new point added.
 - **By citation.** In **Case Law**, click the **+** button. **Look Up
   Case Law** opens. Enter a reporter citation such as 410 U.S. 113, or a
   case name, in **Citation** and click **Look Up**. Check the preview

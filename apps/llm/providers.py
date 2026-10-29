@@ -1,9 +1,9 @@
-"""One call for the AI work that is not a matter chat.
+"""One call for the AI work that is not a matter session.
 
-Summaries, intake extraction and assessment, intake chat, citation
-vetting, context selection and quick-add all ask for a tier ("fast" for
-cheap bulk work, "deep" for a conversation) and run on whichever provider
-is configured, Gemini first. Matter chats keep their own model picker.
+Summaries, intake extraction and assessment, the intake chat and
+quick-add all ask for a tier ("fast" for cheap bulk work, "deep" for a
+conversation) and run on whichever provider is configured, Gemini first.
+Matter sessions run Claude Code through the Agent SDK (apps/ai/runtime.py).
 """
 
 from apps.settings.ai import ANTHROPIC, GEMINI, configured_providers

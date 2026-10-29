@@ -5,8 +5,6 @@ import json
 import pytest
 
 from apps.ai.context import format_witnesses
-from apps.ai.models import Conversation
-from apps.ai.tasks import process_ai_request
 from apps.ai.witness_blocks import apply_witness_blocks
 from apps.case.models import Witness
 
@@ -133,43 +131,3 @@ def test_format_witnesses_lists_fields(matter):
     text = format_witnesses(matter)
     assert "Dr. Alice Reed (Friendly, importance 6) - Treating physician" in text
     assert "Knows: Treated the plaintiff" in text
-
-
-# ── Worker wiring ────────────────────────────────────────────────────────────
-
-
-def test_classic_chat_applies_witness_blocks(user, matter, monkeypatch):
-    """process_ai_request appends the protocol and applies the block."""
-    from apps.llm.status import status_cache as cache
-
-    conversation = Conversation.objects.create(
-        matter=matter, user=user, llm="claude-opus", kind="classic"
-    )
-    conversation.messages.create(role="user", user=user, content="Add the witness")
-
-    captured = {}
-
-    def fake_send(context_text, chat_history, model, **kwargs):
-        captured["context"] = context_text
-        return (
-            block([{"name": "Bob Smith", "knowledge": "Saw the crash"}]),
-            10,
-            10,
-        )
-
-    monkeypatch.setattr("apps.ai.tasks.send_to_claude", fake_send)
-
-    process_ai_request(
-        conversation.id, matter.id, "Add the witness", user.id, "claude-opus"
-    )
-
-    assert "RECORDING WITNESSES" in captured["context"]
-    assert "## Witnesses" in captured["context"]
-    witness = Witness.objects.get()
-    assert witness.name == "Bob Smith"
-    assert witness.matter_id == matter.id
-
-    status = cache.get(f"ai_status_{conversation.id}")
-    assert status["status"] == "complete"
-    assert "Added witness: **Bob Smith**" in status["response"]
-    assert "```create-witnesses" not in status["response"]
