@@ -1,0 +1,33 @@
+{% if configured %}
+  <tr>
+    <th>Files</th>
+    <td id="overview-folder">
+      {% if folder %}
+        <span class="folder-link-name" title="{{ folder.path }}">{{ folder.root_name }} &rsaquo; {{ folder.name }}</span>
+        {% if folder.missing_since %}
+          <span class="folder-link-missing"
+                title="The folder is no longer at {{ folder.path }}. Link the matter to its new folder.">
+            <i class="icon-alert-triangle with-text"></i>Folder not found
+          </span>
+        {% endif %}
+        <button type="button"
+                class="btn-icon"
+                hx-get="{% url 'drive:folder-link-modal' matter.id %}"
+                hx-target="#htmx-modal-container"
+                hx-trigger="click"
+                title="Change the linked folder">
+          <i class="icon-pencil"></i>
+        </button>
+      {% else %}
+        <button type="button"
+                class="btn-icon"
+                hx-get="{% url 'drive:folder-link-modal' matter.id %}"
+                hx-target="#htmx-modal-container"
+                hx-trigger="click"
+                title="Link this matter to its folder in the firm's files">
+          <i class="icon-folder with-text"></i>Link folder
+        </button>
+      {% endif %}
+    </td>
+  </tr>
+{% endif %}

@@ -114,6 +114,11 @@ variable belongs to stays off or falls back until it is set.
 | Variable | Default | Description |
 |---|---|---|
 | `LAW_FIRM_ID` | empty | The firm's id in LEDES invoice exports. While it is blank, the Download Ledes action is hidden. |
+| `DROPBOX_FIRM_ROOT` | empty | Firm files (apps/drive): the Dropbox daemon's synced Firm folder on this host. Empty turns the Files integration off. |
+| `DROPBOX_MATTER_ROOTS` | `['Matters - Open', 'Matters - Pending']` | Subfolders of the root whose direct children are matter folders, comma-separated. (comma-separated list) |
+| `DROPBOX_OCR_EXCLUDE` | `['Matters - Closed']` | Top-level folders the watcher never checks or OCRs, comma-separated. (comma-separated list) |
+| `FILES_OCR_SCRATCH` | `.ocr-scratch/` in the repository | Where the watcher stages an OCR'd PDF before replacing the original in one rename. Keep it on the same filesystem as the tree. Default: .ocr-scratch under the application directory. |
+| `FILES_OCR_JOBS` | `2` | Tesseract workers per PDF when the watcher adds a text layer. (integer) |
 | `PAYMENT_PROCESSOR` | `fake` | Which processor collects online payments: none (online payment off; the emailed link still shows the invoice), lawpay, stripe, confido, or fake. fake is for development: it records a payment although no money moves, so never run it where real clients receive invoices. The built-in default is fake; the installer sets none for a production install. |
 | `INVOICE_PAY_LINK_MAX_AGE` | `7776000` | Seconds an emailed payment link stays valid. Defaults to 90 days. Resending the invoice issues a fresh link. (integer) |
 | `LAWPAY_PUBLIC_KEY` | empty | LawPay (AffiniPay) public key, used in the browser by the hosted card fields. Test keys reach only test accounts. |

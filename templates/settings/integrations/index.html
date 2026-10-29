@@ -1,4 +1,5 @@
 {% extends "settings/main.html" %}
+{% load drive_tags %}
 {% block subcontent %}
   <div class="settings">
     {% if user.role == 'ADMIN' %}
@@ -15,6 +16,7 @@
       {% if quickbooks %}
         {% include "settings/integrations/quickbooks.html" %}
       {% endif %}
+      {% files_integration_card %}
     {% endif %}
     {% if not google_oauth_ready and user.role == 'ADMIN' %}
       <p class="detail-text">

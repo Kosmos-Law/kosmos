@@ -1,0 +1,158 @@
+{% extends "settings/main.html" %}
+{% block subcontent %}
+  <div class="settings files-status">
+    <h2 class="settings-section">Files</h2>
+    <hr />
+    {% if not configured %}
+      <p class="detail-text">
+        The synced tree is not on this server. Set
+        <code>DROPBOX_FIRM_ROOT</code> to the Dropbox daemon's Firm folder.
+      </p>
+    {% else %}
+      <table class="detail-table files-status-table">
+        <tr>
+          <th>Synced tree</th>
+          <td>
+            <code>{{ root }}</code>
+          </td>
+        </tr>
+        <tr>
+          <th>Matter roots</th>
+          <td>
+            <code>{{ roots_text }}</code>
+          </td>
+        </tr>
+        <tr>
+          <th>Watcher</th>
+          <td>
+            {% if watcher_alive %}
+              <span class="files-ok">Running</span>, last seen {{ state.watcher_seen_at|timesince }} ago
+            {% elif state.watcher_seen_at %}
+              <span class="files-warn">Not reporting</span>, last seen {{ state.watcher_seen_at|timesince }} ago
+            {% else %}
+              <span class="files-warn">Never reported</span>. Start the <code>files-watcher</code> service.
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Last full scan</th>
+          <td>
+            {% if state.scanned_at %}
+              {{ state.scanned_at|timesince }} ago
+              {% if state.scan_stats %}
+                (
+                {% for key, value in state.scan_stats.items %}
+                  {{ key }} {{ value }}
+                  {% if not forloop.last %},{% endif %}
+                {% endfor %}
+                )
+              {% endif %}
+            {% else %}
+              Not yet
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>PDFs</th>
+          <td>
+            {{ counts.total }} seen,
+            {{ counts.ocr_done }} given a text layer here,
+            {{ counts.pending }} waiting,
+            {% if counts.failed %}
+              <span class="files-warn">{{ counts.failed }} failed</span>
+            {% else %}
+              0 failed
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Matters linked</th>
+          <td>{{ linked|length }}</td>
+        </tr>
+        <tr>
+          <th>Empty files</th>
+          <td>
+            {% if state.scan_stats.empty_files %}
+              <span class="files-warn">{{ state.scan_stats.empty_files }} zero-byte file{{ state.scan_stats.empty_files|pluralize }}</span>
+              in the tree
+              {% if state.new_empty_files %}
+                , <strong>{{ state.new_empty_files|length }} new since the previous scan</strong>
+              {% endif %}
+            {% elif state.scanned_at %}
+              None
+            {% else %}
+              Not scanned yet
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+      {% if state.new_empty_files %}
+        <h3 class="settings-subsection">Files that arrived empty since the previous scan</h3>
+        <p class="detail-text">
+          A zero-byte file is usually a failed copy or extraction. Check its
+          version history in Dropbox and restore or re-copy it.
+        </p>
+        <ul class="files-list">
+          {% for path in state.new_empty_files|slice:":200" %}
+            <li>
+              <code>{{ path }}</code>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% if missing %}
+        <h3 class="settings-subsection">Linked folders not found</h3>
+        <p class="detail-text">
+          These matters are linked to a folder that is no longer at that path.
+          Open the matter and link it to its new folder.
+        </p>
+        <ul class="files-list">
+          {% for folder in missing %}
+            <li>
+              <a href="{% url 'matters:detail' folder.matter.id %}">{{ folder.matter }}</a>
+              &mdash; <code>{{ folder.path }}</code>, missing since {{ folder.missing_since|date:"Y-m-d" }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      <h3 class="settings-subsection">Folders not linked to a matter</h3>
+      {% if unclaimed %}
+        <ul class="files-list">
+          {% for path in unclaimed %}
+            <li>
+              <code>{{ path }}</code>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="detail-text">Every folder under the matter roots is linked.</p>
+      {% endif %}
+      {% if state.empty_files %}
+        <details class="files-details">
+          <summary>
+            All {{ state.scan_stats.empty_files }} empty file{{ state.scan_stats.empty_files|pluralize }}
+            {% if state.scan_stats.empty_files > state.empty_files|length %}(first {{ state.empty_files|length }}){% endif %}
+          </summary>
+          <ul class="files-list">
+            {% for path in state.empty_files %}
+              <li>
+                <code>{{ path }}</code>
+              </li>
+            {% endfor %}
+          </ul>
+        </details>
+      {% endif %}
+      {% if failures %}
+        <h3 class="settings-subsection">PDFs that could not be OCR'd</h3>
+        <ul class="files-list">
+          {% for pdf in failures %}
+            <li>
+              <code>{{ pdf.path }}</code>
+              <span class="detail-text">{{ pdf.ocr_error|truncatechars:160 }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock subcontent %}

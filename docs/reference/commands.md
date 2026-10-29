@@ -56,6 +56,12 @@ Which of these an operator needs, and when, is covered in
 |---|---|
 | `adopt_google_contacts` | Give the former firm-wide Google Contacts token (GOOGLE_DATA_DIR/contact_tokens.json) and the contacts copied through it to one user. |
 
+## drive
+
+| Command | What it does |
+|---|---|
+| `watch_files` | Watch the synced Firm tree: OCR new PDFs in place, follow folder renames. |
+
 ## intakes
 
 | Command | What it does |

@@ -56,6 +56,7 @@ access, and the things that bite.
 | [The AI context system](subsystems/ai/context.md) | Conversations, context builders, the selector, status, fenced writes |
 | [Agentic chat](subsystems/ai/agent-chat.md) | The tool-loop chat mode |
 | [Drafts](subsystems/drafts.md) | Draft links and the LibreOffice companion |
+| [Files](subsystems/files.md) | The Dropbox-synced Firm tree: matter folder links, the watcher, OCR in place |
 | [Email and intakes](subsystems/email-and-intakes.md) | Gmail sync, inbound email, intakes, client forms |
 | [MCP server and JSON APIs](subsystems/mcp.md) | What Claude Desktop talks to |
 | [Operations](subsystems/operations.md) | The task queue and schedules, storage, recovery commands, publishing the docs |

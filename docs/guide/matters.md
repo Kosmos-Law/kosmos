@@ -106,7 +106,15 @@ timeline, witnesses, emails, AI chat and research.
 **Overview** is the summary of the matter. **Matter Detail** lists its
 status, client, additional billing contacts (when it has any), practice area, open
 date, jurisdiction and billing, and the date it was closed once it has
-been. Beside
+been. When the firm's files are synced to the server, a **Files** row
+shows the matter's folder in the firm's Dropbox, or a **Link folder**
+button if none is linked yet. Click it to pick the folder from those
+under **Matters - Open** and **Matters - Pending** that no other matter
+holds; the closest name match is listed first as a suggestion, and
+nothing is linked until you click **Link**. The AI works from this
+folder. A folder that is renamed in Dropbox keeps its link; one the
+server can no longer find shows **Folder not found** until you link the
+matter to its new folder. Beside
 it are **Events** (upcoming events), **Tasks** (open tasks) and **Recent
 Actions** (the five latest time entries). Each has a **+** button to add
 one, and you can click a row to edit it. **Financials** shows **Balance

@@ -1,4 +1,4 @@
-{% load humanize %}
+{% load humanize drive_tags %}
 <div class="matter-overview">
   <div class="overview-tables">
     <div class="overview-main-col">
@@ -42,6 +42,7 @@
           <th>Description</th>
           <td id="overview-description">{% include "matters/overview/description.html" %}</td>
         </tr>
+        {% matter_folder_row matter %}
         <tr>
           <th>Open Date</th>
           <td>{{ matter.date_start|date:"Y-m-d"|default:"—" }}</td>
