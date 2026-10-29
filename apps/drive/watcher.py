@@ -326,6 +326,10 @@ class Watcher:
             logger.exception("Scan failed")
 
     def run(self):
+        # The inotify package reads DEBUG from the environment as an int at
+        # import; the project's .env sets it to "True" for Django.
+        if not os.environ.get("DEBUG", "0").isdigit():
+            os.environ["DEBUG"] = "0"
         import inotify.adapters
         import inotify.constants as C
 
