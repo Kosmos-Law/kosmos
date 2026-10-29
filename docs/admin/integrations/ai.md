@@ -386,7 +386,10 @@ a session no files.
 2. Open a matter, start a session and ask a question. An answer
    confirms the Anthropic key and the sessions service. A prompt that
    waits with "The sessions service is not running" means the service
-   is down: see [Sessions](../../dev/subsystems/ai/sessions.md).
+   is down. `scripts/install.sh --prod` installs and starts it as
+   `sessions.service` beside the web and worker units; by hand, render
+   `deploy/systemd/sessions.service` with the account and the checkout
+   path and enable it. See [Sessions](../../dev/subsystems/ai/sessions.md).
 3. Open an intake and start its chat, which runs on Gemini when that
    key is set. A reply with no "Error:" prefix confirms the Gemini key.
 4. As a user with the Research permission, ask a session to search
