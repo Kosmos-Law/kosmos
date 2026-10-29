@@ -468,6 +468,9 @@ def run_turn(message_id: int):
     message.save(update_fields=["status", "started_at", "updated_at"])
 
     folder_path, linked = _working_directory(session)
+    # The harness keeps its transcripts and config here; a fresh host
+    # has no such directory yet.
+    Path(settings.SESSIONS_HOME).mkdir(parents=True, exist_ok=True)
     turn = Turn(message, cwd=str(folder_path))
     turn.prompt = prompt_row.content if prompt_row else ""
     turn.flush(force=True)
