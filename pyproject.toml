@@ -162,7 +162,7 @@ name = "The case app's internals are private"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = [
-    "apps.ai", "apps.llm", "apps.drafts", "apps.mail",
+    "apps.ai", "apps.llm", "apps.drafts", "apps.mail", "apps.mcp",
     "apps.accounts", "apps.settings", "apps.management", "apps.matters",
     "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
     "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",

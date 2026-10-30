@@ -26,7 +26,7 @@ permissions.
 | **Practice Areas** | Administrators | The practice areas offered on matters and intakes. |
 | **Tasks** | Administrators, once AI is set up | How the quick task line reads what you type. |
 | **Integrations** | Everyone | Gmail, Google Contacts, AI providers and the firm's files. A user who is not an administrator sees only **Case Email** and **Google Contacts**. Administrators also get **Files**, with a **Status** page showing whether the files watcher is running, which PDFs it could not OCR, and which folders are not yet linked to a matter (linking is done from a matter's **AI** tab). |
-| **Claude Desktop** | Everyone | Connecting the Claude Desktop app to Kosmos. |
+| **Claude** | Everyone | Connecting Claude (claude.ai, Claude Desktop, the mobile apps, Claude Code) to Kosmos, and your API token. |
 | **Intake Forms** | Administrators and users with the Intakes permission | Forms sent to prospective clients. |
 | **Intake Emails** | Administrators and users with the Intakes permission | Ready-made emails for intakes. |
 | **Checklists** | Everyone | Checklist templates for tasks. |
@@ -423,22 +423,26 @@ provider, and the cost, are described in
     [Google](../admin/integrations/google.md) and
     [Gmail](../admin/integrations/gmail.md) in the operator guide.
 
-## Claude Desktop
+## Claude
 
-**Settings → Claude Desktop** lets each user connect the Claude Desktop
-app on their own computer to Kosmos. The page states exactly what Claude
-can then read and write: in short, the matters that user can see.
+**Settings → Claude** lets each user connect Claude to Kosmos: claude.ai,
+Claude Desktop, the mobile apps, Cowork and Claude Code share one
+connection. The page states exactly what Claude can then read and write:
+in short, the matters that user can see, plus new timeline facts,
+witnesses and tasks.
 
-Click **Generate token**, then follow the four steps under **Setup**:
-they include downloading a small connector file and pasting your
-configuration into Claude Desktop. The configuration contains your
-personal token, so do not share it. **Rotate token** replaces the token,
-and Claude Desktop stops working until you paste the new configuration.
-**Revoke token** removes it. Both also cut off the LibreOffice companion
-extension, which uses the same token. If Claude's Kosmos tools fail after
-Kosmos is updated, download the connector file again, save it over the
-old one and restart Claude Desktop. More detail is in
-[Claude Desktop access](../admin/integrations/claude-desktop.md).
+Copy the address under **Connect**, add it in Claude as a custom
+connector, click **Connect** there, and sign in to Kosmos when the browser
+opens; **Allow** finishes it. Nothing is downloaded or installed. Each
+connection is listed under **Connected** with when it was made and last
+used; **Disconnect** ends it at once (connect again from Claude to
+restore it).
+
+The **API token** at the bottom of the page is for the LibreOffice
+companion extension, not for Claude. **Rotate token** replaces it, and
+the extension must be downloaded and installed again; **Revoke token**
+removes it. More detail is in
+[Claude](../admin/integrations/claude-desktop.md).
 
 ## Intake Forms
 

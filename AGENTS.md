@@ -106,13 +106,12 @@ in `docs/dev/setup.md`. Never run `collectstatic` in development.
 
 | Area | What | Read |
 |---|---|---|
-| `apps/` | One Django app per domain (`matters`, `contacts`, `tasks`, `calendar`, `activity`, `invoicing`, `trust`, `case`, `notes`, `drafts`, `drive`, `mail`, `intakes`, `search`, `settings`, `accounts`, `management`, `reports`, `accounting`, `dash`, `checklists`, `folders`) | `docs/dev/architecture.md`, `docs/dev/subsystems/` |
+| `apps/` | One Django app per domain (`matters`, `contacts`, `tasks`, `calendar`, `activity`, `invoicing`, `trust`, `case`, `notes`, `drafts`, `drive`, `mail`, `intakes`, `search`, `mcp` (the remote MCP server Claude connects to, and its OAuth server), `settings`, `accounts`, `management`, `reports`, `accounting`, `dash`, `checklists`, `folders`) | `docs/dev/architecture.md`, `docs/dev/subsystems/` |
 | `config/` | `settings.py` (reads `config/.env`), `urls.py`, health endpoints, project-level tests | `docs/dev/subsystems/platform-and-config.md` |
 | `templates/` | Django templates by app; `components/` and `base.html` shared | `docs/dev/conventions/htmx-alpine.md` |
 | `static/css/`, `static/js/` | Hand-written CSS and JS; `pdfjs/` is vendored by `scripts/update_pdfjs.py` | `docs/dev/frontend/theming.md` |
 | `utils/` | Cross-app helpers: `AuditMixin`, current-user middleware, toasts, rate limiting, safe markdown and JSON, signing | `docs/dev/subsystems/platform-and-config.md` |
 | `apps/management/` | Session state shared by list views (`filter_manager.py`, `selection.py`, `pagination.py`, `user_filter.py`), `schedules.py` and the `setup_schedules` command | `docs/dev/conventions/session-state.md`, `docs/dev/subsystems/operations.md` |
-| `tools/` | The MCP server Claude Desktop runs | `docs/dev/subsystems/mcp.md` |
 | `scripts/`, `deploy/` | Installer, docs build and publish, reference generator; systemd and nginx templates | `docs/admin/install.md`, `docs/dev/writing-docs.md` |
 | `docs/` | This documentation site (`admin/`, `guide/`, `dev/`, `reference/`, `decisions/`) | `docs/dev/writing-docs.md` |
 | `.github/` | Workflows and templates. GitHub Actions is disabled on this repository by choice; run the checks locally | `docs/dev/conventions/branches-and-releases.md` |

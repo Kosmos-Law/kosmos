@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "apps.intakes",
     "apps.matters",
     "apps.search",
+    "apps.mcp",
     "apps.settings",
     "apps.trust",
     "apps.invoicing",

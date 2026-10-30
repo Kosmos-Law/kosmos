@@ -40,8 +40,8 @@ A `Conversation` belongs to exactly one of a `matter` or an `intake`
 (both `CASCADE`); the code, not the database, keeps that exclusive.
 `user` is who started it (`SET_NULL`). `llm` and `kind` (`classic`,
 `agent`, or the older `research`) say how it was run. `ai_context`
-(`auto`, `always`, `never`) still decides whether the Claude Desktop
-MCP API lists it (`apps/ai/api.py`), and `summary` is the précis the
+(`auto`, `always`, `never`) still decides whether the MCP server's
+conversations section lists it (`apps/ai/api.py`), and `summary` is the précis the
 engine wrote after each answer.
 
 A `Message` has a `role`, `content`, the sending `user` for user

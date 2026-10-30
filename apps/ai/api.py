@@ -1,7 +1,10 @@
-"""Token-authed JSON API over one matter's working record.
+"""One matter's working record, as service functions and as a
+token-authed JSON API over them.
 
-Consumed by the Claude Desktop MCP server (tools/kosmos_notes_mcp.py).
-Reads serve every section
+The service functions (list_matters, read_section, ... create_task) are
+what the remote MCP server's tools call (apps/mcp/tools.py); the JSON
+views under case/api/ are the same functions behind the X-Kosmos-Token
+header, for scripts. Reads serve every section
 of a matter as AI-ready text, reusing the in-app chat's formatters where
 they exist so the two surfaces cannot drift; writes are create-only
 (timeline facts, witnesses, tasks) through the same validated entry
@@ -17,6 +20,7 @@ matter, as the Activity screens are.
 """
 
 import json
+from functools import wraps
 
 from django.db.models import Count, F, Max, Q
 from django.db.models.functions import Coalesce
@@ -25,7 +29,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.accounts.access import filter_matters_for_user
-from apps.accounts.api_auth import kosmos_api_auth
+from apps.accounts.api_auth import ApiError, kosmos_api_auth
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.flat_fees.models import FlatFeeEntry
 from apps.activity.time.models import TimeEntry
@@ -535,269 +539,202 @@ SECTIONS = {
 }
 
 
-def _section_response(matter, section):
-    return JsonResponse(
-        {
-            "matter_id": matter.id,
-            "matter": matter.name,
-            "section": section,
-            "text": SECTIONS[section](matter),
-        }
-    )
+def _matter_or_404(user, matter_id):
+    matter = _get_matter(user, matter_id)
+    if matter is None:
+        raise ApiError(404, MATTER_404)
+    return matter
 
 
-@kosmos_api_auth
-@require_GET
-def api_matters(request):
-    """Accessible open matters, name-ordered; ?q= filters by name."""
+def _entry_or_400(entry):
+    if not isinstance(entry, dict):
+        raise ApiError(400, "Request body must be a JSON object.")
+    return entry
+
+
+# ---------------------------------------------------------------------------
+# The service functions. Each takes the acting user, checks access the way
+# the application does, and returns the payload the JSON view serialises;
+# every refusal is an ApiError. apps/mcp/tools.py calls these directly, so
+# Claude over the remote MCP server and a script over the token API see the
+# same data and the same refusals.
+# ---------------------------------------------------------------------------
+
+
+def list_matters(user, q=""):
+    """Accessible open matters, name-ordered; ``q`` filters by name."""
     matters = filter_matters_for_user(
-        Matter.objects.filter(status="Open"), request.api_user
+        Matter.objects.filter(status="Open"), user
     ).order_by("name")
-    q = (request.GET.get("q") or "").strip()
+    q = (q or "").strip()
     if q:
         matters = matters.filter(name__icontains=q)
-    return JsonResponse({"matters": [{"id": m.id, "name": m.name} for m in matters]})
+    return [{"id": m.id, "name": m.name} for m in matters]
 
 
-@kosmos_api_auth
-@require_GET
-def api_matter_section(request, matter_id, section):
+def read_section(user, matter_id, section):
     """One section of a matter as AI-ready text."""
-    matter = _get_matter(request.api_user, matter_id)
-    if matter is None:
-        return JsonResponse({"error": MATTER_404}, status=404)
+    matter = _matter_or_404(user, matter_id)
     if section not in SECTIONS:
-        return JsonResponse(
-            {"error": f"Unknown section. Valid sections: {', '.join(SECTIONS)}."},
-            status=400,
-        )
-    if section in FINANCIAL_SECTIONS and not _has_financial_access(request.api_user):
-        return JsonResponse({"error": FINANCIAL_403}, status=403)
-    return _section_response(matter, section)
+        raise ApiError(400, f"Unknown section. Valid sections: {', '.join(SECTIONS)}.")
+    if section in FINANCIAL_SECTIONS and not _has_financial_access(user):
+        raise ApiError(403, FINANCIAL_403)
+    return {
+        "matter_id": matter.id,
+        "matter": matter.name,
+        "section": section,
+        "text": SECTIONS[section](matter),
+    }
 
 
-@kosmos_api_auth
-@require_GET
-def api_document(request, document_id):
-    """One document's extracted text (the MCP client truncates)."""
+def read_document(user, document_id):
+    """One document's extracted text (the caller truncates)."""
     document = (
         Document.objects.select_related("matter")
         .filter(pk=document_id, matter__status="Open")
         .first()
     )
-    if document is None or not request.api_user.has_matter_access(document.matter):
-        return JsonResponse({"error": DOCUMENT_404}, status=404)
-    return JsonResponse(
-        {
-            "id": document.id,
-            "name": document.name,
-            "matter": document.matter.name,
-            "category": document.category,
-            "date": str(document.date) if document.date else None,
-            "ocr_status": document.ocr_status,
-            "text": document.ocr_text or "",
-        }
-    )
+    if document is None or not user.has_matter_access(document.matter):
+        raise ApiError(404, DOCUMENT_404)
+    return {
+        "id": document.id,
+        "name": document.name,
+        "matter": document.matter.name,
+        "category": document.category,
+        "date": str(document.date) if document.date else None,
+        "ocr_status": document.ocr_status,
+        "text": document.ocr_text or "",
+    }
 
 
-@kosmos_api_auth
-@require_GET
-def api_email_thread(request, matter_id, thread_id):
+def read_email_thread(user, matter_id, thread_id):
     """One email thread in full, formatted like the in-app AI context."""
-    matter = _get_matter(request.api_user, matter_id)
-    if matter is None:
-        return JsonResponse({"error": MATTER_404}, status=404)
+    matter = _matter_or_404(user, matter_id)
     emails = list(
         matter.emails.filter(thread_id=thread_id)
         .dedup()
         .prefetch_related("attachment_files")
     )
     if not emails:
-        return JsonResponse({"error": THREAD_404}, status=404)
+        raise ApiError(404, THREAD_404)
     emails.sort(key=lambda e: e.date or e.created_at)
-    return JsonResponse(
-        {
-            "thread_id": thread_id,
-            "subject": thread_subject(emails),
-            "text": format_email_thread(emails),
-        }
-    )
+    return {
+        "thread_id": thread_id,
+        "subject": thread_subject(emails),
+        "text": format_email_thread(emails),
+    }
 
 
-@kosmos_api_auth
-@require_http_methods(["POST"])
-def api_search_materials(request, matter_id):
+def search_materials(user, matter_id, body):
     """Hybrid (keyword + semantic) search over a matter's materials, run
     through the in-app agent's own search_materials handler so ranking,
-    fusion, and hit shapes stay identical between the two surfaces."""
+    fusion, and hit shapes stay identical between the surfaces."""
     from apps.ai.agent_tools import make_agent_executor
 
-    matter = _get_matter(request.api_user, matter_id)
-    if matter is None:
-        return JsonResponse({"error": MATTER_404}, status=404)
-    body = _json_body(request)
-    if body is None:
-        return JsonResponse({"error": "Body must be a JSON object."}, status=400)
+    matter = _matter_or_404(user, matter_id)
+    if not isinstance(body, dict):
+        raise ApiError(400, "Body must be a JSON object.")
     execute = make_agent_executor(matter, None)
     outcome = execute([{"id": "search", "name": "search_materials", "input": body}])[0]
     payload = json.loads(outcome["content"])
     if outcome["is_error"]:
-        return JsonResponse(
-            {"error": payload.get("error", "Search failed.")}, status=400
-        )
+        raise ApiError(400, payload.get("error", "Search failed."))
     payload.pop("budget", None)
-    return JsonResponse(payload)
+    return payload
 
 
-@kosmos_api_auth
-@require_GET
-def api_conversation(request, matter_id, conversation_id):
+def read_conversation(user, matter_id, conversation_id):
     """One AI conversation's full transcript."""
-    matter = _get_matter(request.api_user, matter_id)
-    if matter is None:
-        return JsonResponse({"error": MATTER_404}, status=404)
+    matter = _matter_or_404(user, matter_id)
     conversation = (
         Conversation.objects.filter(matter=matter, pk=conversation_id)
         .exclude(ai_context="never")
         .first()
     )
     if conversation is None:
-        return JsonResponse({"error": CONVERSATION_404}, status=404)
-    return JsonResponse(
-        {
-            "conversation_id": conversation.id,
-            "title": conversation.title or "Untitled",
-            "matter": matter.name,
-            "kind": conversation.get_kind_display(),
-            "llm": conversation.get_llm_display(),
-            "text": _format_transcript(conversation),
-        }
-    )
+        raise ApiError(404, CONVERSATION_404)
+    return {
+        "conversation_id": conversation.id,
+        "title": conversation.title or "Untitled",
+        "matter": matter.name,
+        "kind": conversation.get_kind_display(),
+        "llm": conversation.get_llm_display(),
+        "text": _format_transcript(conversation),
+    }
 
 
-@kosmos_api_auth
-@require_GET
-def api_invoice(request, invoice_id):
+def read_invoice(user, invoice_id):
     """One invoice with totals, balance, and line items."""
     invoice = (
         Invoice.objects.select_related("matter")
         .filter(pk=invoice_id, matter__status="Open")
         .first()
     )
-    if invoice is None or not request.api_user.has_matter_access(invoice.matter):
-        return JsonResponse({"error": INVOICE_404}, status=404)
-    if not _has_financial_access(request.api_user):
-        return JsonResponse({"error": FINANCIAL_403}, status=403)
-    return JsonResponse(
-        {
-            "invoice_id": invoice.id,
-            "matter": invoice.matter.name,
-            "status": invoice.status_display,
-            "text": f"{format_invoice(invoice)}\n\n{_format_invoice_lines(invoice)}",
-        }
-    )
+    if invoice is None or not user.has_matter_access(invoice.matter):
+        raise ApiError(404, INVOICE_404)
+    if not _has_financial_access(user):
+        raise ApiError(403, FINANCIAL_403)
+    return {
+        "invoice_id": invoice.id,
+        "matter": invoice.matter.name,
+        "status": invoice.status_display,
+        "text": f"{format_invoice(invoice)}\n\n{_format_invoice_lines(invoice)}",
+    }
 
 
-# ---------------------------------------------------------------------------
 # Create-only writes, through the same entry creators the in-app AI's
 # fenced blocks use (validation, matter scoping of cited ids, name dedup).
-# GET on facts/ and witnesses/ serves the matching read section, so every
-# documented section name works even though these paths are matched before
-# the <str:section> route.
-# ---------------------------------------------------------------------------
 
 
-@kosmos_api_auth
-@require_http_methods(["GET", "POST"])
-def api_matter_facts(request, matter_id):
-    """GET: the timeline section. POST: create one timeline fact."""
-    matter = _get_matter(request.api_user, matter_id)
-    if matter is None:
-        return JsonResponse({"error": MATTER_404}, status=404)
-    if request.method == "GET":
-        return _section_response(matter, "timeline")
-
-    entry = _json_body(request)
-    if entry is None:
-        return JsonResponse(
-            {"error": "Request body must be a JSON object."}, status=400
-        )
-    fact = _create_fact_from_entry(entry, matter, request.api_user)
+def create_fact(user, matter_id, entry):
+    """Create one timeline fact on a matter."""
+    matter = _matter_or_404(user, matter_id)
+    fact = _create_fact_from_entry(_entry_or_400(entry), matter, user)
     if fact is None:
-        return JsonResponse(
-            {"error": "description is required (4-150 characters)."}, status=400
-        )
+        raise ApiError(400, "description is required (4-150 characters).")
     source_names = [hl.citation for hl in fact.highlights.all()[:3]]
     source_names += [doc.name for doc in fact.documents.all()[:3]]
     sources = f", source: {', '.join(source_names[:3])}" if source_names else ""
-    return JsonResponse(
-        {
-            "id": fact.id,
-            "message": (
-                f"- Added to timeline: **{fact.description}**"
-                f" ({fact.date or 'no date'}{sources})"
-            ),
-        },
-        status=201,
-    )
+    return {
+        "id": fact.id,
+        "message": (
+            f"- Added to timeline: **{fact.description}**"
+            f" ({fact.date or 'no date'}{sources})"
+        ),
+    }
 
 
-@kosmos_api_auth
-@require_http_methods(["GET", "POST"])
-def api_matter_witnesses(request, matter_id):
-    """GET: the witnesses section. POST: create one witness (name-deduped)."""
-    matter = _get_matter(request.api_user, matter_id)
-    if matter is None:
-        return JsonResponse({"error": MATTER_404}, status=404)
-    if request.method == "GET":
-        return _section_response(matter, "witnesses")
-
-    entry = _json_body(request)
-    if entry is None:
-        return JsonResponse(
-            {"error": "Request body must be a JSON object."}, status=400
-        )
-    witness, created = _create_witness_from_entry(entry, matter, request.api_user)
+def create_witness(user, matter_id, entry):
+    """Create one witness on a matter (name-deduped). Returns the payload
+    and whether a row was created."""
+    matter = _matter_or_404(user, matter_id)
+    witness, created = _create_witness_from_entry(_entry_or_400(entry), matter, user)
     if witness is None:
-        return JsonResponse(
-            {"error": "name is required (at least 2 characters)."}, status=400
-        )
+        raise ApiError(400, "name is required (at least 2 characters).")
     if created:
         message = (
             f"- Added witness: **{witness.name}** ({witness.get_alignment_display()})"
         )
     else:
         message = f"- Already on the witness list: **{witness.name}**"
-    return JsonResponse(
-        {"id": witness.id, "created": created, "message": message},
-        status=201 if created else 200,
-    )
+    return {"id": witness.id, "created": created, "message": message}, created
 
 
-@kosmos_api_auth
-@require_http_methods(["POST"])
-def api_create_task(request):
-    """Create one task, assigned to the token's user; matter optional.
+def create_task(user, entry):
+    """Create one task, assigned to the user; matter optional.
 
     The matter is authorized here (create_task_from_ai_entry resolves by
     name with no access check), and re-pointed after creation in case a
     duplicate matter name resolved to a different matter.
     """
-    entry = _json_body(request)
-    if entry is None:
-        return JsonResponse(
-            {"error": "Request body must be a JSON object."}, status=400
-        )
-
+    entry = _entry_or_400(entry)
     matter = None
     if entry.get("matter_id") is not None:
         try:
             matter_id = int(entry["matter_id"])
         except (TypeError, ValueError):
-            return JsonResponse({"error": MATTER_404}, status=404)
-        matter = _get_matter(request.api_user, matter_id)
-        if matter is None:
-            return JsonResponse({"error": MATTER_404}, status=404)
+            raise ApiError(404, MATTER_404)
+        matter = _matter_or_404(user, matter_id)
 
     task = create_task_from_ai_entry(
         {
@@ -806,12 +743,10 @@ def api_create_task(request):
             "importance": entry.get("importance"),
             "matter": matter.name if matter else None,
         },
-        request.api_user,
+        user,
     )
     if task is None:
-        return JsonResponse(
-            {"error": "description is required (at least 4 characters)."}, status=400
-        )
+        raise ApiError(400, "description is required (at least 4 characters).")
     if matter and task.matter_id != matter.id:
         task.matter = matter
         task.save(update_fields=["matter"])
@@ -819,11 +754,115 @@ def api_create_task(request):
     message = f"- Created task: **{task.description}**"
     if task.date_due:
         message += f" (Due: {task.date_due})"
+    return {
+        "id": task.id,
+        "matter": task.matter.name if task.matter else "Admin",
+        "message": message,
+    }
+
+
+# ---------------------------------------------------------------------------
+# The token-authenticated JSON views: one per service function, each a
+# serialisation of its result or of its ApiError.
+# ---------------------------------------------------------------------------
+
+
+def _json_api(view):
+    """Answer an ApiError raised inside the view as its JSON error."""
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        try:
+            return view(request, *args, **kwargs)
+        except ApiError as exc:
+            return JsonResponse({"error": exc.message}, status=exc.status)
+
+    return wrapper
+
+
+@kosmos_api_auth
+@require_GET
+@_json_api
+def api_matters(request):
     return JsonResponse(
-        {
-            "id": task.id,
-            "matter": task.matter.name if task.matter else "Admin",
-            "message": message,
-        },
-        status=201,
+        {"matters": list_matters(request.api_user, request.GET.get("q"))}
     )
+
+
+@kosmos_api_auth
+@require_GET
+@_json_api
+def api_matter_section(request, matter_id, section):
+    return JsonResponse(read_section(request.api_user, matter_id, section))
+
+
+@kosmos_api_auth
+@require_GET
+@_json_api
+def api_document(request, document_id):
+    return JsonResponse(read_document(request.api_user, document_id))
+
+
+@kosmos_api_auth
+@require_GET
+@_json_api
+def api_email_thread(request, matter_id, thread_id):
+    return JsonResponse(read_email_thread(request.api_user, matter_id, thread_id))
+
+
+@kosmos_api_auth
+@require_http_methods(["POST"])
+@_json_api
+def api_search_materials(request, matter_id):
+    return JsonResponse(
+        search_materials(request.api_user, matter_id, _json_body(request))
+    )
+
+
+@kosmos_api_auth
+@require_GET
+@_json_api
+def api_conversation(request, matter_id, conversation_id):
+    return JsonResponse(read_conversation(request.api_user, matter_id, conversation_id))
+
+
+@kosmos_api_auth
+@require_GET
+@_json_api
+def api_invoice(request, invoice_id):
+    return JsonResponse(read_invoice(request.api_user, invoice_id))
+
+
+# GET on facts/ and witnesses/ serves the matching read section, so every
+# documented section name works even though these paths are matched before
+# the <str:section> route.
+
+
+@kosmos_api_auth
+@require_http_methods(["GET", "POST"])
+@_json_api
+def api_matter_facts(request, matter_id):
+    """GET: the timeline section. POST: create one timeline fact."""
+    if request.method == "GET":
+        return JsonResponse(read_section(request.api_user, matter_id, "timeline"))
+    return JsonResponse(
+        create_fact(request.api_user, matter_id, _json_body(request)), status=201
+    )
+
+
+@kosmos_api_auth
+@require_http_methods(["GET", "POST"])
+@_json_api
+def api_matter_witnesses(request, matter_id):
+    """GET: the witnesses section. POST: create one witness (name-deduped)."""
+    if request.method == "GET":
+        return JsonResponse(read_section(request.api_user, matter_id, "witnesses"))
+    payload, created = create_witness(request.api_user, matter_id, _json_body(request))
+    return JsonResponse(payload, status=201 if created else 200)
+
+
+@kosmos_api_auth
+@require_http_methods(["POST"])
+@_json_api
+def api_create_task(request):
+    return JsonResponse(create_task(request.api_user, _json_body(request)), status=201)

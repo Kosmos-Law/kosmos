@@ -179,11 +179,12 @@ must not be shared or left on a shared drive.
 
 - The token is created automatically the first time a user downloads
   the extension.
-- It is the same token (`ApiToken`) that gives the user's Claude
-  Desktop access to Kosmos, described in
-  [Claude Desktop](claude-desktop.md). There is one per user. Anyone
-  holding it can use those interfaces as that user.
-- The user can rotate or revoke it under **Settings → Claude Desktop**.
+- It is the key of the token-authenticated JSON APIs (`ApiToken`),
+  described in [MCP server and JSON APIs](../../dev/subsystems/mcp.md).
+  There is one per user. Anyone holding it can use those interfaces as
+  that user. Claude's own connection, described in [Claude](claude-desktop.md),
+  does not use it.
+- The user can rotate or revoke it under **Settings → Claude**.
   Either action cuts off the installed extension as well. After
   rotating, the user downloads the extension again and reinstalls it.
 - Deactivating a user's account disables their token at once.

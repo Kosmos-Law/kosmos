@@ -58,7 +58,7 @@ access, and the things that bite.
 | [Drafts](subsystems/drafts.md) | Draft links and the LibreOffice companion |
 | [Files](subsystems/files.md) | The Dropbox-synced Firm tree: matter folder links, the watcher, OCR in place |
 | [Email and intakes](subsystems/email-and-intakes.md) | Gmail sync, inbound email, intakes, client forms |
-| [MCP server and JSON APIs](subsystems/mcp.md) | What Claude Desktop talks to |
+| [MCP server and JSON APIs](subsystems/mcp.md) | The remote MCP server Claude connects to, its OAuth server, and the token APIs |
 | [Operations](subsystems/operations.md) | The task queue and schedules, storage, recovery commands, publishing the docs |
 
 ## Decisions

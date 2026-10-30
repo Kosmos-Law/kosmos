@@ -1,6 +1,7 @@
-"""Token-authed JSON API over the practice-wide search (the same watson
-index, synonym expansion, and case-number matching as the in-app search
-page), for the Claude Desktop MCP server.
+"""The practice-wide search (the same watson index, synonym expansion,
+and case-number matching as the in-app search page) as a service function,
+search_practice(), for the remote MCP server's search_kosmos tool
+(apps/mcp/tools.py), and as a token-authed JSON view over it.
 
 Results are manifest lines with handles for follow-up tools. Matters,
 and proceedings are limited to the user's accessible
@@ -14,7 +15,7 @@ from django.views.decorators.http import require_GET
 from watson import search as watson
 
 from apps.accounts.access import filter_matters_for_user
-from apps.accounts.api_auth import kosmos_api_auth
+from apps.accounts.api_auth import ApiError, kosmos_api_auth
 from apps.contacts.models import Contact
 from apps.intakes.models import Intake
 from apps.matters.models import Matter
@@ -62,21 +63,18 @@ def _intake_line(intake):
     return f"- [intake:{intake.id}] {intake.name} ({', '.join(b for b in bits if b)})"
 
 
-@kosmos_api_auth
-@require_GET
-def api_search(request):
-    query = (request.GET.get("q") or "").strip()
-    scope = request.GET.get("scope") or "all"
+def search_practice(user, query, scope="all"):
+    """The practice-wide search for ``user``: matters, proceedings, contacts
+    and intakes as manifest lines with handles. ``scope`` is ``all`` or one
+    of the search page's scopes."""
+    query = (query or "").strip()
+    scope = scope or "all"
     if not query:
-        return JsonResponse({"error": "Provide q."}, status=400)
+        raise ApiError(400, "Provide q.")
     scopes = search_scopes()
     scope_names = ("all",) + tuple(key for key, _label, _model in scopes)
     if scope not in scope_names:
-        return JsonResponse(
-            {"error": f"Unknown scope. Valid scopes: {', '.join(scope_names)}."},
-            status=400,
-        )
-    user = request.api_user
+        raise ApiError(400, f"Unknown scope. Valid scopes: {', '.join(scope_names)}.")
     wanted = {key for key, _label, _model in scopes if scope in ("all", key)}
     extra_kinds = [kind for kind in registry.kinds() if kind.key in wanted]
     if "intakes" in wanted and not (user.is_admin or user.perm_intakes):
@@ -160,4 +158,16 @@ def api_search(request):
             lines.append(f"  ...and {len(rows) - RESULT_CAP} more; narrow the query.")
         sections.append("\n".join(lines))
     text = "\n\n".join(sections) or "No matches."
-    return JsonResponse({"query": query, "scope": scope, "total": total, "text": text})
+    return {"query": query, "scope": scope, "total": total, "text": text}
+
+
+@kosmos_api_auth
+@require_GET
+def api_search(request):
+    try:
+        result = search_practice(
+            request.api_user, request.GET.get("q"), request.GET.get("scope")
+        )
+    except ApiError as exc:
+        return JsonResponse({"error": exc.message}, status=exc.status)
+    return JsonResponse(result)

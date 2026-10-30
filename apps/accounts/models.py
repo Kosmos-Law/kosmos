@@ -283,11 +283,12 @@ def _new_token_key():
 
 
 class ApiToken(models.Model):
-    """A user's key for the Kosmos JSON APIs: the Claude Desktop MCP server
-    (notes, matter, calendar and search APIs) and the LibreOffice companion
-    extension. Issued on the Claude Desktop settings page or on first visit
-    to the companion setup modal, and baked into the .oxt that user
-    downloads. Formerly drafts.ApiToken; the table kept its name.
+    """A user's key for the token-authenticated Kosmos JSON APIs (the
+    matter, calendar and search APIs) and the LibreOffice companion
+    extension. Issued on the Settings > Claude page or on first visit to
+    the companion setup modal, and baked into the .oxt that user
+    downloads. Claude's own connection does not use it (apps/mcp issues
+    OAuth tokens). Formerly drafts.ApiToken; the table kept its name.
     """
 
     user = models.OneToOneField(

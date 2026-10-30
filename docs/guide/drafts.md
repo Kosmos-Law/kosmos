@@ -38,7 +38,7 @@ edit is made by Writer, and saving the file is up to you.
 
 The download is personal. It carries your access token, so do not share
 the file. If you use **Rotate token** or **Revoke token** under
-**Settings → Claude Desktop**, download the extension again and reinstall
+**Settings → Claude**, download the extension again and reinstall
 it (see [Settings](settings.md)).
 
 This page describes version 0.4.2 of the extension. **Kosmos →

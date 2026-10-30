@@ -107,7 +107,7 @@ below can be changed from `config/.env`, except that three of them follow
 
 | Setting | In effect | Consequence |
 |---|---|---|
-| `SECURE_PROXY_SSL_HEADER` | Set when `DEBUG` is off: `("HTTP_X_FORWARDED_PROTO", "https")` | Django takes the scheme of a request from the `X-Forwarded-Proto` header that nginx sets. Addresses it builds from a request, such as the configuration block on **Settings → Claude Desktop**, begin with `https://`. |
+| `SECURE_PROXY_SSL_HEADER` | Set when `DEBUG` is off: `("HTTP_X_FORWARDED_PROTO", "https")` | Django takes the scheme of a request from the `X-Forwarded-Proto` header that nginx sets. Addresses it builds from a request, such as the connector address on **Settings → Claude** and the OAuth metadata behind it, begin with `https://`. |
 | `SESSION_COOKIE_SECURE` | Set when `DEBUG` is off: on | The session cookie is marked `Secure`. A browser sends it over HTTPS only. |
 | `CSRF_COOKIE_SECURE` | Set when `DEBUG` is off: on | Same for the CSRF cookie. |
 | `SECURE_SSL_REDIRECT` | Not set (off) | Django never redirects to HTTPS. Certbot's nginx redirect is the only one. |
@@ -346,10 +346,14 @@ The role and permission switches are described in
   flat-fee lists.
 - Nothing stops an admin from demoting or deactivating the last admin.
   Recovery is `createsuperuser` from the shell.
-- A user's API token (Claude Desktop, LibreOffice companion) never expires
-  and is stored unhashed. It stops working when the user is deactivated
-  and works again if they are reactivated. Only the user can rotate or
-  revoke it.
+- A user's API token (LibreOffice companion) never expires and is stored
+  unhashed. It stops working when the user is deactivated and works again
+  if they are reactivated. Only the user can rotate or revoke it.
+- A user's Claude connections (Settings → Claude) hold OAuth tokens that
+  are stored hashed, expire after an hour and are rotated by refresh.
+  They stop working when the user is deactivated; the user ends one with
+  Disconnect. An administrator has no screen for another user's
+  connections: deactivate the user.
 - Deactivating a user does not disconnect a Gmail mailbox they connected.
   It keeps synchronizing until the user disconnects it.
 
@@ -433,9 +437,10 @@ Each of these is off until its keys are set.
   payment requests, daily digests, and error reports to `ADMINS`, which
   include details of the failed request.
 - **Object storage**, when `STORAGE_BACKEND=s3`: every uploaded file.
-- **Claude Desktop**, for users who set it up: whatever that user's Claude
-  reads from Kosmos goes to their machine and to Anthropic under their own
-  account. See [Claude Desktop](integrations/claude-desktop.md).
+- **Claude** (Anthropic), for users who connect it: whatever that user's
+  Claude reads from Kosmos goes to Anthropic under the user's own Claude
+  account, fetched by Anthropic's servers, not the user's machine. See
+  [Claude](integrations/claude-desktop.md).
 - **Users' browsers** load scripts and styles from `unpkg.com`,
   `cdn.jsdelivr.net` and Google Fonts on every page, and the processor's
   script on the payment page. The pages do not pin these files with

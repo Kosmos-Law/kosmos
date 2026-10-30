@@ -1,9 +1,9 @@
 """Routes of the AI app: the matter chat under /case/<id>/ai/, the
-conversation operations under /case/ai/, and the token-authed JSON API the
-Claude Desktop MCP server calls under /case/api/. The paths keep their
-historic /case/ prefix so bookmarks, the MCP client and the permission
-middleware's patterns go on working; only the URL names moved to the
-``ai`` namespace.
+conversation operations under /case/ai/, and the token-authed JSON API
+over a matter under /case/api/ (the MCP server in apps/mcp calls the same
+service functions in-process). The paths keep their historic /case/
+prefix so bookmarks, scripts and the permission middleware's patterns go
+on working; only the URL names moved to the ``ai`` namespace.
 """
 
 from django.urls import path
@@ -13,7 +13,7 @@ from apps.ai import api, sessions, views
 app_name = "ai"
 
 urlpatterns = [
-    # Token-authed JSON API for the Claude Desktop MCP server. The
+    # Token-authed JSON API over a matter. The
     # facts/witnesses/emails/conversations routes must precede the
     # <str:section> catch-all so their POST/extra-segment forms match first.
     path("case/api/matters/", api.api_matters, name="api-matters"),

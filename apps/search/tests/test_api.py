@@ -1,5 +1,5 @@
-"""Tests for the practice-wide search JSON API behind the Claude Desktop
-MCP server's search_kosmos tool."""
+"""Tests for the practice-wide search JSON API, whose service function the
+MCP server's search_kosmos tool shares."""
 
 import pytest
 from django.test import Client

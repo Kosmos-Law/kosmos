@@ -19,6 +19,7 @@ class DailyDashCheckMiddleware:
         "/static/",  # Static files
         "/media/",  # Media files
         "/__debug__/",  # Debug toolbar
+        "/mcp/",  # The OAuth consent screen: a redirect away from it loses Claude
     ]
 
     def __init__(self, get_response):

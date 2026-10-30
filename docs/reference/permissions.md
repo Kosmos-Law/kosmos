@@ -331,9 +331,24 @@ limit.
 | Token model | `ApiToken`, one per user (`apps/accounts/models.py`) |
 | Format | `secrets.token_urlsafe(32)`, stored as-is in the database |
 | Expiry | None |
-| Issued | By the user: Settings → Claude Desktop, or the first time they open the LibreOffice companion setup |
-| Rotated or revoked | By the user only, in Settings → Claude Desktop |
+| Issued | By the user: Settings → Claude, or the first time they open the LibreOffice companion setup |
+| Rotated or revoked | By the user only, in Settings → Claude |
 | Missing, unknown, or user inactive | 401 with a JSON error (`apps/accounts/api_auth.py`, `apps/drafts/companion.py`) |
+
+The MCP server at `/mcp` (`apps/mcp`) takes a different credential: an
+OAuth bearer token issued when the user signs in and clicks Allow on
+`/mcp/oauth/authorize`. The tools behind it call the same service
+functions as the `/case/api/` and `/search/api/` routes below, so they
+are scoped identically; the token is the user's, there are no scopes.
+
+| Fact | Value |
+|---|---|
+| Token model | `McpToken` under a `McpConnection` (`apps/mcp/models.py`), SHA-256 digests only |
+| Expiry | Access token one hour; refresh token ninety days, rotated on use |
+| Issued | By the user, through the consent screen; the user must be signed in |
+| Revoked | By the user (Settings → Claude, Disconnect; or the client's revocation call), or by deactivating the user |
+| Missing, unknown, expired, or user inactive | 401 with `WWW-Authenticate: Bearer resource_metadata="…"` (`apps/mcp/server.py`) |
+| OAuth endpoints (`/mcp/oauth/register`, `/mcp/oauth/token`, `/mcp/oauth/revoke`) and the well-known documents | No sign-in; CSRF-exempt; registration is rate-limited per IP |
 
 | URL prefix | Decorator | Methods | Scope |
 |---|---|---|---|

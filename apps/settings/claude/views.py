@@ -1,66 +1,54 @@
-"""Connect Claude Desktop: per-user setup page for the Kosmos MCP server.
+"""Settings > Claude: connect Claude to Kosmos, see what is connected,
+disconnect it.
 
-Generalizes the companion .oxt precedent (the artifact we hand out carries
-the user's token, so setup needs no manual configuration): the page renders
-the exact claude_desktop_config.json block with the user's real token
-substituted, plus a download of the MCP script it points at.
+Claude connects over the remote MCP server (apps/mcp): the page shows the
+one URL to paste into Claude's connector settings, and the sign-in that
+follows happens in the browser, on Kosmos's own consent screen. The
+connections listed here are McpConnection rows; Disconnect deletes one,
+which ends its tokens at once.
 
-The token is the same ApiToken the LibreOffice companion uses, so
-rotating or revoking it here also re-keys that extension.
+The page also keeps the user's API token (ApiToken), which the LibreOffice
+companion and the token-authenticated JSON APIs use: issue, rotate and
+revoke. It has nothing to do with the Claude connection any more, but this
+is where users know to find it.
 """
 
-import json
-from pathlib import Path
-
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import FileResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import ApiToken
-
-SCRIPT_PATH = Path(settings.BASE_DIR) / "tools" / "kosmos_notes_mcp.py"
-
-
-def _config_block(request, token):
-    """The "mcpServers" member to paste inside claude_desktop_config.json.
-
-    Rendered without the file's outer braces: Desktop pre-populates the
-    config with defaults, so the paste target is always inside an existing
-    top-level object, never an empty file.
-    """
-    servers = json.dumps(
-        {
-            "kosmos": {
-                "command": "uv",
-                "args": ["run", "--script", "/path/to/kosmos_notes_mcp.py"],
-                "env": {
-                    "KOSMOS_URL": f"{request.scheme}://{request.get_host()}",
-                    "KOSMOS_TOKEN": token.key,
-                },
-            }
-        },
-        indent=2,
-    )
-    return f'"mcpServers": {servers}'
+from apps.mcp.models import McpConnection
+from apps.mcp.oauth import mcp_url
 
 
 @login_required
 def claude_index(request):
-    token = ApiToken.objects.filter(user=request.user).first()
     context = {
         "subapp": "claude",
-        "token": token,
-        "config_block": _config_block(request, token) if token else "",
+        "connector_url": mcp_url(request),
+        "connections": McpConnection.objects.filter(user=request.user).select_related(
+            "client"
+        ),
+        "token": ApiToken.objects.filter(user=request.user).first(),
     }
     return render(request, "settings/claude/index.html", context)
 
 
 @login_required
 @require_POST
+def claude_disconnect(request, connection_id):
+    """End one connection. Its tokens stop working at once; Claude shows
+    the connector as needing sign-in."""
+    connection = get_object_or_404(McpConnection, pk=connection_id, user=request.user)
+    connection.delete()
+    return redirect("settings:claude-index")
+
+
+@login_required
+@require_POST
 def claude_rotate(request):
-    """Generate (or re-key) the user's token. Serves both buttons: the
+    """Generate (or re-key) the user's API token. Serves both buttons: the
     delete is a no-op when no token exists yet."""
     ApiToken.objects.filter(user=request.user).delete()
     ApiToken.for_user(request.user)
@@ -72,15 +60,3 @@ def claude_rotate(request):
 def claude_revoke(request):
     ApiToken.objects.filter(user=request.user).delete()
     return redirect("settings:claude-index")
-
-
-@login_required
-def claude_script(request):
-    """The MCP server script, served for download so users never need the
-    repo. Not personalized (the token travels in the config block)."""
-    return FileResponse(
-        open(SCRIPT_PATH, "rb"),
-        as_attachment=True,
-        filename="kosmos_notes_mcp.py",
-        content_type="text/x-python",
-    )

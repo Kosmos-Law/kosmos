@@ -1,51 +1,66 @@
-# Claude Desktop access to Kosmos
+# Claude
 
-Claude Desktop on a user's own machine can work with Kosmos directly:
-for any open matter the user can access, it reads the full record
-(contacts, rates, activity, events, tasks, proceedings, settlement,
-documents, highlights, timeline, witnesses, synced emails, AI
-conversations, invoices), and it can search across the practice. Writes
-are narrow and deliberate: create-only timeline facts, witnesses, and
-tasks. Access is per-user: it authenticates with
-the same `ApiToken` the LibreOffice companion uses (header
-`X-Kosmos-Token`), so a user's Claude sees exactly what that user can
-see, and deactivating the user kills the token.
+Claude can work with Kosmos directly: claude.ai on the web, Claude
+Desktop, the mobile apps, Cowork and Claude Code all connect the same
+way. For any open matter the user can access, Claude reads the full
+record (contacts, rates, activity, events, tasks, proceedings,
+settlement, documents, highlights, timeline, witnesses, synced emails,
+earlier AI conversations, invoices) and searches across the practice.
+Writes are narrow and deliberate: create-only timeline facts, witnesses
+and tasks. Access is per user: Claude signs in as the user, through
+Kosmos's own sign-in, and sees exactly what that user can see.
+Deactivating the user, or disconnecting under Settings → Claude, ends the
+access at once.
 
-Nothing needs configuring on the server. Each user sets up their own
-machine from **Settings → Claude Desktop**. How the pieces fit together is
-in the developer guide: [MCP server and JSON APIs](../../dev/subsystems/mcp.md).
+Kosmos is a remote MCP server (`/mcp`) with its own OAuth 2.1
+authorization server. Nothing is configured on the server for it, and
+nothing is installed on the user's machine. How the pieces fit together
+is in the developer guide: [MCP server and JSON APIs](../../dev/subsystems/mcp.md).
+
+## What the server needs
+
+- **HTTPS at a public address.** Claude's connections come from
+  Anthropic's servers, not from the user's computer, so the Kosmos host
+  must be reachable from the internet (from Anthropic's published egress
+  range, `160.79.104.0/21`, if a firewall limits who may connect). A
+  server on a private network or behind a VPN cannot be connected, and
+  the browser that signs the user in must reach it too.
+- **The right public address.** The connector URL on the Settings page
+  is built from the request, or from `PUBLIC_BASE_URL` when that is set.
+  Behind a proxy that rewrites the host, set `PUBLIC_BASE_URL` to the
+  address users type, or the addresses in the OAuth metadata will not
+  match and the sign-in fails.
+- **The well-known paths at the root.** `/.well-known/oauth-protected-resource`
+  and `/.well-known/oauth-authorization-server` are served by Kosmos; a
+  reverse proxy that routes `/.well-known/` elsewhere (for certificate
+  renewal, say) must pass these two on.
 
 ## User setup
 
-1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
-2. In Kosmos: Settings → Claude Desktop → download `kosmos_notes_mcp.py`,
-   save it somewhere permanent.
-3. In Claude Desktop: Settings → Developer → Edit Config. This opens
-   `claude_desktop_config.json`. Note this is Claude **Desktop's**
-   config, not Claude Code's `CLAUDE.md`/`.mcp.json`, and Desktop
-   pre-populates it with defaults. The block on the Kosmos settings page
-   is the `"mcpServers"` member only: paste it inside the file's
-   outermost braces as an additional top-level entry (comma after the
-   preceding entry), keeping what's already there, then fix the script
-   path. If an `mcpServers` section already exists, add just the
-   `"kosmos"` entry inside it.
-4. Restart Claude Desktop; the kosmos tools appear under the tools icon in
-   the chat input.
+1. In Kosmos, open **Settings → Claude** and copy the connector address
+   (`https://<your host>/mcp`).
+2. In Claude, open Settings, then Connectors, and choose **Add custom
+   connector**. Name it Kosmos, paste the address as the server URL, and
+   leave the OAuth settings as they are.
+3. Click **Connect**. The browser opens Kosmos: sign in if asked (the
+   usual email code or authenticator app), and click **Allow**.
+4. Back in Claude, the Kosmos tools are available in every conversation,
+   on every device signed in to that Claude account.
 
-The script is part of Kosmos and changes with it. When an update to
-Kosmos changes the script's tools, each user downloads it again from
-Settings → Claude Desktop, saves it over the old copy and restarts Claude
-Desktop; an older copy calls endpoints that may no longer exist.
+In Claude Code, the same connection is
+`claude mcp add --transport http kosmos https://<your host>/mcp` followed
+by `/mcp` in the session to sign in.
 
-The settings page also offers rotate and revoke. Rotating re-keys the
-LibreOffice companion too, because both use the same token.
+A connection stays until the user disconnects it (Settings → Claude, or
+in Claude's connector settings), an administrator deactivates the user,
+or it goes ninety days unused. Each connection is listed on the Settings
+page with when it was made and last used.
 
-## Scoping a Desktop Project to a matter
+## Scoping a Claude Project to a matter
 
-Desktop's MCP config is global: a Project cannot launch a different
-server or pass different env. Matter scoping is conversational: the tools
-take the matter as a parameter, and a per-matter Desktop Project carries
-it in its custom instructions, e.g.:
+Matter scoping is conversational: the tools take the matter as a
+parameter, and a per-matter Claude Project carries it in its
+instructions, e.g.:
 
 > This project concerns the Kosmos matter "Rivera v. Northside Logistics".
 > Resolve it once with find_matter, then pass its matter_id to the
@@ -57,4 +72,22 @@ Two write surfaces, both create-only, neither destructive:
 
 - **Timeline facts and witnesses**: Claude can add them to a matter, with
   the same validation the in-app chat applies.
-- **Tasks**: Claude can add tasks, assigned to the token's user.
+- **Tasks**: Claude can add tasks, assigned to the user who connected.
+
+## Troubleshooting
+
+- **"Couldn't reach the MCP server"** when adding the connector: Claude
+  could not fetch `https://<host>/mcp` or the well-known documents from
+  Anthropic's servers. Check that the host is public, that the
+  certificate is valid, and that the proxy passes `/.well-known/` on.
+  `curl -i https://<host>/mcp` from outside should answer `401` with a
+  `WWW-Authenticate` header.
+- **The sign-in page says the connection cannot be made**: the
+  application's redirect address is not one it registered, or its
+  client id is unknown. Remove the connector in Claude and add it again.
+- **The sign-in loops or lands on the Dash**: the address Claude used
+  does not match the one Kosmos believes is its own. Set
+  `PUBLIC_BASE_URL`.
+- **Tools fail with "Your Kosmos account does not have financial
+  access"**: as in the application, the ledger, trust and rates need the
+  Financial permission.

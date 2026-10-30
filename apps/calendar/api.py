@@ -1,7 +1,7 @@
 """JSON API for the calendar, for another app to overlay Kosmos's events
 on its own calendar (Cloud Portal does). Auth is the user's X-Kosmos-Token
-key (ApiToken, via kosmos_api_auth), the one the Claude Desktop page
-in Settings issues, so the events returned are the ones that user may see.
+key (ApiToken, via kosmos_api_auth), the one the Claude page in Settings
+issues, so the events returned are the ones that user may see.
 
 GET events/api/?start=YYYY-MM-DD&end=YYYY-MM-DD returns the events on those
 days, inclusive, as a list of objects:

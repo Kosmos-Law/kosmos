@@ -78,6 +78,6 @@ exactly where the user could see it on a screen:
 
 - [AI chat and context](../dev/subsystems/ai/context.md), "What goes
   into the context" and "Access".
-- [Agentic chat](../dev/subsystems/ai/agent-chat.md); [MCP server and
+- [Sessions](../dev/subsystems/ai/sessions.md) (the agentic chat it grew from is retired); [MCP server and
   JSON APIs](../dev/subsystems/mcp.md).
 - [Permissions reference](../reference/permissions.md).

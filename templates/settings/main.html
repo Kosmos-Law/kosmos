@@ -58,7 +58,7 @@
             <a href="{% url 'settings:integrations-index' %}">Integrations</a>
           </li>
           <li {% if subapp == "claude" %}class="active"{% endif %}>
-            <a href="{% url 'settings:claude-index' %}">Claude Desktop</a>
+            <a href="{% url 'settings:claude-index' %}">Claude</a>
           </li>
           {% if user.role == 'ADMIN' or user.perm_intakes %}
             {% comment %}

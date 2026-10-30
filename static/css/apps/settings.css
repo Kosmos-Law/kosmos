@@ -576,7 +576,7 @@ h2.settings-section {
   font-size: 0.875rem;
 }
 
-/* The Claude Desktop and authenticator steps are numbered lists, with
+/* The Claude and authenticator steps are numbered lists, with
    the code in them run in with the text (code is a block elsewhere) */
 .companion-steps,
 .authenticator-steps {
@@ -597,7 +597,7 @@ h2.settings-section {
   padding: 0 0.25em;
 }
 
-/* Claude Desktop page: the rendered claude_desktop_config.json block,
+/* Claude page: the connector address block,
    with the copy button floating over its top-right corner. */
 .claude-config {
   position: relative;
@@ -622,6 +622,17 @@ h2.settings-section {
 .claude-token-actions {
   display: flex;
   gap: 0.75rem;
+}
+
+/* The connected applications: a narrow table, the Disconnect button in
+   its last column flush right. */
+.claude-connections {
+  max-width: 40rem;
+}
+
+.claude-connection-actions {
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
