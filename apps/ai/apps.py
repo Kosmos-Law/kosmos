@@ -8,46 +8,9 @@ class AiConfig(AppConfig):
 
     def ready(self):
         from apps.accounts.access import register_matter_lookup
-        from apps.ai.models import Conversation, Message, Session
-        from apps.ai.sessions import get_session_list_context
-        from apps.ai.views import get_conversation_list_context
-        from apps.case.services import Tab, register_tab
-        from apps.settings.ai import ai_enabled
+        from apps.ai.models import Conversation, Message
 
-        # The AI tab of the case shell, once a provider is set up: the
-        # matter's Claude Code sessions. The archive of earlier
-        # conversations and saved case law are views inside it, so the tab
-        # lights for them too.
-        register_tab(
-            Tab(
-                name="ai",
-                label="AI",
-                index_url="ai:index",
-                list_url="ai:list",
-                template="ai/sessions/list.html",
-                data=get_session_list_context,
-                order=90,
-                available=lambda user, matter_id: ai_enabled(),
-                also_active=("ai-archive", "caselaws"),
-                wrapper_id="ai-sessions",
-                refresh_trigger="sessionsChanged from:body",
-            )
-        )
-        register_tab(
-            Tab(
-                name="ai-archive",
-                label="Archive",
-                index_url="ai:archive",
-                list_url="ai:archive-list",
-                template="ai/list.html",
-                data=get_conversation_list_context,
-                order=91,
-                available=lambda user, matter_id: ai_enabled(),
-                listed=lambda user, matter_id: False,
-                wrapper_id="ai-conversations",
-                refresh_trigger="conversationsChanged from:body",
-            )
-        )
-        register_matter_lookup("session_id", Session, ("matter_id",))
+        # The conversation operations the intake chat's templates use
+        # (apps/ai/views.py) resolve their matter through these.
         register_matter_lookup("conv_id", Conversation, ("matter_id",))
         register_matter_lookup("message_id", Message, ("conversation__matter_id",))

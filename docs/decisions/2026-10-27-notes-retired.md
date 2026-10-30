@@ -45,7 +45,8 @@ views with the user, and deleting either keeps working.
   still records timeline facts and witnesses.
 - The `note` and `library` kinds of the semantic index.
 - In the Claude Desktop connector (`tools/kosmos_notes_mcp.py`, which
-  keeps its file name): the tools `list_library`, `list_matter_notes`,
+  kept its file name until the script itself was retired on 2026-10-30):
+  the tools `list_library`, `list_matter_notes`,
   `search_notes`, `read_note` and `write_note`, and the notes JSON API
   under `/notes/api/`. `find_matter` stays, now served from
   `/case/api/matters/`.

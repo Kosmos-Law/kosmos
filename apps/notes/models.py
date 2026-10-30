@@ -151,9 +151,10 @@ class Note(AuditMixin, models.Model):
     labels = models.ManyToManyField("case.Label", related_name="notes", blank=True)
 
     viewed_at = models.DateTimeField(null=True, blank=True)
-    # Editor toolbar toggle: Claude Desktop (the MCP notes API) may write
-    # to this note until this time; null = no external write access. The
-    # in-app AI's note writes are not gated by this.
+    # Editor toolbar toggle, left from the retired notes API: an external
+    # AI client could write to this note until this time; null = no
+    # external write access. The in-app AI's note writes were not gated
+    # by this.
     ai_write_until = models.DateTimeField(null=True, blank=True)
     history = HistoricalRecords()
 

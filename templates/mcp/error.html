@@ -1,0 +1,19 @@
+{% extends "registration/base.html" %}
+{% load firm_tags %}
+{% block title %}
+  Connection refused
+{% endblock title %}
+{% block content %}
+  <div class="auth-container">
+    <div class="auth-card">
+      {% auth_brand %}
+      <div class="auth-subtitle">This connection cannot be made</div>
+      <div class="auth-error">{{ description }}</div>
+      <p class="auth-info">
+        Nothing was changed. Start the connection again from Claude; if it
+        fails the same way, the application is misconfigured, not your
+        account.
+      </p>
+    </div>
+  </div>
+{% endblock content %}

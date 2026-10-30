@@ -3,9 +3,10 @@
 Who a user is, how they sign in, and what they may reach. The user model
 and the sign-in flow live in `apps/accounts/`; the path and matter checks
 run in middleware from the same app; each application that lists records
-by matter narrows them through its own `access.py`; and the per-user API
-token that the LibreOffice companion and the MCP server present lives in
-`apps/drafts/`. The matrix of what each flag opens is generated into
+by matter narrows them through its own `access.py`; the per-user API
+token that the LibreOffice companion presents lives in `apps/accounts/`;
+and the OAuth tokens Claude presents to the MCP server live in `apps/mcp/`
+([MCP server and JSON APIs](mcp.md)). The matrix of what each flag opens is generated into
 [Permissions matrix](../../reference/permissions.md); this page explains
 the machinery behind it and does not repeat the gates.
 
@@ -28,8 +29,9 @@ the machinery behind it and does not repeat the gates.
 | `apps/settings/profile/views.py` | The profile forms and `nav_icon`, the sidebar icon picker |
 | `templates/sidebar.html` | The account menu (who is signed in, Settings, Log out) in the Settings item's place |
 | `apps/settings/permissions/` | The read-only permissions matrix page |
-| `apps/settings/claude/views.py` | Issue, rotate and revoke the API token |
-| `apps/drafts/models.py` | `ApiToken` |
+| `apps/settings/claude/views.py` | Settings → Claude: the MCP connections and Disconnect; issue, rotate and revoke the API token |
+| `apps/accounts/models.py` | `ApiToken` |
+| `apps/mcp/models.py`, `apps/mcp/oauth.py` | Claude's OAuth clients, connections and tokens, and the sign-in that issues them |
 | `apps/accounts/api_auth.py`, `apps/drafts/companion.py` | `kosmos_api_auth` and `companion_auth`, the token decorators |
 | `templates/registration/` | `login.html`, `verify_code.html`, `verify_authenticator.html` |
 
@@ -96,8 +98,10 @@ every worker process.
 
 **`ApiToken`** is a `OneToOneField` to the user with a `key` from
 `secrets.token_urlsafe(32)` (`unique=True`, no expiry). `for_user()` is a
-`get_or_create`, so a user has at most one token and the LibreOffice
-companion and Claude Desktop share it.
+`get_or_create`, so a user has at most one token; the LibreOffice
+companion and the token-authenticated JSON APIs use it. Claude does not:
+its tokens are `McpToken` rows under a `McpConnection` (`apps/mcp`),
+hashed, an hour long and rotated by refresh.
 
 Nothing about permissions is enforced in the database. The flags are
 booleans, `role` is a `CharField` with choices, and matter membership is
@@ -321,10 +325,18 @@ would. Which routes use which decorator, and what each exposes, is in
 [Token-authenticated APIs](../../reference/permissions.md#token-authenticated-apis);
 the APIs themselves are in [MCP server and JSON APIs](mcp.md).
 
-The Settings → Claude Desktop page issues the token on first visit through
-`ApiToken.for_user()`. `claude_rotate` deletes and recreates the row;
-`claude_revoke` deletes it. Rotating re-keys the LibreOffice companion as
-well, since it is the same row.
+The Settings → Claude page issues the token through `ApiToken.for_user()`
+(as does the companion's setup, on first use). `claude_rotate` deletes
+and recreates the row; `claude_revoke` deletes it. Rotating re-keys the
+LibreOffice companion, since it is the same row.
+
+The MCP server takes a different credential: a bearer token from its own
+OAuth authorization server, issued when the user signs in and clicks
+Allow on the consent screen (`/mcp/oauth/authorize`, a `login_required`
+view, so the two-step sign-in runs first). `McpToken.by_access_token()`
+refuses an expired token and an inactive user alike. Connections are
+ended under Settings → Claude or by deactivating the user. The flow is in
+[MCP server and JSON APIs](mcp.md).
 
 ### User administration
 

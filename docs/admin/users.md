@@ -206,7 +206,7 @@ request. Admin rows are shown switched on and cannot be changed.
 | Switch | When it is off, the user loses |
 |---|---|
 | **All Matters** | Access to matters they are not assigned to. See [Limit a user to certain matters](#limit-a-user-to-certain-matters). |
-| **Financial** | Everything under `/invoicing/` (invoices, unbilled work, payments, credits, payment requests, the trust ledger), the Rates and Ledger tabs of a matter, the balance and trust figures on a matter's Overview, bulk "change matter" and "comp" on time and expense lists, and the ledger, trust and invoice reads in the [Claude Desktop](integrations/claude-desktop.md) connection. |
+| **Financial** | Everything under `/invoicing/` (invoices, unbilled work, payments, credits, payment requests, the trust ledger), the Rates and Ledger tabs of a matter, the balance and trust figures on a matter's Overview, bulk "change matter" and "comp" on time and expense lists, and the ledger, trust and invoice reads in the [Claude](integrations/claude-desktop.md) connection. |
 | **Intakes** | Everything under `/intakes/`, including the intake form builder, and the intake email templates under **Settings → Intake Emails**. |
 | **Reports** | Everything under `/reports/`, and the firm-wide breakdown in the dashboard's Work in Progress section (they see their own figures instead). This switch starts off for a new user; the other four start on. |
 | **Research** | A matter's saved case law (the **Case Law** view of the AI tab), the case-law viewer, and a session's case law search and its saving of cases to the matter. |
@@ -216,7 +216,7 @@ Read these limits before you rely on a switch:
 
 - **Financial** does not hide rates and amounts everywhere. The time list
   still shows its Rate and Fee columns, and the expense and flat-fee lists
-  still show amounts. The Claude Desktop connection still serves a
+  still show amounts. The Claude connection still serves a
   matter's rates, activity and settlement sections.
 
 The [permissions matrix](../reference/permissions.md) has the full list of
@@ -261,7 +261,7 @@ For a restricted user, Kosmos then:
   it is asked for directly;
 - leaves other matters and their proceedings out of search;
 - limits the dashboard's matter lists and upcoming events, the daily
-  digest and the Claude Desktop connection to their matters.
+  digest and the Claude connection to their matters.
 
 !!! warning
 
@@ -309,9 +309,10 @@ There is no delete. An account is switched off and its records stay.
 From the user's next request:
 
 - Sign-in is refused, and existing sessions stop working.
-- The user's API token is rejected with HTTP 401. That is the token used by
-  Claude Desktop and by the LibreOffice companion extension. The token is
-  not deleted: if you reactivate the account, the same token works again.
+- The user's API token and their Claude connections are rejected with
+  HTTP 401. The token is the one the LibreOffice companion extension
+  uses. Neither is deleted: if you reactivate the account, both work
+  again.
 - Mail they forward to the intake address is dropped.
 - They no longer receive the daily digest, and they disappear from the
   permissions matrix and from user pickers.

@@ -3,8 +3,8 @@
 The shell in apps/case/views.py knows no tab by name. Every tab of the
 matter's working file is registered here: the case app registers its own
 in CaseConfig.ready() (apps/case/registrations.py), and the apps that
-contribute a tab register theirs the same way, the AI tab from apps.ai
-and the Emails tab from apps.mail, so the case builder never imports the
+contribute a tab register theirs the same way, the Emails tab from
+apps.mail, so the case builder never imports the
 apps that sit on top of it. The nav lists the registered tabs in order,
 the tab-content view dispatches to each tab's data function, and the
 tab remembered in the session is checked against the registry.

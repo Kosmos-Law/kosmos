@@ -40,13 +40,15 @@ urlpatterns = [
     path("", include("apps.ai.urls")),
     path("", include("apps.mail.urls")),
     path("", include("apps.drafts.urls")),
-    path("", include("apps.drive.urls")),
     # Activity App
     path("", include("apps.activity.urls")),
     # Trust App
     path("", include("apps.trust.urls")),
     # Search App
     path("", include("apps.search.urls")),
+    # The remote MCP server and its OAuth endpoints: the well-known
+    # documents at the root, the endpoint at /mcp
+    path("", include("apps.mcp.urls")),
     # Settings App
     path("", include("apps.settings.urls")),
     # Billing App

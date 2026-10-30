@@ -1,6 +1,6 @@
-"""Tests for the matter-scope JSON API behind the Claude Desktop MCP
-server: auth, section reads, full-content reads, and the create-only
-fact/witness/task writes."""
+"""Tests for the matter-scope JSON API, whose service functions the MCP
+server's tools share: auth, section reads, full-content reads, and the
+create-only fact/witness/task writes."""
 
 import json
 from datetime import timedelta

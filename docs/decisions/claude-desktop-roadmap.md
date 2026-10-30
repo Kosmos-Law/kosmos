@@ -17,3 +17,10 @@ OAuth 2.1 (django-oauth-toolkit; Claude accepts a manually issued client
 id/secret, so dynamic client registration can wait). No local install,
 works on claude.ai web and mobile, and offboarding is a server-side
 revoke.
+
+Rung 3 was built on 2026-10-30, skipping rung 2, with an authorization
+server of Kosmos's own rather than django-oauth-toolkit, and with dynamic
+registration and client ID metadata documents rather than a manually
+issued client: see
+[Claude connects over a remote MCP server with OAuth](2026-10-30-claude-connects-over-remote-mcp.md).
+The rung 1 script is gone.

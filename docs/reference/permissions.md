@@ -50,7 +50,7 @@ it.
 
 | Order | Rule (list in the source) | Path | Who passes |
 |---|---|---|---|
-| 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
+| 0 | Pattern (`AI_PATTERN`) | The conversation routes the intake chat uses under `/case/ai/…`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
 | 0 | Pattern (`CASE_FILE_PATTERN`, less `CASE_FILE_EXEMPT`) | Everything under `/case/` except the MCP matter API under `/case/api/` | Everyone while the firm's case file is on (Settings > Features); nobody (404) when an administrator has switched it off |
 | 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |
@@ -331,9 +331,24 @@ limit.
 | Token model | `ApiToken`, one per user (`apps/accounts/models.py`) |
 | Format | `secrets.token_urlsafe(32)`, stored as-is in the database |
 | Expiry | None |
-| Issued | By the user: Settings → Claude Desktop, or the first time they open the LibreOffice companion setup |
-| Rotated or revoked | By the user only, in Settings → Claude Desktop |
+| Issued | By the user: Settings → Claude, or the first time they open the LibreOffice companion setup |
+| Rotated or revoked | By the user only, in Settings → Claude |
 | Missing, unknown, or user inactive | 401 with a JSON error (`apps/accounts/api_auth.py`, `apps/drafts/companion.py`) |
+
+The MCP server at `/mcp` (`apps/mcp`) takes a different credential: an
+OAuth bearer token issued when the user signs in and clicks Allow on
+`/mcp/oauth/authorize`. The tools behind it call the same service
+functions as the `/case/api/` and `/search/api/` routes below, so they
+are scoped identically; the token is the user's, there are no scopes.
+
+| Fact | Value |
+|---|---|
+| Token model | `McpToken` under a `McpConnection` (`apps/mcp/models.py`), SHA-256 digests only |
+| Expiry | Access token one hour; refresh token ninety days, rotated on use |
+| Issued | By the user, through the consent screen; the user must be signed in |
+| Revoked | By the user (Settings → Claude, Disconnect; or the client's revocation call), or by deactivating the user |
+| Missing, unknown, expired, or user inactive | 401 with `WWW-Authenticate: Bearer resource_metadata="…"` (`apps/mcp/server.py`) |
+| OAuth endpoints (`/mcp/oauth/register`, `/mcp/oauth/token`, `/mcp/oauth/revoke`) and the well-known documents | No sign-in; CSRF-exempt; registration is rate-limited per IP |
 
 | URL prefix | Decorator | Methods | Scope |
 |---|---|---|---|

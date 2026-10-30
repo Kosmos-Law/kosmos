@@ -50,8 +50,9 @@ Each integration stays off until it is configured.
   inbound routing.
 - [Drafting with LibreOffice](integrations/libreoffice.md): the companion
   extension.
-- [Claude Desktop](integrations/claude-desktop.md): per-user access
-  through an MCP server.
+- [Claude](integrations/claude-desktop.md): per-user access from
+  claude.ai, Claude Desktop and Claude Code through the built-in remote
+  MCP server.
 
 ## Operate
 

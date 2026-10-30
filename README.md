@@ -44,8 +44,10 @@ tracked changes.
 mailbox, with a per-matter email view; contacts copied to each user's own
 Google Contacts.
 
-**Claude Desktop.** An MCP server exposes matters, documents, conversations
-and financial data to Claude Desktop (see [Claude Desktop access](docs/admin/integrations/claude-desktop.md)).
+**Claude.** A built-in remote MCP server, behind Kosmos's own sign-in,
+lets each user connect claude.ai, Claude Desktop or Claude Code to their
+matters, documents, conversations and financial data (see
+[Claude](docs/admin/integrations/claude-desktop.md)).
 
 ## Installation
 

@@ -53,12 +53,10 @@ access, and the things that bite.
 | [Time and billing](subsystems/time-and-billing.md) | Time, expenses and flat fees, invoices, credits, applications, reports |
 | [Trust and payments](subsystems/trust-and-payments.md) | The trust ledger, payments and their trust withdrawals, online payments, payment requests |
 | [Case building](subsystems/case-building.md) | Documents, OCR, highlights, facts, witnesses, labels, search |
-| [Sessions](subsystems/ai/sessions.md) | Claude Code sessions on a matter: the runtime over the Agent SDK, the tools, the prompt, the service |
-| [The archive and the intake chat](subsystems/ai/context.md) | The conversations of the earlier chat, the intake chat's turn, the shared AI helpers |
+| [The archive and the intake chat](subsystems/ai/context.md) | The conversations of the retired chat, the intake chat's turn, the shared AI helpers and the matter tools behind the MCP server |
 | [Drafts](subsystems/drafts.md) | Draft links and the LibreOffice companion |
-| [Files](subsystems/files.md) | The Dropbox-synced Firm tree: matter folder links, the watcher, OCR in place |
 | [Email and intakes](subsystems/email-and-intakes.md) | Gmail sync, inbound email, intakes, client forms |
-| [MCP server and JSON APIs](subsystems/mcp.md) | What Claude Desktop talks to |
+| [MCP server and JSON APIs](subsystems/mcp.md) | The remote MCP server Claude connects to, its OAuth server, and the token APIs |
 | [Operations](subsystems/operations.md) | The task queue and schedules, storage, recovery commands, publishing the docs |
 
 ## Decisions

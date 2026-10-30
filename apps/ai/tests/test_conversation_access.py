@@ -10,8 +10,8 @@ from django.test import Client
 from django.urls import reverse
 
 from apps.accounts.models import CustomUser
+from apps.ai.access import accessible_matters as get_accessible_matters
 from apps.ai.models import Conversation, Message
-from apps.ai.views import get_accessible_matters
 from apps.intakes.models import Intake
 from apps.llm.status import status_cache
 from apps.matters.models import Matter
@@ -136,64 +136,3 @@ class TestStatusAndCancel:
         )
         assert response.status_code == 403
         assert status_cache.get(key)["status"] == "complete"
-
-
-class TestChangesNeedPost:
-    """A plain link (or an image tag on another site) must not delete
-    or re-flag a conversation."""
-
-    @pytest.fixture
-    def conversation(self, matter, user):
-        return Conversation.objects.create(matter=matter, title="Keep me", user=user)
-
-    def test_delete_refuses_get(self, client, conversation):
-        url = reverse("ai:delete-conversation", args=[conversation.id])
-        assert client.get(url).status_code == 405
-        assert Conversation.objects.filter(pk=conversation.pk).exists()
-        assert client.post(url).status_code == 204
-        assert not Conversation.objects.filter(pk=conversation.pk).exists()
-
-    def test_set_ai_context_refuses_get(self, client, conversation):
-        url = reverse("ai:set-ai-context", args=[conversation.id, "never"])
-        assert client.get(url).status_code == 405
-        conversation.refresh_from_db()
-        assert conversation.ai_context == "auto"
-        assert client.post(url).status_code == 200
-        conversation.refresh_from_db()
-        assert conversation.ai_context == "never"
-
-
-class TestBulkSelection:
-    """The bulk actions act on the ids held in the matter's selection, so
-    only that matter's conversations may enter it or be acted on."""
-
-    def test_an_intake_chat_cannot_be_selected(self, restricted_client, matter, user):
-        intake_chat = _intake_chat(user)
-        response = restricted_client.post(
-            reverse("ai:toggle-select", args=[matter.id, intake_chat.id])
-        )
-        assert response.status_code == 404
-
-    def test_bulk_delete_stays_inside_the_matter(self, client, matter, user):
-        mine = Conversation.objects.create(matter=matter, title="Mine", user=user)
-        intake_chat = _intake_chat(user)
-        session = client.session
-        session[f"selected_conversations_{matter.id}"] = [mine.id, intake_chat.id]
-        session.save()
-
-        client.post(reverse("ai:bulk-delete", args=[matter.id]))
-        assert not Conversation.objects.filter(pk=mine.pk).exists()
-        assert Conversation.objects.filter(pk=intake_chat.pk).exists()
-
-    def test_bulk_set_context_stays_inside_the_matter(self, client, matter, user):
-        mine = Conversation.objects.create(matter=matter, title="Mine", user=user)
-        intake_chat = _intake_chat(user)
-        session = client.session
-        session[f"selected_conversations_{matter.id}"] = [mine.id, intake_chat.id]
-        session.save()
-
-        client.post(reverse("ai:bulk-set-context", args=[matter.id, "never"]))
-        mine.refresh_from_db()
-        intake_chat.refresh_from_db()
-        assert mine.ai_context == "never"
-        assert intake_chat.ai_context == "auto"

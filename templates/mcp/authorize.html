@@ -1,0 +1,38 @@
+{% extends "registration/base.html" %}
+{% load firm_tags %}
+{% block title %}
+  Connect to Kosmos
+{% endblock title %}
+{% block content %}
+  <div class="auth-container">
+    <div class="auth-card">
+      {% auth_brand %}
+      <div class="auth-subtitle">Connect {{ client.name }} to Kosmos</div>
+      <p class="auth-info">
+        <strong>{{ client.name }}</strong> wants to work in Kosmos as
+        <strong>{{ user.email }}</strong>. It will be able to read the open
+        matters you have access to (contacts, activity, events, tasks,
+        documents, highlights, the timeline, witnesses, emails and, if you
+        hold the Financial permission, rates, the ledger and trust), search
+        the practice, and add timeline facts, witnesses and tasks. It can
+        never edit or delete existing records.
+      </p>
+      <p class="auth-info mcp-consent-redirect">
+        After you allow it, you return to <strong>{{ redirect_host }}</strong>.
+        {% if loopback_only %}
+          That is a program on your own computer; allow this only if you
+          started the connection from there just now.
+        {% endif %}
+        You can disconnect it at any time under Settings, Claude.
+      </p>
+      <form class="account-form" method="post">
+        {% csrf_token %}
+        {% for name, value in fields.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+        <div class="auth-buttons justify-between">
+          <button type="submit" name="decision" value="deny" class="btn btn-secondary">Cancel</button>
+          <button type="submit" name="decision" value="allow" class="btn btn-success">Allow</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

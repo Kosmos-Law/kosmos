@@ -4,9 +4,8 @@ This page is for attorneys and paralegals who write documents for a
 matter. It covers a document linked to an AI chat: how to have the AI
 edit it as tracked changes in LibreOffice Writer, and what happens to the
 link afterwards. You should already know how to open a matter
-([Matters](matters.md)) and start a chat on it ([AI chat](ai-chat.md)).
-Drafts are part of the AI chat, so they are available only when your
-firm has set up AI (see [AI](settings.md#ai)).
+([Matters](matters.md)). Drafts are available only when your firm has
+set up AI (see [AI](settings.md#ai)).
 
 ## What a draft is
 
@@ -38,7 +37,7 @@ edit is made by Writer, and saving the file is up to you.
 
 The download is personal. It carries your access token, so do not share
 the file. If you use **Rotate token** or **Revoke token** under
-**Settings → Claude Desktop**, download the extension again and reinstall
+**Settings → Claude**, download the extension again and reinstall
 it (see [Settings](settings.md)).
 
 This page describes version 0.4.2 of the extension. **Kosmos →

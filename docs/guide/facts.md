@@ -267,33 +267,27 @@ ticked on other pages stay ticked and are counted in the number.
 Highlights and facts take labels, which you create on the **Labels** tab:
 see [Documents](documents.md). Witnesses do not take labels.
 
-## Facts and witnesses from the AI chat
+## Facts and witnesses from Claude
 
-A matter's [AI chat](ai-chat.md) can add to the timeline and the witness
-list when you tell it to in so many words.
-
-1. Open the matter's **AI** tab and start or open a chat.
-2. Say what to record, for example "Add the events in the Rivera
-   deposition to the timeline" or "Add the shift supervisor as a
-   witness".
-3. Read the end of the reply. Each new fact has a line beginning "Added
-   to timeline", with its date and the highlights or documents the AI
-   linked as sources. Each new witness has a line beginning "Added
-   witness". A person already on the list is reported as "Already on the
-   witness list" and is not added twice.
+Claude, connected to Kosmos (see
+[Claude](../admin/integrations/claude-desktop.md)), can add to the
+timeline and the witness list when you tell it to in so many words:
+"Add the events in the Rivera deposition to the timeline", or "Add the
+shift supervisor as a witness". It says what it added. A person already
+on the list is not added twice.
 
 Good to know:
 
-- There is no step to confirm. The rows exist as soon as the reply
-  appears, so check each one on **Timeline** or **Witnesses**.
-- Nothing on those tabs marks a row as made by the AI. The chat reply is
-  the only record of which ones it added.
-- Asking the chat to "build a chronology" or "list the witnesses" gets
-  an answer in the chat, not new rows.
+- There is no step to confirm. The rows exist as soon as Claude reports
+  them, so check each one on **Timeline** or **Witnesses**.
+- Nothing on those tabs marks a row as made by Claude. The conversation
+  is the only record of which ones it added.
+- Asking Claude to "build a chronology" or "list the witnesses" gets an
+  answer in the conversation, not new rows.
 
 ## What the AI is given
 
-When you chat about a matter, the AI is given the highlights on its
+When Claude reads a matter through the connector, it is given the highlights on its
 documents (slug, citation and the start of the text), every timeline fact
 with its date and sources, and each witness's name, alignment,
 importance, affiliation and the start of **Knowledge**. A witness's

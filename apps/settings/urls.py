@@ -53,11 +53,15 @@ urlpatterns = [
         session_urls.keyboard_shortcuts,
         name="keyboard-shortcuts",
     ),
-    # Claude Desktop (notes MCP connector)
+    # Claude (the remote MCP connection, and the API token)
     path("settings/claude/", claude_urls.claude_index, name="claude-index"),
+    path(
+        "settings/claude/disconnect/<int:connection_id>/",
+        claude_urls.claude_disconnect,
+        name="claude-disconnect",
+    ),
     path("settings/claude/rotate/", claude_urls.claude_rotate, name="claude-rotate"),
     path("settings/claude/revoke/", claude_urls.claude_revoke, name="claude-revoke"),
-    path("settings/claude/script/", claude_urls.claude_script, name="claude-script"),
     # Integrations
     path("settings/integrations/", integration_urls.index, name="integrations-index"),
     path(

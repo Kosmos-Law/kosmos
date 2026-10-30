@@ -2,91 +2,129 @@
 {% block subcontent %}
   <div class="settings">
     <div class="toolbar">
-      <h1>Claude Desktop</h1>
+      <h1>Claude</h1>
     </div>
     <p class="detail-text">
-      Connect Claude Desktop on your computer to Kosmos. Claude can then
+      Connect Claude to Kosmos: claude.ai, Claude Desktop, the mobile apps,
+      Cowork and Claude Code all use the same connection. Claude can then
       read, for any open matter you have access to, the full record:
       contacts, rates, activity, events, tasks, proceedings, settlement,
-      documents, highlights, the timeline, witnesses, and synced emails.
-      It can also add timeline facts, witnesses, and tasks (it can never
-      edit or delete existing ones). Access is personal: it uses your token below, and sees exactly what
-      you can see.
+      documents, highlights, the timeline, witnesses, synced emails and
+      earlier AI conversations. It can search the practice, and it can add
+      timeline facts, witnesses and tasks (it can never edit or delete
+      existing ones). Access is personal: Claude signs in as you and sees
+      exactly what you can see.
     </p>
-    {% if token %}
-      <h2 class="settings-section">Setup</h2>
-      <hr />
-      <ol class="companion-steps">
-        <li>
-          Install <a href="https://docs.astral.sh/uv/getting-started/installation/"
-    target="_blank">uv</a> if you don't have it (it runs the connector
-          script with no other setup).
-        </li>
-        <li>
-          <a href="{% url 'settings:claude-script' %}">Download kosmos_notes_mcp.py</a>
-          and save it somewhere permanent (for example your home folder).
-        </li>
-        <li>
-          In Claude Desktop, open Settings, then Developer, then Edit
-          Config. This opens <code>claude_desktop_config.json</code>, which
-          already has settings in it. Keep those: paste the section below
-          inside the file's outermost braces, as one more top-level entry
-          (add a comma after the entry before it). If the file already has
-          an <code>mcpServers</code> section, add just the
-          <code>"kosmos"</code> part inside it. Then change
-          <code>/path/to/kosmos_notes_mcp.py</code> to where you saved the
-          script.
-        </li>
-        <li>
-          Restart Claude Desktop. The kosmos tools appear under the tools
-          icon in the chat input.
-        </li>
-      </ol>
-      <div class="claude-config">
-        <button type="button"
-                class="btn btn-sm action-btn copy-btn claude-config-copy"
-                data-copy="{{ config_block }}"
-                title="Copy configuration">
-          <i class="icon-copy"></i>
-        </button>
-        <pre class="claude-config-block">{{ config_block }}</pre>
-      </div>
-      <p class="detail-text companion-note">
-        This block carries your personal access token. Do not share it.
-        Each user should copy their own from this page.
-      </p>
-      <h2 class="settings-section">Token</h2>
-      <hr />
-      <p class="detail-text">
-        Your token was created {{ token.created_at|date:"M j, Y" }}. It is
-        shared with the LibreOffice companion extension: rotating or
-        revoking it here re-keys that too (re-download the extension
+    <h2 class="settings-section">Connect</h2>
+    <hr />
+    <ol class="companion-steps">
+      <li>
+        In Claude, open Settings, then Connectors, and choose
+        <strong>Add custom connector</strong>. (In Claude Code:
+        <code>claude mcp add --transport http kosmos {{ connector_url }}</code>
+        and skip to the sign-in.)
+      </li>
+      <li>
+        Name it Kosmos and paste this address as the server URL, leaving
+        the OAuth settings as they are:
+        <div class="claude-config">
+          <button type="button"
+                  class="btn btn-sm action-btn copy-btn claude-config-copy"
+                  data-copy="{{ connector_url }}"
+                  title="Copy address">
+            <i class="icon-copy"></i>
+          </button>
+          <pre class="claude-config-block">{{ connector_url }}</pre>
+        </div>
+      </li>
+      <li>
+        Click <strong>Connect</strong>. Your browser opens Kosmos: sign in
+        if you are not already, and click <strong>Allow</strong>.
+      </li>
+      <li>
+        Back in Claude, the Kosmos tools are available in every
+        conversation. Nothing is installed on your computer.
+      </li>
+    </ol>
+    <h2 class="settings-section">Connected</h2>
+    <hr />
+    {% if connections %}
+      <table class="table settings-table claude-connections">
+        <thead>
+          <tr>
+            <th>Application</th>
+            <th>Connected</th>
+            <th>Last used</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for connection in connections %}
+            <tr>
+              <td>{{ connection.client.name }}</td>
+              <td>{{ connection.created_at|date:"M j, Y" }}</td>
+              <td>
+                {% if connection.last_used_at %}
+                  {{ connection.last_used_at|date:"M j, Y, g:i a" }}
+                {% else %}
+                  Not yet
+                {% endif %}
+              </td>
+              <td class="claude-connection-actions">
+                <form method="post"
+                      action="{% url 'settings:claude-disconnect' connection.id %}">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="btn btn-sm btn-secondary"
+                          onclick="return confirm('Disconnect {{ connection.client.name|escapejs }}? It loses access immediately; connect again from Claude to restore it.')">
+                    Disconnect
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="detail-text">Nothing is connected yet.</p>
+    {% endif %}
+    <h2 class="settings-section">API token</h2>
+    <hr />
+    <p class="detail-text">
+      Your API token is what the LibreOffice companion extension and the
+      Kosmos JSON APIs use. Claude does not use it.
+      {% if token %}
+        It was created {{ token.created_at|date:"M j, Y" }}. Rotating or
+        revoking it re-keys the companion (re-download the extension
         afterwards if you use it).
-      </p>
-      <div class="claude-token-actions">
-        <form method="post" action="{% url 'settings:claude-rotate' %}">
-          {% csrf_token %}
+      {% else %}
+        You do not have one; the companion's setup issues one when you
+        first need it.
+      {% endif %}
+    </p>
+    <div class="claude-token-actions">
+      <form method="post" action="{% url 'settings:claude-rotate' %}">
+        {% csrf_token %}
+        {% if token %}
           <button type="submit"
                   class="btn btn-secondary"
-                  onclick="return confirm('Rotate your token? Claude Desktop and the LibreOffice companion stop working until you update them with the new one.')">
+                  onclick="return confirm('Rotate your token? The LibreOffice companion stops working until you update it with the new one.')">
             Rotate token
           </button>
-        </form>
+        {% else %}
+          <button type="submit" class="btn btn-secondary">Generate token</button>
+        {% endif %}
+      </form>
+      {% if token %}
         <form method="post" action="{% url 'settings:claude-revoke' %}">
           {% csrf_token %}
           <button type="submit"
                   class="btn btn-danger"
-                  onclick="return confirm('Revoke your token? Claude Desktop and the LibreOffice companion lose access immediately.')">
+                  onclick="return confirm('Revoke your token? The LibreOffice companion loses access immediately.')">
             Revoke token
           </button>
         </form>
-      </div>
-    {% else %}
-      <p class="detail-text">You don't have an access token yet.</p>
-      <form method="post" action="{% url 'settings:claude-rotate' %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary">Generate token</button>
-      </form>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 {% endblock subcontent %}

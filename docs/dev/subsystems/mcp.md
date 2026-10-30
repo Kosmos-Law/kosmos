@@ -1,63 +1,129 @@
 # MCP server and JSON APIs
 
-Claude Desktop reaches Kosmos through a small MCP server that each user
-runs on their own machine, talking to token-authenticated JSON APIs in
-`apps/ai` (served under `case/api/`) and `apps/search`. User-facing setup is in the
-operator guide: [Claude Desktop access to Kosmos](../../admin/integrations/claude-desktop.md).
+Claude reaches Kosmos through a remote MCP server that Kosmos itself
+serves at `/mcp`, behind an OAuth 2.1 authorization server that is also
+Kosmos's own (`apps/mcp`). The tools call the same service functions as
+the token-authenticated JSON APIs in `apps/ai/api.py` (under `case/api/`)
+and `apps/search/api.py`. User-facing setup is in the operator guide:
+[Claude](../../admin/integrations/claude-desktop.md).
 
-Access is per user: requests authenticate with the same `ApiToken`
-the LibreOffice companion uses (header `X-Kosmos-Token`), so a user's
-Claude sees exactly what that user can see, and deactivating the user
-kills the token.
+Access is per user. An MCP request carries a bearer token that a user
+issued by signing in to Kosmos and clicking Allow; the tools run as that
+user, so Claude sees exactly what the user can see, disconnecting under
+Settings → Claude ends the tokens, and deactivating the user kills them
+all. The JSON APIs keep their separate `X-Kosmos-Token` key
+(`ApiToken`), shared with the LibreOffice companion; the MCP server does
+not accept it.
 
 ## Where the code is
 
 | Module | Holds |
 |---|---|
-| `tools/kosmos_notes_mcp.py` | The stdio MCP server Claude Desktop launches; one tool per API call |
-| `apps/accounts/api_auth.py` | `kosmos_api_auth`, the token decorator that sets `request.api_user` |
-| `apps/ai/api.py` | The matter list, a matter's sections as AI-ready text, documents, email threads, conversations, invoices, hybrid search, the three write endpoints |
-| `apps/search/api.py` | Practice-wide search, as the search page does it |
-| `apps/settings/claude/views.py` | Settings → Claude Desktop: the config block, script download, rotate and revoke |
+| `apps/mcp/server.py` | The MCP endpoint: bearer check, the JSON-RPC dispatch (`initialize`, `ping`, `tools/list`, `tools/call`), the 401 that starts sign-in |
+| `apps/mcp/tools.py` | The eleven tools: descriptions, JSON schemas, and the text each makes of a service function's result |
+| `apps/mcp/oauth.py` | The authorization server: metadata documents, registration, the consent screen, the token and revocation endpoints, redirect-URI and PKCE checks |
+| `apps/mcp/models.py` | `McpClient`, `McpAuthorizationCode`, `McpConnection`, `McpToken` |
+| `apps/mcp/urls.py` | The well-known documents at the root, `/mcp`, `/mcp/oauth/*` |
+| `templates/mcp/` | The consent screen and the refusal page, on the sign-in pages' shell |
+| `apps/accounts/api_auth.py` | `kosmos_api_auth`, the `X-Kosmos-Token` decorator, and `ApiError`, what every service function raises |
+| `apps/ai/api.py` | The service functions over a matter (`list_matters`, `read_section`, `read_document`, `read_email_thread`, `search_materials`, `read_conversation`, `read_invoice`, `create_fact`, `create_witness`, `create_task`) and the JSON views over them |
+| `apps/search/api.py` | `search_practice()` and its JSON view |
+| `apps/settings/claude/views.py` | Settings → Claude: the connector address, the connections and Disconnect, the API token |
 | `apps/ai/context.py` | The section formatters the matter API reuses |
 
 ## Data model
 
-`ApiToken` (`apps/accounts/models.py`) is one row per user
-(`OneToOneField`, `CASCADE`) with a unique `key`. There is no separate MCP
-token: rotating the key from the Claude Desktop page re-keys the
-LibreOffice companion too.
+- **`McpClient`**: an OAuth client. Claude registers one dynamically
+  (RFC 7591) when a connector is first set up, or identifies itself by
+  a client ID metadata document, in which case `client_id` is the
+  document's HTTPS URL and the row caches what it says
+  (`is_metadata_document`). `redirect_uris` is what the consent screen
+  will send the browser to; `secret_hash` is blank for a public client
+  (Claude is one). A client has no access of its own.
+- **`McpAuthorizationCode`**: the code the consent screen hands the
+  browser, five minutes long, with the PKCE challenge and the redirect
+  URI it was issued for. Deleted when redeemed.
+- **`McpConnection`**: a user's standing authorization of a client,
+  with `created_at` and `last_used_at`. This is what Settings → Claude
+  lists and Disconnect deletes; its tokens go with it (`CASCADE`).
+- **`McpToken`**: one access token (an hour) and the refresh token that
+  replaces it (ninety days). Refreshing marks the row's refresh token
+  used and creates the next row; the old access token lives out its
+  hour, so a request in flight is not failed by a refresh.
 
-## The three pieces
+Tokens, codes and secrets are stored as SHA-256 digests. They are
+long random strings, so a digest is enough: a copy of the table cannot
+be replayed, and a presented token is looked up by hashing it.
 
-- **JSON APIs** (every view wrapped in `kosmos_api_auth`):
-  - `apps/ai/api.py`, under `case/api/`: `matters/?q=` lists the user's
-    accessible open matters; `matter/<id>/<section>/` serves
-    the sixteen `SECTIONS` as AI-ready text (overview, contacts, rates,
-    activity, events, tasks, proceedings, settlement, documents,
-    highlights, timeline, witnesses, emails, conversations, ledger,
-    trust), reusing the in-app chat's formatters from
-    `apps/ai/context.py` where they exist; `documents/<id>/`,
-    `matter/<id>/emails/<thread_id>/`, `matter/<id>/conversations/<id>/`
-    and `invoices/<id>/` serve full content; `matter/<id>/search/` runs
-    the agent's own `search_materials` handler so ranking is identical;
-    POSTs to `matter/<id>/facts/`, `matter/<id>/witnesses/` and `tasks/`
-    create rows through the same validated entry creators the in-app AI's
-    fenced blocks use.
-  - `apps/search/api.py`, under `search/api/`: the practice-wide search
-    (matters of any status, proceedings, contacts, intakes) as
-    manifest lines with handles.
-- **MCP server** (`tools/kosmos_notes_mcp.py`): a single-file stdio
-  translator on the mcp SDK's `MCPServer` that Claude Desktop launches
-  itself. Tools: `find_matter`, `read_matter`, `search_matter`, `search_kosmos`, `read_document`, `read_email_thread`,
-  `read_conversation`, `read_invoice`, `add_fact`, `add_witness`,
-  `add_task`. Long reads truncate at `READ_TRUNCATE_CHARS` (40k) with an
-  explicit marker. All intelligence lives in the APIs; the script only
-  formats, so a port to another runtime stays trivial.
-- **Settings page** (Settings → Claude Desktop, `apps/settings/claude/`):
-  renders the exact `claude_desktop_config.json` block with the user's
-  real token substituted (the `.oxt` precedent, generalized), serves the
-  script for download, and offers rotate and revoke.
+## How it works
+
+### Discovery and sign-in
+
+1. Claude posts to `/mcp` without a token and gets `401` with
+   `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource/mcp"`.
+   The `401` is required: Claude ignores the header on any other status.
+2. The protected resource metadata (RFC 9728) names the resource
+   (`https://host/mcp`, which must equal the URL the user entered) and
+   the authorization server (the site's base URL).
+3. The authorization server metadata (RFC 8414) at
+   `/.well-known/oauth-authorization-server` lists the endpoints and
+   advertises `client_id_metadata_document_supported` with `none` among
+   the token endpoint auth methods. With both present Claude identifies
+   itself by its published metadata document and registers nothing;
+   without them it falls back to dynamic registration at
+   `/mcp/oauth/register`, which is also offered.
+4. The browser is sent to `/mcp/oauth/authorize`. The view is
+   `login_required`, so an anonymous user goes through the ordinary
+   two-step sign-in and comes back (`next`). The consent screen names
+   the client and the host it will return to, and Allow issues a code.
+   `DailyDashCheckMiddleware` exempts `/mcp/`, or the once-a-day Dash
+   redirect would swallow the flow.
+5. Claude swaps the code at `/mcp/oauth/token` (form-encoded) with its
+   PKCE verifier, and the resource it named is checked against this
+   server's MCP URL (RFC 8707). A `McpConnection` and its first
+   `McpToken` are made. Every later request carries the access token;
+   a refresh rotates it.
+
+Base addresses come from `PUBLIC_BASE_URL` when set, else the request.
+There are no scopes: what a token reaches is what its user may reach.
+Every redirect carries `iss` (RFC 9207).
+
+### Redirect URIs
+
+A registered redirect URI must be HTTPS, or plain HTTP to the loopback
+address (Claude Code listens on one). At authorization time the URI must
+match a registered one exactly, except that a loopback URI matches on
+any port (RFC 8252 section 7.3): Claude Code picks a free port per
+session. An unknown client or an unregistered redirect ends on a page
+(`templates/mcp/error.html`), never on a redirect the request chose;
+every other error goes back to the client as an `error` parameter.
+
+### The endpoint
+
+`POST /mcp` is streamable HTTP in its simplest form: one JSON-RPC message
+in, one JSON object out (`application/json`), no event stream, no
+session id. `GET` answers `405`, as the transport provides for a server
+with no stream to offer. Notifications answer `202` with no body. The
+protocol versions accepted are in `PROTOCOL_VERSIONS`; an
+`MCP-Protocol-Version` header outside them is `400`. A browser-sent
+`Origin` that is not this host is `403` (the transport's DNS-rebinding
+guard).
+
+Tool results are text. A refusal from a service function (`ApiError`)
+comes back as a tool result with `isError: true` and the message
+prefixed `Kosmos API error (<status>)`, so the model learns what was
+wrong (a 404 it can retry with another id, a 403 it cannot). Arguments
+that do not fit the schema are a JSON-RPC `-32602`.
+
+### Tools
+
+`find_matter`, `read_matter`, `search_matter`, `search_kosmos`,
+`read_document`, `read_email_thread`, `read_conversation`,
+`read_invoice`, `add_fact`, `add_witness`, `add_task`. Long reads
+truncate at `READ_TRUNCATE_CHARS` (40k) with an explicit marker. All
+intelligence lives in the service functions; `tools.py` only describes
+and formats. `initialize` also returns `instructions` telling the model
+to resolve a matter once and read the overview first.
 
 ## Access
 
@@ -66,49 +132,60 @@ Matters are the user's accessible open matters only, through
 thread or conversation is a 404 so it does not confirm existence. The
 money sections (`FINANCIAL_SECTIONS`: rates, ledger, trust) and invoice
 reads additionally need `has_financial_access()` (admin or
-`perm_financial`), like the in-app Rates and Ledger tabs; that denial is a
-403, since the matter's existence is already known to the caller. The
+`perm_financial`), like the in-app Rates and Ledger tabs; that denial is
+a 403, since the matter's existence is already known to the caller. The
 activity section is open to every user who can see the matter, as the
 Activity screens are. Intakes in the practice-wide search need
-`perm_intakes`. Inactive users are refused at the token check. See the
+`perm_intakes`. Inactive users are refused at the token check, on both
+the bearer and the `X-Kosmos-Token` paths. See the
 [permissions reference](../../reference/permissions.md).
 
 ## Write access
 
 Two write surfaces, both create-only, neither destructive:
 
-- **Timeline facts and witnesses**: `add_fact` and `add_witness` reuse
-  `_create_fact_from_entry()` and `_create_witness_from_entry()`
-  (validation, matter scoping of cited ids, name dedup): exactly what the
-  in-app chat's fenced blocks can do, no more.
-- **Tasks**: `add_task` reuses `create_task_from_ai_entry()`, assigned to
-  the token's user; the API authorizes the matter itself, because the
-  service resolves by name without an access check, and re-points the
-  task after creation in case a duplicate name resolved elsewhere.
+- **Timeline facts and witnesses**: `create_fact` and `create_witness`
+  reuse `_create_fact_from_entry()` and `_create_witness_from_entry()`
+  (validation, matter scoping of cited ids, name dedup): exactly what
+  the in-app chat's fenced blocks can do, no more.
+- **Tasks**: `create_task` reuses `create_task_from_ai_entry()`,
+  assigned to the acting user; the matter is authorized here, because
+  the service resolves by name without an access check, and the task is
+  re-pointed after creation in case a duplicate name resolved elsewhere.
 
 ## Things that bite
 
 - **The formatters are shared on purpose.** A change to a section
-  formatter in `apps/ai/context.py` changes what both the in-app chat
-  and Claude Desktop see; a new section needs a `SECTIONS` entry and, if
-  it carries money, a place in `FINANCIAL_SECTIONS`.
-- **Matter scope differs by API.** The case API serves open
+  formatter in `apps/ai/context.py` changes what the in-app chat, Claude
+  and the JSON API see; a new section needs a `SECTIONS` entry and, if
+  it carries money, a place in `FINANCIAL_SECTIONS`, and the `enum` in
+  `read_matter`'s schema follows `SECTIONS` automatically.
+- **Matter scope differs by API.** The matter functions serve open
   matters only; the practice-wide search lists matters of any status,
   because it is navigational.
-- **The script is the shipped artefact.** Users download it from the
-  settings page and run it with `uv`; a change to a tool's signature or
-  docstring reaches them only after they re-download.
+- **The `resource` must match the URL the user typed.** The protected
+  resource metadata says `https://host/mcp`; a proxy that changes the
+  host, or a user who types a different one, breaks the token exchange.
+  `PUBLIC_BASE_URL` pins it.
+- **Registration is open.** It has to be: Claude registers before any
+  user is involved. A client has no access until a user allows it, so
+  the only thing registration can do is make rows; it is rate-limited
+  per IP and rows nobody connected within a day are swept on the next
+  registration.
+- **Refresh reuse inside sixty seconds is tolerated.** Two of Claude's
+  workers can refresh the same token at once; within
+  `REFRESH_REUSE_GRACE` the second gets its own pair. Later reuse is
+  treated as theft and revokes the connection (OAuth 2.1 section 4.3.1).
 - **Email threads list most-recent-activity first** (2026-09-25), so the
   40k truncation drops the oldest; keep that order when touching
   `_format_email_threads()`.
 
-Where the transport and packaging may go next is recorded in
-[Claude Desktop: packaging roadmap](../../decisions/claude-desktop-roadmap.md).
+How this replaced the per-user stdio script is recorded in
+[Claude connects over a remote MCP server with OAuth](../../decisions/2026-10-30-claude-connects-over-remote-mcp.md).
 
 ## Related
 
-- [Claude Desktop access to Kosmos](../../admin/integrations/claude-desktop.md)
-  for setup; [AI chat and context](ai/context.md) and
-  [Sessions](ai/sessions.md) for the matter tools and the search
-  handler this reuses; [Drafts](drafts.md) for the companion that shares
-  the token.
+- [Claude](../../admin/integrations/claude-desktop.md) for setup;
+  [The archive and the intake chat](ai/context.md)
+  for the matter tools and the search handler this reuses; [Drafts](drafts.md)
+  for the companion that shares the API token.

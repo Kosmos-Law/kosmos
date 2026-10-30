@@ -54,7 +54,6 @@ dependencies = [
     "segno>=1.6.6",
     "holidays>=0.86",
     "icalendar==7.3.0",
-    "claude-agent-sdk==0.2.174",
 ]
 
 [dependency-groups]
@@ -67,7 +66,6 @@ dev = [
     # Code formatting and linting
     "pre-commit==3.7.1",
     # Dev-server gunicorn reload watcher
-    "inotify>=0.2.12",
     "import-linter>=2.15",
 ]
 
@@ -162,7 +160,7 @@ name = "The case app's internals are private"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = [
-    "apps.ai", "apps.llm", "apps.drafts", "apps.mail",
+    "apps.ai", "apps.llm", "apps.drafts", "apps.mail", "apps.mcp",
     "apps.accounts", "apps.settings", "apps.management", "apps.matters",
     "apps.contacts", "apps.folders", "apps.calendar", "apps.tasks",
     "apps.activity", "apps.invoicing", "apps.trust", "apps.checklists",

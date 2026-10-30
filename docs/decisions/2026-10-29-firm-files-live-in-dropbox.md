@@ -104,4 +104,6 @@ the database.
 - [Drafts are companion-first over a Drive `.odt`
   (2026-08-06)](2026-08-06-drafts-are-companion-first.md): still in
   force for ODT editing until the agent's ODT tooling lands.
-- [Files](../dev/subsystems/files.md).
+- [The AI chat is retired (2026-10-30)](2026-10-30-ai-chat-retired.md), which removed the
+  server-side files, the watcher and the matter-folder link; the files
+  stay in Dropbox, indexed by firm-index on the office server.

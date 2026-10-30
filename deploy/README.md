@@ -12,16 +12,6 @@ are `@USER@` (the account that owns the checkout and runs the services),
   the socket.
 - `systemd/qcluster.service`: the Django-Q worker. Django reads `config/.env`
   itself, so the unit carries no `EnvironmentFile`.
-- `systemd/files-watcher.service`: the files watcher (`manage.py watch_files`)
-  over the Dropbox daemon's synced Firm tree: OCR in place for PDFs that
-  arrive without a text layer, and matter-folder links that follow renames.
-  Needs `DROPBOX_FIRM_ROOT` in `config/.env` and the Dropbox daemon running
-  under the same account.
-- `systemd/sessions.service`: the sessions service (`manage.py
-  run_sessions`), which runs the AI sessions' turns through the Claude
-  Agent SDK. Needs an Anthropic API key (`ANTHROPIC_API_KEY` in
-  `config/.env`, or one entered under Settings > Integrations). Without it
-  a sent prompt waits on the page until the service is up.
 - `logrotate/kosmos`: weekly rotation of everything in `logs/`, installed as
   `/etc/logrotate.d/kosmos`.
 - `nginx/kosmos.conf`: the HTTP site. Run `certbot --nginx` afterwards for

@@ -6,7 +6,7 @@ matter, as the Activity screens do. Invoices, the rates section, the ledger
 and trust are behind the Financial permission, as the Invoicing, Rates and
 Ledger screens are. A run for no user carries no billing detail at all.
 The matter tools here are the ones a session serves (session_tools.py);
-the Claude Desktop API applies the same rule.
+the token API (and the MCP server over it) applies the same rule.
 """
 
 import json
@@ -170,7 +170,7 @@ class TestMatterTools:
 
 
 class TestTokenApi:
-    """The Claude Desktop API serves the same sections under the same rule."""
+    """The token API serves the same sections under the same rule."""
 
     @pytest.mark.parametrize("section", ["rates", "ledger", "trust"])
     def test_money_sections_need_financial(self, billed_matter, no_financial, section):

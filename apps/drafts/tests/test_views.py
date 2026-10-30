@@ -47,19 +47,6 @@ def test_a_linked_draft_shows_and_unlinks(client, conversation, link):
     assert b"draft/unlink" not in response.content
 
 
-def test_conversation_list_shows_draft_badge(client, link, matter):
-    response = client.get(f"/case/{matter.id}/ai/archive/")
-    assert response.status_code == 200
-    assert b"ai-draft-badge" in response.content
-
-
-def test_standalone_chat_shows_chip(client, link, matter):
-    response = client.get(f"/case/ai/conversations/{link.conversation_id}/view/")
-    assert response.status_code == 200
-    assert b"draftChip" in response.content
-    assert b"motion.odt" in response.content
-
-
 def test_companion_setup_modal(client):
     response = client.get("/case/drafts/companion/setup/")
     assert response.status_code == 200

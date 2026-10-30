@@ -46,7 +46,8 @@ of every session; the harness supplies the loop.
   cache; a turn can be stopped; the answer, the trail of tool calls,
   tokens and cost are recorded on the message. The harness's own
   transcript, kept under a directory of the application's own, is
-  what the next turn resumes. Details: [Sessions](../dev/subsystems/ai/sessions.md).
+  what the next turn resumes. (The Sessions subsystem page went with
+  the feature: [The AI chat is retired](2026-10-30-ai-chat-retired.md).)
 - **Billing is by API key.** Anthropic's terms do not allow a
   third-party application to bill a user's Claude subscription. The
   desktop subscriptions stay for work outside a matter.
