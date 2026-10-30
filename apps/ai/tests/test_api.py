@@ -587,7 +587,8 @@ class TestTimeEntryCreate:
         assert str(entry.date) == "2026-10-01"
         assert entry.category.name == "Discovery"
         assert entry.invoice is None and not entry.comp and not entry.entered
-        assert "$250/hr, $75.00" in response.json()["message"]
+        assert entry.needs_approval is True
+        assert "$250/hr, $75.00; needs approval" in response.json()["message"]
 
     def test_firm_rate_and_today_by_default(self, api, matter, user):
         response = post_json(

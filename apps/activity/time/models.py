@@ -17,6 +17,10 @@ class TimeEntry(AuditMixin, models.Model):
     rate = models.IntegerField(null=True)
     comp = models.BooleanField(default=False)
     entered = models.BooleanField(default=False)
+    # Set on an entry a person has not yet looked at: one the AI logged
+    # over the MCP server. Cleared by the Approve bulk action, which the
+    # entry's own user or an admin may run.
+    needs_approval = models.BooleanField(default=False)
     invoice = models.ForeignKey(
         Invoice, on_delete=models.SET_NULL, null=True, blank=True
     )

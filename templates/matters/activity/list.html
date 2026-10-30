@@ -10,6 +10,13 @@
                   hx-swap="none">
             {{ selected_entries|length }} <i class="icon-x bulk-clear-icon"></i>
           </button>
+          <button type="button"
+                  class="btn-icon"
+                  hx-post="{% url 'matters:activity-bulk-approve' matter.id %}"
+                  hx-swap="none"
+                  title="Approve the selected entries (your own, or any as an admin)">
+            <i class="icon-check with-text"></i> Approve
+          </button>
           {% if user.is_admin or user.perm_financial %}
             <div class="dropdown" x-data="dropdown()">
               <button type="button"

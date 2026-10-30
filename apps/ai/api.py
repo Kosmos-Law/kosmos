@@ -228,6 +228,8 @@ def _format_activity(matter):
             )
             if entry.comp:
                 line += " [COMP]"
+            if entry.needs_approval:
+                line += " [NEEDS APPROVAL]"
             if entry.invoice:
                 line += f" [Invoice #{entry.invoice.id}, {entry.invoice.status}]"
             lines.append(line)
@@ -896,9 +898,10 @@ def create_task(user, entry):
 def create_time_entry(user, matter_id, entry):
     """Create one time entry on an hourly matter, as the acting user, at the
     user's rate for that matter (the matter's override, else the firm
-    default). The entry is unbilled; the model never sets rate, comp or an
-    invoice. Abbreviation codes are not expanded: the narrative is taken
-    as written.
+    default). The entry is unbilled and flagged needs_approval, for the
+    entry's user or an admin to approve on the Activity tab; the model
+    never sets rate, comp or an invoice. Abbreviation codes are not
+    expanded: the narrative is taken as written.
     """
     matter = _matter_or_404(user, matter_id)
     entry = _entry_or_400(entry)
@@ -937,6 +940,7 @@ def create_time_entry(user, matter_id, entry):
         hours=hours,
         rate=rate,
         category=category,
+        needs_approval=True,
     )
     coded = f" [{category.name}]" if category else ""
     return {
@@ -944,7 +948,7 @@ def create_time_entry(user, matter_id, entry):
         "matter": matter.name,
         "message": (
             f"- Logged {hours}h on {when}{coded}: **{actions}** "
-            f"(${rate}/hr, ${hours * rate:,.2f}) [{matter.name}]"
+            f"(${rate}/hr, ${hours * rate:,.2f}; needs approval) [{matter.name}]"
         ),
     }
 

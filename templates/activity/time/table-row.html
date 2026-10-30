@@ -21,6 +21,10 @@
        data-bs-toggle="modal"
        data-bs-target="#htmx-modal-container">{{ entry.actions }}</a>
   {% endif %}
+  {% if entry.needs_approval %}
+    <span class="app-badge app-badge-sm badge-yellow"
+          title="Logged by the AI; approve it on the Activity tab">Needs approval</span>
+  {% endif %}
 </td>
 <td class="hours">{{ entry.hours|floatformat:1 }}</td>
 <td class="rate">

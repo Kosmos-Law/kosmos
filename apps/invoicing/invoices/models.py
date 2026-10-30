@@ -55,6 +55,29 @@ class Invoice(AuditMixin, models.Model):
         indexes = [models.Index(fields=["matter"])]
         db_table = "app_invoicing_invoice"
 
+    def unapproved_time(self):
+        """The invoice's time entries still waiting for a person's approval
+        (ones the AI logged). A Draft cannot be approved or sent while any
+        remain: see approval_hold()."""
+        from apps.activity.time.models import TimeEntry
+
+        return TimeEntry.objects.filter(invoice=self, needs_approval=True)
+
+    def approval_hold(self):
+        """Why this invoice cannot leave Draft, or None when it can: a
+        sentence naming the time entries that need approval. Only a Draft
+        is held; once approved, its entries were approved first."""
+        if self.status != "DRAFT":
+            return None
+        count = self.unapproved_time().count()
+        if not count:
+            return None
+        return (
+            f"Invoice #{self.id} has {count} time "
+            f"{'entry' if count == 1 else 'entries'} that need approval. "
+            "Approve them on the Activity tab first."
+        )
+
     def save(self, *args, **kwargs):
         from apps.activity.expenses.models import ExpenseEntry
         from apps.activity.flat_fees.models import FlatFeeEntry

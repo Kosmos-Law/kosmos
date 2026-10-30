@@ -872,6 +872,14 @@ def invoices_edit_status(request, pk, status, view):
         )
         return response
 
+    # A Draft with time entries the AI logged stays a Draft until a person
+    # has approved them, whichever status it is being moved to.
+    hold = invoice.approval_hold() if status != "DRAFT" else None
+    if hold:
+        response = HttpResponse(status=204)
+        toast_error(response, hold)
+        return response
+
     was_draft = invoice.status == "DRAFT"
     invoice.status = status
     invoice.save()

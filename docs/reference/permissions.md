@@ -248,7 +248,8 @@ whether the server also refuses the request.
 | Matter navigation: Ledger tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware and view) |
 | Matter form: Delete button | Admin | `templates/matters/form.html` | Yes (view) |
 | Activity lists: selection column and bulk actions | Admin or `perm_financial` | `templates/activity/time/list.html`, `expenses/list.html`, `flat-fees/list.html` | Bulk matter and comp only |
-| A matter's Time list: the Matter and Comp bulk menus (the selection column and the Category menu are for everyone) | Admin or `perm_financial` | `templates/matters/activity/list.html`; `apps/matters/activity/views.py` | Yes |
+| Time list: the Matter and Comp bulk menus (the selection column and the Approve action are for everyone; Approve applies to the user's own entries, or any for an admin) | Admin or `perm_financial` | `templates/activity/time/list.html`; `apps/activity/time/views.py` | Yes |
+| A matter's Time list: the Matter and Comp bulk menus (the selection column, the Category menu and the Approve action are for everyone; Approve applies to the user's own entries, or any for an admin) | Admin or `perm_financial` | `templates/matters/activity/list.html`; `apps/matters/activity/views.py` | Yes |
 | Time codes: add and edit buttons | Admin | `templates/activity/time/codes/list.html`, `results.html` | Yes (view) |
 | Invoice detail: delete a voided invoice | Admin | `templates/invoicing/invoices/detail/detail.html` | Yes (view) |
 | Settings menu: Firm | Admin | `templates/settings/main.html` | Yes (middleware) |

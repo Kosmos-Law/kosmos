@@ -16,6 +16,7 @@ from apps.activity.expenses.summary import (
 from apps.activity.models import ActivityCategory
 from apps.activity.time.models import TimeEntry
 from apps.activity.time.summary import calculate_summary
+from apps.activity.time.views import approval_response, approve_entries
 from apps.management.pagination import CustomPaginator
 from apps.management.selection import (
     all_visible_selected,
@@ -516,6 +517,23 @@ def activity_bulk_update_comp(request, matter_id):
     }
 
     return render(request, "matters/activity/bulk-comp-form.html", context)
+
+
+@login_required
+@matter_access_required
+@require_POST
+def activity_bulk_approve(request, matter_id):
+    """Approve the selected entries: the user's own, or any for an admin.
+    Open to everyone on the matter, like the Category menu."""
+    key = get_session_key("selected_matter_activity", matter_id)
+    selected_entries = get_selected_ids(request, key)
+    if not selected_entries:
+        return HttpResponse(status=400, content="No time entries selected.")
+
+    entries = TimeEntry.objects.filter(id__in=selected_entries, matter_id=matter_id)
+    approved, skipped = approve_entries(entries, request.user)
+    clear_selected_ids(request, key)
+    return approval_response(approved, skipped, MATTER_ACTIVITY_TRIGGER)
 
 
 @login_required

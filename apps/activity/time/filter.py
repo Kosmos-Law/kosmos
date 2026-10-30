@@ -46,6 +46,11 @@ class TimeEntryFilter(django_filters.FilterSet):
         empty_label="All",
         method="filter_invoice",
     )
+    needs_approval = django_filters.ChoiceFilter(
+        choices=[(1, "Only Needs Approval"), (0, "Only Approved")],
+        empty_label="All",
+        label="Approval",
+    )
     order_by = MultipleOrderingFilter(
         fields=[
             (("date", "id"), "date"),
@@ -81,4 +86,5 @@ class TimeEntryFilter(django_filters.FilterSet):
             "comp",
             "entered",
             "invoice",
+            "needs_approval",
         ]
