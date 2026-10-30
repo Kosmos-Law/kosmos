@@ -171,8 +171,10 @@ create-shaped](../../decisions/2026-10-30-claude-writes-stay-create-shaped.md).
   rows, by name). The matter must be hourly, as the time form requires.
   The rate is `calculate_rate_for_matter()` for the acting user, never
   an argument; the entry is unbilled (`invoice` null, `entered` and
-  `comp` false). Abbreviation codes are not expanded: the model writes
-  the narrative in full.
+  `comp` false) and flagged `needs_approval`, which the Activity tab's
+  Approve action clears (see [Time and billing](time-and-billing.md)).
+  Abbreviation codes are not expanded: the model writes the narrative
+  in full.
 - **Events**: `create_event` applies the event form's rules (a start with
   no end runs an hour via `default_end_time()`, an end date on the start
   date is dropped, times must run forward within a day) and saves the

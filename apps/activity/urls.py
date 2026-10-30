@@ -50,6 +50,7 @@ from apps.activity.time.views import (
     order_by_time,
     set_rate,
     time_add,
+    time_bulk_approve,
     time_bulk_update_comp,
     time_bulk_update_matter,
     time_clear_selection,
@@ -134,6 +135,11 @@ urlpatterns = [
         "activity/time/bulk/update-comp",
         time_bulk_update_comp,
         name="time-bulk-update-comp",
+    ),
+    path(
+        "activity/time/bulk/approve",
+        time_bulk_approve,
+        name="time-bulk-approve",
     ),
     # Abbreviation code management URLs
     path("activity/time/codes/", abbreviation_codes_list, name="codes-list"),

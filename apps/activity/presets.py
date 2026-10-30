@@ -18,7 +18,8 @@ def activity_date_filters(today):
     Each preset only defines the fields it controls; the rest of the
     session filter (user, comp, matter, keyword, ...) is preserved by the
     callers. "unbilled" (Work in Progress) is date-free: it pins the
-    entered/invoice dimensions instead.
+    entered/invoice dimensions instead; "needs_approval" (time only) is
+    date-free too and pins the approval dimension.
     """
     monday = today - timedelta(days=today.weekday())
     month_start = today.replace(day=1)
@@ -35,6 +36,12 @@ def activity_date_filters(today):
             "entered": 0,
             "invoice": 0,
             "filter_label": "unbilled",
+        },
+        "needs_approval": {
+            "date_min": "",
+            "date_max": "",
+            "needs_approval": 1,
+            "filter_label": "needs_approval",
         },
         "today": {
             "date_min": str(today),
@@ -81,10 +88,13 @@ def detect_filter_label(filter_data, today):
     date_max = filter_data.get("date_max", "")
     entered = str(filter_data.get("entered", ""))
     invoice = str(filter_data.get("invoice", ""))
+    needs_approval = str(filter_data.get("needs_approval", ""))
 
     if not date_min and not date_max:
         if entered == "0" and invoice == "0":
             return "unbilled"
+        if needs_approval == "1":
+            return "needs_approval"
         return "all"
 
     if not date_min or not date_max:

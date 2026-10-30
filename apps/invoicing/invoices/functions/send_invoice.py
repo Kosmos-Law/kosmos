@@ -107,6 +107,13 @@ def send_invoice(
     always downloadable behind the tokenized pay link, and attachment-free
     email clears spam filters more reliably.
     """
+    # The same hold as the status menu: a Draft whose time entries await
+    # approval is not sent. Refused before anything is logged, because no
+    # send was attempted.
+    hold = invoice.approval_hold()
+    if hold:
+        raise InvoiceSendError(hold)
+
     matter = invoice.matter
     client = matter.client if matter else None
     to_list = _parse_recipients(to)
@@ -269,6 +276,13 @@ def send_reminder(
     the pay link). Logs a 'reminder'-kind transmission; the invoice's status,
     date_sent, and ×N send tally are untouched.
     """
+    # The same hold as the status menu: a Draft whose time entries await
+    # approval is not sent. Refused before anything is logged, because no
+    # send was attempted.
+    hold = invoice.approval_hold()
+    if hold:
+        raise InvoiceSendError(hold)
+
     matter = invoice.matter
     client = matter.client if matter else None
     to_list = _parse_recipients(to)

@@ -174,6 +174,9 @@ def time_filter_quick(request, quick_filter):
     if quick_filter != "unbilled" and filter_data.get("entered") == 0:
         filter_data.pop("entered", None)
         filter_data.pop("invoice", None)
+    # Likewise "needs_approval" and its approval override
+    if quick_filter != "needs_approval" and filter_data.get("needs_approval") == 1:
+        filter_data.pop("needs_approval", None)
 
     request.session["time_filter"] = filter_data
     request.session.modified = True
@@ -602,6 +605,55 @@ def time_bulk_update_comp(request):
     }
 
     return render(request, "activity/bulk-comp-form.html", context)
+
+
+def approve_entries(entries, user):
+    """Approve the entries that are ``user``'s to approve: an admin approves
+    any, anyone else only their own. Returns (approved, skipped), skipped
+    being the entries that needed approval but were someone else's."""
+    approved = skipped = 0
+    for entry in entries:
+        if not entry.needs_approval:
+            continue
+        if entry.user_id != user.id and not user.is_admin:
+            skipped += 1
+            continue
+        entry.needs_approval = False
+        entry.save(update_fields=["needs_approval"])
+        approved += 1
+    return approved, skipped
+
+
+def approval_response(approved, skipped, trigger):
+    response = HttpResponse(status=204, headers={"HX-Trigger": trigger})
+    plural = "entry" if approved == 1 else "entries"
+    toast_success(response, f"Approved {approved} {plural}.")
+    if skipped:
+        toast_warning(
+            response,
+            f"Skipped {skipped} {'entry' if skipped == 1 else 'entries'} "
+            "that are not yours to approve.",
+        )
+    return response
+
+
+@login_required
+@require_POST
+def time_bulk_approve(request):
+    """Approve the selected entries: the user's own, or any for an admin.
+    Open to every user, unlike the matter and comp bulk actions, because
+    approving your own entry is not a financial change."""
+    key = get_session_key("selected_time")
+    selected_time = get_selected_ids(request, key)
+    if not selected_time:
+        return HttpResponse(status=400, content="No time entries selected.")
+
+    entries = entries_for_user(
+        TimeEntry.objects.filter(id__in=selected_time), request.user
+    )
+    approved, skipped = approve_entries(entries, request.user)
+    clear_selected_ids(request, key)
+    return approval_response(approved, skipped, TIME_TRIGGER)
 
 
 # ============================================================================

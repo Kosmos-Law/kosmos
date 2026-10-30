@@ -10,53 +10,62 @@
                   hx-swap="none">
             {{ selected_time|length }} <i class="icon-x bulk-clear-icon"></i>
           </button>
-          <div class="dropdown" x-data="dropdown()">
-            <button type="button"
-                    class="btn-icon"
-                    x-ref="button"
-                    @click="toggle()"
-                    :aria-expanded="open">
-              <span><i class="icon-briefcase-business with-text"></i> Matter</span>
-              <small><i class="icon-chevron-down"></i></small>
-            </button>
-            <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
-              {% for m in matters %}
+          <button type="button"
+                  class="btn-icon"
+                  hx-post="{% url 'activity:time-bulk-approve' %}"
+                  hx-swap="none"
+                  title="Approve the selected entries (your own, or any as an admin)">
+            <i class="icon-check with-text"></i> Approve
+          </button>
+          {% if user.is_admin or user.perm_financial %}
+            <div class="dropdown" x-data="dropdown()">
+              <button type="button"
+                      class="btn-icon"
+                      x-ref="button"
+                      @click="toggle()"
+                      :aria-expanded="open">
+                <span><i class="icon-briefcase-business with-text"></i> Matter</span>
+                <small><i class="icon-chevron-down"></i></small>
+              </button>
+              <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+                {% for m in matters %}
+                  <li>
+                    <a class="dropdown-item"
+                       href="#"
+                       hx-post="{% url 'activity:time-bulk-update-matter' %}"
+                       hx-vals='{"matter": "{{ m.id }}"}'
+                       hx-swap="none"><i class="icon-briefcase-business"></i> {{ m.name }}</a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+            <div class="dropdown" x-data="dropdown()">
+              <button type="button"
+                      class="btn-icon"
+                      x-ref="button"
+                      @click="toggle()"
+                      :aria-expanded="open">
+                <span><i class="icon-check with-text"></i> Comp</span>
+                <small><i class="icon-chevron-down"></i></small>
+              </button>
+              <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
                 <li>
                   <a class="dropdown-item"
                      href="#"
-                     hx-post="{% url 'activity:time-bulk-update-matter' %}"
-                     hx-vals='{"matter": "{{ m.id }}"}'
-                     hx-swap="none"><i class="icon-briefcase-business"></i> {{ m.name }}</a>
+                     hx-post="{% url 'activity:time-bulk-update-comp' %}"
+                     hx-vals='{"comp": "true"}'
+                     hx-swap="none"><i class="icon-check"></i> Comp</a>
                 </li>
-              {% endfor %}
-            </ul>
-          </div>
-          <div class="dropdown" x-data="dropdown()">
-            <button type="button"
-                    class="btn-icon"
-                    x-ref="button"
-                    @click="toggle()"
-                    :aria-expanded="open">
-              <span><i class="icon-check with-text"></i> Comp</span>
-              <small><i class="icon-chevron-down"></i></small>
-            </button>
-            <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
-              <li>
-                <a class="dropdown-item"
-                   href="#"
-                   hx-post="{% url 'activity:time-bulk-update-comp' %}"
-                   hx-vals='{"comp": "true"}'
-                   hx-swap="none"><i class="icon-check"></i> Comp</a>
-              </li>
-              <li>
-                <a class="dropdown-item"
-                   href="#"
-                   hx-post="{% url 'activity:time-bulk-update-comp' %}"
-                   hx-vals='{"comp": "false"}'
-                   hx-swap="none"><i class="icon-x"></i> Not Comp</a>
-              </li>
-            </ul>
-          </div>
+                <li>
+                  <a class="dropdown-item"
+                     href="#"
+                     hx-post="{% url 'activity:time-bulk-update-comp' %}"
+                     hx-vals='{"comp": "false"}'
+                     hx-swap="none"><i class="icon-x"></i> Not Comp</a>
+                </li>
+              </ul>
+            </div>
+          {% endif %}
         </div>
       {% else %}
         <div class="filter-tools">
@@ -71,13 +80,15 @@
           </button>
           <div class="dropdown" x-data="dropdown()">
             <button type="button"
-                    class="select-btn filter-dropdown-button {% if filter_label in 'unbilled today yesterday this_week last_week this_month last_month custom' %}toggle-active{% endif %}"
+                    class="select-btn filter-dropdown-button {% if filter_label in 'unbilled needs_approval today yesterday this_week last_week this_month last_month custom' %}toggle-active{% endif %}"
                     x-ref="button"
                     @click="toggle()"
                     :aria-expanded="open">
             <span><i class="icon-calendar with-text"></i>
             {% if filter_label == "unbilled" %}
               Work in Progress
+            {% elif filter_label == "needs_approval" %}
+              Needs Approval
             {% elif filter_label == "today" %}
               Today
             {% elif filter_label == "yesterday" %}
@@ -141,6 +152,11 @@
                href="#"
                hx-post="{% url 'activity:time-filter-quick' 'unbilled' %}">Work in Progress</a>
           </li>
+          <li>
+            <a class="dropdown-item"
+               href="#"
+               hx-post="{% url 'activity:time-filter-quick' 'needs_approval' %}">Needs Approval</a>
+          </li>
         </ul>
       </div>
       {% include "components/user-chips.html" with filter_user_url="activity:time-filter-user" toggle_chip_url="activity:toggle-chip" %}
@@ -188,12 +204,10 @@
   <table class="table activity card-table">
     <thead>
       <tr>
-        {% if user.is_admin or user.perm_financial %}
-          <th class="col-select">
-            {% url 'activity:time-select-all' as select_all_url %}
-            {% include "selection/select-all-btn.html" with select_all_url=select_all_url all_selected=all_selected %}
-          </th>
-        {% endif %}
+        <th class="col-select">
+          {% url 'activity:time-select-all' as select_all_url %}
+          {% include "selection/select-all-btn.html" with select_all_url=select_all_url all_selected=all_selected %}
+        </th>
         <th class="date">
           Date
           <button class="btn-sort {% if current_order == 'date' %}active{% endif %}"
@@ -223,17 +237,10 @@
     </thead>
     <tbody id="time-table">
       {% for entry in objects %}
-        <tr id="time-{{ entry.id }}">
-          {% if user.is_admin or user.perm_financial %}
-            {% include "activity/time/table-row.html" with show_select=True %}
-          {% else %}
-            {% include "activity/time/table-row.html" %}
-          {% endif %}
-        </tr>
+        <tr id="time-{{ entry.id }}">{% include "activity/time/table-row.html" with show_select=True %}</tr>
       {% empty %}
         <tr>
-          <td colspan="{% if user.is_admin or user.perm_financial %}8{% else %}7{% endif %}"
-              class="empty-message">No time entries found.</td>
+          <td colspan="8" class="empty-message">No time entries found.</td>
         </tr>
       {% endfor %}
     </tbody>

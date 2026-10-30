@@ -180,6 +180,21 @@ answering `204` with an `HX-Trigger` (`timeChanged`, `expensesChanged`,
   from All Users the cycle enters at the first or last user. The pinned
   user chips are the same set the tasks tab uses
   (`CustomUser.task_user_chips`, capped at `TASK_CHIPS_CAP`).
+- **An entry the AI logged needs a person's approval.** `create_time_entry()`
+  in `apps/ai/api.py` saves it with `TimeEntry.needs_approval` set; the
+  Activity tab and a matter's Time list show a "Needs approval" badge on
+  the row, the Activity tab's date dropdown has a Needs Approval preset
+  (date-free, like Work in Progress; the Filter modal has the same
+  dimension), and the Approve bulk action (`time_bulk_approve()`,
+  `activity_bulk_approve()` on the matter, both through
+  `approve_entries()`) clears it on the user's own entries, or on any for
+  an admin, and reports what it skipped. A flagged entry is unbilled
+  work like any other and a Draft gathers it, but the Draft is held:
+  `Invoice.approval_hold()` names the entries still waiting, the status
+  menu (`invoices_edit_status()`) refuses to move the Draft anywhere
+  with a toast, `send_invoice()` raises `InvoiceSendError` before logging
+  a transmission, and the detail page shows the count beside the status.
+  Once the entries are approved the invoice moves on as usual.
 
 ### Categories
 

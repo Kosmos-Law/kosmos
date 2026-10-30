@@ -83,7 +83,10 @@ Claude asks before calling a write tool unless the user has chosen
   checklist is refused, as on the Tasks page.
 - **Time entries**: logged on an hourly matter as the connected user, at
   that user's rate for the matter (Claude cannot set a rate). The entry
-  is unbilled until it is put on an invoice in Kosmos.
+  carries a "Needs approval" badge on the Activity tab until the user
+  (or an admin) selects it and clicks Approve; the Needs Approval choice
+  in the date dropdown lists every entry waiting. A draft invoice that
+  holds such an entry cannot be approved or sent until the entry is.
 - **Events**: added to a matter's calendar or the firm's, with the same
   rules as the event form. The event is the firm's (everyone's) unless
   the user asks for it on their own calendar.

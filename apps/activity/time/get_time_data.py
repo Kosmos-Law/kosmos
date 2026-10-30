@@ -111,6 +111,8 @@ def get_time_data(request):
             and filter_data.get("entered") not in (None, ""),
             filter_data.get("filter_label") != "unbilled"
             and filter_data.get("invoice") not in (None, ""),
+            filter_data.get("filter_label") != "needs_approval"
+            and filter_data.get("needs_approval") not in (None, ""),
         ]
     )
 

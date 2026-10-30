@@ -568,8 +568,9 @@ TOOLS = [
         "add_time_entry",
         "Log one time entry on an hourly matter, as the user, at the user's "
         "rate for that matter (Kosmos sets the rate; never pass one). "
-        "Creates immediately, unbilled; only call on the user's explicit "
-        "direction.\n\n"
+        "Creates immediately, unbilled and marked as needing approval, "
+        "which the user or an admin gives on the Activity tab; only call on "
+        "the user's explicit direction.\n\n"
         "actions is the billing narrative as it should appear on the "
         "invoice (write it in full; abbreviation codes are not expanded). "
         "hours is decimal, 0.1 to 99.9, rounded to a tenth. date is ISO "

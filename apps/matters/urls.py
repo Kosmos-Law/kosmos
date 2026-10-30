@@ -284,6 +284,11 @@ urlpatterns = [
         activity.activity_bulk_set_category,
         name="activity-bulk-set-category",
     ),
+    path(
+        "matters/<int:matter_id>/activity/bulk/approve",
+        activity.activity_bulk_approve,
+        name="activity-bulk-approve",
+    ),
     # Activity categories (one-per-entry coding; managed in the Categories
     # sub-view of the activity tab)
     path(
