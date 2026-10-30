@@ -33,7 +33,10 @@ is in the developer guide: [MCP server and JSON APIs](../../dev/subsystems/mcp.m
 - **The well-known paths at the root.** `/.well-known/oauth-protected-resource`
   and `/.well-known/oauth-authorization-server` are served by Kosmos; a
   reverse proxy that routes `/.well-known/` elsewhere (for certificate
-  renewal, say) must pass these two on.
+  renewal, say) must pass these two on. A rule that refuses hidden
+  paths (`location ~ /\.` in nginx) catches them too; the shipped
+  `kosmos-security.conf` puts a `location ^~ /.well-known/oauth-`
+  before its own.
 
 ## User setup
 
@@ -82,6 +85,12 @@ Two write surfaces, both create-only, neither destructive:
   certificate is valid, and that the proxy passes `/.well-known/` on.
   `curl -i https://<host>/mcp` from outside should answer `401` with a
   `WWW-Authenticate` header.
+- **"Couldn't register with Kosmos's sign-in service"**: Claude could
+  not read the well-known documents, fell back to `/register` at the
+  root, and found nothing there. `curl -i
+  https://<host>/.well-known/oauth-authorization-server` should answer
+  `200` with JSON; a `403` from nginx means a hidden-files rule is in
+  front of it (see the well-known note above).
 - **The sign-in page says the connection cannot be made**: the
   application's redirect address is not one it registered, or its
   client id is unknown. Remove the connector in Claude and add it again.
