@@ -1,7 +1,6 @@
 from django.urls import path
 
 from apps.case import views
-from apps.case.caselaws import views as caselaws
 from apps.case.documents import views as documents
 from apps.case.facts import views as facts
 from apps.case.highlights import views as highlights
@@ -177,11 +176,6 @@ urlpatterns = [
         name="highlights-filter-importance",
     ),
     path(
-        "case/<int:matter_id>/highlights/filter/source/<str:source_type>/",
-        highlights.highlights_filter_source_type,
-        name="highlights-filter-source-type",
-    ),
-    path(
         "case/<int:matter_id>/highlights/filter/witness/",
         highlights.highlights_filter_witness,
         name="highlights-filter-witness-clear",
@@ -316,73 +310,6 @@ urlpatterns = [
         "case/<int:matter_id>/facts/bulk-label-action/",
         facts.bulk_facts_label_action,
         name="facts-bulk-label-action",
-    ),
-    # Case Law (matter-scoped)
-    path(
-        "case/<int:matter_id>/caselaws/",
-        caselaws.caselaws_index,
-        name="caselaws-index",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/list/",
-        caselaws.caselaws_list,
-        name="caselaws-list",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/add/",
-        caselaws.caselaws_add,
-        name="caselaws-add",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/lookup/",
-        caselaws.caselaws_lookup,
-        name="caselaws-lookup",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/save/",
-        caselaws.caselaws_save,
-        name="caselaws-save",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/sort/<str:order>/",
-        caselaws.caselaws_sort,
-        name="caselaws-sort",
-    ),
-    # Case laws - bulk selection and actions
-    path(
-        "case/<int:matter_id>/caselaws/toggle-select/<int:caselaw_id>/",
-        caselaws.toggle_caselaw_select,
-        name="caselaw-toggle-select",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/clear-selection/",
-        caselaws.clear_caselaw_selection,
-        name="caselaws-clear-selection",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/select-all/",
-        caselaws.select_all_caselaws,
-        name="caselaws-select-all",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/bulk-delete/",
-        caselaws.bulk_caselaws_delete,
-        name="caselaws-bulk-delete",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/bulk-ai/<str:action>/",
-        caselaws.bulk_caselaws_ai,
-        name="caselaws-bulk-ai",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/bulk-labels/",
-        caselaws.bulk_caselaws_labels_modal,
-        name="caselaws-bulk-labels",
-    ),
-    path(
-        "case/<int:matter_id>/caselaws/bulk-labels-apply/",
-        caselaws.bulk_caselaws_labels_apply,
-        name="caselaws-bulk-labels-apply",
     ),
     # Witnesses (matter-scoped)
     path(
@@ -641,42 +568,6 @@ urlpatterns = [
         "case/highlights/<int:highlight_id>/link/",
         highlights.highlight_link,
         name="highlight-link",
-    ),
-    # Case Law operations
-    path(
-        "case/caselaws/<int:caselaw_id>/edit/",
-        caselaws.caselaw_edit,
-        name="caselaw-edit",
-    ),
-    path(
-        "case/caselaws/<int:caselaw_id>/delete/",
-        caselaws.caselaw_delete,
-        name="caselaw-delete",
-    ),
-    path(
-        "case/caselaws/<int:caselaw_id>/importance/<int:value>/",
-        caselaws.caselaw_importance,
-        name="caselaw-importance",
-    ),
-    path(
-        "case/caselaws/<int:caselaw_id>/set-ai/<str:state>/",
-        caselaws.caselaw_set_ai,
-        name="caselaw-set-ai",
-    ),
-    path(
-        "case/caselaws/<int:caselaw_id>/view/",
-        caselaws.caselaw_viewer,
-        name="caselaw-viewer",
-    ),
-    path(
-        "case/<int:matter_id>/viewer/cluster/<int:cluster_id>/",
-        caselaws.caselaw_viewer_by_cluster,
-        name="caselaw-viewer-cluster",
-    ),
-    path(
-        "case/caselaws/<int:caselaw_id>/highlights/add/",
-        caselaws.caselaw_add_highlight,
-        name="caselaw-add-highlight",
     ),
     # Fact operations
     path("case/facts/<int:fact_id>/edit/", facts.facts_edit, name="facts-edit"),

@@ -92,4 +92,4 @@ Recoverable from git history at the parent of commit `c70da1a05`.
 - [Research chat (retired 2026-08-16)](research-chat-retired.md): the
   feature the tab replaced.
 - [The AI chat is retired](2026-10-30-ai-chat-retired.md) and
-  [Case building](../dev/subsystems/case-building.md#saved-cases).
+  [Case building](../dev/subsystems/case-building.md) (saved cases were retired on 2026-10-30, see [Saved case law is retired](2026-10-30-case-law-retired.md)).

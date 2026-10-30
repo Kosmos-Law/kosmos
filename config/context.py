@@ -21,9 +21,6 @@ def integrations(request):
     a template asks.
 
     ai_enabled: an AI provider key is set (apps/settings/ai.py).
-    caselaw_available: a CourtListener token is set and the user holds the
-    Research permission; saved case law is a view of the AI tab, or its
-    own tab when AI is off.
     case_file_enabled: the case builder's feature, as the firm's
     administrator set it (Settings > Features).
     """
@@ -32,11 +29,6 @@ def integrations(request):
         from apps.settings.ai import ai_enabled
 
         return ai_enabled()
-
-    def _caselaw():
-        from apps.settings.courtlistener import caselaw_available
-
-        return caselaw_available(getattr(request, "user", None))
 
     def _case_file():
         from apps.settings.features import case_file_enabled
@@ -57,7 +49,6 @@ def integrations(request):
 
     return {
         "ai_enabled": SimpleLazyObject(_ai),
-        "caselaw_available": SimpleLazyObject(_caselaw),
         # The firm's feature switches (apps/settings/features.py).
         "case_file_enabled": SimpleLazyObject(_case_file),
         "accounting_enabled": SimpleLazyObject(_accounting),

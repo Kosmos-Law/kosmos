@@ -25,10 +25,8 @@ def label_for_matter(matter, label_id):
 
 
 def highlights_for_matter(matter):
-    """Highlights on the matter's documents and saved cases."""
-    return Highlight.objects.filter(
-        Q(document__matter=matter) | Q(caselaw__matter=matter)
-    )
+    """Highlights on the matter's documents."""
+    return Highlight.objects.filter(document__matter=matter)
 
 
 def source_for_fact(fact, source_type, source_id):

@@ -17,8 +17,6 @@ from datetime import (
     time as time_cls,
 )
 
-from django.db.models import Q
-
 from apps.case.models import Document, Fact, Highlight
 
 logger = logging.getLogger(__name__)
@@ -143,7 +141,7 @@ def _create_fact_from_entry(entry, matter, requesting_user):
 
     # Attach sources, silently dropping ids that do not belong to this
     # matter (hallucinated or cross-matter ids must not link). Highlights
-    # scope through their parent document or caselaw.
+    # scope through their parent document.
     doc_ids = _int_list(entry.get("documents"))
     if doc_ids:
         fact.documents.set(Document.objects.filter(matter=matter, id__in=doc_ids))
@@ -151,9 +149,7 @@ def _create_fact_from_entry(entry, matter, requesting_user):
     hl_ids = _int_list(entry.get("highlights"))
     if hl_ids:
         fact.highlights.set(
-            Highlight.objects.filter(id__in=hl_ids).filter(
-                Q(document__matter=matter) | Q(caselaw__matter=matter)
-            )
+            Highlight.objects.filter(id__in=hl_ids, document__matter=matter)
         )
 
     return fact

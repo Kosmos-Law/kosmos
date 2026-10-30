@@ -1,8 +1,7 @@
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from django.db.models.functions import Coalesce
+from django.db.models import F, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -51,17 +50,15 @@ def get_highlights_data(request, matter, matter_id):
     keyword = get_filter_value("keyword")
     order_by = get_filter_value("order_by")
     document_id = get_filter_value("document")
-    source_type = get_filter_value("source_type")
     witness_id = get_filter_value("witness")
 
     witnesses = []
     selected_witness = None
 
     if matter:
-        # Include both document and case law highlights
-        highlights = Highlight.objects.filter(
-            Q(document__matter=matter) | Q(caselaw__matter=matter)
-        ).select_related("document", "document__matter", "caselaw", "created_by")
+        highlights = Highlight.objects.filter(document__matter=matter).select_related(
+            "document", "document__matter", "created_by"
+        )
         documents = Document.objects.filter(matter=matter).order_by("name")
         witnesses = Witness.objects.filter(matter=matter).order_by("name")
 
@@ -79,8 +76,8 @@ def get_highlights_data(request, matter, matter_id):
             selected_document = documents.filter(id=document_id).first()
 
         # Handle custom ordering with secondary sorts. "Date" is the date
-        # the Date column shows: the document's, or the case's filing date.
-        source_date = Coalesce("document__date", "caselaw__date_filed")
+        # the Date column shows: the document's.
+        source_date = F("document__date")
         if order_by == "date":
             highlights = highlights.order_by(source_date.asc(nulls_last=True), "slug")
         elif order_by == "-date":
@@ -150,7 +147,6 @@ def get_highlights_data(request, matter, matter_id):
             if importance_value
             else ""
         ),
-        "source_type": source_type,
         "witnesses": witnesses,
         "selected_witness": selected_witness,
     }
@@ -268,25 +264,6 @@ def highlights_filter_witness(request, matter_id, witness_id=None):
 
 
 @login_required
-def highlights_filter_source_type(request, matter_id, source_type):
-    """Filter highlights by source type (case or document)."""
-    filter_session_key = get_session_key("highlights_filter", matter_id)
-    pagination_session_key = get_session_key("highlights_pagination", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
-
-    # Valid source types: "", "case", "document"
-    if source_type in ("case", "document"):
-        filter_data["source_type"] = source_type
-    else:
-        filter_data["source_type"] = ""  # "all" or any other value clears filter
-
-    request.session[filter_session_key] = filter_data
-    request.session[pagination_session_key] = 1  # Reset to page 1
-
-    return redirect("case:highlights-list", matter_id=matter_id)
-
-
-@login_required
 def highlights_filter(request, matter_id):
     """Filter modal for highlights - GET shows modal, POST saves to session."""
     matter, matters = get_matter_from_url(request, matter_id)
@@ -308,7 +285,7 @@ def highlights_filter(request, matter_id):
     filter_data = request.session.get(filter_session_key, {})
 
     queryset = (
-        Highlight.objects.filter(Q(document__matter=matter) | Q(caselaw__matter=matter))
+        Highlight.objects.filter(document__matter=matter)
         if matter
         else Highlight.objects.none()
     )
@@ -375,11 +352,7 @@ def highlight_importance(request, highlight_id, importance):
             {"highlight": highlight},
         )
 
-    matter_id = (
-        highlight.document.matter_id
-        if highlight.document
-        else highlight.caselaw.matter_id
-    )
+    matter_id = highlight.document.matter_id
     return redirect("case:highlights-list", matter_id=matter_id)
 
 
@@ -444,11 +417,7 @@ def delete_highlight(request, highlight_id):
     highlight = get_object_or_404(Highlight, id=highlight_id)
 
     # Prune the id from any current selection so the bulk count stays honest.
-    matter_id = (
-        highlight.document.matter_id
-        if highlight.document
-        else highlight.caselaw.matter_id
-    )
+    matter_id = highlight.document.matter_id
     key = get_session_key("selected_highlights", matter_id)
     selected = get_selected_ids(request, key)
     if highlight.id in selected:
@@ -467,14 +436,10 @@ def delete_highlight(request, highlight_id):
 def highlight_detail(request, highlight_id):
     """Display highlight details in a modal."""
     highlight = get_object_or_404(
-        Highlight.objects.select_related("document", "caselaw").prefetch_related(
-            "labels"
-        ),
+        Highlight.objects.select_related("document").prefetch_related("labels"),
         id=highlight_id,
     )
-    matter = (
-        highlight.document.matter if highlight.document else highlight.caselaw.matter
-    )
+    matter = highlight.document.matter
     return render(
         request,
         "case/highlights/detail.html",
@@ -497,12 +462,10 @@ def _form_error_text(form):
 def edit_highlight(request, highlight_id):
     """Edit a highlight's slug, color, importance, and text."""
     highlight = get_object_or_404(
-        Highlight.objects.select_related("document", "caselaw"), id=highlight_id
+        Highlight.objects.select_related("document"), id=highlight_id
     )
     is_viewer_context = request.GET.get("context") == "viewer"
-    matter = (
-        highlight.document.matter if highlight.document else highlight.caselaw.matter
-    )
+    matter = highlight.document.matter
 
     if request.method == "POST":
         form = HighlightForm(request.POST, instance=highlight)
@@ -549,36 +512,25 @@ def edit_highlight(request, highlight_id):
 def highlight_link(request, highlight_id):
     """Redirect to viewer at specific highlight location."""
     highlight = get_object_or_404(
-        Highlight.objects.select_related("document", "caselaw"), id=highlight_id
+        Highlight.objects.select_related("document"), id=highlight_id
     )
 
     from django.urls import reverse
 
-    if highlight.document:
-        viewer_url = reverse("case:viewer", args=[highlight.document_id])
-        return redirect(
-            f"{viewer_url}?page={highlight.page_number}&highlight={highlight.id}"
-        )
-    elif highlight.caselaw:
-        viewer_url = reverse("case:caselaw-viewer", args=[highlight.caselaw_id])
-        return redirect(f"{viewer_url}?highlight={highlight.id}")
-
-    # Fallback (shouldn't happen due to constraint)
-    return redirect("case:highlights-index")
+    viewer_url = reverse("case:viewer", args=[highlight.document_id])
+    return redirect(
+        f"{viewer_url}?page={highlight.page_number}&highlight={highlight.id}"
+    )
 
 
 def _highlight_in_matter(matter, highlight_id):
-    """True if the highlight belongs to a document or caselaw under matter."""
-    return Highlight.objects.filter(
-        Q(document__matter=matter) | Q(caselaw__matter=matter), id=highlight_id
-    ).exists()
+    """True if the highlight belongs to a document under matter."""
+    return Highlight.objects.filter(document__matter=matter, id=highlight_id).exists()
 
 
 def _selected_highlights_qs(matter, selected_ids):
     """Return highlights restricted to the given matter and selection."""
-    return Highlight.objects.filter(
-        Q(document__matter=matter) | Q(caselaw__matter=matter), id__in=selected_ids
-    )
+    return Highlight.objects.filter(document__matter=matter, id__in=selected_ids)
 
 
 @login_required

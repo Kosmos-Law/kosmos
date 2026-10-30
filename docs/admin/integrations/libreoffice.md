@@ -44,7 +44,7 @@ answers that the edits were not applied and nothing is changed.
   requirements](../install-manual.md#machine-requirements).
 - **An AI provider key.** Drafts are part of the AI chat, and without a
   key the companion's addresses answer 404. See
-  [AI providers and research](ai.md).
+  [AI providers](ai.md).
 - **`PUBLIC_BASE_URL` set correctly**, as described next.
 - **The server reachable over HTTPS from users' computers.** The
   extension calls paths under `/case/drafts/companion/api/` and sends the

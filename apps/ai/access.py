@@ -6,8 +6,8 @@ passes anything with no matter, and never sees an id that arrives in the
 query string or the body. The helpers here cover both gaps.
 
 The second half is about the reply rather than the route: the context and
-the agent tools are built for the user who is asking, so money and case-law
-research reach only the users who could open those screens.
+the agent tools are built for the user who is asking, so money reaches
+only the users who could open those screens.
 """
 
 from django.core.exceptions import PermissionDenied
@@ -62,8 +62,3 @@ def matter_conversation_for_user(conv_id, matter, user):
 def has_financial_access(user):
     """Rates, fees, amounts and invoices: the Financial permission."""
     return bool(user) and (user.is_admin or user.perm_financial)
-
-
-def has_research_access(user):
-    """Case-law search: the Research permission."""
-    return bool(user) and (user.is_admin or user.perm_research)

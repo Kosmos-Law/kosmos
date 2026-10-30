@@ -51,22 +51,19 @@ it, and a plus button with **Apply Labels** and **Link Witnesses**.
 ### The Highlights tab
 
 **Highlights** lists every highlight on the matter in one list, newest
-first, ten to a page. It includes highlights made in court opinions (see
-[Case law](research.md)).
+first, ten to a page.
 
 | Column | What it shows |
 |---|---|
 | **Created** | The day the highlight was made. |
-| **Highlight** | A badge for the kind of source, the slug in the highlight's colour, the text, the citation, and any labels and witnesses. |
-| **Date** | The date of the document, or the date the opinion was filed. |
+| **Highlight** | The slug in the highlight's colour, the text, the citation, and any labels and witnesses. |
+| **Date** | The date of the document. |
 | The flag column | The importance. Click it to change it. |
 
 Click the slug for a menu: **View Detail**, **Edit Highlight**, **View
 Source**, **Copy Text & Citation** and **Copy Link**. **View Source**, and
 the citation under the text, open the document in a new tab at the
-highlight's page with the highlight selected. For a highlight made in a
-court opinion they open the opinion, which needs the Research
-permission.
+highlight's page with the highlight selected.
 
 To narrow the list:
 

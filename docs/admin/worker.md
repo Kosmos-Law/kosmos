@@ -38,7 +38,6 @@ database and run when the worker comes back. Until then:
 | Online payment webhooks | The payment processor's notification is accepted and queued, but the payment is not marked settled, confirmed or reversed in Kosmos. |
 | Intakes from forwarded email | The message is stored, but no intake is created from it. |
 | Gmail | Attachment text is not extracted, and linking a label to a matter does not pull its messages in. |
-| Saved case law | A case saved to a matter gets no summary. |
 | Every scheduled job | No daily digest email, no Gmail sync, no chat purge. |
 
 Kosmos does say so in two places. Administrators see a notice at the top

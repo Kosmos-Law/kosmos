@@ -13,22 +13,10 @@ IMPORTANCE_CHOICES = (
     (1, "Lowest"),
 )
 
-SOURCE_TYPE_CHOICES = [
-    ("", "All Sources"),
-    ("case", "Cases"),
-    ("document", "Documents"),
-]
-
 
 class HighlightsFilter(django_filters.FilterSet):
     """Filter for highlights list."""
 
-    source_type = django_filters.ChoiceFilter(
-        method="filter_source_type",
-        choices=SOURCE_TYPE_CHOICES,
-        label="Source Type",
-        empty_label=None,
-    )
     document = django_filters.ModelChoiceFilter(
         queryset=Document.objects.none(),
         empty_label="All",
@@ -75,7 +63,6 @@ class HighlightsFilter(django_filters.FilterSet):
     class Meta:
         model = Highlight
         fields = [
-            "source_type",
             "document",
             "keyword",
             "label",
@@ -113,12 +100,4 @@ class HighlightsFilter(django_filters.FilterSet):
         """Filter highlights by witness."""
         if value:
             return queryset.filter(witnesses=value)
-        return queryset
-
-    def filter_source_type(self, queryset, name, value):
-        """Filter highlights by source type (case or document)."""
-        if value == "case":
-            return queryset.filter(caselaw__isnull=False)
-        elif value == "document":
-            return queryset.filter(document__isnull=False)
         return queryset

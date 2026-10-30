@@ -10,7 +10,7 @@ accepted 8 to 10)."""
 
 import pytest
 
-from apps.case.models import CaseLaw, Highlight, Witness
+from apps.case.models import Highlight, Witness
 from apps.management.selection import get_session_key
 
 pytestmark = pytest.mark.django_db
@@ -24,24 +24,12 @@ def witness(user, matter):
 
 
 @pytest.fixture
-def case_law(matter, user):
-    # Stored text keeps the viewer from calling CourtListener.
-    return CaseLaw.objects.create(
-        matter=matter,
-        case_name="Roe v. Wade",
-        citation="410 U.S. 113",
-        text="The opinion of the court. " * 40,
-    )
-
-
-@pytest.fixture
-def importance_urls(fact, witness, highlight, case_law):
+def importance_urls(fact, witness, highlight):
     """(object, URL prefix) for each single-record importance endpoint."""
     return [
         (fact, f"/case/facts/{fact.id}/importance/"),
         (witness, f"/case/witnesses/{witness.id}/importance/"),
         (highlight, f"/case/highlights/{highlight.id}/importance/"),
-        (case_law, f"/case/caselaws/{case_law.id}/importance/"),
     ]
 
 
@@ -138,9 +126,9 @@ class TestWitnessAlignment:
 
 
 def test_the_lists_send_post_for_importance_and_alignment(
-    client, matter, fact, witness, highlight, case_law
+    client, matter, fact, witness, highlight
 ):
-    for path in ("facts", "witnesses", "highlights", "caselaws"):
+    for path in ("facts", "witnesses", "highlights"):
         html = client.get(f"/case/{matter.id}/{path}/list/").content.decode()
         for line in html.splitlines():
             # The column filters and sorts keep their GET links.
@@ -151,7 +139,7 @@ def test_the_lists_send_post_for_importance_and_alignment(
         assert "/importance/" in html, path
 
 
-# --- Create Highlight in the two viewers ---
+# --- Create Highlight in the viewer ---
 
 CHOICES = [
     ("7", "Highest"),
@@ -174,11 +162,6 @@ def _document_highlight(client, document, **extra):
     return client.post(f"/case/documents/{document.id}/highlights/add/", data)
 
 
-def _case_highlight(client, case_law, **extra):
-    data = {"slug": "Holding", "text": "The opinion", "char_offset": "0"} | extra
-    return client.post(f"/case/caselaws/{case_law.id}/highlights/add/", data)
-
-
 class TestCreateImportance:
     def test_the_document_viewer_saves_the_chosen_importance(self, client, document):
         response = _document_highlight(client, document, importance="2")
@@ -187,41 +170,21 @@ class TestCreateImportance:
         assert response.json()["importance"] == 2
         assert Highlight.objects.get(slug="Key passage").importance == 2
 
-    def test_the_case_viewer_saves_the_chosen_importance(self, client, case_law):
-        response = _case_highlight(client, case_law, importance="6")
-
-        assert response.status_code == 200
-        assert Highlight.objects.get(slug="Holding").importance == 6
-
-    def test_without_a_choice_the_highlight_is_normal(self, client, document, case_law):
+    def test_without_a_choice_the_highlight_is_normal(self, client, document):
         _document_highlight(client, document)
-        _case_highlight(client, case_law)
 
         assert Highlight.objects.get(slug="Key passage").importance == 4
-        assert Highlight.objects.get(slug="Holding").importance == 4
 
     @pytest.mark.parametrize("value", ["8", "10", "0", "high"])
-    def test_a_value_off_the_scale_is_refused(self, client, document, case_law, value):
-        for response in (
-            _document_highlight(client, document, importance=value),
-            _case_highlight(client, case_law, importance=value),
-        ):
-            assert response.status_code == 400
-            assert response.json()["error"] == "Invalid importance."
+    def test_a_value_off_the_scale_is_refused(self, client, document, value):
+        response = _document_highlight(client, document, importance=value)
 
-        assert not Highlight.objects.filter(slug__in=["Key passage", "Holding"])
+        assert response.status_code == 400
+        assert response.json()["error"] == "Invalid importance."
+        assert not Highlight.objects.filter(slug="Key passage")
 
-    @pytest.mark.parametrize(
-        "url_name", ["document", "case"], ids=["document viewer", "case viewer"]
-    )
-    def test_both_viewers_offer_the_seven_levels(
-        self, client, document, case_law, url_name
-    ):
-        url = (
-            f"/case/documents/{document.id}/view/"
-            if url_name == "document"
-            else f"/case/caselaws/{case_law.id}/view/"
-        )
+    def test_the_viewer_offers_the_seven_levels(self, client, document):
+        url = f"/case/documents/{document.id}/view/"
         html = client.get(url).content.decode()
 
         select = html.split('id="highlight-importance"')[1].split("</select>")[0]

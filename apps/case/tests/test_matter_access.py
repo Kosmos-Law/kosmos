@@ -128,9 +128,8 @@ def test_unknown_ids_and_matterless_rows_resolve_to_nothing(user):
 
 @pytest.fixture
 def limited_client(user):
-    """Sees every matter, but with the research, financial and intakes
-    permissions switched off."""
-    user.perm_research = False
+    """Sees every matter, but with the financial and intakes permissions
+    switched off."""
     user.perm_financial = False
     user.perm_intakes = False
     user.save()
@@ -138,13 +137,6 @@ def limited_client(user):
     client.force_login(user)
     client.get("/dash/")
     return client
-
-
-def test_case_law_is_refused_without_the_research_permission(limited_client, matter):
-    assert limited_client.get(f"/case/{matter.id}/caselaws/").status_code == 403
-    # The tab-switch route reaches the same page by another address.
-    assert limited_client.get(f"/case/{matter.id}/tab/caselaws/").status_code == 403
-    assert limited_client.get(f"/case/{matter.id}/tab/documents/").status_code == 200
 
 
 def test_rates_and_ledger_are_refused_without_the_financial_permission(
@@ -162,6 +154,5 @@ def test_intake_email_settings_are_refused_without_the_intakes_permission(
 
 
 def test_the_same_pages_open_with_the_permissions_on(client, matter):
-    assert client.get(f"/case/{matter.id}/caselaws/").status_code == 200
     assert client.get(f"/matters/{matter.id}/rates").status_code == 200
     assert client.get("/settings/intake-emails/").status_code == 200

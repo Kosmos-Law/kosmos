@@ -115,9 +115,8 @@ show_missing = true
 # core (accounts, settings, management, matters, contacts, folders) and
 # the model-provider layer (apps.llm); the core never imports it; and the
 # apps that sit on top of it (apps.ai, apps.mail, apps.drafts) reach it
-# only through apps.case.models, apps.case.services, apps.case.courtlistener
-# and apps.case.jurisdictions. Direct imports are what is checked; tests and
-# migrations are exempt.
+# only through apps.case.models and apps.case.services. Direct imports are
+# what is checked; tests and migrations are exempt.
 # ---------------------------------------------------------------------------
 [tool.importlinter]
 root_packages = ["apps"]
@@ -169,11 +168,10 @@ source_modules = [
 ]
 forbidden_modules = [
     "apps.case.documents", "apps.case.facts", "apps.case.highlights",
-    "apps.case.labels", "apps.case.witnesses", "apps.case.caselaws",
+    "apps.case.labels", "apps.case.witnesses",
     "apps.case.search", "apps.case.views",
     "apps.case.semantic", "apps.case.search_config", "apps.case.tabs",
     "apps.case.registrations", "apps.case.abbreviate",
-    "apps.case.courtlistener_throttle",
     "apps.case.management", "apps.case.templatetags", "apps.case.urls",
     "apps.case.apps",
 ]

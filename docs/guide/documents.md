@@ -194,7 +194,7 @@ Good to know:
 
 A label is a coloured tag you make up yourself, for example "Damages" or
 "Hot". Labels go on documents, highlights, timeline facts and saved
-case law, so one label can gather everything on a theme.
+so one label can gather everything on a theme.
 
 The **Labels** tab has two cards. **This Matter** holds labels that exist
 only on this matter. **All Matters** holds labels every matter can use.

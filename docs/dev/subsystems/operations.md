@@ -58,8 +58,7 @@ Work reaches it two ways. Code queues a task with
 `django_q.tasks.async_task("dotted.path.to.function", *args)`; the
 callers are the OCR pipeline (`apps/case/documents/tasks.py`, `signals.py`,
 `views.py`), the Gmail sync, document summaries, semantic
-re-indexing (`apps/case/semantic.py`),
-saved case-law summaries (`apps/case/caselaws/tasks.py`), the inbound intake
+re-indexing (`apps/case/semantic.py`), the inbound intake
 webhook (`apps/intakes/inbound.py`), payment webhooks
 (`apps/invoicing/pay/views.py`). Or a `Schedule` row fires on its cron and the cluster calls the schedule's `func`.
 

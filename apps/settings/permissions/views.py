@@ -8,7 +8,6 @@ PERM_COLUMNS = (
     ("perm_financial", "Financial"),
     ("perm_intakes", "Intakes"),
     ("perm_reports", "Reports"),
-    ("perm_research", "Research"),
     ("perm_accounting", "Accounting"),
 )
 

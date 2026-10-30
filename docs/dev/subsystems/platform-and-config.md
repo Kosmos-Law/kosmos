@@ -126,9 +126,7 @@ project entries. On the way in they run in this order:
 4. **`PermissionMiddleware`** (`apps/accounts/middleware.py`). First,
    for every request, it answers 404 on the pages of an optional
    integration that is not set up: `AI_PATTERN` (the AI tab, the drafts
-   companion, intake assessment and chat) without an AI key,
-   `CASELAW_PATTERN` (saved case law and the cluster viewer) without a
-   CourtListener token; see
+   companion, intake assessment and chat) without an AI key; see
    [AI is optional](ai/context.md#ai-is-optional). For a signed-in
    user it then answers 404 on a feature the firm's administrator has
    switched off under Settings > Features: `CASE_FILE_PATTERN` (all of
@@ -139,8 +137,7 @@ project entries. On the way in they run in this order:
    the user lacks (`/invoicing/` and `/reports/` by prefix, `/intakes/`
    and the intake-emails settings); and the `PERMISSION_PATTERNS`, which
    gate matter-scoped paths such as `/matters/<id>/rates` and `/ledger`
-   (`perm_financial`) and saved case law and the case viewer
-   (`perm_research`). Its
+   (`perm_financial`). Its
    `process_view()` then enforces matter membership for everything under
    `/case/`: `user_may_use_route()` in `apps/accounts/access.py` resolves
    the matter from whichever id the URL names (document, fact,

@@ -429,7 +429,7 @@ def _get_object_for_witnesses(object_type, object_id, view=None):
     """Resolve object + matter + row template for the witness apply flow."""
     if object_type == "highlight":
         obj = get_object_or_404(Highlight, id=object_id)
-        matter = obj.document.matter if obj.document else obj.caselaw.matter
+        matter = obj.document.matter
         if view == "table":
             row_template = "case/highlights/highlight-row.html"
         elif view == "viewer":

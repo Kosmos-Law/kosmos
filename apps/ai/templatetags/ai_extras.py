@@ -14,7 +14,6 @@ TOOL_ICONS = {
     "read_document": "icon-file-text",
     "read_email_thread": "icon-mail",
     "read_note": "icon-scroll-text",
-    "read_caselaw": "icon-scale",
     "read_conversation": "icon-message-circle",
     "read_invoice": "icon-receipt",
     "read_matter_section": "icon-book-open",

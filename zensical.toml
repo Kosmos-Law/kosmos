@@ -24,7 +24,7 @@ nav = [
     { "Integrations" = [
       { "Outgoing email" = "admin/integrations/email.md" },
       { "File storage" = "admin/integrations/storage.md" },
-      { "AI providers and research" = "admin/integrations/ai.md" },
+      { "AI providers" = "admin/integrations/ai.md" },
       { "Online payments" = "admin/integrations/payments.md" },
       { "Google Workspace" = "admin/integrations/google.md" },
       { "Gmail sync" = "admin/integrations/gmail.md" },
@@ -67,7 +67,6 @@ nav = [
       { "Timeline, witnesses and highlights" = "guide/facts.md" },
       { "Email" = "guide/email.md" },
       { "Drafts" = "guide/drafts.md" },
-      { "Case law" = "guide/research.md" },
     ] },
     { "Administer" = [
       { "Settings" = "guide/settings.md" },
@@ -181,6 +180,7 @@ nav = [
       { "2026-10-06: AI is optional" = "decisions/2026-10-06-ai-is-optional.md" },
       { "Claude Desktop: packaging roadmap" = "decisions/claude-desktop-roadmap.md" },
       { "Claude connects over a remote MCP server with OAuth (2026-10-30)" = "decisions/2026-10-30-claude-connects-over-remote-mcp.md" },
+      { "2026-10-30: Saved case law is retired" = "decisions/2026-10-30-case-law-retired.md" },
       { "Research Chat (retired 2026-08-16)" = "decisions/research-chat-retired.md" },
     ] },
     { "Notes, drafts and documents" = [

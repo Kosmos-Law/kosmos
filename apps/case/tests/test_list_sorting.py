@@ -8,7 +8,7 @@ from datetime import date
 
 import pytest
 
-from apps.case.models import CaseLaw, Document, Highlight
+from apps.case.models import Document, Highlight
 
 pytestmark = pytest.mark.django_db
 
@@ -38,21 +38,13 @@ def test_date_sorts_highlights_by_the_documents_date(client, matter, user):
     _highlight_on(matter, user, date(2024, 3, 1), "March")
     _highlight_on(matter, user, date(2024, 1, 1), "January")
     _highlight_on(matter, user, None, "Undated")
-    case_law = CaseLaw.objects.create(
-        matter=matter,
-        case_name="Roe v. Wade",
-        citation="410 U.S. 113",
-        date_filed=date(2024, 2, 1),
-    )
-    Highlight.objects.create(
-        caselaw=case_law, slug="February case", text="x", created_by=user
-    )
+    _highlight_on(matter, user, date(2024, 2, 1), "February")
 
     client.get(f"/case/{matter.id}/highlights/filter/sort/date/")
-    assert _listed(client, matter) == ["January", "February case", "March", "Undated"]
+    assert _listed(client, matter) == ["January", "February", "March", "Undated"]
 
     client.get(f"/case/{matter.id}/highlights/filter/sort/date/")
-    assert _listed(client, matter) == ["March", "February case", "January", "Undated"]
+    assert _listed(client, matter) == ["March", "February", "January", "Undated"]
 
 
 @pytest.mark.parametrize(

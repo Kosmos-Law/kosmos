@@ -78,14 +78,4 @@ urlpatterns = [
         views.delete_message,
         name="delete-message",
     ),
-    path(
-        "case/ai/messages/<int:message_id>/vetting-status/",
-        views.message_vetting_status,
-        name="message-vetting-status",
-    ),
-    path(
-        "case/ai/messages/<int:message_id>/citation/<int:citation_index>/vetting/",
-        views.citation_vetting_detail,
-        name="citation-vetting-detail",
-    ),
 ]

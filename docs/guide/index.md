@@ -38,7 +38,6 @@ Working a case:
 - [Email](email.md): filing correspondence on a matter from Gmail.
 - [Drafts](drafts.md): drafting in LibreOffice with the AI's edits as
   tracked changes.
-- [Case law](research.md): finding case law with Claude and keeping it on a matter.
 
 Looking after Kosmos:
 

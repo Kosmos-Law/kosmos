@@ -103,7 +103,6 @@ class CustomUser(AbstractUser):
     # Off until an administrator turns it on: the reports show the whole
     # firm's revenue, whatever matters or other permissions a user has.
     perm_reports = models.BooleanField(default=False)
-    perm_research = models.BooleanField(default=True)
     # Off until an administrator turns it on: Accounting shows the whole firm's
     # bank accounts and statements.
     perm_accounting = models.BooleanField(default=False)
@@ -116,7 +115,6 @@ class CustomUser(AbstractUser):
         "perm_financial",
         "perm_intakes",
         "perm_reports",
-        "perm_research",
         "perm_accounting",
     )
 

@@ -41,4 +41,4 @@ client documents.
 `SEMANTIC_AUTO_INDEX` needs a Gemini key, set as `GEMINI_API_KEY` or under
 **Settings → Integrations**. Without one, saving a record queues nothing, so
 the setting has no effect. AI itself is optional: with no AI key set, every
-AI feature is hidden. See [AI providers and research](integrations/ai.md).
+AI feature is hidden. See [AI providers](integrations/ai.md).

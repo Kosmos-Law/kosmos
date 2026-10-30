@@ -18,12 +18,11 @@ All are fields on `CustomUser`
 | Name in Settings | Field | Default for a new user | Notes |
 |---|---|---|---|
 | Role: Admin | `role = "ADMIN"` | `USER` (`ADMIN` from `createsuperuser`) | `is_admin` is true only for this role. An admin passes every check on this page whatever the flags say, except the daily digest row below. |
-| Role: User | `role = "USER"` | yes | Subject to the five flags. |
+| Role: User | `role = "USER"` | yes | Subject to the four flags. |
 | All Matters | `perm_all_matters` | on | Off limits the user to matters they are a member of (`Matter.members`). |
 | Financial | `perm_financial` | on | |
 | Intakes | `perm_intakes` | on | |
 | Reports | `perm_reports` | off | The one switch that starts off: the reports show the whole firm's figures. An administrator turns it on for each user who needs it. |
-| Research | `perm_research` | on | |
 | (not in Settings) | `is_staff`, `is_superuser` | off (on from `createsuperuser`) | Django's own flags. Nothing in Kosmos reads them; there is no Django admin. |
 | Status | `is_active` | on | Off refuses sign-in, ends existing sessions and rejects the user's API token. |
 
@@ -42,7 +41,7 @@ integration that is not set up on this server. They answer HTTP 404 for
 everyone, admins included, whatever their flags. An AI provider counts as
 set up when its key is in `config/.env` or stored under Settings >
 Integrations; see
-[AI providers and research](../admin/integrations/ai.md#without-an-ai-key).
+[AI providers](../admin/integrations/ai.md#without-an-ai-key).
 
 Rules 1 to 4 test the request path before the URL is resolved and are
 skipped for an admin. Rule 5 runs once the URL is resolved, from the ids in
@@ -52,7 +51,6 @@ it.
 |---|---|---|---|
 | 0 | Pattern (`AI_PATTERN`) | The conversation routes the intake chat uses under `/case/ai/…`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
 | 0 | Pattern (`CASE_FILE_PATTERN`, less `CASE_FILE_EXEMPT`) | Everything under `/case/` except the MCP matter API under `/case/api/` | Everyone while the firm's case file is on (Settings > Features); nobody (404) when an administrator has switched it off |
-| 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/permissions/` | Admin role only |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/firm/` | Admin role only |
@@ -65,21 +63,18 @@ it.
 | 3 | Prefix (`PERMISSION_PATHS`) | `/settings/intake-emails/` | Admin, or `perm_intakes` |
 | 3 | Prefix (`PERMISSION_PATHS`) | `/reports/` | Admin, or `perm_reports` |
 | 4 | Pattern (`PERMISSION_PATTERNS`) | `/matters/<id>/rates` and `/matters/<id>/ledger`, alone or followed by `/…` | Admin, or `perm_financial` |
-| 4 | Pattern (`PERMISSION_PATTERNS`) | The saved case law under `/case/caselaws/…` and `/case/<id>/caselaws/…`, the tab-switch address `/case/<id>/tab/caselaws/`, and the case viewer `/case/<id>/viewer/cluster/…` | Admin, or `perm_research` |
 | 5 | Matter membership (`MATTER_SCOPED_PREFIXES`, `process_view`) | Everything under `/case/` | Admin, `perm_all_matters`, or a member of every matter the URL's ids belong to. The lookup is set out under Matter membership below. |
 
 The patterns as written in the source:
 
 ```
 ^/matters/\d+/(rates|ledger)(/|$)
-^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/
 ```
 
 and for rule 0:
 
 ```
-AI_PATTERN       ^/case/(\d+/)?(tab/)?ai/|^/case/drafts/|^/intakes/\d+/(assess|chat/)|^/settings/tasks/
-CASELAW_PATTERN  ^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/
+AI_PATTERN  ^/case/(\d+/)?(tab/)?ai/|^/case/drafts/|^/intakes/\d+/(assess|chat/)|^/settings/tasks/
 ```
 
 Settings > Tasks (`/settings/tasks/`) holds only AI quick task entry, so
@@ -103,8 +98,7 @@ What sits under each path:
 | `/reports/` | All reports. |
 | `/matters/<id>/rates…` | A matter's Rates page and its list, add, edit and delete routes. |
 | `/matters/<id>/ledger…` | A matter's Ledger tab, list and PDF. |
-| `/case/caselaws/…`, `/case/<id>/caselaws/…`, `/case/<id>/viewer/cluster/…` | The saved case law (the AI tab's Case Law view, or its own Case Law tab when no AI provider is set up), adding a case by citation, and the case viewer. |
-| `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, emails, case search, AI chats and drafts. |
+| `/case/` | The case workspace: documents and the viewer, highlights, timeline facts, witnesses, labels, emails, case search and drafts. |
 
 ## Gates checked in views
 
@@ -143,15 +137,14 @@ names a record, and the record leads to a matter (`MATTER_LOOKUPS` and
 |---|---|---|
 | `matter_id` | The matter itself | |
 | `document_id` | Document | The document |
-| `highlight_id` | Highlight | Its document, or its case law |
-| `caselaw_id` | Saved case law | The case law |
+| `highlight_id` | Highlight | Its document |
 | `fact_id` | Timeline fact | The fact |
 | `witness_id` | Witness | The witness |
 | `label_id` | Label | The label |
 | `conv_id` | AI conversation | The conversation |
 | `message_id` | AI message | Its conversation |
 | `email_id` | Synced email | The email |
-| `object_type` with `object_id` | Label and witness pickers: a `document`, `highlight`, `fact`, `caselaw` or `witness` | As for that kind of record |
+| `object_type` with `object_id` | Label and witness pickers: a `document`, `highlight`, `fact` or `witness` | As for that kind of record |
 
 | Case | Result |
 |---|---|
@@ -216,13 +209,6 @@ Not checked against `perm_financial`:
 | Middleware: `/reports/…` | `apps/accounts/middleware.py` | 403 |
 | Firm-wide "Unbilled Time" breakdown on the dashboard (by user and by matter) | `apps/dash/views.py` | Shows the user's own figures instead |
 
-### Research (`perm_research`)
-
-| Gate | Location | Blocked |
-|---|---|---|
-| Middleware: `/case/caselaws/…`, `/case/<matter_id>/caselaws/…`, `/case/<matter_id>/tab/caselaws/`, `/case/<matter_id>/viewer/cluster/…` | `apps/accounts/middleware.py` | 403 |
-| The Agentic chat's CourtListener tools and the `save-caselaw` protocol (`has_research_access()`) | `apps/ai/access.py` | Tools not offered; the agent works from the cases already saved |
-
 ### Admin role
 
 | Gate | Location | Blocked |
@@ -258,7 +244,6 @@ whether the server also refuses the request.
 | Sidebar: Invoicing | Admin or `perm_financial` | `templates/sidebar.html` | Yes (middleware) |
 | Sidebar: Intakes | Admin or `perm_intakes` | `templates/sidebar.html` | Yes (middleware) |
 | Sidebar: Reports | Admin or `perm_reports` | `templates/sidebar.html` | Yes (middleware) |
-| AI tab: Conversations / Case Law switch | Admin or `perm_research` | `templates/ai/view-pills.html` | Yes (middleware) |
 | Matter navigation: Rates tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware, and the tab switch in the view) |
 | Matter navigation: Ledger tab | Admin or `perm_financial` | `templates/matters/includes/detail-nav.html` | Yes (middleware and view) |
 | Matter form: Delete button | Admin | `templates/matters/form.html` | Yes (view) |
@@ -372,4 +357,4 @@ requires beyond matter access:
 | `overview`, `contacts`, `rates`, `activity`, `events`, `tasks`, `proceedings`, `settlement`, `documents`, `highlights`, `timeline`, `witnesses`, `emails`, `conversations` | None |
 | `ledger`, `trust` | Admin or `perm_financial`; otherwise 403 `{"error": "Your Kosmos account does not have financial access."}` |
 
-`perm_reports` and `perm_research` are not consulted by any token API.
+`perm_reports` is not consulted by any token API.

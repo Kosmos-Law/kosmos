@@ -230,9 +230,9 @@ def _format_documents(matter):
 
 def _format_highlights(matter):
     """Highlight manifest; [hl:ID] handles are valid add_fact sources."""
-    highlights = Highlight.objects.filter(
-        Q(document__matter=matter) | Q(caselaw__matter=matter)
-    ).select_related("document", "caselaw")
+    highlights = Highlight.objects.filter(document__matter=matter).select_related(
+        "document"
+    )
     if not highlights:
         return "No highlights."
     lines = []

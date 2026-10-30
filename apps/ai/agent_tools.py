@@ -28,7 +28,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from django.core.cache import cache as django_cache
 from django.db import connections
 from django.db.models import Q
 
@@ -59,19 +58,6 @@ SEARCH_MAX_QUERIES = 5
 SEARCH_FUZZY_FLOOR = 0.4
 SNIPPET_CHARS = 300
 SECTION_CAP = 150_000
-OPINION_CACHE_SECONDS = 3600
-
-# CourtListener research tools. Opinion text is immutable, so fetched
-# clusters cache for a day (LocMem, so a worker reload clears it anyway);
-# the working set carries opinions from this cache only.
-CASELAW_SEARCH_DEFAULT_LIMIT = 10
-CASELAW_SEARCH_MAX_LIMIT = 20
-OPINION_TEXT_CACHE_SECONDS = 86_400
-OPINION_TEXT_CAP = 250_000
-GREP_DEFAULT_WIDTH = 600
-GREP_MAX_WIDTH = 1500
-GREP_MAX_MATCHES = 8
-GREP_MAX_OPINIONS = 10
 
 # A search whose hits were mostly returned by an earlier search this turn
 # earns a note; the research loop showed rephrase-looping burns budget.
@@ -117,34 +103,12 @@ def _read_params(extra: dict | None = None) -> dict:
 # the executor's handlers are both built for the requesting user, so a tool
 # the user may not use is neither advertised nor run.
 FINANCIAL_TOOLS = ("read_invoice",)
-RESEARCH_TOOLS = (
-    "search_caselaw",
-    "lookup_citation",
-    "read_opinion",
-    "search_in_opinions",
-)
 # Never offered to the agent, whoever asks: read_invoice covers billing
 # questions for the users who may ask them.
 AGENT_WITHHELD_SECTIONS = ("ledger", "trust")
 FINANCIAL_REFUSAL = (
     "Billing records are not available to this user (no Financial permission)."
 )
-RESEARCH_REFUSAL = (
-    "Case-law research is not available to this user (no Research "
-    "permission). Answer from the case law saved on the matter."
-)
-COURTLISTENER_UNCONFIGURED_REFUSAL = (
-    "Case-law search is not configured (no CourtListener API key). Answer "
-    "from the case law saved on the matter."
-)
-
-
-def courtlistener_configured() -> bool:
-    """The CourtListener tools need an API key (COURTLISTENER_API_KEY).
-    Without one every call would fail, so they are not offered at all."""
-    from apps.case.courtlistener import get_api_token
-
-    return bool(get_api_token())
 
 
 def agent_sections(include_financial: bool) -> list[str]:
@@ -162,12 +126,9 @@ def agent_sections(include_financial: bool) -> list[str]:
 def build_agent_tools(
     budget: AgentBudget = DEFAULT_BUDGET,
     include_financial: bool = False,
-    include_research: bool = False,
 ) -> list[dict]:
     """Provider-neutral tool specs for one agent turn, for one user:
-    read_invoice and the rates section need the Financial permission, the
-    CourtListener tools the Research permission and a configured
-    CourtListener API key."""
+    read_invoice and the rates section need the Financial permission."""
     section_enum = [
         name
         for name in (
@@ -273,25 +234,6 @@ def build_agent_tools(
             },
         },
         {
-            "name": "read_caselaw",
-            "description": (
-                "A case saved to this matter ([case:ID]): the attorney's notes, "
-                "the summary, and the opinion text fetched from CourtListener."
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": _read_params(
-                    {
-                        "caselaw_id": {
-                            "type": "integer",
-                            "description": "Saved case id.",
-                        }
-                    }
-                ),
-                "required": ["caselaw_id"],
-            },
-        },
-        {
             "name": "read_conversation",
             "description": (
                 "The transcript of an earlier AI conversation on this matter "
@@ -349,169 +291,10 @@ def build_agent_tools(
                 "required": ["section"],
             },
         },
-        {
-            "name": "search_caselaw",
-            "description": (
-                "Search published court opinions on CourtListener. This is "
-                "relevance-ranked full-text search (Solr), NOT a Boolean "
-                "terms-and-connectors engine: AND is the default between "
-                'terms, OR for true alternatives, "quoted phrases" for exact '
-                "wording, stem* wildcards for inflections (moot* covers moot, "
-                'mooted, mootness), "phrase"~N for proximity. Quote statute '
-                'numbers bare, without subsections ("9-11-21", never '
-                '"9-11-21(a)"); statute numbers are the highest-precision '
-                "anchors, and pairing two interacting statutes in one query "
-                "finds the doctrine that lives in their interaction. Always "
-                "filter by state; each follow-up query must change WHAT is "
-                "asked, never reshuffle the same terms. Hits with a "
-                "citation are published and citable (published: true); "
-                "prefer them. Hits carry cluster_id for read_opinion and "
-                "search_in_opinions."
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "A single search (prefer queries).",
-                    },
-                    "queries": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": (
-                            "Two to three differently phrased searches, run "
-                            "together and merged."
-                        ),
-                    },
-                    "state": {
-                        "type": "string",
-                        "description": (
-                            "Two-letter state id (e.g. ga) to search that "
-                            "state's supreme and appellate courts. Defaults "
-                            "to the matter's jurisdiction; pass it "
-                            "explicitly when you know it."
-                        ),
-                    },
-                    "include_federal": {
-                        "type": "boolean",
-                        "description": (
-                            "Also search the state's federal district "
-                            "courts, its circuit, and SCOTUS."
-                        ),
-                    },
-                    "filed_after": {
-                        "type": "string",
-                        "description": (
-                            "YYYY-MM-DD; only opinions filed after this "
-                            "date. Use for currency checks."
-                        ),
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": (
-                            f"Maximum hits per query, default "
-                            f"{CASELAW_SEARCH_DEFAULT_LIMIT}, at most "
-                            f"{CASELAW_SEARCH_MAX_LIMIT}."
-                        ),
-                    },
-                },
-            },
-        },
-        {
-            "name": "lookup_citation",
-            "description": (
-                'Resolve one reporter citation (e.g. "267 Ga. App. 431") '
-                "to its case: name, court, date, cluster_id. Citation "
-                "lookup is exact where name search is unreliable — route "
-                "verification of any case you plan to rely on through its "
-                "citation, and use this to chase the authorities an anchor "
-                "opinion cites."
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "citation": {
-                        "type": "string",
-                        "description": "One reporter citation.",
-                    }
-                },
-                "required": ["citation"],
-            },
-        },
-        {
-            "name": "read_opinion",
-            "description": (
-                "The full text of a CourtListener opinion cluster "
-                "(majority first, then concurrences and dissents), by "
-                "cluster_id from search_caselaw or lookup_citation. "
-                f"Long opinions come in parts of "
-                f"{budget.default_read_chars:,} characters. Prefer "
-                "search_in_opinions to locate the passage first, then read "
-                "the slice around it; full reads are the exception."
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": _read_params(
-                    {
-                        "cluster_id": {
-                            "type": "integer",
-                            "description": "CourtListener cluster id.",
-                        }
-                    }
-                ),
-                "required": ["cluster_id"],
-            },
-        },
-        {
-            "name": "search_in_opinions",
-            "description": (
-                "Find every occurrence of a literal phrase inside up to "
-                f"{GREP_MAX_OPINIONS} opinions at once (case-insensitive "
-                "exact substring, not term search), returning excerpt "
-                "windows with character offsets you can follow with a "
-                "targeted read_opinion slice. The cheap way to mine an "
-                "anchor opinion: grep the statute number or doctrine "
-                "phrase to find the rule statement and the cases it "
-                "cites, instead of reading the whole opinion."
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "cluster_ids": {
-                        "type": "array",
-                        "items": {"type": "integer"},
-                        "description": (
-                            f"Up to {GREP_MAX_OPINIONS} cluster ids to "
-                            "search; one bad id never aborts the batch."
-                        ),
-                    },
-                    "query": {
-                        "type": "string",
-                        "description": (
-                            "The literal text to find (statute number, "
-                            "doctrine phrase, case short name)."
-                        ),
-                    },
-                    "snippet_size": {
-                        "type": "integer",
-                        "description": (
-                            f"Excerpt window characters, default "
-                            f"{GREP_DEFAULT_WIDTH}, at most "
-                            f"{GREP_MAX_WIDTH}. Use larger for passages "
-                            "with block quotes."
-                        ),
-                    },
-                },
-                "required": ["cluster_ids", "query"],
-            },
-        },
     ]
-    withheld = set()
-    if not include_financial:
-        withheld.update(FINANCIAL_TOOLS)
-    if not include_research or not courtlistener_configured():
-        withheld.update(RESEARCH_TOOLS)
-    return [tool for tool in tools if tool["name"] not in withheld]
+    if include_financial:
+        return tools
+    return [tool for tool in tools if tool["name"] not in FINANCIAL_TOOLS]
 
 
 # ---------------------------------------------------------------------------
@@ -552,129 +335,13 @@ def _snippet(text: str, query: str, width: int = SNIPPET_CHARS) -> str:
     return piece
 
 
-def _grep(text: str, query: str, width: int = GREP_DEFAULT_WIDTH) -> list[dict]:
-    """Every window of ``text`` around a literal, case-insensitive match.
-
-    The grep-in-opinions primitive: exact-substring matching (not term
-    search), returning character offsets so a hit can be followed with a
-    targeted read_opinion slice. Capped at GREP_MAX_MATCHES windows;
-    overlapping matches inside one window are skipped.
-    """
-    needle = (query or "").strip().lower()
-    if not text or not needle:
-        return []
-    lower = text.lower()
-    matches = []
-    pos = lower.find(needle)
-    while pos >= 0 and len(matches) < GREP_MAX_MATCHES:
-        start = max(0, pos - width // 2)
-        end = min(len(text), start + width)
-        piece = text[start:end]
-        if start > 0:
-            piece = "..." + piece
-        if end < len(text):
-            piece += "..."
-        matches.append({"position": pos, "text": piece})
-        pos = lower.find(needle, end)
-    return matches
-
-
-def _matter_state(matter) -> str:
-    """The jurisdictions.STATES id matching the matter's jurisdiction text."""
-    from apps.case.jurisdictions import STATES
-
-    jurisdiction = (getattr(matter, "jurisdiction", "") or "").strip().lower()
-    if not jurisdiction:
-        return ""
-    for state in STATES:
-        if state["id"] == jurisdiction or state["name"].lower() in jurisdiction:
-            return state["id"]
-    return ""
-
-
-def _opinion_for_cluster(cluster_id: int) -> dict | None:
-    """Cluster metadata plus the full concatenated opinion text, cached.
-
-    One fetch_cluster call, then every sub-opinion (majority first,
-    concurrences and dissents after) up to OPINION_TEXT_CAP. Returns None when the
-    cluster does not resolve; text may still be empty (old scanned
-    opinions). The working set reads this cache and never fetches.
-    """
-    from apps.case.courtlistener import (
-        fetch_cluster,
-        fetch_opinion,
-        format_citations_with_year,
-    )
-
-    cache_key = f"agent_opinion_cluster_{cluster_id}"
-    cached = django_cache.get(cache_key)
-    if cached is not None:
-        return cached
-
-    cluster = fetch_cluster(cluster_id)
-    if not cluster:
-        return None
-
-    parts = []
-    total = 0
-    for opinion_url in cluster.get("sub_opinions", []):
-        if total >= OPINION_TEXT_CAP:
-            break
-        try:
-            opinion_id = int(opinion_url.rstrip("/").split("/")[-1])
-        except (ValueError, IndexError):
-            continue
-        opinion = fetch_opinion(opinion_id)
-        text = opinion.plain_text if opinion.found else ""
-        if not text:
-            continue
-        if parts:
-            parts.append(
-                "\n\n--- next opinion in this cluster (concurrence or dissent) ---\n\n"
-            )
-        parts.append(text)
-        total += len(text)
-
-    from datetime import date as date_cls
-
-    try:
-        date_filed = (
-            date_cls.fromisoformat(cluster["date_filed"])
-            if cluster.get("date_filed")
-            else None
-        )
-    except ValueError:
-        date_filed = None
-    payload = {
-        "cluster_id": cluster_id,
-        "case_name": cluster.get("case_name") or "",
-        "citation": format_citations_with_year(
-            cluster.get("citations", []), date_filed
-        ),
-        "date_filed": cluster.get("date_filed") or "",
-        "url": (
-            f"https://www.courtlistener.com{cluster['absolute_url']}"
-            if cluster.get("absolute_url")
-            else ""
-        ),
-        "text": "".join(parts)[:OPINION_TEXT_CAP],
-    }
-    django_cache.set(cache_key, payload, OPINION_TEXT_CACHE_SECONDS)
-    return payload
-
-
 PENDING_LABELS = {
     "search_materials": 'Searching "{query}"...',
     "read_document": "Reading document {doc_id}...",
     "read_email_thread": "Reading email thread {thread_id}...",
-    "read_caselaw": "Reading saved case {caselaw_id}...",
     "read_conversation": "Reading conversation {conversation_id}...",
     "read_invoice": "Reading invoice {invoice_id}...",
     "read_matter_section": "Reading the {section} section...",
-    "search_caselaw": 'Searching case law for "{query}"...',
-    "lookup_citation": "Looking up {citation}...",
-    "read_opinion": "Reading opinion {cluster_id}...",
-    "search_in_opinions": 'Searching opinions for "{query}"...',
 }
 
 
@@ -733,8 +400,7 @@ def make_agent_executor(
     """Build ``execute_batch(calls) -> outcomes`` for one agent turn.
 
     The executor works for ``user``: read_invoice and the rates section
-    need their Financial permission and the CourtListener tools their
-    Research permission. With no user, neither is available.
+    need their Financial permission. With no user, they are not available.
 
     ``calls`` are ``{"id", "name", "input"}``; outcomes are ``{"id",
     "name", "content": json string, "is_error"}`` in the same order.
@@ -744,15 +410,14 @@ def make_agent_executor(
     steps with the model turn; ``execute_batch.usage()`` reports the
     counters for the status payload.
     """
-    from apps.case.models import CaseLaw, Document, Fact, Highlight
+    from apps.case.models import Document, Fact, Highlight
     from apps.invoicing.invoices.models import Invoice
     from apps.mail.ai import format_email_thread, thread_subject
 
-    from .access import has_financial_access, has_research_access
+    from .access import has_financial_access
     from .models import Conversation
 
     include_financial = has_financial_access(user)
-    include_research = has_research_access(user)
 
     lock = threading.Lock()
     state = {"calls": 0, "chars": 0, "n": 0, "turn": 0}
@@ -824,9 +489,7 @@ def make_agent_executor(
         if "highlight" in kinds:
             scopes["highlight"] = (
                 ContentType.objects.get_for_model(Highlight),
-                Highlight.objects.filter(
-                    Q(document__matter=matter) | Q(caselaw__matter=matter)
-                ),
+                Highlight.objects.filter(document__matter=matter),
             )
         if "fact" in kinds:
             scopes["fact"] = (
@@ -915,7 +578,7 @@ def make_agent_executor(
                 "ocr_text", "search_vector"
             ),
             Highlight: lambda ids: Highlight.objects.filter(pk__in=ids).select_related(
-                "document", "caselaw"
+                "document"
             ),
             Fact: lambda ids: Fact.objects.filter(pk__in=ids),
             Email: lambda ids: Email.objects.filter(pk__in=ids),
@@ -963,11 +626,8 @@ def make_agent_executor(
                     "snippet": _snippet(obj.text, query),
                     "rank": rank,
                 }
-                if obj.document_id:
-                    hit["document_id"] = obj.document_id
-                    hit["date"] = str(obj.document.date) if obj.document.date else None
-                elif obj.caselaw_id:
-                    hit["caselaw_id"] = obj.caselaw_id
+                hit["document_id"] = obj.document_id
+                hit["date"] = str(obj.document.date) if obj.document.date else None
                 hits.append(hit)
             elif isinstance(obj, Fact):
                 hits.append(
@@ -1009,7 +669,7 @@ def make_agent_executor(
             "email": lambda ids: Email.objects.filter(pk__in=ids),
             "highlight": lambda ids: Highlight.objects.filter(
                 pk__in=ids
-            ).select_related("document", "caselaw"),
+            ).select_related("document"),
             "fact": lambda ids: Fact.objects.filter(pk__in=ids),
         }
         by_kind = {}
@@ -1060,10 +720,7 @@ def make_agent_executor(
                     category=obj.color,
                     date=None,
                 )
-                if obj.document_id:
-                    base["document_id"] = obj.document_id
-                elif obj.caselaw_id:
-                    base["caselaw_id"] = obj.caselaw_id
+                base["document_id"] = obj.document_id
             else:  # fact
                 base.update(
                     id=obj.id,
@@ -1273,53 +930,6 @@ def make_agent_executor(
             "total_chars": fields["total_chars"],
         }
 
-    def _read_caselaw(tool_input):
-        from .context import _fetch_caselaw_opinion_text
-
-        caselaw = CaseLaw.objects.filter(
-            matter=matter, pk=tool_input.get("caselaw_id") or 0
-        ).first()
-        if caselaw is None:
-            return {"error": "No such saved case on this matter."}, {}
-        if caselaw.ai_context == "never":
-            return {"error": f"Case {caselaw.id} is excluded from AI use."}, {}
-        cache_key = f"agent_opinion_{caselaw.id}"
-        opinion = django_cache.get(cache_key)
-        if opinion is None:
-            opinion = _fetch_caselaw_opinion_text(caselaw) or ""
-            django_cache.set(cache_key, opinion, OPINION_CACHE_SECONDS)
-        parts = [f"{caselaw.case_name}, {caselaw.citation}"]
-        if caselaw.court:
-            parts.append(f"Court: {caselaw.court}")
-        if caselaw.date_filed:
-            parts.append(f"Date: {caselaw.date_filed}")
-        if caselaw.notes:
-            parts.append(f"Attorney notes:\n{caselaw.notes}")
-        if caselaw.summary:
-            parts.append(f"Summary:\n{caselaw.summary}")
-        if opinion:
-            parts.append(f"Opinion:\n{opinion}")
-        else:
-            parts.append("Opinion text unavailable.")
-        fields, chars = _slice("\n\n".join(parts), tool_input)
-        payload = {
-            "caselaw_id": caselaw.id,
-            "case_name": caselaw.case_name,
-            "citation": caselaw.citation,
-            "cluster_id": caselaw.cluster_id,
-            **fields,
-        }
-        return payload, {
-            "label": _part_label("Read", caselaw.case_name, fields),
-            "title": f"Read *{caselaw.case_name}*",
-            "detail": _part_detail(fields),
-            "kind": "caselaw",
-            "id": caselaw.id,
-            "name": caselaw.case_name,
-            "chars": chars,
-            "total_chars": fields["total_chars"],
-        }
-
     def _read_conversation(tool_input):
         conv = (
             Conversation.objects.filter(
@@ -1400,291 +1010,13 @@ def make_agent_executor(
             "total_chars": len(text),
         }
 
-    def _search_caselaw(tool_input):
-        from apps.case.courtlistener import sanitize_query, search_opinions
-        from apps.case.jurisdictions import get_court_ids
-
-        raw = tool_input.get("queries") or []
-        if isinstance(raw, str):
-            raw = [raw]
-        single = str(tool_input.get("query") or "").strip()
-        queries = []
-        for candidate in ([single] if single else []) + [str(x) for x in raw]:
-            candidate = candidate.strip()
-            if candidate and candidate.lower() not in [q.lower() for q in queries]:
-                queries.append(candidate)
-        queries = queries[:3]
-        if not queries:
-            return {"error": "Provide query or queries."}, {}
-
-        state = str(tool_input.get("state") or "").strip().lower() or _matter_state(
-            matter
-        )
-        court = get_court_ids(state, bool(tool_input.get("include_federal")))
-        filed_after = str(tool_input.get("filed_after") or "").strip()
-        try:
-            limit = int(tool_input.get("limit") or CASELAW_SEARCH_DEFAULT_LIMIT)
-        except (TypeError, ValueError):
-            limit = CASELAW_SEARCH_DEFAULT_LIMIT
-        limit = max(1, min(limit, CASELAW_SEARCH_MAX_LIMIT))
-
-        merged = {}
-        failed = 0
-        for query in queries:
-            rows, status = search_opinions(
-                sanitize_query(query),
-                court=court,
-                limit=limit,
-                filed_after=filed_after,
-            )
-            if status != 200:
-                failed += 1
-                continue
-            for row in rows:
-                key = row.get("cluster_id") or (
-                    f"{row.get('citation')}|{row.get('date_filed')}"
-                )
-                hit = merged.get(key)
-                if hit is None:
-                    citations = row.get("citation") or []
-                    snippet = (
-                        (row.get("snippet") or "")
-                        .replace("<mark>", "")
-                        .replace("</mark>", "")[:500]
-                    )
-                    merged[key] = {
-                        "case_name": row.get("case_name") or "",
-                        "citation": ", ".join(citations),
-                        "published": bool(citations),
-                        "court": row.get("court") or "",
-                        "date_filed": row.get("date_filed") or "",
-                        "cluster_id": row.get("cluster_id"),
-                        "cite_count": row.get("cite_count") or 0,
-                        "snippet": snippet,
-                        "matched": [query],
-                    }
-                elif query not in hit["matched"]:
-                    hit["matched"].append(query)
-
-        if failed == len(queries):
-            return {
-                "error": (
-                    "CourtListener search failed for every query "
-                    "(API error or no token). Try again or answer from "
-                    "the matter's saved case law."
-                )
-            }, {}
-
-        hits = list(merged.values())
-        seen_count = 0
-        with lock:
-            for hit in hits:
-                if not hit["cluster_id"]:
-                    continue
-                key = ("opinion", str(hit["cluster_id"]))
-                hit["seen"] = key in seen_hits
-                seen_count += hit["seen"]
-                seen_hits.add(key)
-        payload = {
-            "queries": queries,
-            "state": state,
-            "hits": hits,
-            "total": len(hits),
-        }
-        if failed:
-            payload["note"] = f"{failed} of {len(queries)} queries failed at the API."
-        elif len(hits) >= 3 and seen_count / len(hits) >= OVERLAP_SHARE:
-            payload["note"] = (
-                "Most of these cases came back from an earlier search this "
-                "turn. Change WHAT the query asks, or work with the cases "
-                "you already found."
-            )
-        more = f" and {len(queries) - 1} more" if len(queries) > 1 else ""
-        label = (
-            f'Searched case law "{queries[0]}"{more} ({len(hits)} hit'
-            f"{'s' if len(hits) != 1 else ''})"
-        )
-        return payload, {
-            "label": label,
-            "title": f'Searched case law "{queries[0]}"{more}',
-            "detail": f"{len(hits)} hits",
-            "kind": "caselaw_search",
-            "query": queries[0],
-            "queries": queries,
-            "hits": len(hits),
-            "chars": 0,
-        }
-
-    def _lookup_citation(tool_input):
-        from apps.case.courtlistener import lookup_citation
-
-        citation = str(tool_input.get("citation") or "").strip()
-        if not citation:
-            return {"error": "citation is required."}, {}
-        result = lookup_citation(citation)
-        if not result.found:
-            payload = {
-                "found": False,
-                "citation": citation,
-                "note": (
-                    result.error
-                    or "No case resolves to this citation on CourtListener."
-                ),
-            }
-            return payload, {
-                "label": f"Looked up {citation} (not found)",
-                "title": f"Looked up {citation}",
-                "detail": "not found",
-                "kind": "lookup",
-                "id": citation,
-                "name": citation,
-                "chars": 0,
-            }
-        payload = {
-            "found": True,
-            "case_name": result.case_name,
-            "citation": result.citation or citation,
-            "court": result.court,
-            "date_filed": result.date_filed,
-            "docket_number": result.docket_number,
-            "cluster_id": result.cluster_id,
-        }
-        return payload, {
-            "label": f"Looked up {citation}: {result.case_name}",
-            "title": f"Looked up {citation}",
-            "detail": result.case_name,
-            "kind": "lookup",
-            "id": citation,
-            "name": result.case_name,
-            "chars": 0,
-        }
-
-    def _read_opinion(tool_input):
-        try:
-            cluster_id = int(tool_input.get("cluster_id") or 0)
-        except (TypeError, ValueError):
-            cluster_id = 0
-        if not cluster_id:
-            return {"error": "cluster_id is required."}, {}
-        data = _opinion_for_cluster(cluster_id)
-        if data is None:
-            return {
-                "error": (
-                    f"No CourtListener cluster {cluster_id}, or the fetch failed."
-                )
-            }, {}
-        if not data["text"]:
-            return {
-                "error": (f"Cluster {cluster_id} has no machine-readable opinion text.")
-            }, {}
-        fields, chars = _slice(data["text"], tool_input)
-        name = data["case_name"] or f"cluster {cluster_id}"
-        payload = {
-            "cluster_id": cluster_id,
-            "case_name": data["case_name"],
-            "citation": data["citation"],
-            "date_filed": data["date_filed"],
-            **fields,
-        }
-        with lock:
-            seen_hits.add(("opinion", str(cluster_id)))
-        return payload, {
-            "label": _part_label("Read opinion", name, fields),
-            "title": f"Read opinion *{name}*",
-            "detail": _part_detail(fields),
-            "kind": "opinion",
-            "id": cluster_id,
-            "name": name,
-            "chars": chars,
-            "total_chars": fields["total_chars"],
-        }
-
-    def _grep_opinions(tool_input):
-        ids = tool_input.get("cluster_ids") or []
-        if not isinstance(ids, list):
-            ids = [ids]
-        cluster_ids = []
-        for raw_id in ids:
-            try:
-                value = int(raw_id)
-            except (TypeError, ValueError):
-                continue
-            if value and value not in cluster_ids:
-                cluster_ids.append(value)
-        cluster_ids = cluster_ids[:GREP_MAX_OPINIONS]
-        query = str(tool_input.get("query") or "").strip()
-        if not cluster_ids or not query:
-            return {"error": "Provide cluster_ids and a query."}, {}
-        try:
-            width = int(tool_input.get("snippet_size") or GREP_DEFAULT_WIDTH)
-        except (TypeError, ValueError):
-            width = GREP_DEFAULT_WIDTH
-        width = max(100, min(width, GREP_MAX_WIDTH))
-
-        results = []
-        total_matches = 0
-        total_chars = 0
-        for cluster_id in cluster_ids:
-            try:
-                data = _opinion_for_cluster(cluster_id)
-            except Exception:  # isolation: one bad id never aborts the batch
-                logger.exception("search_in_opinions failed for %s", cluster_id)
-                data = None
-            if data is None:
-                results.append(
-                    {
-                        "cluster_id": cluster_id,
-                        "error": "cluster not found or fetch failed",
-                    }
-                )
-                continue
-            if not data["text"]:
-                results.append(
-                    {
-                        "cluster_id": cluster_id,
-                        "case_name": data["case_name"],
-                        "error": "no machine-readable opinion text",
-                    }
-                )
-                continue
-            snippets = _grep(data["text"], query, width)
-            total_matches += len(snippets)
-            total_chars += sum(len(s["text"]) for s in snippets)
-            results.append(
-                {
-                    "cluster_id": cluster_id,
-                    "case_name": data["case_name"],
-                    "match_count": len(snippets),
-                    "snippets": snippets,
-                }
-            )
-        payload = {"query": query, "results": results}
-        n = len(cluster_ids)
-        label = (
-            f'Searched {n} opinion{"s" if n != 1 else ""} for "{query}" '
-            f"({total_matches} match{'es' if total_matches != 1 else ''})"
-        )
-        return payload, {
-            "label": label,
-            "title": f'Searched opinions for "{query}"',
-            "detail": f"{total_matches} matches in {n} opinions",
-            "kind": "opinion_grep",
-            "query": query,
-            "chars": total_chars,
-        }
-
     handlers = {
         "search_materials": _search,
         "read_document": _read_document,
         "read_email_thread": _read_email_thread,
-        "read_caselaw": _read_caselaw,
         "read_conversation": _read_conversation,
         "read_invoice": _read_invoice,
         "read_matter_section": _read_section,
-        "search_caselaw": _search_caselaw,
-        "lookup_citation": _lookup_citation,
-        "read_opinion": _read_opinion,
-        "search_in_opinions": _grep_opinions,
     }
 
     def _refusal(message):
@@ -1695,12 +1027,6 @@ def make_agent_executor(
     if not include_financial:
         for tool_name in FINANCIAL_TOOLS:
             handlers[tool_name] = _refusal(FINANCIAL_REFUSAL)
-    if not include_research:
-        for tool_name in RESEARCH_TOOLS:
-            handlers[tool_name] = _refusal(RESEARCH_REFUSAL)
-    elif not courtlistener_configured():
-        for tool_name in RESEARCH_TOOLS:
-            handlers[tool_name] = _refusal(COURTLISTENER_UNCONFIGURED_REFUSAL)
 
     # -- dispatch -----------------------------------------------------------
 

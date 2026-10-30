@@ -250,8 +250,7 @@ An administrator's row is marked "admin": its switches are on and locked.
 | **All Matters** | Every matter. Switched off, the user sees only the matters assigned to them. |
 | **Financial** | **Invoicing** (invoices, payments and trust), the **Rates** and **Ledger** tabs of a matter, the **Financials** figures on a matter's **Overview**, and the **Trust** tab of a client's contact page. |
 | **Intakes** | The **Intakes** page, and **Intake Forms** and **Intake Emails** in Settings. |
-| **Reports** | The **Reports** page, and the whole firm's figures under **Work in Progress** on the Dash. This switch starts off for a new user. The other four start on. |
-| **Research** | A matter's saved case law, the **Case Law** tab. |
+| **Reports** | The **Reports** page, and the whole firm's figures under **Work in Progress** on the Dash. This switch starts off for a new user. The other three start on. |
 
 ### Limit a user to assigned matters
 
@@ -413,11 +412,11 @@ the only key, the AI features disappear again.
 A row that reads "Set in config/.env" has a key set by the person who
 runs your server. It cannot be changed here. What is sent to each
 provider, and the cost, are described in
-[AI providers and research](../admin/integrations/ai.md).
+[AI providers](../admin/integrations/ai.md).
 
 !!! note
 
-    Sending email, file storage, CourtListener and online payments have no
+    Sending email, file storage and online payments have no
     screen in Settings. The person who runs your server sets them up, along
     with the Google project behind these connections: see
     [Google](../admin/integrations/google.md) and

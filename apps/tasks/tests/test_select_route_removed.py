@@ -14,7 +14,9 @@ pytestmark = pytest.mark.django_db
 def test_select_route_is_gone(client):
     with pytest.raises(NoReverseMatch):
         reverse("tasks:select")
-    assert client.get("/tasks").status_code == 404
+    response = client.get("/tasks")
+    assert response.status_code == 301
+    assert response["Location"] == reverse("tasks:index")
 
 
 def test_admin_link_goes_to_the_index(user):

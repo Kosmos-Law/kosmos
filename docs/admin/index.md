@@ -36,9 +36,9 @@ Each integration stays off until it is configured.
   sign-in depends on it.
 - [File storage](integrations/storage.md): local disk or an S3-compatible
   bucket, and how files are served.
-- [AI providers and research](integrations/ai.md): AI is optional;
+- [AI providers](integrations/ai.md): AI is optional;
   API keys (in `config/.env` or Settings), what a server without AI
-  shows, semantic search, CourtListener, chat retention, and what data leaves the
+  shows, semantic search, chat retention, and what data leaves the
   server.
 - [Online payments](integrations/payments.md): LawPay, Stripe or Confido,
   webhooks, and settlement.

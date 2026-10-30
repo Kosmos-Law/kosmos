@@ -23,7 +23,7 @@ subsystem pages group them.
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
 | [Accounting](subsystems/accounting.md) | `apps/accounting` | The general ledger: the chart of accounts with its tax lines, journal entries, the statements and the tax summary. A module, off by default, gated by the Accounting permission. |
-| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab, the saved case law and the semantic index. `apps/notes` holds only the models and migrations of the retired notes, kept for their data ([Notes are retired](../decisions/2026-10-27-notes-retired.md)); `apps/drive` likewise holds only migrations, of the removed Google Drive mirror and the removed Files integration ([The AI chat is retired](../decisions/2026-10-30-ai-chat-retired.md)). |
+| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab and the semantic index. `apps/notes` holds only the models and migrations of the retired notes, kept for their data ([Notes are retired](../decisions/2026-10-27-notes-retired.md)); `apps/drive` likewise holds only migrations, of the removed Google Drive mirror and the removed Files integration ([The AI chat is retired](../decisions/2026-10-30-ai-chat-retired.md)). |
 | [AI](subsystems/ai/context.md) | `apps/ai`, `apps/llm` | The [archive and the intake chat](subsystems/ai/context.md) (the retired chat's conversations, the intake chat's turn, the shared helpers and the read-only matter tools); the matter service functions behind the [MCP server](subsystems/mcp.md) (`apps/mcp`); the model-provider layer (the Anthropic and Gemini clients, embeddings, pricing, the status store). |
 | [Drafts](subsystems/drafts.md) | `apps/drafts` | Draft links and the LibreOffice companion (`companion_src/`). |
 | [Email and intakes](subsystems/email-and-intakes.md) | `apps/mail`, `apps/intakes`, `apps/search` | Gmail sync onto matters and the Emails tab; intakes, the inbound Mailgun webhook, the client forms; the global search modal. |
@@ -36,8 +36,7 @@ apps add to it and the `search/api/` JSON endpoint in `api.py` that the
 MCP server's `search_kosmos` tool calls); `apps/llm` has none either.
 None of the directories under `apps/` is vestigial: every one is
 installed and routed. There is no `billing`, `lab` or `research` app;
-billing lives in `apps/invoicing` and case law in the case builder over
-the CourtListener client in `apps/case/courtlistener.py`. Three packages have no `urls.py`:
+billing lives in `apps/invoicing`, and research happens in Claude. Three packages have no `urls.py`:
 `apps/llm` has no views, and `apps/notes` and `apps/drive` hold no code
 beyond their models and migrations.
 
@@ -48,7 +47,7 @@ beyond their models and migrations.
 | `config/settings.py` | Reads `config/.env` through `django-environ`, defines `Q_CLUSTER`, the two caches, storage, email and logging. Explained in [Platform and config](subsystems/platform-and-config.md). |
 | `config/urls.py` | The health endpoints, the sign-in views, then one `include()` per app at the root, including the two public, tokenized URL sets (the payment page under `apps/invoicing/pay/urls.py` and the client intake form under `apps/intakes/client_forms/public_urls.py`). |
 | `config/health.py` | `/health/live/`, `/health/ready/` and `/health/worker/`. |
-| `config/context.py` | Two context processors: `env` (the `ENV` value, which the templates use to show the development banner) and `integrations` (lazy `ai_enabled` and `caselaw_available`, which hide the optional AI and saved case-law surfaces, and the firm's `case_file_enabled` and `accounting_enabled` switches). |
+| `config/context.py` | Two context processors: `env` (the `ENV` value, which the templates use to show the development banner) and `integrations` (lazy `ai_enabled`, which hides the optional AI surfaces, and the firm's `case_file_enabled` and `accounting_enabled` switches). |
 | `config/helpers.py` | Small utilities used across apps: `normalize_phone()`, `dictfetchall()`, `MultipleOrderingFilter` for `django-filter`, and the `dump*` debugging helpers. |
 | `config/tests/` | Tests for the health endpoints, media routing, rate limiting, safe Markdown and the generated reference pages. |
 
@@ -80,7 +79,7 @@ Tasks, Proceedings, Settlement and Ledger
 
 **The case file**, under `/case/<id>/...`, is the case builder's view of
 the same matter: Documents, Highlights, Timeline, Witnesses,
-Emails, Labels, Search and AI (or Case Law while AI is off). Case in the
+Emails, Labels and Search. Case in the
 sidebar opens `/case/`, which reopens the last matter on its last tab;
 the shell remembers both in the session (`last_viewed_matter`,
 `case_tab_<id>`). The tabs are not a list in a template: each is a `Tab`
@@ -122,8 +121,7 @@ runs them (`uv run lint-imports`):
   `management`, `matters`, `contacts`, `folders`) and `apps/llm`;
 - the core never imports the case builder;
 - the apps on top of it (`apps/ai`, `apps/mail`, `apps/drafts`) reach it
-  only through `apps/case/models.py`, `apps/case/services.py`,
-  `apps/case/courtlistener.py` and `apps/case/jurisdictions.py`;
+  only through `apps/case/models.py` and `apps/case/services.py`;
 - `apps/llm` imports nothing but `apps/settings`.
 
 What crosses the boundary is registered at start-up rather than
@@ -177,7 +175,7 @@ updates, are on the [HTMX and Alpine](conventions/htmx-alpine.md) page.
   (`SESSION_SAVE_EVERY_REQUEST`) and lasts eight weeks. See
   [Session state](conventions/session-state.md).
 - **The per-process cache** (`CACHES["default"]`, LocMem) holds
-  CourtListener opinion payloads and the public-page rate-limit counters.
+  the public-page rate-limit counters.
   It is private to each gunicorn worker.
 - **The browser** keeps the theme, the sidebar collapsed flag and similar
   preferences in `localStorage` (`static/js/theme.js`, `sidebar.js`).
@@ -297,7 +295,6 @@ are bare paths that `static_v` cannot version (`deploy/nginx/kosmos.conf`).
    STORAGE_BACKEND=s3           Google (Calendar, Contacts, Gmail)
    (or media/ on disk)          Anthropic and Gemini (chat, summaries,
                                   embeddings)
-                                CourtListener (research, citations)
                                 LawPay, Stripe, Confido (payments,
                                   webhooks back to /webhooks/)
                                 Mailgun (SMTP out; inbound route posts
