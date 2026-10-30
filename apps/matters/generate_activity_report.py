@@ -3,11 +3,11 @@ from tempfile import NamedTemporaryFile
 from django.core.handlers.wsgi import WSGIRequest
 from django.template.loader import render_to_string
 from django.utils import timezone
-from weasyprint import HTML
 
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.flat_fees.models import FlatFeeEntry
 from apps.activity.time.models import TimeEntry
+from apps.management.pdf import pdf_html
 from apps.matters.models import Matter
 from apps.matters.timekeepers import build_timekeepers
 from apps.settings.models import Firm
@@ -74,8 +74,7 @@ def generate_activity_report(
     }
 
     html_string = render_to_string("matters/activity-report.html", context)
-    base_url = request.build_absolute_uri("/").rstrip("/")
-    html = HTML(string=html_string, base_url=base_url)
+    html = pdf_html(html_string)
 
     with NamedTemporaryFile(suffix=".pdf", delete=False) as pdf_file:
         html.write_pdf(target=pdf_file.name)

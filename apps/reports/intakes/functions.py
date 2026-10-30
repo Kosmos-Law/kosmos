@@ -4,9 +4,9 @@ from tempfile import NamedTemporaryFile
 
 from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
-from weasyprint import HTML
 
 from apps.intakes.models import Intake
+from apps.management.pdf import pdf_html
 from apps.matters.models import PracticeArea
 from apps.settings.models import Firm
 
@@ -159,7 +159,7 @@ def generate_intakes_pdf(date_from_obj, date_to_obj, request):
     }
 
     html_string = render_to_string("reports/intakes/intakes_pdf.html", context)
-    html = HTML(string=html_string, base_url=request.build_absolute_uri())
+    html = pdf_html(html_string)
 
     with NamedTemporaryFile(suffix=".pdf", delete=False) as pdf_file:
         html.write_pdf(target=pdf_file.name)

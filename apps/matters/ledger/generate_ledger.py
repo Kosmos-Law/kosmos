@@ -3,8 +3,8 @@ from tempfile import NamedTemporaryFile
 
 from django.http import Http404
 from django.template.loader import render_to_string
-from weasyprint import HTML
 
+from apps.management.pdf import pdf_html
 from apps.matters.ledger.get_ledger_data import get_ledger_data
 from apps.matters.models import Matter
 from apps.matters.proceedings.models import Proceeding
@@ -40,7 +40,7 @@ def generate_ledger(matter_id, request):
     } | ledger_data
 
     html_string = render_to_string("matters/ledger/pdf.html", context)
-    html = HTML(string=html_string, base_url=request.build_absolute_uri())
+    html = pdf_html(html_string)
 
     with NamedTemporaryFile(suffix=".pdf", delete=False) as pdf_file:
         html.write_pdf(target=pdf_file.name)

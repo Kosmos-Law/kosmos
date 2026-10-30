@@ -138,11 +138,11 @@ def _invoice_pdf_response(invoice, request):
     )
 
     if not invoice.pdf_file:
-        store_invoice_pdf(invoice, request)
+        store_invoice_pdf(invoice)
     try:
         pdf = invoice.pdf_file.open("rb")
     except FileNotFoundError:
-        store_invoice_pdf(invoice, request)
+        store_invoice_pdf(invoice)
         pdf = invoice.pdf_file.open("rb")
     return FileResponse(
         pdf,

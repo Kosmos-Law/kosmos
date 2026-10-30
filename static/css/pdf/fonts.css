@@ -1,0 +1,40 @@
+/* Noto Serif for the PDFs, served from static/fonts rather than Google
+   Fonts: fetching the web font on every render doubled the time to approve
+   or send an invoice. The server's own Noto Serif (fonts-noto-core) has no
+   SemiBold, which .strong and table totals use. Licence: OFL.txt beside
+   the font files. */
+
+@font-face {
+  font-family: "Noto Serif";
+  font-style: normal;
+  font-weight: 400;
+  src: url("../../fonts/noto-serif/NotoSerif-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Serif";
+  font-style: italic;
+  font-weight: 400;
+  src: url("../../fonts/noto-serif/NotoSerif-Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Serif";
+  font-style: normal;
+  font-weight: 600;
+  src: url("../../fonts/noto-serif/NotoSerif-SemiBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Serif";
+  font-style: normal;
+  font-weight: 700;
+  src: url("../../fonts/noto-serif/NotoSerif-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Serif";
+  font-style: italic;
+  font-weight: 700;
+  src: url("../../fonts/noto-serif/NotoSerif-BoldItalic.ttf") format("truetype");
+}

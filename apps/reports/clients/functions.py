@@ -3,11 +3,11 @@ from tempfile import NamedTemporaryFile
 
 from django.core.handlers.wsgi import WSGIRequest
 from django.template.loader import render_to_string
-from weasyprint import HTML
 
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.time.models import TimeEntry
 from apps.contacts.models import Contact
+from apps.management.pdf import pdf_html
 from apps.settings.models import Firm
 
 
@@ -154,12 +154,7 @@ def generate_client_statement_pdf(
 
     html_string = render_to_string("reports/clients/statement_pdf.html", context)
 
-    if request:
-        base_url = request.build_absolute_uri("/").rstrip("/")
-    else:
-        base_url = "file://"
-
-    html = HTML(string=html_string, base_url=base_url)
+    html = pdf_html(html_string)
 
     with NamedTemporaryFile(suffix=".pdf", delete=False) as pdf_file:
         html.write_pdf(target=pdf_file.name)

@@ -15,7 +15,7 @@ class TestGenerateFactsPdf:
         with pytest.raises(Http404):
             generate_facts_pdf(99999, mock_request)
 
-    @patch("apps.case.facts.generate_pdf.HTML")
+    @patch("apps.management.pdf.HTML")
     @patch("apps.case.facts.generate_pdf.render_to_string")
     def test_generates_pdf(self, mock_render, mock_html, matter, fact, client):
         """PDF should be generated for valid matter."""
@@ -34,7 +34,7 @@ class TestGenerateFactsPdf:
         mock_html_instance.write_pdf.assert_called_once()
         assert result is not None
 
-    @patch("apps.case.facts.generate_pdf.HTML")
+    @patch("apps.management.pdf.HTML")
     @patch("apps.case.facts.generate_pdf.render_to_string")
     def test_includes_matter_in_context(self, mock_render, mock_html, matter, client):
         """Context should include matter."""
@@ -50,7 +50,7 @@ class TestGenerateFactsPdf:
         context = call_args[0][1]
         assert context["matter"] == matter
 
-    @patch("apps.case.facts.generate_pdf.HTML")
+    @patch("apps.management.pdf.HTML")
     @patch("apps.case.facts.generate_pdf.render_to_string")
     def test_includes_facts_in_context(
         self, mock_render, mock_html, matter, fact, client
@@ -68,7 +68,7 @@ class TestGenerateFactsPdf:
         context = call_args[0][1]
         assert fact in context["facts"]
 
-    @patch("apps.case.facts.generate_pdf.HTML")
+    @patch("apps.management.pdf.HTML")
     @patch("apps.case.facts.generate_pdf.render_to_string")
     def test_includes_proceeding_in_context(
         self, mock_render, mock_html, matter, proceeding, client
@@ -86,7 +86,7 @@ class TestGenerateFactsPdf:
         context = call_args[0][1]
         assert context["proceeding"] == proceeding
 
-    @patch("apps.case.facts.generate_pdf.HTML")
+    @patch("apps.management.pdf.HTML")
     @patch("apps.case.facts.generate_pdf.render_to_string")
     def test_uses_correct_template(self, mock_render, mock_html, matter, client):
         """Should render the correct template."""
@@ -109,7 +109,7 @@ class TestTimelinePdfContent:
     def _html(self, matter):
         mock_request = MagicMock()
         mock_request.build_absolute_uri.return_value = "http://testserver/"
-        with patch("apps.case.facts.generate_pdf.HTML") as mock_html:
+        with patch("apps.management.pdf.HTML") as mock_html:
             mock_html.return_value = MagicMock()
             generate_facts_pdf(matter.id, mock_request)
         return mock_html.call_args.kwargs["string"]
@@ -179,7 +179,7 @@ class TestTimelinePdfFollowsTheFilter:
         session = client.session
         session[f"facts_filter_{matter.id}"] = filter_data
         session.save()
-        with patch("apps.case.facts.generate_pdf.HTML") as mock_html:
+        with patch("apps.management.pdf.HTML") as mock_html:
             mock_html.return_value = MagicMock()
             response = client.get(f"/case/{matter.id}/facts/pdf/")
         assert response.status_code == 200

@@ -76,14 +76,14 @@ def _log(
     )
 
 
-def _store_pdf_as_sent(invoice, request):
+def _store_pdf_as_sent(invoice):
     """Store the PDF as the client will see it: the watermark follows the
     status at render time, and the status is only saved once the email has
     gone out."""
     status = invoice.status
     invoice.status = "SENT"
     try:
-        store_invoice_pdf(invoice, request)
+        store_invoice_pdf(invoice)
     finally:
         invoice.status = status
 
@@ -155,9 +155,9 @@ def send_invoice(
         # already has (it is only made if somehow missing), rather than
         # paying the WeasyPrint cost on every send.
         if invoice.status in UNSENT_STATUSES:
-            _store_pdf_as_sent(invoice, request)
+            _store_pdf_as_sent(invoice)
         elif attach_pdf and not invoice.pdf_file:
-            store_invoice_pdf(invoice, request)
+            store_invoice_pdf(invoice)
 
         cover = message if message is not None else (invoice.message or "")
         # Firm branding comes from the Firm settings record (same source as
@@ -320,7 +320,7 @@ def send_reminder(
 
     try:
         if attach_pdf and not invoice.pdf_file:
-            store_invoice_pdf(invoice, request)
+            store_invoice_pdf(invoice)
 
         company = Firm.objects.first()
         bcc_list = _parse_recipients(company.invoice_bcc) if company else []
