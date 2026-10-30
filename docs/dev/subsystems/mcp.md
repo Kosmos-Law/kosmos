@@ -20,13 +20,13 @@ not accept it.
 | Module | Holds |
 |---|---|
 | `apps/mcp/server.py` | The MCP endpoint: bearer check, the JSON-RPC dispatch (`initialize`, `ping`, `tools/list`, `tools/call`), the 401 that starts sign-in |
-| `apps/mcp/tools.py` | The eleven tools: descriptions, JSON schemas, and the text each makes of a service function's result |
+| `apps/mcp/tools.py` | The fifteen tools: descriptions, JSON schemas, and the text each makes of a service function's result |
 | `apps/mcp/oauth.py` | The authorization server: metadata documents, registration, the consent screen, the token and revocation endpoints, redirect-URI and PKCE checks |
 | `apps/mcp/models.py` | `McpClient`, `McpAuthorizationCode`, `McpConnection`, `McpToken` |
 | `apps/mcp/urls.py` | The well-known documents at the root, `/mcp`, `/mcp/oauth/*` |
 | `templates/mcp/` | The consent screen and the refusal page, on the sign-in pages' shell |
 | `apps/accounts/api_auth.py` | `kosmos_api_auth`, the `X-Kosmos-Token` decorator, and `ApiError`, what every service function raises |
-| `apps/ai/api.py` | The service functions over a matter (`list_matters`, `read_section`, `read_document`, `read_email_thread`, `search_materials`, `read_conversation`, `read_invoice`, `create_fact`, `create_witness`, `create_task`) and the JSON views over them |
+| `apps/ai/api.py` | The service functions over a matter (`list_matters`, `read_section`, `read_document`, `read_email_thread`, `search_materials`, `read_conversation`, `read_invoice`, `create_fact`, `create_witness`, `create_task`, `create_time_entry`, `create_event`, `complete_task`, `create_contact`) and the JSON views over them |
 | `apps/search/api.py` | `search_practice()` and its JSON view |
 | `apps/settings/claude/views.py` | Settings → Claude: the connector address, the connections and Disconnect, the API token |
 | `apps/ai/context.py` | The section formatters the matter API reuses |
@@ -119,11 +119,16 @@ that do not fit the schema are a JSON-RPC `-32602`.
 
 `find_matter`, `read_matter`, `search_matter`, `search_kosmos`,
 `read_document`, `read_email_thread`, `read_conversation`,
-`read_invoice`, `add_fact`, `add_witness`, `add_task`. Long reads
+`read_invoice`, `add_fact`, `add_witness`, `add_task`, `add_time_entry`,
+`add_event`, `complete_task`, `add_contact`. Long reads
 truncate at `READ_TRUNCATE_CHARS` (40k) with an explicit marker. All
 intelligence lives in the service functions; `tools.py` only describes
 and formats. `initialize` also returns `instructions` telling the model
-to resolve a matter once and read the overview first.
+to resolve a matter once and read the overview first. The contacts and
+tasks sections are manifests with `[contact:ID]` and `[task:ID]`
+handles (the contacts section also names the groups and roles
+`add_contact` may use on the matter); they are formatted in `api.py`,
+not shared with `apps/ai/context.py`.
 
 ## Access
 
@@ -142,7 +147,11 @@ the bearer and the `X-Kosmos-Token` paths. See the
 
 ## Write access
 
-Two write surfaces, both create-only, neither destructive:
+Seven writes, none destructive. Six create a row; the seventh marks a
+task complete, which the tasks page can undo. Nothing on the money side
+(invoices, payments, trust) and nothing that sends mail is reachable.
+The record is [Claude's writes stay
+create-shaped](../../decisions/2026-10-30-claude-writes-stay-create-shaped.md).
 
 - **Timeline facts and witnesses**: `create_fact` and `create_witness`
   reuse `_create_fact_from_entry()` and `_create_witness_from_entry()`
@@ -152,6 +161,34 @@ Two write surfaces, both create-only, neither destructive:
   assigned to the acting user; the matter is authorized here, because
   the service resolves by name without an access check, and the task is
   re-pointed after creation in case a duplicate name resolved elsewhere.
+  `complete_task` sets `STATUS_COMPLETE` through the model's `save()`,
+  which stamps `date_completed`; the checklist guard
+  (`can_complete_task()`) applies as on the tasks page, a task already
+  complete is reported rather than failed, and a task on a matter the
+  user cannot see is a 404.
+- **Time entries**: `create_time_entry` takes a narrative, hours and an
+  optional date and category (one of the matter's `ActivityCategory`
+  rows, by name). The matter must be hourly, as the time form requires.
+  The rate is `calculate_rate_for_matter()` for the acting user, never
+  an argument; the entry is unbilled (`invoice` null, `entered` and
+  `comp` false). Abbreviation codes are not expanded: the model writes
+  the narrative in full.
+- **Events**: `create_event` applies the event form's rules (a start with
+  no end runs an hour via `default_end_time()`, an end date on the start
+  date is dropped, times must run forward within a day) and saves the
+  event `Pending` so the calendar's default filter shows it. The matter
+  is optional, as on the form; without one the event is the firm's. No
+  assignee unless `assigned_to_me`, which matches how nearly every event
+  in the firm's calendar is kept.
+- **Contacts**: `create_contact` makes one address-book row, name-deduped
+  (a same-named contact is reported and its details left alone), with
+  the contact form's normalisation (`normalize_phone()`, lower-cased
+  email). With `matter_id` it also puts the contact on the matter as a
+  `Relationship`, which needs a `role` from `assignable_roles()` and a
+  `group` from the matter's groups less the system Client group; both are
+  resolved before anything is created, so a bad name leaves no orphan,
+  and a refusal lists the names to choose from. `already_assigned()`
+  stops a duplicate party row.
 
 ## Things that bite
 

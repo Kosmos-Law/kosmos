@@ -6,9 +6,10 @@ what the remote MCP server's tools call (apps/mcp/tools.py); the JSON
 views under case/api/ are the same functions behind the X-Kosmos-Token
 header, for scripts. Reads serve every section
 of a matter as AI-ready text, reusing the in-app chat's formatters where
-they exist so the two surfaces cannot drift; writes are create-only
-(timeline facts, witnesses, tasks) through the same validated entry
-creators the in-app AI's fenced blocks use.
+they exist so the two surfaces cannot drift; writes are create-shaped
+(timeline facts, witnesses, tasks, time entries, events, contacts, and
+marking a task complete) through the same validation the application's
+forms and the in-app AI's fenced blocks apply.
 
 Access mirrors the app: matters are the user's accessible OPEN matters
 only, and every denial is a 404 so it doesn't confirm existence. The
@@ -20,8 +21,12 @@ matter, as the Activity screens are.
 """
 
 import json
+from datetime import date, time
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from functools import wraps
 
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db.models import Count, F, Max, Q
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
@@ -32,28 +37,35 @@ from apps.accounts.access import filter_matters_for_user
 from apps.accounts.api_auth import ApiError, kosmos_api_auth
 from apps.activity.expenses.models import ExpenseEntry
 from apps.activity.flat_fees.models import FlatFeeEntry
+from apps.activity.models import ActivityCategory
 from apps.activity.time.models import TimeEntry
+from apps.activity.time.views import calculate_rate_for_matter
 from apps.ai.access import has_financial_access
 from apps.ai.context import (
-    format_contacts,
     format_events,
     format_invoice,
     format_matter_overview,
     format_proceedings,
     format_settlement,
-    format_tasks,
     format_witnesses,
 )
 from apps.ai.fact_blocks import _create_fact_from_entry
 from apps.ai.models import Conversation
 from apps.ai.witness_blocks import _create_witness_from_entry
+from apps.calendar.events import default_end_time
+from apps.calendar.models import Event
 from apps.case.models import Document, Fact, Highlight
+from apps.checklists.models import can_complete_task
+from apps.contacts.access import already_assigned, assignable_roles
+from apps.contacts.models import Contact
 from apps.invoicing.invoices.models import Invoice
 from apps.invoicing.requests.models import PaymentRequest
 from apps.mail.ai import format_email_thread, group_by_thread, thread_subject
 from apps.matters.ledger.get_ledger_data import get_ledger_data
-from apps.matters.models import Matter
+from apps.matters.models import Group, Matter, Relationship
 from apps.matters.rates.models import Rate
+from apps.tasks.constants import CHECKLIST_INCOMPLETE_MESSAGE, STATUS_COMPLETE
+from apps.tasks.models import Task
 from apps.tasks.services import create_task_from_ai_entry
 from apps.trust.available import client_trust_available, trust_available_severity
 from apps.trust.trust import (
@@ -61,12 +73,14 @@ from apps.trust.trust import (
     get_confirmed_client_balance,
     get_pending_client_balance,
 )
+from config.helpers import normalize_phone
 
 MATTER_404 = "No such matter, or you do not have access to it."
 DOCUMENT_404 = "No such document, or you do not have access to it."
 THREAD_404 = "No such email thread in this matter."
 CONVERSATION_404 = "No such AI conversation in this matter."
 INVOICE_404 = "No such invoice, or you do not have access to it."
+TASK_404 = "No such task, or you do not have access to it."
 FINANCIAL_403 = "Your Kosmos account does not have financial access."
 
 # Sections behind the Financial permission in the application itself (the
@@ -102,6 +116,67 @@ def _json_body(request):
 # manifest-shaped (ids and handles for follow-up tool calls) rather than
 # chat-context-shaped, which is why they live here and not in ai/context.
 # ---------------------------------------------------------------------------
+
+
+def _format_contacts(matter):
+    """The parties: each contact with its role and group, then the groups
+    and roles add_contact may use on this matter."""
+    relationships = (
+        Relationship.objects.filter(matter=matter)
+        .select_related("contact", "role", "group")
+        .order_by("group__order", "contact__name")
+    )
+    lines = []
+    for rel in relationships:
+        contact = rel.contact
+        line = f"- [contact:{contact.id}] {contact.name} ({rel.role.name}, {rel.group.name})"
+        if contact.company:
+            line += f" - {contact.company}"
+        if contact.email:
+            line += f" [{contact.email}]"
+        if contact.phone1:
+            line += f" {contact.phone1}"
+        lines.append(line)
+    if not lines:
+        lines.append("No contacts assigned.")
+    lines.append(
+        "Groups add_contact may use on this matter: "
+        + ", ".join(g.name for g in _assignable_groups(matter))
+        + ". Roles: "
+        + ", ".join(r.name for r in assignable_roles())
+        + "."
+    )
+    return "\n".join(lines)
+
+
+def _format_tasks(matter):
+    """Task manifest, pending first, capped at 20; [task:ID] handles feed
+    complete_task. Within each group the most important come first (7 is
+    the top of the scale), then the soonest due; nulls are ordered
+    explicitly, as the in-app formatter does, or the cut fills with
+    finished work."""
+    tasks = (
+        Task.objects.filter(matter=matter)
+        .select_related("user")
+        .order_by(
+            F("date_completed").desc(nulls_first=True),
+            "-importance",
+            F("date_due").asc(nulls_last=True),
+        )[:20]
+    )
+    if not tasks:
+        return "No tasks."
+    lines = []
+    for task in tasks:
+        status = task.status or ("Complete" if task.date_completed else "Pending")
+        line = f"- [task:{task.id}] [{status}] P{task.importance}: {task.description}"
+        if task.date_due:
+            line += f" (Due: {task.date_due})"
+        if task.user:
+            line += f" - {task.user.full_name}"
+        lines.append(line)
+    lines.append("Use complete_task with a task id to mark one complete.")
+    return "\n".join(lines)
 
 
 def _format_rates(matter):
@@ -521,11 +596,11 @@ def _format_invoice_lines(invoice):
 
 SECTIONS = {
     "overview": format_matter_overview,
-    "contacts": format_contacts,
+    "contacts": _format_contacts,
     "rates": _format_rates,
     "activity": _format_activity,
     "events": format_events,
-    "tasks": format_tasks,
+    "tasks": _format_tasks,
     "proceedings": format_proceedings,
     "settlement": format_settlement,
     "documents": _format_documents,
@@ -550,6 +625,63 @@ def _entry_or_400(entry):
     if not isinstance(entry, dict):
         raise ApiError(400, "Request body must be a JSON object.")
     return entry
+
+
+def _matter_id_or_404(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ApiError(404, MATTER_404)
+
+
+def _text(entry, name, limit, minimum=0, required=False):
+    """A trimmed string field, refused when too short, cut when too long."""
+    value = str(entry.get(name) or "").strip()
+    if len(value) < minimum:
+        if required or value:
+            raise ApiError(400, f"{name} is required (at least {minimum} characters).")
+    return value[:limit]
+
+
+def _date_or_400(entry, name, required=False):
+    value = entry.get(name)
+    if value in (None, ""):
+        if required:
+            raise ApiError(400, f"{name} is required (YYYY-MM-DD).")
+        return None
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        raise ApiError(400, f"{name} must be a date, YYYY-MM-DD.")
+
+
+def _time_or_400(entry, name):
+    value = entry.get(name)
+    if value in (None, ""):
+        return None
+    try:
+        return time.fromisoformat(str(value))
+    except ValueError:
+        raise ApiError(400, f"{name} must be a time, HH:MM.")
+
+
+def _hours_or_400(value):
+    if value is None or value == "" or isinstance(value, bool):
+        raise ApiError(400, "hours is required (a number of hours, e.g. 0.3).")
+    try:
+        hours = Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, ValueError):
+        raise ApiError(400, "hours must be a number, e.g. 0.3.")
+    if hours <= 0 or hours > Decimal("99.9"):
+        raise ApiError(400, "hours must be between 0.1 and 99.9.")
+    return hours
+
+
+def _assignable_groups(matter):
+    """The groups a party may be put in on this matter: the firm's and the
+    matter's own, less the system Client group (the client is set on the
+    matter)."""
+    return Group.objects.for_matter(matter).exclude(is_system=True)
 
 
 # ---------------------------------------------------------------------------
@@ -761,6 +893,226 @@ def create_task(user, entry):
     }
 
 
+def create_time_entry(user, matter_id, entry):
+    """Create one time entry on an hourly matter, as the acting user, at the
+    user's rate for that matter (the matter's override, else the firm
+    default). The entry is unbilled; the model never sets rate, comp or an
+    invoice. Abbreviation codes are not expanded: the narrative is taken
+    as written.
+    """
+    matter = _matter_or_404(user, matter_id)
+    entry = _entry_or_400(entry)
+    if matter.billing_type != "HOURLY":
+        raise ApiError(
+            400,
+            f"{matter.name} is billed as {matter.get_billing_type_display()}; "
+            "time entries are for hourly matters.",
+        )
+    actions = _text(entry, "actions", 2000, minimum=4, required=True)
+    hours = _hours_or_400(entry.get("hours"))
+    when = _date_or_400(entry, "date") or timezone.localdate()
+    category = None
+    category_name = _text(entry, "category", 100)
+    if category_name:
+        category = ActivityCategory.objects.filter(
+            matter=matter, name__iexact=category_name
+        ).first()
+        if category is None:
+            names = list(matter.activity_categories.values_list("name", flat=True))
+            raise ApiError(
+                400,
+                f"No category {category_name!r} on this matter. "
+                + (
+                    f"Its categories: {', '.join(names)}."
+                    if names
+                    else "It has no categories; leave category out."
+                ),
+            )
+    rate = calculate_rate_for_matter(matter, user)
+    time_entry = TimeEntry.objects.create(
+        matter=matter,
+        user=user,
+        date=when,
+        actions=actions,
+        hours=hours,
+        rate=rate,
+        category=category,
+    )
+    coded = f" [{category.name}]" if category else ""
+    return {
+        "id": time_entry.id,
+        "matter": matter.name,
+        "message": (
+            f"- Logged {hours}h on {when}{coded}: **{actions}** "
+            f"(${rate}/hr, ${hours * rate:,.2f}) [{matter.name}]"
+        ),
+    }
+
+
+EVENT_TYPES = [value for value, _label in Event.EVENT_TYPE_CHOICES]
+
+
+def create_event(user, entry):
+    """Create one calendar event, on a matter or (with no matter_id) the
+    firm's. Nobody is assigned unless ``assigned_to_me`` is true: an event
+    with no assignee is everyone's, as the calendar treats it. The same
+    rules as the event form: a start with no end runs an hour; an end date
+    on the start date is dropped; times must run forward within one day.
+    """
+    entry = _entry_or_400(entry)
+    matter = None
+    if entry.get("matter_id") is not None:
+        matter = _matter_or_404(user, _matter_id_or_404(entry["matter_id"]))
+    description = _text(entry, "description", 255, minimum=4, required=True)
+    when = _date_or_400(entry, "date", required=True)
+    end_date = _date_or_400(entry, "end_date")
+    if end_date is not None:
+        if end_date < when:
+            raise ApiError(400, "end_date must be on or after date.")
+        if end_date == when:
+            end_date = None
+    start = _time_or_400(entry, "start_time")
+    end = _time_or_400(entry, "end_time")
+    if start and not end:
+        end = default_end_time(start)
+    if start and end and start >= end and not end_date:
+        raise ApiError(400, "end_time must be after start_time.")
+    event_type = _text(entry, "event_type", 50) or None
+    if event_type and event_type not in EVENT_TYPES:
+        raise ApiError(400, f"event_type must be one of: {', '.join(EVENT_TYPES)}.")
+    event = Event.objects.create(
+        user=user,
+        matter=matter,
+        date=when,
+        end_date=end_date,
+        start_time=start,
+        end_time=end,
+        status="Pending",
+        party=_text(entry, "party", 50) or None,
+        description=description,
+        event_type=event_type,
+        location=_text(entry, "location", 255) or None,
+        details=_text(entry, "details", 10_000),
+    )
+    if entry.get("assigned_to_me") is True:
+        event.assignees.add(user)
+
+    label = matter.name if matter else "Firm"
+    message = f"- Added event: **{description}** on {when}"
+    if end_date:
+        message += f" through {end_date}"
+    if start:
+        message += f" {start:%H:%M}"
+        if end:
+            message += f"-{end:%H:%M}"
+    if event.party:
+        message += f" with {event.party}"
+    if event.location:
+        message += f" ({event.location})"
+    message += f" [{label}]"
+    return {"id": event.id, "matter": label, "message": message}
+
+
+def complete_task(user, task_id):
+    """Mark one task complete, as the tasks page does: a task on a matter
+    the user cannot see is a 404; an incomplete checklist blocks it; a
+    task already complete is reported, not failed. The model stamps
+    date_completed.
+    """
+    task = Task.objects.select_related("matter").filter(pk=task_id).first()
+    if task is None or (task.matter_id and not user.has_matter_access(task.matter)):
+        raise ApiError(404, TASK_404)
+    label = task.matter.name if task.matter else "Admin"
+    if task.status == STATUS_COMPLETE:
+        return {
+            "id": task.id,
+            "matter": label,
+            "changed": False,
+            "message": f"- Already complete: **{task.description}** [{label}]",
+        }
+    if not can_complete_task(task):
+        raise ApiError(400, CHECKLIST_INCOMPLETE_MESSAGE)
+    task.status = STATUS_COMPLETE
+    task.save()
+    return {
+        "id": task.id,
+        "matter": label,
+        "changed": True,
+        "message": f"- Completed: **{task.description}** [{label}]",
+    }
+
+
+def create_contact(user, entry):
+    """Create one contact in the firm's address book (name-deduped: a
+    same-named contact is reported and its details left as they were) and,
+    given matter_id with a role and a group, put the contact on that
+    matter. The matter link is validated before anything is created, so a
+    bad role leaves no orphan. Returns the payload and whether a contact
+    row was created.
+    """
+    entry = _entry_or_400(entry)
+    name = _text(entry, "name", 100, minimum=2, required=True)
+    if len(name) > 50:
+        raise ApiError(400, "name must be 50 characters or fewer.")
+    matter = role = group = None
+    if entry.get("matter_id") is not None:
+        matter = _matter_or_404(user, _matter_id_or_404(entry["matter_id"]))
+        role_name = _text(entry, "role", 50)
+        role = assignable_roles().filter(name__iexact=role_name).first()
+        if role is None:
+            names = ", ".join(r.name for r in assignable_roles())
+            raise ApiError(400, f"role is required with matter_id. Roles: {names}.")
+        group_name = _text(entry, "group", 50)
+        groups = _assignable_groups(matter)
+        group = groups.filter(name__iexact=group_name).first()
+        if group is None:
+            names = ", ".join(g.name for g in groups)
+            raise ApiError(
+                400,
+                f"group is required with matter_id. Groups on this matter: {names}.",
+            )
+
+    contact = Contact.objects.filter(name__iexact=name).first()
+    created = False
+    if contact is None:
+        email = _text(entry, "email", 100).lower()
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                raise ApiError(400, "email is not a valid address.")
+        phone = _text(entry, "phone", 50)
+        if phone:
+            phone, valid = normalize_phone(phone)
+            if not valid:
+                raise ApiError(400, "phone must be a 10-digit US number.")
+        contact = Contact.objects.create(
+            user=user,
+            name=name,
+            company=_text(entry, "company", 49) or None,
+            email=email or None,
+            phone1=phone or None,
+            address=_text(entry, "address", 250) or None,
+            notes=_text(entry, "notes", 249) or None,
+        )
+        created = True
+        message = f"- Added contact: **{contact.name}**"
+    else:
+        message = (
+            f"- Already in contacts: **{contact.name}** (details left as they were)"
+        )
+
+    if matter:
+        if already_assigned(matter, contact, group, role):
+            message += f"; already on {matter.name} as {role.name} in {group.name}"
+        else:
+            Relationship.objects.create(
+                matter=matter, contact=contact, group=group, role=role
+            )
+            message += f"; assigned to {matter.name} as {role.name} in {group.name}"
+    return {"id": contact.id, "created": created, "message": message}, created
+
+
 # ---------------------------------------------------------------------------
 # The token-authenticated JSON views: one per service function, each a
 # serialisation of its result or of its ApiError.
@@ -866,3 +1218,35 @@ def api_matter_witnesses(request, matter_id):
 @_json_api
 def api_create_task(request):
     return JsonResponse(create_task(request.api_user, _json_body(request)), status=201)
+
+
+@kosmos_api_auth
+@require_http_methods(["POST"])
+@_json_api
+def api_matter_time(request, matter_id):
+    return JsonResponse(
+        create_time_entry(request.api_user, matter_id, _json_body(request)),
+        status=201,
+    )
+
+
+@kosmos_api_auth
+@require_http_methods(["POST"])
+@_json_api
+def api_create_event(request):
+    return JsonResponse(create_event(request.api_user, _json_body(request)), status=201)
+
+
+@kosmos_api_auth
+@require_http_methods(["POST"])
+@_json_api
+def api_complete_task(request, task_id):
+    return JsonResponse(complete_task(request.api_user, task_id))
+
+
+@kosmos_api_auth
+@require_http_methods(["POST"])
+@_json_api
+def api_create_contact(request):
+    payload, created = create_contact(request.api_user, _json_body(request))
+    return JsonResponse(payload, status=201 if created else 200)

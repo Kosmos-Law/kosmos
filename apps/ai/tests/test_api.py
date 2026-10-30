@@ -516,3 +516,386 @@ class TestMaterialSearch:
             restricted_api, f"/case/api/matter/{matter.id}/search/", {"query": "x"}
         )
         assert response.status_code == 404
+
+
+def firm_group(name):
+    """A firm-wide party group by name. The migrations seed the firm's
+    groups, but a flushed test database may have lost them, and a leaked
+    row may have doubled them: take what is there, else make it."""
+    from apps.matters.models import Group
+
+    group = Group.objects.filter(name=name, matter__isnull=True).first()
+    return group or Group.objects.create(name=name, order=2)
+
+
+def firm_role(name):
+    from apps.matters.models import Role
+
+    return Role.objects.filter(name=name).first() or Role.objects.create(name=name)
+
+
+class TestContactsSection:
+    def test_lists_handles_groups_and_roles(self, api, matter, contact):
+        from apps.matters.models import Relationship
+
+        group, role = firm_group("Adversary"), firm_role("Counsel")
+        Relationship.objects.create(
+            matter=matter, contact=contact, group=group, role=role
+        )
+        text = section_text(api, matter, "contacts")
+        assert f"[contact:{contact.id}] Test Client (Counsel, Adversary)" in text
+        assert "- Test Company [client@example.com]" in text
+        groups, roles = text.split("Groups add_contact may use on this matter: ")[
+            1
+        ].split(". Roles: ")
+        assert "Adversary" in groups and "Client" not in groups
+        assert "Counsel" in roles and "Client" not in roles
+
+
+class TestTasksSection:
+    def test_lists_handles_and_status(self, api, matter, user):
+        task = Task.objects.create(
+            user=user, matter=matter, description="call the expert", status="Pending"
+        )
+        text = section_text(api, matter, "tasks")
+        assert f"[task:{task.id}] [Pending] P4: Call the expert" in text
+        assert "Use complete_task" in text
+
+
+class TestTimeEntryCreate:
+    def time_url(self, matter):
+        return f"/case/api/matter/{matter.id}/time/"
+
+    def test_creates_at_the_matter_rate(self, api, matter, user):
+        Rate.objects.create(user=user, matter=matter, matter_rate=250)
+        ActivityCategory.objects.create(matter=matter, name="Discovery")
+        response = post_json(
+            api,
+            self.time_url(matter),
+            {
+                "actions": "Review deposition transcript",
+                "hours": 0.25,
+                "date": "2026-10-01",
+                "category": "discovery",
+            },
+        )
+        assert response.status_code == 201, response.content
+        entry = TimeEntry.objects.get(pk=response.json()["id"])
+        assert entry.user == user and entry.matter == matter
+        assert entry.rate == 250
+        assert str(entry.hours) == "0.3"
+        assert str(entry.date) == "2026-10-01"
+        assert entry.category.name == "Discovery"
+        assert entry.invoice is None and not entry.comp and not entry.entered
+        assert "$250/hr, $75.00" in response.json()["message"]
+
+    def test_firm_rate_and_today_by_default(self, api, matter, user):
+        response = post_json(
+            api, self.time_url(matter), {"actions": "Call with client", "hours": 1}
+        )
+        assert response.status_code == 201
+        entry = TimeEntry.objects.get(pk=response.json()["id"])
+        assert entry.rate == user.user_rate == 100
+        assert entry.date == timezone.localdate()
+
+    def test_unknown_category_lists_the_matters(self, api, matter):
+        ActivityCategory.objects.create(matter=matter, name="Pleadings")
+        response = post_json(
+            api,
+            self.time_url(matter),
+            {"actions": "Draft answer", "hours": 1, "category": "Motions"},
+        )
+        assert response.status_code == 400
+        assert "Pleadings" in response.json()["error"]
+        assert not TimeEntry.objects.exists()
+
+    @pytest.mark.parametrize("hours", [0, -1, 100, "abc", True, None])
+    def test_bad_hours_is_400(self, api, matter, hours):
+        response = post_json(
+            api, self.time_url(matter), {"actions": "Research", "hours": hours}
+        )
+        assert response.status_code == 400
+        assert "hours" in response.json()["error"]
+
+    def test_flat_fee_matter_is_400(self, api, matter):
+        matter.billing_type = "FLAT_FEE"
+        matter.save()
+        response = post_json(
+            api, self.time_url(matter), {"actions": "Research", "hours": 1}
+        )
+        assert response.status_code == 400
+        assert "hourly" in response.json()["error"]
+
+    def test_denied_matter_is_404(self, restricted_api, matter):
+        response = post_json(
+            restricted_api, self.time_url(matter), {"actions": "Research", "hours": 1}
+        )
+        assert response.status_code == 404
+        assert not TimeEntry.objects.exists()
+
+
+class TestEventCreate:
+    def test_matter_event_with_default_end(self, api, matter, user):
+        response = post_json(
+            api,
+            "/case/api/events/",
+            {
+                "matter_id": matter.id,
+                "description": "Status hearing",
+                "date": "2026-11-12",
+                "start_time": "09:30",
+                "party": "Judge Ortiz",
+                "location": "Courtroom 4B",
+                "event_type": "In-person",
+            },
+        )
+        assert response.status_code == 201, response.content
+        event = Event.objects.get(pk=response.json()["id"])
+        assert event.matter == matter and event.user == user
+        assert event.status == "Pending"
+        assert str(event.start_time) == "09:30:00"
+        assert str(event.end_time) == "10:30:00"
+        assert event.end_date is None
+        assert event.assignees.count() == 0
+        message = response.json()["message"]
+        assert "Status hearing" in message and "09:30-10:30" in message
+        assert "[Test Matter]" in message
+
+    def test_firm_event_assigned_to_me(self, api, user):
+        response = post_json(
+            api,
+            "/case/api/events/",
+            {
+                "description": "Bar association lunch",
+                "date": "2026-11-12",
+                "assigned_to_me": True,
+            },
+        )
+        assert response.status_code == 201
+        event = Event.objects.get(pk=response.json()["id"])
+        assert event.matter is None
+        assert list(event.assignees.all()) == [user]
+        assert response.json()["matter"] == "Firm"
+
+    def test_multi_day_drops_same_day_end(self, api, matter):
+        response = post_json(
+            api,
+            "/case/api/events/",
+            {
+                "matter_id": matter.id,
+                "description": "Trial",
+                "date": "2026-11-12",
+                "end_date": "2026-11-12",
+            },
+        )
+        assert response.status_code == 201
+        assert Event.objects.get(pk=response.json()["id"]).end_date is None
+
+    @pytest.mark.parametrize(
+        "bad, needle",
+        [
+            ({"end_date": "2026-11-11"}, "end_date"),
+            ({"start_time": "10:00", "end_time": "09:00"}, "end_time"),
+            ({"date": "next tuesday"}, "date"),
+            ({"event_type": "Carrier pigeon"}, "event_type"),
+            ({"description": "x"}, "description"),
+        ],
+    )
+    def test_bad_values_are_400(self, api, matter, bad, needle):
+        payload = {
+            "matter_id": matter.id,
+            "description": "Hearing",
+            "date": "2026-11-12",
+        }
+        payload.update(bad)
+        response = post_json(api, "/case/api/events/", payload)
+        assert response.status_code == 400
+        assert needle in response.json()["error"]
+        assert not Event.objects.exists()
+
+    def test_denied_matter_is_404(self, restricted_api, matter):
+        response = post_json(
+            restricted_api,
+            "/case/api/events/",
+            {"matter_id": matter.id, "description": "Hearing", "date": "2026-11-12"},
+        )
+        assert response.status_code == 404
+        assert not Event.objects.exists()
+
+
+class TestTaskComplete:
+    def complete_url(self, task):
+        return f"/case/api/tasks/{task.id}/complete/"
+
+    def test_completes_and_stamps_the_date(self, api, matter, user):
+        task = Task.objects.create(
+            user=user, matter=matter, description="serve the subpoena", status="Pending"
+        )
+        response = api.post(self.complete_url(task))
+        assert response.status_code == 200, response.content
+        assert response.json()["changed"] is True
+        task.refresh_from_db()
+        assert task.status == "Complete"
+        assert task.date_completed == timezone.localdate()
+
+    def test_already_complete_is_reported(self, api, user):
+        task = Task.objects.create(user=user, description="done", status="Complete")
+        response = api.post(self.complete_url(task))
+        assert response.status_code == 200
+        assert response.json()["changed"] is False
+        assert "Already complete" in response.json()["message"]
+        assert response.json()["matter"] == "Admin"
+
+    def test_unfinished_checklist_blocks(self, api, user):
+        from apps.checklists.models import Checklist, ChecklistItem
+
+        task = Task.objects.create(user=user, description="onboard", status="Pending")
+        checklist = Checklist.objects.create(task=task, name="Onboarding")
+        ChecklistItem.objects.create(
+            checklist=checklist, description="sign engagement letter", item_type="item"
+        )
+        response = api.post(self.complete_url(task))
+        assert response.status_code == 400
+        task.refresh_from_db()
+        assert task.status == "Pending"
+
+    def test_denied_matter_is_404(self, restricted_api, matter, user):
+        task = Task.objects.create(
+            user=user, matter=matter, description="private", status="Pending"
+        )
+        assert restricted_api.post(self.complete_url(task)).status_code == 404
+        task.refresh_from_db()
+        assert task.status == "Pending"
+
+    def test_unknown_task_is_404(self, api):
+        assert api.post("/case/api/tasks/999999/complete/").status_code == 404
+
+
+class TestContactCreate:
+    @pytest.fixture
+    def parties(self):
+        return firm_group("Adversary"), firm_role("Counsel")
+
+    def test_creates_normalized(self, api, user):
+        from apps.contacts.models import Contact
+
+        response = post_json(
+            api,
+            "/case/api/contacts/",
+            {
+                "name": "Dana Whitfield",
+                "company": "Whitfield & Co.",
+                "email": "Dana@Whitfield.Example",
+                "phone": "(404) 555-0133",
+                "notes": "Opposing counsel",
+            },
+        )
+        assert response.status_code == 201, response.content
+        contact = Contact.objects.get(pk=response.json()["id"])
+        assert contact.user == user
+        assert contact.email == "dana@whitfield.example"
+        assert contact.phone1 and "555" in contact.phone1 and "(" not in contact.phone1
+        assert contact.company == "Whitfield & Co."
+
+    def test_dedups_by_name(self, api, contact):
+        response = post_json(
+            api, "/case/api/contacts/", {"name": "test client", "email": "x@y.example"}
+        )
+        assert response.status_code == 200
+        assert response.json()["created"] is False
+        assert response.json()["id"] == contact.id
+        contact.refresh_from_db()
+        assert contact.email == "client@example.com"
+
+    def test_links_to_matter(self, api, matter, parties):
+        from apps.matters.models import Relationship
+
+        group, role = parties
+        response = post_json(
+            api,
+            "/case/api/contacts/",
+            {
+                "name": "Dana Whitfield",
+                "matter_id": matter.id,
+                "role": "counsel",
+                "group": "adversary",
+            },
+        )
+        assert response.status_code == 201, response.content
+        rel = Relationship.objects.get(matter=matter, contact_id=response.json()["id"])
+        assert rel.role.name == "Counsel" and rel.group == group
+        assert (
+            "assigned to Test Matter as Counsel in Adversary"
+            in (response.json()["message"])
+        )
+        again = post_json(
+            api,
+            "/case/api/contacts/",
+            {
+                "name": "Dana Whitfield",
+                "matter_id": matter.id,
+                "role": "Counsel",
+                "group": "Adversary",
+            },
+        )
+        assert again.status_code == 200
+        assert "already on Test Matter" in again.json()["message"]
+        assert Relationship.objects.filter(matter=matter, group=group).count() == 1
+
+    def test_bad_role_lists_roles_and_creates_nothing(self, api, matter, parties):
+        from apps.contacts.models import Contact
+
+        response = post_json(
+            api,
+            "/case/api/contacts/",
+            {"name": "Dana Whitfield", "matter_id": matter.id, "role": "Wizard"},
+        )
+        assert response.status_code == 400
+        assert "Counsel" in response.json()["error"]
+        assert not Contact.objects.filter(name="Dana Whitfield").exists()
+
+    def test_bad_group_lists_groups(self, api, matter, parties):
+        response = post_json(
+            api,
+            "/case/api/contacts/",
+            {
+                "name": "Dana Whitfield",
+                "matter_id": matter.id,
+                "role": "Counsel",
+                "group": "Client",
+            },
+        )
+        assert response.status_code == 400
+        assert "Adversary" in response.json()["error"]
+
+    @pytest.mark.parametrize(
+        "bad, needle",
+        [
+            ({"email": "not-an-address"}, "email"),
+            ({"phone": "123"}, "phone"),
+            ({"name": "D"}, "name"),
+            ({"name": "D" * 51}, "name"),
+        ],
+    )
+    def test_bad_values_are_400(self, api, bad, needle):
+        payload = {"name": "Dana Whitfield"}
+        payload.update(bad)
+        response = post_json(api, "/case/api/contacts/", payload)
+        assert response.status_code == 400
+        assert needle in response.json()["error"]
+
+    def test_denied_matter_is_404(self, restricted_api, matter, parties):
+        from apps.contacts.models import Contact
+
+        response = post_json(
+            restricted_api,
+            "/case/api/contacts/",
+            {
+                "name": "Dana Whitfield",
+                "matter_id": matter.id,
+                "role": "Counsel",
+                "group": "Adversary",
+            },
+        )
+        assert response.status_code == 404
+        assert not Contact.objects.filter(name="Dana Whitfield").exists()

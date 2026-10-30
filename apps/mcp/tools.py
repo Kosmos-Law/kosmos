@@ -6,8 +6,10 @@ description, JSON schema) and turns their results into text.
 Reads cover every section of a matter (including its AI conversations,
 ledger and trust position), invoices, the matter's hybrid keyword and
 semantic material search, and the practice-wide search; writes are
-narrow: create-only timeline facts, witnesses and tasks. Money reads
-require the user's financial permission in Kosmos.
+narrow: create-only timeline facts, witnesses, tasks, time entries,
+events and contacts, and marking a task complete (the one update, and a
+reversible one). Money reads require the user's financial permission in
+Kosmos.
 """
 
 from dataclasses import dataclass
@@ -72,6 +74,24 @@ def _list(args, name):
         return None
     if not isinstance(value, list):
         raise InvalidArguments(f"{name} must be a list.")
+    return value
+
+
+def _number(args, name):
+    value = args.get(name)
+    if value is None:
+        raise InvalidArguments(f"{name} is required.")
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise InvalidArguments(f"{name} must be a number.")
+    return value
+
+
+def _bool(args, name):
+    value = args.get(name)
+    if value is None:
+        return False
+    if not isinstance(value, bool):
+        raise InvalidArguments(f"{name} must be true or false.")
     return value
 
 
@@ -225,6 +245,53 @@ def add_task(user, args):
     return f"{result['message']} [{result['matter']}]"
 
 
+def add_time_entry(user, args):
+    entry = {
+        "actions": _str(args, "actions"),
+        "hours": _number(args, "hours"),
+        "date": _str(args, "date", False),
+        "category": _str(args, "category", False),
+    }
+    return _call(api.create_time_entry, user, _int(args, "matter_id"), entry)["message"]
+
+
+def add_event(user, args):
+    entry = {
+        "description": _str(args, "description"),
+        "date": _str(args, "date"),
+        "matter_id": _int(args, "matter_id", False),
+        "end_date": _str(args, "end_date", False),
+        "start_time": _str(args, "start_time", False),
+        "end_time": _str(args, "end_time", False),
+        "party": _str(args, "party", False),
+        "location": _str(args, "location", False),
+        "event_type": _str(args, "event_type", False),
+        "details": _str(args, "details", False),
+        "assigned_to_me": _bool(args, "assigned_to_me"),
+    }
+    return _call(api.create_event, user, entry)["message"]
+
+
+def complete_task(user, args):
+    return _call(api.complete_task, user, _int(args, "task_id"))["message"]
+
+
+def add_contact(user, args):
+    entry = {
+        "name": _str(args, "name"),
+        "company": _str(args, "company", False),
+        "email": _str(args, "email", False),
+        "phone": _str(args, "phone", False),
+        "address": _str(args, "address", False),
+        "notes": _str(args, "notes", False),
+        "matter_id": _int(args, "matter_id", False),
+        "role": _str(args, "role", False),
+        "group": _str(args, "group", False),
+    }
+    payload, _created = _call(api.create_contact, user, entry)
+    return payload["message"]
+
+
 # ---------------------------------------------------------------------------
 # Descriptions and schemas: what Claude reads to decide what to call
 # ---------------------------------------------------------------------------
@@ -287,9 +354,12 @@ TOOLS = [
         "read_matter",
         "Read one section of a matter's record (resolve the id with "
         "find_matter first).\n\n"
-        "Sections: overview, contacts, rates (billing setup and hourly "
+        "Sections: overview, contacts (the parties with [contact:ID] "
+        "handles, and the groups and roles add_contact may use), rates "
+        "(billing setup and hourly "
         "rates), activity (time entries, expenses, and flat fees with "
-        "category coding), events, tasks (capped at 20), proceedings, "
+        "category coding), events, tasks (capped at 20, with [task:ID] "
+        "handles for complete_task), proceedings, "
         "settlement, documents (metadata manifest; use read_document for a "
         "document's full text), highlights (excerpts with [hl:ID] handles "
         "usable as add_fact sources), timeline (the facts chronology), "
@@ -494,6 +564,110 @@ TOOLS = [
         add_task,
         read_only=False,
     ),
+    Tool(
+        "add_time_entry",
+        "Log one time entry on an hourly matter, as the user, at the user's "
+        "rate for that matter (Kosmos sets the rate; never pass one). "
+        "Creates immediately, unbilled; only call on the user's explicit "
+        "direction.\n\n"
+        "actions is the billing narrative as it should appear on the "
+        "invoice (write it in full; abbreviation codes are not expanded). "
+        "hours is decimal, 0.1 to 99.9, rounded to a tenth. date is ISO "
+        "(YYYY-MM-DD), today if omitted. category is one of the matter's "
+        "activity categories by name (the activity section shows them in "
+        "brackets); leave it out when unsure.",
+        _schema(
+            {
+                "matter_id": _MATTER_ID,
+                "actions": {"type": "string"},
+                "hours": {"type": "number", "minimum": 0.1, "maximum": 99.9},
+                "date": {"type": "string", "description": "YYYY-MM-DD"},
+                "category": {"type": "string"},
+            },
+            ["matter_id", "actions", "hours"],
+        ),
+        add_time_entry,
+        read_only=False,
+    ),
+    Tool(
+        "add_event",
+        "Add one calendar event. Creates immediately; only call on the "
+        "user's explicit direction, and read the events section first to "
+        "avoid duplicating one.\n\n"
+        "Pass matter_id to put the event on a matter, or omit it for a "
+        "firm-wide event. description is 4-255 characters. date is ISO "
+        "(YYYY-MM-DD); end_date only for an event over several days. "
+        "start_time/end_time are HH:MM (24h); a start with no end runs an "
+        "hour; omit both for an all-day event. party is who it is with "
+        "(50 characters); location is the place; event_type is Zoom, "
+        "Virtual, Phone, or In-person; details is free text (dial-in, "
+        "agenda). The event goes on the firm's calendar (everyone's) "
+        "unless assigned_to_me is true, which puts it on the user's own.",
+        _schema(
+            {
+                "description": {"type": "string"},
+                "date": {"type": "string", "description": "YYYY-MM-DD"},
+                "matter_id": _MATTER_ID,
+                "end_date": {"type": "string", "description": "YYYY-MM-DD"},
+                "start_time": {"type": "string", "description": "HH:MM"},
+                "end_time": {"type": "string", "description": "HH:MM"},
+                "party": {"type": "string"},
+                "location": {"type": "string"},
+                "event_type": {
+                    "type": "string",
+                    "enum": ["Zoom", "Virtual", "Phone", "In-person"],
+                },
+                "details": {"type": "string"},
+                "assigned_to_me": {"type": "boolean"},
+            },
+            ["description", "date"],
+        ),
+        add_event,
+        read_only=False,
+    ),
+    Tool(
+        "complete_task",
+        "Mark one task complete, by the [task:ID] id shown in the tasks "
+        "section. Applies immediately; only call on the user's explicit "
+        "direction. A task already complete is reported, not changed; a "
+        "task with an unfinished checklist is refused. Reversible in "
+        "Kosmos.",
+        _schema({"task_id": {"type": "integer"}}, ["task_id"]),
+        complete_task,
+        read_only=False,
+    ),
+    Tool(
+        "add_contact",
+        "Add one contact to the firm's address book, and optionally put it "
+        "on a matter. Creates immediately; only call on the user's explicit "
+        "direction. A same-named contact already in the address book is "
+        "reported instead of duplicated (and still put on the matter when "
+        "asked).\n\n"
+        "name is 2-50 characters. Never guess contact details (company, "
+        "email, phone, address); leave them out unless the record states "
+        "them. phone is a 10-digit US number. notes is a short remark. To "
+        "put the contact on a matter pass matter_id with role and group, "
+        "both by name from the matter's contacts section (roles such as "
+        "Counsel, Adversary, Judge, Expert - Testifying; groups are the "
+        "matter's sides, such as Adversary, Court, Other). A wrong role or "
+        "group is refused with the list to choose from.",
+        _schema(
+            {
+                "name": {"type": "string"},
+                "company": {"type": "string"},
+                "email": {"type": "string"},
+                "phone": {"type": "string"},
+                "address": {"type": "string"},
+                "notes": {"type": "string"},
+                "matter_id": _MATTER_ID,
+                "role": {"type": "string"},
+                "group": {"type": "string"},
+            },
+            ["name"],
+        ),
+        add_contact,
+        read_only=False,
+    ),
 ]
 
 TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
@@ -504,5 +678,6 @@ INSTRUCTIONS = (
     "by name once with find_matter (or search_kosmos for anything else in "
     "the practice), then pass its matter_id to read_matter, starting with "
     "the overview section, and to search_matter. The add_* tools create "
-    "records immediately: call them only when the user asks for the record."
+    "records immediately, and complete_task changes one: call them only "
+    "when the user asks for the record."
 )

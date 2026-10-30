@@ -33,7 +33,6 @@ from django.utils import timezone
 from apps.accounts.models import CustomUser
 from apps.activity.time.models import TimeEntry
 from apps.calendar.models import Event
-from apps.matters.models import Relationship
 from apps.matters.proceedings.models import Proceeding
 from apps.matters.settlement.models import SettlementEntry
 from apps.settings.models import Firm
@@ -187,29 +186,6 @@ def format_matter_overview(matter) -> str:
     ]
     if matter.client:
         lines.append(f"Primary Client: {matter.client.name}")
-    return "\n".join(lines)
-
-
-def format_contacts(matter) -> str:
-    """Format contacts and their roles."""
-    relationships = Relationship.objects.filter(matter=matter).select_related(
-        "contact", "role", "group"
-    )
-
-    if not relationships:
-        return "No contacts assigned."
-
-    lines = []
-    for rel in relationships:
-        contact = rel.contact
-        role_name = rel.role.name if rel.role else "No role"
-        line = f"- {contact.name} ({role_name})"
-        if contact.company:
-            line += f" - {contact.company}"
-        if contact.email:
-            line += f" [{contact.email}]"
-        lines.append(line)
-
     return "\n".join(lines)
 
 

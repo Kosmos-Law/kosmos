@@ -43,6 +43,11 @@ urlpatterns = [
         name="api-search-materials",
     ),
     path(
+        "case/api/matter/<int:matter_id>/time/",
+        api.api_matter_time,
+        name="api-matter-time",
+    ),
+    path(
         "case/api/matter/<int:matter_id>/<str:section>/",
         api.api_matter_section,
         name="api-matter-section",
@@ -61,6 +66,21 @@ urlpatterns = [
         "case/api/tasks/",
         api.api_create_task,
         name="api-create-task",
+    ),
+    path(
+        "case/api/tasks/<int:task_id>/complete/",
+        api.api_complete_task,
+        name="api-complete-task",
+    ),
+    path(
+        "case/api/events/",
+        api.api_create_event,
+        name="api-create-event",
+    ),
+    path(
+        "case/api/contacts/",
+        api.api_create_contact,
+        name="api-create-contact",
     ),
     # AI conversation operations
     path(

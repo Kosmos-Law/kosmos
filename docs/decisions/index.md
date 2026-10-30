@@ -86,6 +86,7 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [AI is optional (2026-10-06)](2026-10-06-ai-is-optional.md)
 - [Claude Desktop: packaging roadmap](claude-desktop-roadmap.md)
 - [Claude connects over a remote MCP server with OAuth (2026-10-30)](2026-10-30-claude-connects-over-remote-mcp.md)
+- [Claude's writes stay create-shaped (2026-10-30)](2026-10-30-claude-writes-stay-create-shaped.md)
 - [Research Chat (retired 2026-08-16)](research-chat-retired.md)
 
 ## Notes, drafts and documents
