@@ -1,220 +1,20 @@
-"""
-Views for AI chat within case analysis.
-"""
+"""The views the intake chat's message templates still call: a
+reply's status and cancel, deleting a message, and citation vetting.
+The matter chat itself is retired (docs/decisions/2026-10-30-ai-chat-retired.md)."""
 
 import logging
 import time
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import F, Max
-from django.db.models.functions import Coalesce
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, render
 
-from apps.accounts.models import CustomUser
-from apps.case.services import (
-    GENERATE_DOCUMENT_SUMMARY_TASK,
-    get_matter_from_url,
-    get_session_key,
-    set_last_tab,
-)
 from apps.llm.status import status_cache
-from apps.management.selection import (
-    all_visible_selected,
-    clear_selected_ids,
-    get_selected_ids,
-    select_all_ids,
-    selection_response,
-    toggle_id,
-)
 
-from .access import (
-    accessible_matters,
-    conversation_for_user,
-)
-from .filters import ConversationFilter
-from .models import Conversation, Message
+from .access import accessible_matters, conversation_for_user
+from .models import Message
 
 logger = logging.getLogger(__name__)
-
-# The HX-Trigger event that refreshes the archive list in every tab.
-CONVERSATIONS_TRIGGER = "conversationsChanged"
-
-
-def get_accessible_matters(user):
-    """The matters this user may open (see access.accessible_matters)."""
-    return accessible_matters(user)
-
-
-def annotate_last_activity(queryset):
-    """Annotate conversations with last message timestamp, falling back to created_at."""
-    return queryset.select_related("draft_link").annotate(
-        last_activity=Coalesce(Max("messages__created_at"), F("created_at"))
-    )
-
-
-def get_conversation_list_context(request, matter):
-    """Filter/sort/selection context shared by the AI tab's list partials.
-
-    The keyword/participant filter and the sort order persist per matter in
-    the session ("ai_filter" key, applied through ConversationFilter);
-    row selection rides its own session key.
-    """
-    filter_session_key = get_session_key("ai_filter", matter.id)
-    filter_data = request.session.get(filter_session_key, {})
-
-    conversations = annotate_last_activity(Conversation.objects.filter(matter=matter))
-    if filter_data:
-        conversations = ConversationFilter(filter_data, queryset=conversations).qs
-    else:
-        conversations = conversations.order_by("-created_at", "-id")
-
-    current_order = filter_data.get("order_by", "-created_at")
-    if isinstance(current_order, list):
-        current_order = current_order[0] if current_order else "-created_at"
-
-    conv_list = list(conversations)
-    selection_key = get_session_key("selected_conversations", matter.id)
-    selected_conversations = get_selected_ids(request, selection_key)
-    visible_ids = [c.id for c in conv_list]
-
-    participant_choices = list(
-        CustomUser.objects.filter(ai_messages__conversation__matter=matter)
-        .distinct()
-        .order_by("first_name", "last_name")
-    )
-    participant_id = str(filter_data.get("participant", ""))
-    selected_participant = next(
-        (u for u in participant_choices if str(u.id) == participant_id), None
-    )
-
-    return {
-        "matter": matter,
-        "conversations": conv_list,
-        "current_order": current_order,
-        "selected_conversations": selected_conversations,
-        "all_selected": all_visible_selected(selected_conversations, visible_ids),
-        "filter_q": filter_data.get("q", ""),
-        "participant_choices": participant_choices,
-        "selected_participant": selected_participant,
-    }
-
-
-@login_required
-def ai_index(request, matter_id):
-    """Main AI view - list of conversations."""
-    matter, matters = get_matter_from_url(request, matter_id)
-    set_last_tab(request, matter_id, "ai")
-
-    # Backfill: queue summary generation for documents missing summaries
-    from apps.case.models import Document
-
-    docs_needing_summary = Document.objects.filter(
-        matter=matter,
-        summary__isnull=True,
-        ocr_text__isnull=False,
-        ocr_status__in=["completed", "extracted"],
-    )
-    if docs_needing_summary.exists():
-        from django_q.tasks import async_task
-
-        for doc in docs_needing_summary[:20]:
-            async_task(
-                GENERATE_DOCUMENT_SUMMARY_TASK,
-                doc.id,
-                task_name=f"Summary-{doc.id}",
-                group="summary_generation",
-            )
-
-    context = {
-        "app": "case",
-        "subapp": "ai",
-        "matters": matters,
-        **get_conversation_list_context(request, matter),
-    }
-
-    return render(request, "ai/main.html", context)
-
-
-@login_required
-def ai_list(request, matter_id):
-    """Return conversation list partial (for HTMX refresh)."""
-    matter, _ = get_matter_from_url(request, matter_id)
-    return render(
-        request, "ai/list.html", get_conversation_list_context(request, matter)
-    )
-
-
-@login_required
-def ai_sort(request, matter_id, order):
-    """Sort conversations by a field."""
-    filter_session_key = get_session_key("ai_filter", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
-
-    current_order = filter_data.get("order_by", "")
-
-    # Toggle sort direction if clicking the same column
-    if current_order == order:
-        new_order = f"-{order}" if not current_order.startswith("-") else order
-    elif current_order == f"-{order}":
-        new_order = order
-    else:
-        new_order = f"-{order}"  # Default to descending for new column
-
-    filter_data["order_by"] = new_order
-    request.session[filter_session_key] = filter_data
-
-    return redirect("ai:archive-list", matter_id=matter_id)
-
-
-@login_required
-def ai_filter(request, matter_id):
-    """Update the conversation keyword/participant filter (session-persisted).
-
-    The toolbar search input targets just the table (partial=table) so a
-    swap mid-typing never steals focus; participant picks re-render the
-    whole list so the dropdown's label updates too.
-    """
-    matter, _ = get_matter_from_url(request, matter_id)
-    filter_session_key = get_session_key("ai_filter", matter_id)
-    filter_data = request.session.get(filter_session_key, {})
-
-    if "q" in request.GET:
-        q = request.GET.get("q", "").strip()
-        if q:
-            filter_data["q"] = q
-        else:
-            filter_data.pop("q", None)
-    if "participant" in request.GET:
-        participant = request.GET.get("participant", "")
-        if participant.isdigit():
-            filter_data["participant"] = participant
-        else:
-            filter_data.pop("participant", None)
-    request.session[filter_session_key] = filter_data
-
-    template = (
-        "ai/table.html" if request.GET.get("partial") == "table" else "ai/list.html"
-    )
-    return render(request, template, get_conversation_list_context(request, matter))
-
-
-@login_required
-def conversation_view(request, conv_id):
-    """A conversation from the archive, read-only, in its own window."""
-    conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
-    )
-    return render(
-        request,
-        "ai/conversation-standalone.html",
-        {
-            "matter": conversation.matter,
-            "conversation": conversation,
-            "messages": conversation.messages.select_related("user").all(),
-        },
-    )
 
 
 def _error_reply(message):
@@ -252,10 +52,9 @@ def _poll_ended():
 
 @login_required
 def ai_status(request, conv_id):
-    """The status poll of a running chat turn: the intake chat's, since
-    the matter chat's engine was retired (sessions have their own,
-    sessions.session_live). Reads the run's entry in the status cache
-    and, when it is finished, writes the answer as a message."""
+    """The status poll of a running chat turn: the intake chat's, the one
+    chat left. Reads the run's entry in the status cache and, when it is
+    finished, writes the answer as a message."""
     # An intake chat names no matter, so the central matter check never
     # sees it; access.conversation_for_user checks the Intakes permission.
     conversation = conversation_for_user(conv_id, request.user)
@@ -409,7 +208,7 @@ def delete_message(request, message_id):
     message = get_object_or_404(
         Message,
         pk=message_id,
-        conversation__matter__in=get_accessible_matters(request.user),
+        conversation__matter__in=accessible_matters(request.user),
     )
     conversation = message.conversation
 
@@ -434,49 +233,12 @@ def delete_message(request, message_id):
 
 
 @login_required
-@require_POST
-def delete_conversation(request, conv_id):
-    """Delete a conversation."""
-    conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
-    )
-
-    conversation.delete()
-
-    # Trigger refresh of conversation list
-    response = HttpResponse(status=204)
-    response["HX-Trigger"] = "conversationsChanged"
-    return response
-
-
-@login_required
-@require_POST
-def set_ai_context(request, conv_id, state):
-    """Set the ai_context state on a conversation."""
-    if state not in ("auto", "always", "never"):
-        return HttpResponse(status=400)
-
-    conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
-    )
-
-    conversation.ai_context = state
-    conversation.save()
-
-    return render(
-        request,
-        "ai/ai-context-cell.html",
-        {"conv": conversation},
-    )
-
-
-@login_required
 def citation_vetting_detail(request, message_id, citation_index):
     """Return a modal fragment describing the Flash vetting verdict for one citation."""
     message = get_object_or_404(
         Message,
         pk=message_id,
-        conversation__matter__in=get_accessible_matters(request.user),
+        conversation__matter__in=accessible_matters(request.user),
     )
 
     citations = message.verified_citations or []
@@ -506,124 +268,7 @@ def message_vetting_status(request, message_id):
     message = get_object_or_404(
         Message,
         pk=message_id,
-        conversation__matter__in=get_accessible_matters(request.user),
+        conversation__matter__in=accessible_matters(request.user),
     )
 
     return render(request, "ai/vetting-wrapper.html", {"message": message})
-
-
-@login_required
-def rename_conversation(request, conv_id):
-    """Rename a conversation - POST saves and closes modal."""
-    conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
-    )
-
-    if request.method == "POST":
-        new_title = request.POST.get("title", "").strip()
-        if new_title:
-            conversation.title = new_title[:255]
-            conversation.save()
-
-        # Check if request came from standalone view
-        if request.headers.get("HX-Target") == "conversationTitle":
-            # From standalone view - return title partial
-            return render(
-                request,
-                "ai/conversation-title.html",
-                {
-                    "conversation": conversation,
-                },
-            )
-
-        # From modal - return 204 to close modal and trigger list refresh
-        return HttpResponse(status=204, headers={"HX-Trigger": "conversationsChanged"})
-
-    # GET - return edit form for standalone view
-    return render(
-        request,
-        "ai/conversation-rename-inline.html",
-        {
-            "conversation": conversation,
-        },
-    )
-
-
-@login_required
-def rename_form(request, conv_id):
-    """Return rename modal for conversation."""
-    conversation = get_object_or_404(
-        Conversation, pk=conv_id, matter__in=get_accessible_matters(request.user)
-    )
-
-    return render(
-        request,
-        "ai/rename-modal.html",
-        {
-            "conversation": conversation,
-            "matter": conversation.matter,
-        },
-    )
-
-
-@login_required
-@require_POST
-def ai_toggle_select(request, matter_id, conv_id):
-    # Only this matter's conversations may enter its selection: the bulk
-    # actions below act on whatever ids the selection holds.
-    get_object_or_404(Conversation, pk=conv_id, matter_id=matter_id)
-    session_key = get_session_key("selected_conversations", matter_id)
-    toggle_id(request, session_key, conv_id)
-    return selection_response(CONVERSATIONS_TRIGGER)
-
-
-@login_required
-@require_POST
-def ai_select_all(request, matter_id):
-    matter, _ = get_matter_from_url(request, matter_id)
-    conversations = Conversation.objects.filter(matter=matter)
-    visible_ids = [c.id for c in conversations]
-    session_key = get_session_key("selected_conversations", matter_id)
-    select_all_ids(request, session_key, visible_ids)
-    return selection_response(CONVERSATIONS_TRIGGER)
-
-
-@login_required
-@require_POST
-def ai_clear_selection(request, matter_id):
-    session_key = get_session_key("selected_conversations", matter_id)
-    clear_selected_ids(request, session_key)
-    return selection_response(CONVERSATIONS_TRIGGER)
-
-
-@login_required
-@require_POST
-def ai_bulk_set_context(request, matter_id, state):
-    """Bulk set ai_context on selected conversations."""
-    if state not in ("auto", "always", "never"):
-        return HttpResponse(status=400)
-
-    session_key = get_session_key("selected_conversations", matter_id)
-    selected = get_selected_ids(request, session_key)
-    if not selected:
-        return HttpResponse(status=400)
-
-    Conversation.objects.filter(id__in=selected, matter_id=matter_id).update(
-        ai_context=state
-    )
-    clear_selected_ids(request, session_key)
-    return selection_response(CONVERSATIONS_TRIGGER)
-
-
-@login_required
-@require_POST
-def ai_bulk_delete(request, matter_id):
-    """Bulk delete selected conversations."""
-    session_key = get_session_key("selected_conversations", matter_id)
-    selected = get_selected_ids(request, session_key)
-    if not selected:
-        return HttpResponse(status=400)
-
-    Conversation.objects.filter(id__in=selected, matter_id=matter_id).delete()
-    clear_selected_ids(request, session_key)
-    return selection_response(CONVERSATIONS_TRIGGER)

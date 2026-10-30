@@ -21,7 +21,7 @@ PDF and has one of four categories: **Correspondence**, **Discovery**,
 | **Pg.** | The number of pages, once Kosmos has read the file. |
 | **Date** | The document's own date. Click it to change it, then press Enter. A document with no date shows a calendar button. |
 | **Added** | The day the document was added to Kosmos. |
-| **AI** | **Auto**, **Always** or **Never**: whether the AI reads this document. See [AI chat](ai-chat.md). Shown only when your firm has set up AI. |
+| **AI** | **Auto**, **Always** or **Never**: whether the AI reads this document, in Claude through the Kosmos connector and in matter search. Shown only when your firm has set up AI. |
 | (flag) | The importance, from **Highest** to **Lowest**. New documents are **Normal**. Click the icon to change it. |
 
 | Badge | What it means |

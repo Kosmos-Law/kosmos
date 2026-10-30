@@ -114,17 +114,6 @@ variable belongs to stays off or falls back until it is set.
 | Variable | Default | Description |
 |---|---|---|
 | `LAW_FIRM_ID` | empty | The firm's id in LEDES invoice exports. While it is blank, the Download Ledes action is hidden. |
-| `DROPBOX_FIRM_ROOT` | empty | Firm files (apps/drive): the Dropbox daemon's synced Firm folder on this host. Empty turns the Files integration off. |
-| `DROPBOX_MATTER_ROOTS` | `['Matters - Open', 'Matters - Pending']` | Subfolders of the root whose direct children are matter folders, comma-separated. (comma-separated list) |
-| `DROPBOX_OCR_EXCLUDE` | `['Matters - Closed']` | Top-level folders the watcher never checks or OCRs, comma-separated. (comma-separated list) |
-| `FILES_OCR_SCRATCH` | `.ocr-scratch/` in the repository | Where the watcher stages an OCR'd PDF before replacing the original in one rename. Keep it on the same filesystem as the tree. Default: .ocr-scratch under the application directory. |
-| `FILES_OCR_JOBS` | `2` | Tesseract workers per PDF when the watcher adds a text layer. (integer) |
-| `FILES_TEXT_CACHE` | `.file-text/` in the repository | Where the text of PDFs and documents is cached for the sessions' search inside files. Outside the Dropbox tree. Default: .file-text under the application directory. |
-| `SESSIONS_HOME` | `.claude-sessions/` in the repository | Claude Code sessions (apps/ai/runtime.py; manage.py run_sessions). Where the harness keeps transcripts and config for sessions. Default: .claude-sessions under the application directory. |
-| `SESSIONS_SCRATCH` | `.claude-sessions' / 'scratch/` in the repository | Working directory for a session whose matter has no linked folder. Default: scratch/ under SESSIONS_HOME. |
-| `SESSIONS_CONCURRENCY` | `2` | Turns the sessions service runs at once (each is a Claude Code process). (integer) |
-| `SESSIONS_MAX_TURNS` | `80` | Model/tool rounds one turn may take before the harness stops it. (integer) |
-| `SESSIONS_MAX_BUDGET_USD` | `10.0` | Dollars one turn may spend before the harness stops it. |
 | `PAYMENT_PROCESSOR` | `fake` | Which processor collects online payments: none (online payment off; the emailed link still shows the invoice), lawpay, stripe, confido, or fake. fake is for development: it records a payment although no money moves, so never run it where real clients receive invoices. The built-in default is fake; the installer sets none for a production install. |
 | `INVOICE_PAY_LINK_MAX_AGE` | `7776000` | Seconds an emailed payment link stays valid. Defaults to 90 days. Resending the invoice issues a fresh link. (integer) |
 | `LAWPAY_PUBLIC_KEY` | empty | LawPay (AffiniPay) public key, used in the browser by the hosted card fields. Test keys reach only test accounts. |

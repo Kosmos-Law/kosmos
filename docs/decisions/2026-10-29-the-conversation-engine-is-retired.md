@@ -63,5 +63,5 @@ and the status poll, and is decided separately.
 ## Related
 
 - [AI chat becomes Claude Code sessions](2026-10-29-ai-chat-becomes-claude-code-sessions.md)
-- [Sessions](../dev/subsystems/ai/sessions.md);
+- [The AI chat is retired](2026-10-30-ai-chat-retired.md);
   [The archive and the intake chat](../dev/subsystems/ai/context.md)

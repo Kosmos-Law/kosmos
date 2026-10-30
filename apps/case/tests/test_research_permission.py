@@ -1,7 +1,7 @@
 """The Research permission gates saved case law.
 
-Saved case law is a view of the AI tab, reached by its Case Law switch,
-which a user without the permission does not see. The case law and the
+Saved case law is the Case Law tab, which a user without the permission
+does not see. The case law and the
 case viewer refuse such a user at their addresses too, whichever way the
 address names the matter or the case. Companion to the permission tests
 in test_matter_access.py."""
@@ -94,19 +94,3 @@ def test_an_admin_is_never_refused(user, matter, case_law):
     client.get("/dash/")
 
     assert client.get(f"/case/{matter.id}/caselaws/list/").status_code == 200
-
-
-def test_the_ai_tab_offers_case_law_with_the_permission(client, matter):
-    body = client.get(f"/case/{matter.id}/tab/ai/").content.decode()
-    assert f"/case/{matter.id}/tab/caselaws/" in body
-
-
-def test_the_ai_tab_hides_case_law_without_it(no_research_client, matter):
-    response = no_research_client.get(f"/case/{matter.id}/tab/ai/")
-    assert response.status_code == 200
-    assert f"/case/{matter.id}/tab/caselaws/" not in response.content.decode()
-
-
-def test_case_law_keeps_the_ai_tab_active(client, matter):
-    body = client.get(f"/case/{matter.id}/caselaws/").content.decode()
-    assert 'class="mode-pill active">Case Law' in body.replace("\n", "")

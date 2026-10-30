@@ -47,7 +47,6 @@ def _routes(matter, document, highlight, fact, conversation):
         f"/case/highlights/{highlight.id}/detail/",
         f"/case/facts/{fact.id}/edit/",
         f"/case/labels/apply/document/{document.id}/",
-        f"/case/ai/conversations/{conversation.id}/view/",
     ]
 
 

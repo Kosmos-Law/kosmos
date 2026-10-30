@@ -18,7 +18,6 @@ def register():
     from apps.case.models import CaseLaw, Document, Fact, Highlight, Label, Witness
     from apps.case.search.views import get_search_data
     from apps.case.witnesses.views import get_witnesses_data
-    from apps.settings.ai import ai_enabled
     from apps.settings.courtlistener import caselaw_available
 
     def tab(name, label, order, data, **options):
@@ -39,18 +38,16 @@ def register():
     tab("highlights", "Highlights", 20, lambda r, m: get_highlights_data(r, m, m.id))
     tab("facts", "Timeline", 30, lambda r, m: get_facts_data(r, m, m.id))
     tab("witnesses", "Witnesses", 40, lambda r, m: get_witnesses_data(r, m, m.id))
-    # 60 is the Emails tab (apps.mail), 90 the AI tab (apps.ai).
+    # 60 is the Emails tab (apps.mail).
     tab("labels", "Labels", 70, lambda r, m: get_label_data(r, m.id))
     tab("search", "Search", 80, lambda r, m: get_search_data(r, m, m.id))
-    # Saved case law: its own tab when AI is off and CourtListener is on,
-    # a view inside the AI tab otherwise (the AI tab claims it as active).
+    # Saved case law, when CourtListener is on.
     tab(
         "caselaws",
         "Case Law",
         95,
         lambda r, m: get_caselaws_data(r, m, m.id),
         available=lambda user, matter_id: caselaw_available(user),
-        listed=lambda user, matter_id: caselaw_available(user) and not ai_enabled(),
     )
 
     register_matter_lookup("document_id", Document, ("matter_id",), "document")

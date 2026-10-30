@@ -19,14 +19,15 @@ All variables named here are described in the
 
 | Key | Provider | Enables |
 |---|---|---|
-| Anthropic (`ANTHROPIC_API_KEY`) | Anthropic | Sessions on a matter (Claude Code through the Agent SDK), and every background AI feature. |
+| Anthropic (`ANTHROPIC_API_KEY`) | Anthropic | Every background AI feature. |
 | Gemini (`GEMINI_API_KEY`) | Google Gemini | Every background AI feature, and [semantic search](#semantic-search). |
 | `COURTLISTENER_API_KEY` | CourtListener | Saved case law and case law search. See [CourtListener](#courtlistener). |
 
-Sessions need the Anthropic key: a session is Claude Code run on the
-server against the matter's folder, and it bills the firm's Anthropic
-account by use. The AI tab appears with either key, but without the
-Anthropic key a session's prompt fails with the harness's error.
+Asking Claude about a matter is not done in Kosmos: people work in
+Claude's own apps, connected to Kosmos over its MCP server (see
+[Claude](claude-desktop.md)). That needs no key here, since it runs on
+each user's own Claude account. The keys on this page run the
+background features and the intake chat.
 
 Either key runs the background features:
 
@@ -47,7 +48,7 @@ under **Settings → Tasks** when that provider has a key, and the other
 one when it does not.
 
 Only semantic search needs Gemini in particular, because the embeddings
-come from Gemini. Without a Gemini key, matter search and a session's
+come from Gemini. Without a Gemini key, matter search and the connector's
 search tool match by keyword alone, and nothing says so.
 
 ## Set the keys
@@ -114,8 +115,7 @@ python manage.py createcachetable
 
 With neither key set (in `config/.env` or in Settings), Kosmos hides:
 
-- the **AI** tab of every matter, with its conversations and the drafts
-  companion (see [Drafting with LibreOffice](libreoffice.md));
+- the drafts companion (see [Drafting with LibreOffice](libreoffice.md));
 - **Assessment**, **Assess** and **Chat** on intakes;
 - the AI context controls: the **AI** column and the AI bulk action on
   **Documents** and **Case Law**, and the **AI Context** field of the
@@ -123,10 +123,9 @@ With neither key set (in `config/.env` or in Settings), Kosmos hides:
 - **Settings → Tasks**, which holds only AI quick task entry. The quick
   task line reads "Matter - Description" whatever the stored setting says.
 
-The addresses of the AI tab, its conversations, the drafts companion and
-the intake assessment and chat answer 404 for everyone, administrators
-included, so a bookmark or an old link does not reach them. A user whose
-last tab on a matter was **AI** is taken to **Documents**.
+The addresses of the drafts companion and the intake assessment and
+chat answer 404 for everyone, administrators included, so a bookmark or
+an old link does not reach them.
 
 Nothing is queued in the background: no document, chat or case
 summaries, and no semantic indexing. Forwarded intake email still works.
@@ -147,45 +146,14 @@ tool's results show. Once a key is set:
 
 - semantic search: run `build_semantic_index` (see
   [Semantic search](#semantic-search));
-- documents: opening a matter's AI tab queues summaries for up to 20 of
-  its documents that lack one, each time it is opened; until then the
-  selector goes by a document's name and description;
-- saved cases added while AI was off keep no summary. There is no
-  backfill for them.
-
-## The models in a session
-
-The models a session can use are a fixed list in the code
-(`MODEL_CHOICES` in
-[`apps/ai/models.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/ai/models.py)):
-Claude Opus (the default), Claude Sonnet, and Claude Fable, which is
-offered to administrators only. The model and the effort (how hard the
-model thinks: low, medium, high or max, high by default) are set on the
-session page and can be changed between prompts. A session an
-administrator set to Claude Fable runs on Claude Opus when anyone else
-continues it.
-
-Searching inside the matter's PDFs and documents keeps a copy of each
-file's text under `FILES_TEXT_CACHE` (`.file-text` under the
-application directory by default), outside the Dropbox tree. It fills
-itself as files are searched and as the files watcher checks new PDFs;
-`manage.py index_file_text` fills it for the whole tree at once, which
-is worth running once after the Dropbox folder first syncs.
-
-## Cost
-
-Every turn is billed by Anthropic to the firm's account. A session
-reads what it needs as it goes, so a turn's cost depends on how much
-Claude opened; the page shows each turn's tokens and cost as the
-harness reports them, and the session's running total. Two settings
-cap a turn: `SESSIONS_MAX_TURNS` (model and tool rounds) and
-`SESSIONS_MAX_BUDGET_USD` (dollars), in `config/.env`. Use Anthropic's
-console for spending limits and alerts.
+- documents and saved cases added while AI was off keep no summary,
+  and the search tools go by a document's name and description. There
+  is no backfill for them.
 
 ## Semantic search
 
 Semantic search finds material by meaning as well as by keyword. It is
-used by matter search and by a session's search tool. Kosmos
+used by matter search and by the Claude connector's search tool. Kosmos
 splits documents, emails, highlights and timeline facts into chunks, asks Gemini for an embedding of each chunk, and stores
 the vectors in PostgreSQL.
 
@@ -223,8 +191,8 @@ Things to know:
   templates set it to `False`. With it on and no Gemini key, saves queue
   nothing, so turning it on early is harmless; it does nothing until the
   key is set.
-- Without a Gemini key, search inside a matter and a session's search
-  tool match by keyword only. Nothing on the screen says so.
+- Without a Gemini key, search inside a matter and the connector's
+  search tool match by keyword only. Nothing on the screen says so.
 - A document is indexed only once its text has been extracted. Documents
   and emails marked "Never" for AI context are not indexed.
 - Closed matters are not covered by `build_semantic_index` unless you
@@ -237,49 +205,35 @@ Things to know:
 ## CourtListener
 
 [CourtListener](https://www.courtlistener.com/) is a free case law
-database run by the Free Law Project. Kosmos uses its API to search
-opinions, resolve citations, fetch opinion text and check the citations
-in AI replies. Create an account there, generate an API token, set it
+database run by the Free Law Project. Kosmos uses its API to resolve
+citations, fetch opinion text and check the citations in AI replies. Create an account there, generate an API token, set it
 as `COURTLISTENER_API_KEY` in `config/.env`, and restart the web
 application and the worker. It has no screen in Settings.
 
 Saved case law follows the token. Users with the Research permission
 (and administrators) see a matter's saved cases:
 
-- as the **Case Law** view of the matter's **AI** tab, when an AI key is
-  set;
-- as a **Case Law** tab of its own on the **Case** side, when no AI key
-  is set. Cases can then be added by citation, read and highlighted, but
-  they get no summary and have no **AI** column.
+as the matter's **Case Law** tab. Cases are added by citation, read and
+highlighted; with an AI key each gets a summary and the tab has an
+**AI** column.
 
 Without the token, Kosmos makes no CourtListener requests at all:
 
 - saved case law is hidden on every matter, and its addresses (the list,
   adding by citation, the case viewer) answer 404. Cases already saved
   stay in the database and reappear when the token is set again;
-- a session is not offered the case law search tools, and its research
-  method is left out of Claude's instructions;
-- the text of case law already saved cannot be fetched, so a session
-  reads only what was saved with it.
+- the text of case law already saved cannot be fetched.
 
-Restart both services after setting the token. The search tools
-are offered from the next question on.
+Restart both services after setting the token.
 
 CourtListener limits requests per account. Kosmos spaces its requests a
 quarter of a second apart within each process and, when CourtListener
-answers "too many requests", waits and retries up to three times. A
-heavy research session can still run into the account's hourly or daily
-limit, and results will be thinner until it resets. The limits are set by
+answers "too many requests", waits and retries up to three times. Heavy
+use can still run into the account's hourly or daily limit, and lookups
+fail until it resets. The limits are set by
 CourtListener for your account, not by Kosmos.
 
-The court filter for a session's case law searches is a list of
-states maintained in the code
-([`apps/case/jurisdictions.py`](https://github.com/Kosmos-Law/kosmos/blob/dev/apps/case/jurisdictions.py)),
-and a search defaults to the state named in the matter's Jurisdiction
-field.
-Each state has its supreme court, appellate courts and federal circuit.
-Federal district courts are filled in for only some states. Links for
-statute citations are likewise built in the code, and only for the
+Links for statute citations are built in the code, and only for the
 United States Code, the Code of Federal Regulations and the Georgia
 Code. Statutes of other states are shown without a link.
 
@@ -340,21 +294,14 @@ with clients. This section states what Kosmos sends. It cannot tell you
 what each provider does with it: read their terms, and the data handling
 options of the plan you buy.
 
-**To Anthropic, with a prompt in a session on a matter:**
-
-- the name and title of the user asking, the firm's name and
-  jurisdiction;
-- the matter overview, its contacts and parties, witnesses and court
-  proceedings, and the top level of the matter's folder;
-- the session so far (the harness keeps its own transcript on the
-  server and resumes it);
-- whatever Claude reads during the turn: files from the matter's
-  folder, and what the Kosmos tools return (facts, highlights, tasks,
-  events, time entries, the settlement log, synced email with the text
-  of attachments, saved case law, earlier sessions and conversations;
-  invoices and rates only for a user with the Financial permission).
-  Anything on the matter can be read during a turn; a document or
-  email set to **Never** cannot.
+**To Anthropic, when a user works on a matter in Claude:** what Claude
+reads through the connector's tools in answer to the user's questions:
+the matter record, facts, witnesses, highlights, tasks, synced email,
+the text of documents, the archived conversations, and invoices only
+for a user with the Financial permission. A document
+or email set to **Never** cannot be read. This goes under the user's
+own Claude account, not a key on this server; the firm's files on the
+user's computer are read by Claude directly. See [Claude](claude-desktop.md).
 
 **To the background provider (Google when a Gemini key is set, otherwise
 Anthropic), by the background features:** intake details and the full
@@ -368,40 +315,34 @@ matter search. Without a Gemini key none of this is sent.
 
 With no AI key at all, nothing is sent to either provider.
 
-**To CourtListener, when its token is set:** the search queries and
-opinion lookups a session makes for a user with the Research
-permission.
+**To CourtListener, when its token is set:** the citation lookups and
+opinion fetches made for saved case law and for citation checks.
 
 Users can keep individual items out: documents, emails and archived
 conversations have an AI context setting, and "Never" excludes the item
 from the matter tools and from the semantic index. There is no switch
-that excludes a whole matter, but a matter with no linked folder gives
-a session no files.
+that excludes a whole matter.
 
 ## Check that it works
 
 1. As an administrator, open **Settings → Integrations**. Each provider
    you set up shows "Set in config/.env" or a **Remove** button. A row
    that still shows **API key** and **Save** has no key.
-2. Open a matter, start a session and ask a question. An answer
-   confirms the Anthropic key and the sessions service. A prompt that
-   waits with "The sessions service is not running" means the service
-   is down. `scripts/install.sh --prod` installs and starts it as
-   `sessions.service` beside the web and worker units; by hand, render
-   `deploy/systemd/sessions.service` with the account and the checkout
-   path and enable it. See [Sessions](../../dev/subsystems/ai/sessions.md).
+2. Connect Claude under **Settings → Claude** and ask it about a matter
+   (see [Claude](claude-desktop.md)). An answer confirms the connector;
+   no AI key is involved.
 3. Open an intake and start its chat, which runs on Gemini when that
    key is set. A reply with no "Error:" prefix confirms the Gemini key.
-4. As a user with the Research permission, ask a session to search
-   case law. A search in the turn's steps confirms the CourtListener
-   token.
+4. As a user with the Research permission, add a case by citation
+   under **Case Law**. The preview confirms the CourtListener token, and
+   the summary written for the case confirms the AI key.
 5. Upload a PDF, wait for text extraction, and search the matter for a
    phrase that paraphrases its content without using its words. A hit
    confirms semantic search.
 
 ## Troubleshooting
 
-**There is no AI tab, and no AI anywhere.** No AI key is set, or the one
+**There is no AI anywhere.** No AI key is set, or the one
 stored in Settings can no longer be read. Check **Settings →
 Integrations**. If you changed `SECRET_KEY` (or restored the database on
 another server), the stored keys were lost: the log has "A stored AI key

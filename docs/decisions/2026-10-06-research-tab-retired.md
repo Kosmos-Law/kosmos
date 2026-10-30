@@ -91,5 +91,5 @@ Recoverable from git history at the parent of commit `c70da1a05`.
   about the retired pipeline.
 - [Research chat (retired 2026-08-16)](research-chat-retired.md): the
   feature the tab replaced.
-- [Sessions](../dev/subsystems/ai/sessions.md) (the agentic chat it grew from is retired) and
+- [The AI chat is retired](2026-10-30-ai-chat-retired.md) and
   [Case building](../dev/subsystems/case-building.md#saved-cases).

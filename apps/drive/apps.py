@@ -1,12 +1,9 @@
-"""Firm files: the Dropbox tree synced onto this host.
-
-The firm keeps its files in Dropbox. The Dropbox daemon syncs the Firm
-folder onto the server, and this app works with the files where they are:
-it links a matter to its folder (a person chooses; the app only suggests),
-watches the tree so links follow renames and every PDF carries a text
-layer (OCR in place), and reports the tree's state under Settings. Nothing
-is copied into the database; the AI agent reads the files from disk.
-Record: docs/decisions/2026-10-29-firm-files-live-in-dropbox.md.
+"""Migrations only: the shell that drops the removed Google Drive mirror's
+tables and, after it, the removed Files integration's (matter-to-folder
+links and the watcher's state). The firm's files live in Dropbox and are
+indexed by firm-index on the office server; Claude reads them there.
+Records: docs/decisions/2026-10-27-google-drive-removed.md,
+docs/decisions/2026-10-30-ai-chat-retired.md.
 """
 
 from django.apps import AppConfig
@@ -15,4 +12,4 @@ from django.apps import AppConfig
 class DriveConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.drive"
-    verbose_name = "Firm files"
+    verbose_name = "Firm files (retired)"

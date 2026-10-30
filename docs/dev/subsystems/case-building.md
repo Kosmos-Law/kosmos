@@ -19,7 +19,7 @@ model live here.
 | `apps/case/semantic.py` | The semantic index: chunking, embedding, the kind registry, save-time re-indexing, `semantic_entries()` |
 | `apps/case/models.py` | `Label`, `Document`, `Highlight`, `Fact`, `Witness`, `CaseLaw` |
 | `apps/case/documents/` | Documents tab, upload, duplicate detection, mbox import, OCR task, viewer |
-| `apps/drive/` | Migrations only: the shell that drops the removed Drive mirror's tables (see [Google Drive is removed](../../decisions/2026-10-27-google-drive-removed.md)) |
+| `apps/drive/` | Migrations only: the shell that drops the removed Drive mirror's tables and, after it, the removed Files integration's (see [Google Drive is removed](../../decisions/2026-10-27-google-drive-removed.md) and [The AI chat is retired](../../decisions/2026-10-30-ai-chat-retired.md)) |
 | `apps/case/highlights/` | Highlights tab and the viewer's highlight endpoints |
 | `apps/case/facts/`, `apps/case/witnesses/` | Timeline and Witnesses tabs, the Timeline PDF |
 | `apps/case/labels/` | Labels tab and the apply-labels modal used by every tab |
@@ -235,17 +235,11 @@ excerpts) this one was left as it is pending a real sanitiser. Saved
 cases and the viewer need `perm_research`, enforced by URL pattern in the
 middleware.
 
-With AI configured the list is a view of the AI tab:
-`templates/ai/view-pills.html` puts a Conversations | Case Law
-switch in both toolbars, shown only when `caselaw_available` (a
-CourtListener token, and an admin or a `perm_research` user).
-`/case/<id>/caselaws/` and the `caselaws` tab key render the list with
-the AI tab marked active in the case navigation. Without AI the list is
-its own Case Law tab, with no AI column, bulk AI menu or summary.
-Without a CourtListener token the list, lookup and viewer 404
-(`CASELAW_PATTERN` in `PermissionMiddleware`). Cases also arrive from a session's `save_caselaw`
-tool (see [Sessions](ai/sessions.md)), which builds the row from
-`fetch_cluster()` so a citation-less slip opinion saves too.
+The list is the matter's Case Law tab, shown when `caselaw_available`
+(a CourtListener token, and an admin or a `perm_research` user). With
+AI configured it has an AI column, a bulk AI menu and a summary per
+case; without, none of those. Without a CourtListener token the list,
+lookup and viewer 404 (`CASELAW_PATTERN` in `PermissionMiddleware`).
 
 Jurisdictions (`apps/case/jurisdictions.py`) feed the agent's
 `search_caselaw` court filter: a state lists its supreme and appellate
@@ -336,7 +330,7 @@ matrix is in the [permissions reference](../../reference/permissions.md).
   and highlights](../../guide/facts.md), [Case law](../../guide/research.md)
 - Admin: [Storage](../../admin/integrations/storage.md)
 - Subsystems: [Matters](matters.md), [AI context](ai/context.md),
-  [Sessions](ai/sessions.md), [Drafts](drafts.md),
+  [Drafts](drafts.md),
   [Email and intakes](email-and-intakes.md) (the Emails tab),
   [MCP](mcp.md) (the case JSON API), [Operations](operations.md)
 - Conventions: [HTMX and Alpine](../conventions/htmx-alpine.md),

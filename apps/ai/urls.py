@@ -1,14 +1,14 @@
-"""Routes of the AI app: the matter chat under /case/<id>/ai/, the
-conversation operations under /case/ai/, and the token-authed JSON API
-over a matter under /case/api/ (the MCP server in apps/mcp calls the same
-service functions in-process). The paths keep their historic /case/
-prefix so bookmarks, scripts and the permission middleware's patterns go
-on working; only the URL names moved to the ``ai`` namespace.
+"""Routes of the AI app: the token-authed JSON API over a matter under
+/case/api/ (the MCP server in apps/mcp calls the same service functions
+in-process), and the few conversation operations the intake chat's
+message templates still use under /case/ai/. The paths keep their
+historic /case/ prefix so scripts and the permission middleware's
+patterns go on working.
 """
 
 from django.urls import path
 
-from apps.ai import api, sessions, views
+from apps.ai import api, views
 
 app_name = "ai"
 
@@ -62,59 +62,6 @@ urlpatterns = [
         api.api_create_task,
         name="api-create-task",
     ),
-    # AI Chat (matter-scoped)
-    path("case/<int:matter_id>/ai/", sessions.sessions_index, name="index"),
-    path("case/<int:matter_id>/ai/list/", sessions.sessions_list, name="list"),
-    path(
-        "case/<int:matter_id>/ai/sessions/launch/",
-        sessions.session_launch,
-        name="session-launch",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/",
-        sessions.session_page,
-        name="session-page",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/messages/",
-        sessions.session_messages,
-        name="session-messages",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/send/",
-        sessions.session_send,
-        name="session-send",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/model/",
-        sessions.session_controls,
-        name="session-controls",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/rename/",
-        sessions.session_rename,
-        name="session-rename",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/delete/",
-        sessions.session_delete,
-        name="session-delete",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/live/",
-        sessions.session_live,
-        name="session-live",
-    ),
-    path(
-        "case/ai/sessions/<int:session_id>/cancel/",
-        sessions.session_cancel,
-        name="session-cancel",
-    ),
-    # The archive: conversations from the chat that preceded sessions.
-    path("case/<int:matter_id>/ai/archive/", views.ai_index, name="archive"),
-    path("case/<int:matter_id>/ai/archive/list/", views.ai_list, name="archive-list"),
-    path("case/<int:matter_id>/ai/sort/<str:order>/", views.ai_sort, name="sort"),
-    path("case/<int:matter_id>/ai/filter/", views.ai_filter, name="filter"),
     # AI conversation operations
     path(
         "case/ai/status/<int:conv_id>/",
@@ -132,21 +79,6 @@ urlpatterns = [
         name="delete-message",
     ),
     path(
-        "case/ai/conversations/<int:conv_id>/view/",
-        views.conversation_view,
-        name="conversation-view",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/delete/",
-        views.delete_conversation,
-        name="delete-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/set-ai/<str:state>/",
-        views.set_ai_context,
-        name="set-ai-context",
-    ),
-    path(
         "case/ai/messages/<int:message_id>/vetting-status/",
         views.message_vetting_status,
         name="message-vetting-status",
@@ -155,41 +87,5 @@ urlpatterns = [
         "case/ai/messages/<int:message_id>/citation/<int:citation_index>/vetting/",
         views.citation_vetting_detail,
         name="citation-vetting-detail",
-    ),
-    # AI conversation selection & bulk actions
-    path(
-        "case/<int:matter_id>/ai/toggle-select/<int:conv_id>/",
-        views.ai_toggle_select,
-        name="toggle-select",
-    ),
-    path(
-        "case/<int:matter_id>/ai/select-all/",
-        views.ai_select_all,
-        name="select-all",
-    ),
-    path(
-        "case/<int:matter_id>/ai/clear-selection/",
-        views.ai_clear_selection,
-        name="clear-selection",
-    ),
-    path(
-        "case/<int:matter_id>/ai/bulk-set-context/<str:state>/",
-        views.ai_bulk_set_context,
-        name="bulk-set-context",
-    ),
-    path(
-        "case/<int:matter_id>/ai/bulk-delete/",
-        views.ai_bulk_delete,
-        name="bulk-delete",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/rename/",
-        views.rename_conversation,
-        name="rename-conversation",
-    ),
-    path(
-        "case/ai/conversations/<int:conv_id>/rename-form/",
-        views.rename_form,
-        name="rename-form",
     ),
 ]

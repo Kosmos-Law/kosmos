@@ -186,6 +186,6 @@ How this replaced the per-user stdio script is recorded in
 ## Related
 
 - [Claude](../../admin/integrations/claude-desktop.md) for setup;
-  [AI chat and context](ai/context.md) and [Sessions](ai/sessions.md)
+  [The archive and the intake chat](ai/context.md)
   for the matter tools and the search handler this reuses; [Drafts](drafts.md)
   for the companion that shares the API token.

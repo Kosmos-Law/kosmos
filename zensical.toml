@@ -68,7 +68,6 @@ nav = [
       { "Email" = "guide/email.md" },
       { "Drafts" = "guide/drafts.md" },
       { "Case law" = "guide/research.md" },
-      { "AI chat" = "guide/ai-chat.md" },
     ] },
     { "Administer" = [
       { "Settings" = "guide/settings.md" },

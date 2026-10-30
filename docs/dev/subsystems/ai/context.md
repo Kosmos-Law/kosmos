@@ -1,29 +1,33 @@
 # The archive and the intake chat
 
-What is left of the chat that preceded [sessions](sessions.md): the
-`Conversation` and `Message` rows, the archive that shows them on the
-AI tab, the intake chat that still runs on them, and the helpers the
-rest of the AI code shares. The engine itself (the context builder and
-selector, the in-house tool loop, the fenced writes and citation
-vetting after each answer) was retired on 2026-10-29
-([record](../../../decisions/2026-10-29-the-conversation-engine-is-retired.md));
-new questions on a matter are sessions. All of it is optional: with no
-provider key configured, none of it is reachable (see
-[AI is optional](#ai-is-optional)).
+What is left of the retired matter chat: the `Conversation` and
+`Message` rows (kept, since intake chats and drafts are conversations),
+the intake chat that still runs on them, and the helpers and matter
+tools the [MCP server](../mcp.md)'s service functions share. The engine
+itself (the context builder and selector, the in-house tool loop, the
+fenced writes and citation vetting after each answer) was retired on
+2026-10-29
+([record](../../../decisions/2026-10-29-the-conversation-engine-is-retired.md)),
+and the chat's screens, with the Claude Code sessions that briefly
+replaced them, on 2026-10-30
+([record](../../../decisions/2026-10-30-ai-chat-retired.md)): questions
+about a matter are asked in Claude's own apps over the MCP server. All of
+it is optional: with no provider key configured, none of it is reachable
+(see [AI is optional](#ai-is-optional)).
 
 ## Where the code is
 
 | Module | Holds |
 |---|---|
-| `apps/ai/models.py` | `Conversation`, `Message`; `Session`, `SessionMessage` (sessions) |
-| `apps/ai/views.py` | The archive: the list under the Archive pill (filter, sort, rename, delete, the AI setting, bulk actions), the read-only conversation window, the citation vetting modal; and `ai_status` / `cancel_request`, the status poll the intake chat uses |
-| `apps/ai/context.py` | The shared helpers: `build_request_info()`, `build_chat_history()`, `load_legal_prompt()`, `SOURCE_LINKING`, and the section formatters (`format_matter_overview()`, `format_contacts()`, …) the session prompt, the matter tools and the MCP API read |
-| `apps/ai/agent_tools.py` | The read-only matter tools (search, documents, email, the matter record, case law); served to sessions by `session_tools.py` |
+| `apps/ai/models.py` | `Conversation`, `Message` |
+| `apps/ai/views.py` | `ai_status` / `cancel_request`, the status poll the intake chat uses; `delete_message`; the citation vetting modal and status the shared message templates call |
+| `apps/ai/context.py` | The shared helpers: `build_request_info()`, `build_chat_history()`, `load_legal_prompt()`, `SOURCE_LINKING`, and the section formatters (`format_matter_overview()`, `format_contacts()`, …) the matter tools and the MCP API read |
+| `apps/ai/agent_tools.py` | The read-only matter tools (search, documents, email, the matter record, case law); `search_materials()` in `api.py` runs the MCP server's search through them |
 | `apps/ai/prompts/legal.md` | The legal system prompt |
-| `apps/llm/status.py` | The cross-process status store and heartbeat (the intake chat's turn, the session runtime's live state) |
+| `apps/llm/status.py` | The cross-process status store and heartbeat (the intake chat's turn) |
 | `apps/ai/access.py` | Who may use a conversation and the Financial and Research gates |
 | `apps/llm/anthropic_client.py`, `gemini_client.py` | `send_to_claude()`, `send_to_gemini_streaming()`: one completion with streaming and prompt caching |
-| `apps/llm/providers.py` | `complete()`, the one call for AI work that is not a session; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
+| `apps/llm/providers.py` | `complete()`, the one call for background AI work; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
 | `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
 | `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `accounting_enabled` for templates |
 | `apps/ai/fact_blocks.py`, `witness_blocks.py` | The fenced write blocks' parsers, now reached by the MCP API's create routes |
@@ -31,7 +35,7 @@ provider key configured, none of it is reachable (see
 | `apps/ai/purge.py` | The closed-matter chat purge |
 | `apps/case/semantic.py`, `apps/llm/embeddings.py` | The pgvector index behind `search_materials` |
 | `apps/llm/pricing.py` | Estimated cost per message |
-| `templates/ai/` | The archive list and window, `messages.html` and `message-single.html` (shared with the intake chat), `status.html` (the intake chat's poller), the trail and citation partials; `templates/ai/sessions/` is the session page |
+| `templates/ai/` | `messages.html` and `message-single.html` (the intake chat's window), `status.html` (its poller), the trail and citation partials, and `draft-chip.html` and `companion-setup.html`, which the drafts views render |
 | `apps/intakes/chat.py` | The intake chat, built on the same models and status protocol |
 
 ## Data model
@@ -123,11 +127,10 @@ Routes under `/case/<matter id>/...` are checked for matter membership by
 The status, cancel and intake routes name no matter, so `access.py`
 fills the gap: `conversation_for_user()` (a matter chat needs the
 matter, an intake chat the Intakes permission) guards the poll and
-cancel views. The session views check the matter themselves
-(`sessions._session_for`).
+cancel views.
 
-`has_financial_access()` (admin or `perm_financial`) decides whether a
-session's tools offer invoices, and `has_research_access()` (admin or
+`has_financial_access()` (admin or `perm_financial`) decides whether the
+matter tools offer invoices, and `has_research_access()` (admin or
 `perm_research`) whether they offer case law. The matrix is in the
 [permissions reference](../../../reference/permissions.md).
 
@@ -137,14 +140,15 @@ session's tools offer invoices, and `has_research_access()` (admin or
   run the worker inline; `status.py` binds `Thread` at import so the
   heartbeat stays a real thread, or that patch turns its wait loop into a
   hang.
-- **`message-single.html` and `messages.html` are shared** by the
-  archive window and the intake chat; a change to one shape shows in
-  both.
+- **`message-single.html` and `messages.html` are the intake chat's**,
+  and the drafts views render `draft-chip.html` and
+  `companion-setup.html` from the same folder: `templates/ai/` is not
+  dead because the matter chat is.
 
 ## Related
 
-- [Sessions](sessions.md), the engine of new questions on a matter.
-- [AI chat](../../../guide/ai-chat.md) in the user guide shows the screens.
+- [MCP server and JSON APIs](../mcp.md), where questions about a matter
+  are answered now.
 - [AI providers and research](../../../admin/integrations/ai.md) covers
   keys, the prompt file and retention for operators;
   [Background worker](../../../admin/worker.md) covers qcluster.

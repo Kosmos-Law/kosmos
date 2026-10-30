@@ -29,7 +29,6 @@ Which of these an operator needs, and when, is covered in
 | Command | What it does |
 |---|---|
 | `purge_closed_chats` | Delete AI chat history (conversations, messages and their history rows) for matters closed longer than the retention window. Chats are working notes with no lasting value once a matter closes; the client file lives in the firm's file store and Gmail. Scheduled weekly by setup_schedules. |
-| `run_sessions` | Run Claude Code session turns as they are requested. |
 
 ## calendar
 
@@ -56,13 +55,6 @@ Which of these an operator needs, and when, is covered in
 | Command | What it does |
 |---|---|
 | `adopt_google_contacts` | Give the former firm-wide Google Contacts token (GOOGLE_DATA_DIR/contact_tokens.json) and the contacts copied through it to one user. |
-
-## drive
-
-| Command | What it does |
-|---|---|
-| `index_file_text` | Extract and cache the text of PDFs and documents under the matter roots. |
-| `watch_files` | Watch the synced Firm tree: OCR new PDFs in place, follow folder renames. |
 
 ## intakes
 

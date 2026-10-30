@@ -152,7 +152,7 @@ conversations. The permission matrix is in the
 
 ## Related
 
-- Guide: [Drafts](../../guide/drafts.md), [AI chat](../../guide/ai-chat.md)
+- Guide: [Drafts](../../guide/drafts.md)
 - Admin: [Drafting with LibreOffice](../../admin/integrations/libreoffice.md)
-- Subsystems: [The archive and the intake chat](ai/context.md), [Sessions](ai/sessions.md)
+- Subsystems: [The archive and the intake chat](ai/context.md)
 - Conventions: [Testing](../conventions/testing.md)

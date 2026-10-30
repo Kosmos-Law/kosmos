@@ -50,7 +50,7 @@ it.
 
 | Order | Rule (list in the source) | Path | Who passes |
 |---|---|---|---|
-| 0 | Pattern (`AI_PATTERN`) | The AI tab and its conversations under `/case/ai/…`, `/case/<id>/ai/…` and `/case/<id>/tab/ai/`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
+| 0 | Pattern (`AI_PATTERN`) | The conversation routes the intake chat uses under `/case/ai/…`; the drafts companion under `/case/drafts/`; `/intakes/<id>/assess` and `/intakes/<id>/chat/…`; Settings > Tasks under `/settings/tasks/` | Everyone when an AI provider key is set; nobody (404) when none is |
 | 0 | Pattern (`CASE_FILE_PATTERN`, less `CASE_FILE_EXEMPT`) | Everything under `/case/` except the MCP matter API under `/case/api/` | Everyone while the firm's case file is on (Settings > Features); nobody (404) when an administrator has switched it off |
 | 0 | Pattern (`CASELAW_PATTERN`) | The saved case law paths of rule 4 and the case viewer `/case/<id>/viewer/cluster/…` | Everyone (then rule 4 applies) when `COURTLISTENER_API_KEY` is set; nobody (404) when it is not |
 | 2 | Prefix (`ADMIN_ONLY_PATHS`) | `/settings/users/` | Admin role only |

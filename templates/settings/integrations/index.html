@@ -1,5 +1,4 @@
 {% extends "settings/main.html" %}
-{% load drive_tags %}
 {% block subcontent %}
   <div class="settings">
     {% if user.role == 'ADMIN' %}
@@ -7,16 +6,14 @@
       <hr />
       <p class="detail-text">
         AI features are optional and stay hidden until a provider key is set:
-        chat on a matter, intake assessments, document summaries, and
-        AI quick task entry. Either provider runs all of them; with both,
-        background work uses Gemini and chats offer both. Matter search by
-        meaning needs a Gemini key.
+        intake assessments and chat, document summaries, and AI quick task
+        entry. Either provider runs all of them; with both, background work
+        uses Gemini. Matter search by meaning needs a Gemini key.
       </p>
       {% include "settings/integrations/ai.html" %}
       {% if quickbooks %}
         {% include "settings/integrations/quickbooks.html" %}
       {% endif %}
-      {% files_integration_card %}
     {% endif %}
     {% if not google_oauth_ready and user.role == 'ADMIN' %}
       <p class="detail-text">

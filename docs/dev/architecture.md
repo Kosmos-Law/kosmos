@@ -23,10 +23,9 @@ subsystem pages group them.
 | [Time and billing](subsystems/time-and-billing.md) | `apps/activity`, `apps/invoicing`, `apps/reports` | Time, expense and flat-fee entries with their categories; invoices, credits, payment requests; the reports. |
 | [Trust and payments](subsystems/trust-and-payments.md) | `apps/trust`, `apps/invoicing/pay`, `apps/invoicing/processors` | The trust ledger; the public payment page, the processor adapters (LawPay, Stripe, Confido, a fake for tests) and webhook reconciliation. |
 | [Accounting](subsystems/accounting.md) | `apps/accounting` | The general ledger: the chart of accounts with its tax lines, journal entries, the statements and the tax summary. A module, off by default, gated by the Accounting permission. |
-| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab, the saved case law and the semantic index. `apps/notes` holds only the models and migrations of the retired notes, kept for their data ([Notes are retired](../decisions/2026-10-27-notes-retired.md)); `apps/drive` is the Files subsystem below. |
-| [AI](subsystems/ai/context.md) | `apps/ai`, `apps/llm` | [Sessions](subsystems/ai/sessions.md) (Claude Code sessions on a matter: the AI tab, the session page, the runtime over the Agent SDK and the sessions service); the [archive and the intake chat](subsystems/ai/context.md) (the earlier chat's conversations, the intake chat's turn, the shared helpers and the read-only matter tools); the matter service functions behind the [MCP server](subsystems/mcp.md) (`apps/mcp`); the model-provider layer (the Anthropic and Gemini clients, embeddings, pricing, the status store). |
+| [Case building](subsystems/case-building.md) | `apps/case`, `apps/drive`, `apps/notes` | The case builder: documents and OCR, highlights, facts, witnesses, labels, the case search tab, the saved case law and the semantic index. `apps/notes` holds only the models and migrations of the retired notes, kept for their data ([Notes are retired](../decisions/2026-10-27-notes-retired.md)); `apps/drive` likewise holds only migrations, of the removed Google Drive mirror and the removed Files integration ([The AI chat is retired](../decisions/2026-10-30-ai-chat-retired.md)). |
+| [AI](subsystems/ai/context.md) | `apps/ai`, `apps/llm` | The [archive and the intake chat](subsystems/ai/context.md) (the retired chat's conversations, the intake chat's turn, the shared helpers and the read-only matter tools); the matter service functions behind the [MCP server](subsystems/mcp.md) (`apps/mcp`); the model-provider layer (the Anthropic and Gemini clients, embeddings, pricing, the status store). |
 | [Drafts](subsystems/drafts.md) | `apps/drafts` | Draft links and the LibreOffice companion (`companion_src/`). |
-| [Files](subsystems/files.md) | `apps/drive` | The Dropbox-synced Firm tree: a person links each matter to its folder, a watcher follows renames and OCRs PDFs in place ([Firm files live in Dropbox](../decisions/2026-10-29-firm-files-live-in-dropbox.md)). |
 | [Email and intakes](subsystems/email-and-intakes.md) | `apps/mail`, `apps/intakes`, `apps/search` | Gmail sync onto matters and the Emails tab; intakes, the inbound Mailgun webhook, the client forms; the global search modal. |
 | Settings | `apps/settings` | One package per Settings page (`firm/`, `users/`, `permissions/`, `appearance/`, `integrations/`, `claude/`, and so on) and the `Firm` record. |
 
@@ -37,9 +36,8 @@ apps add to it and the `search/api/` JSON endpoint in `api.py` that the
 MCP server's `search_kosmos` tool calls); `apps/llm` has none either.
 None of the directories under `apps/` is vestigial: every one is
 installed and routed. There is no `billing`, `lab` or `research` app;
-billing lives in `apps/invoicing` and case-law research in the sessions'
-matter tools (`apps/ai/agent_tools.py`) over the CourtListener client in
-`apps/case/courtlistener.py`. Three packages have no `urls.py`:
+billing lives in `apps/invoicing` and case law in the case builder over
+the CourtListener client in `apps/case/courtlistener.py`. Three packages have no `urls.py`:
 `apps/llm` has no views, and `apps/notes` and `apps/drive` hold no code
 beyond their models and migrations.
 
@@ -110,7 +108,7 @@ the form-field renderers (`form-fields-template*.html`, selected through
 `FORM_RENDERER` in settings), the HTMX modal shell, the brand marks and
 gradients, the user chips and the format toolbar. `templates/base-minimal.html`
 is the no-sidebar base for the sign-in pages, the public payment and
-intake-form pages and the AI prompt windows.
+intake-form pages.
 
 ## Module boundaries
 

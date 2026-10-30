@@ -1,9 +1,8 @@
-"""AI is optional: without a provider key the AI tab, its routes and the
-AI context controls are gone, and saved case law follows CourtListener."""
+"""AI is optional: without a provider key the AI-gated routes and the AI
+context controls are gone. Saved case law is its own tab whenever
+CourtListener is set up, whatever the AI keys say."""
 
 import pytest
-
-from apps.ai.models import Conversation
 
 pytestmark = pytest.mark.django_db
 
@@ -12,26 +11,17 @@ def _nav(client, matter):
     return client.get(f"/case/{matter.id}/tab/documents/").content.decode()
 
 
-class TestAiTab:
-    def test_shown_when_ai_is_set_up(self, client, matter):
-        assert f"/case/{matter.id}/ai/" in _nav(client, matter)
+class TestNoAiTab:
+    def test_the_case_shell_has_no_ai_tab(self, client, matter):
+        assert f"/case/{matter.id}/ai/" not in _nav(client, matter)
 
-    def test_hidden_without_ai(self, client, matter, ai_off, courtlistener_off):
-        html = _nav(client, matter)
-        assert f"/case/{matter.id}/ai/" not in html
-        assert "Case Law" not in html
+    def test_the_old_address_is_gone(self, client, matter):
+        assert client.get(f"/case/{matter.id}/ai/").status_code == 404
 
-    def test_routes_404_without_ai(self, client, matter, user, ai_off):
-        conversation = Conversation.objects.create(matter=matter, title="Old")
-        for path in (
-            f"/case/{matter.id}/ai/",
-            f"/case/{matter.id}/tab/ai/",
-            f"/case/ai/conversations/{conversation.id}/view/",
-            "/case/drafts/companion/setup/",
-        ):
-            assert client.get(path).status_code == 404, path
+    def test_routes_404_without_ai(self, client, matter, ai_off):
+        assert client.get("/case/drafts/companion/setup/").status_code == 404
 
-    def test_a_remembered_ai_tab_falls_back(self, client, matter, ai_off):
+    def test_a_remembered_ai_tab_falls_back(self, client, matter):
         session = client.session
         session[f"case_tab_{matter.id}"] = "ai"
         session.save()
@@ -41,9 +31,10 @@ class TestAiTab:
 
 
 class TestCaseLaw:
-    def test_inside_the_ai_tab_with_ai(self, client, matter):
-        html = client.get(f"/case/{matter.id}/tab/ai/").content.decode()
-        assert f"/case/{matter.id}/tab/caselaws/" in html
+    def test_own_tab_with_ai(self, client, matter):
+        html = _nav(client, matter)
+        assert ">Case Law</a>" in html
+        assert client.get(f"/case/{matter.id}/caselaws/").status_code == 200
 
     def test_own_tab_without_ai(self, client, matter, ai_off):
         html = _nav(client, matter)
@@ -53,8 +44,7 @@ class TestCaseLaw:
         assert ">Conversations</a>" not in response.content.decode()
 
     def test_gone_without_courtlistener(self, client, matter, courtlistener_off):
-        html = client.get(f"/case/{matter.id}/tab/ai/").content.decode()
-        assert f"/case/{matter.id}/tab/caselaws/" not in html
+        assert ">Case Law</a>" not in _nav(client, matter)
         assert client.get(f"/case/{matter.id}/caselaws/").status_code == 404
 
 
