@@ -117,9 +117,8 @@ that looks a practice area up by name can get two. Prefer the fixture's
 instance to a lookup by name.
 
 Three autouse fixtures in the root `conftest.py` apply to every test:
-`_integration_keys` sets `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` and
-`COURTLISTENER_API_TOKEN` to fake values, so every test sees AI and
-CourtListener as set up (the same on a laptop whose `config/.env` holds
+`_integration_keys` sets `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` to
+fake values, so every test sees AI as set up (the same on a laptop whose `config/.env` holds
 real keys as in CI with none) and a stray real API call fails instead of
 spending; `_no_semantic_auto_index` sets `SEMANTIC_AUTO_INDEX = False` so
 model saves do not enqueue embedding tasks; and `use_local_storage`
@@ -127,10 +126,9 @@ points `STORAGES` and `MEDIA_ROOT` at a temporary directory. The
 docstring of the last records why both are set: with only `STORAGES`
 overridden, uploads once leaked into the real `media/` directory.
 
-Two opt-in fixtures there cover the unset case: `ai_off` blanks both AI
-keys (no key is stored on the test database's `Firm` either), and
-`courtlistener_off` blanks the CourtListener token. Request them in a
-test of what a server without AI or CourtListener shows; see
+One opt-in fixture there covers the unset case: `ai_off` blanks both AI
+keys (no key is stored on the test database's `Firm` either). Request it
+in a test of what a server without AI shows; see
 `apps/case/tests/test_ai_optional.py`.
 
 ## Fixtures
@@ -204,7 +202,7 @@ region is a GET returning 200 and the partial; assert the rows are in
 
 Access is two things: the `perm_*` flags on `CustomUser`
 (`perm_all_matters`, `perm_financial`, `perm_intakes`, `perm_reports`,
-`perm_research`), and matter membership (`Matter.members`), which only
+`perm_accounting`), and matter membership (`Matter.members`), which only
 applies to a user without `perm_all_matters`. The checks are
 `CustomUser.has_matter_access()`, the `matter_access_required` decorator
 and `filter_matters_for_user()` in `apps/accounts/access.py`, and the

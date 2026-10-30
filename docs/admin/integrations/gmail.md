@@ -39,7 +39,7 @@ PDF in the matter's Documents, where it no longer depends on Gmail. See
 [File storage](storage.md) for where that PDF is kept.
 
 Synced email text is included in AI context and semantic search for the
-matter (see [AI providers and research](ai.md)).
+matter (see [AI providers](ai.md)).
 
 ## What you need
 

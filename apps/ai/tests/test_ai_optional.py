@@ -1,6 +1,5 @@
 """AI is optional: without a provider key the AI-gated routes and the AI
-context controls are gone. Saved case law is its own tab whenever
-CourtListener is set up, whatever the AI keys say."""
+context controls are gone."""
 
 import pytest
 
@@ -28,24 +27,6 @@ class TestNoAiTab:
         response = client.get(f"/case/select-matter/{matter.id}/")
         assert response.status_code == 302
         assert response["Location"].endswith(f"/case/{matter.id}/documents/")
-
-
-class TestCaseLaw:
-    def test_own_tab_with_ai(self, client, matter):
-        html = _nav(client, matter)
-        assert ">Case Law</a>" in html
-        assert client.get(f"/case/{matter.id}/caselaws/").status_code == 200
-
-    def test_own_tab_without_ai(self, client, matter, ai_off):
-        html = _nav(client, matter)
-        assert ">Case Law</a>" in html
-        response = client.get(f"/case/{matter.id}/caselaws/")
-        assert response.status_code == 200
-        assert ">Conversations</a>" not in response.content.decode()
-
-    def test_gone_without_courtlistener(self, client, matter, courtlistener_off):
-        assert ">Case Law</a>" not in _nav(client, matter)
-        assert client.get(f"/case/{matter.id}/caselaws/").status_code == 404
 
 
 class TestAiContextControls:

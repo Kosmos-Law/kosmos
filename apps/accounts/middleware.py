@@ -45,16 +45,6 @@ class PermissionMiddleware:
     # the tab in the navigation is not a gate: the URL has to refuse too.
     PERMISSION_PATTERNS = [
         (re.compile(r"^/matters/\d+/(rates|ledger)(/|$)"), "perm_financial"),
-        # Saved case law (a view of the AI tab) and the case viewer need the
-        # Research permission, under /case/<matter>/caselaws/,
-        # /case/caselaws/<case>/ and /case/<matter>/viewer/cluster/<id>/.
-        (
-            re.compile(
-                r"^/case/(\d+/)?(tab/)?caselaws/"
-                r"|^/case/\d+/viewer/cluster/"
-            ),
-            "perm_research",
-        ),
     ]
 
     # Pages that exist only when an optional integration is set up. Hidden
@@ -64,9 +54,6 @@ class PermissionMiddleware:
         r"|^/case/drafts/"
         r"|^/intakes/\d+/(assess|chat/)"
         r"|^/settings/tasks/"
-    )
-    CASELAW_PATTERN = re.compile(
-        r"^/case/(\d+/)?(tab/)?caselaws/|^/case/\d+/viewer/cluster/"
     )
 
     # Where matter membership is enforced from the URL alone. /matters/
@@ -105,11 +92,6 @@ class PermissionMiddleware:
             from apps.settings.ai import ai_enabled
 
             if not ai_enabled():
-                return HttpResponseNotFound()
-        if self.CASELAW_PATTERN.match(request.path):
-            from apps.settings.courtlistener import get_api_token
-
-            if not get_api_token():
                 return HttpResponseNotFound()
         # The feature switches are read only for a signed-in user: anyone
         # else gets the sign-in redirect from the view, and the firm row is

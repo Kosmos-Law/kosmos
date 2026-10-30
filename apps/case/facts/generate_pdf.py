@@ -29,9 +29,7 @@ def generate_facts_pdf(matter_id, request, facts=None, filter_summary=None):
     if facts is None:
         # The screen's default order (date, then time).
         facts = all_facts.order_by("date", "time")
-    facts = facts.prefetch_related(
-        "highlights__document", "highlights__caselaw", "documents"
-    )
+    facts = facts.prefetch_related("highlights__document", "documents")
 
     context = {
         "matter": matter,

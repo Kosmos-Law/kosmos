@@ -83,7 +83,7 @@ def test_viewer_prints_highlight_text_inertly(client, document, highlight):
     assert "\\u003C/script\\u003E" in body
 
 
-def test_case_law_excerpt_keeps_marks_and_nothing_else():
+def test_marked_excerpt_keeps_marks_and_nothing_else():
     from apps.ai.templatetags.markdown_extras import marked_excerpt
 
     rendered = str(

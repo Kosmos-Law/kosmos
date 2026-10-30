@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.case.documents.access import open_matters_for_user
-from apps.case.models import CaseLaw, Document, Fact, Highlight, Label
+from apps.case.models import Document, Fact, Highlight, Label
 from apps.case.views import get_matter_from_url, get_session_key, set_last_tab
 from apps.matters.models import Matter
 
@@ -183,7 +183,6 @@ def delete_label(request, label_id):
 TABLE_ROW_TRIGGERS = {
     "document": "documentsChanged",
     "fact": "factsChanged",
-    "caselaw": "caselawsChanged",
 }
 
 
@@ -196,9 +195,7 @@ def _get_object_for_labels(object_type, object_id, view=None):
         context_key = "document"
     elif object_type == "highlight":
         obj = get_object_or_404(Highlight, id=object_id)
-        # A highlight sits on a document or on a saved case; both carry
-        # the matter.
-        matter = obj.source.matter
+        matter = obj.document.matter
         # Pick row template based on view: table row, viewer sidebar card, or card
         if view == "table":
             row_template = "case/highlights/highlight-row.html"
@@ -212,11 +209,6 @@ def _get_object_for_labels(object_type, object_id, view=None):
         matter = obj.matter
         row_template = "case/facts/fact-row.html"
         context_key = "fact"
-    elif object_type == "caselaw":
-        obj = get_object_or_404(CaseLaw, id=object_id)
-        matter = obj.matter
-        row_template = "case/caselaws/row.html"
-        context_key = "case_law"
     else:
         return None, None, None, None
     return obj, matter, row_template, context_key
@@ -307,10 +299,7 @@ def add_label_to(request, object_type, object_id):
     }
 
     # Add selection state for row templates that include a checkbox
-    if object_type == "caselaw" and matter:
-        selected_session_key = get_session_key("selected_caselaws", matter.id)
-        context["selected_caselaws"] = request.session.get(selected_session_key, [])
-    elif object_type == "highlight" and matter:
+    if object_type == "highlight" and matter:
         selected_session_key = get_session_key("selected_highlights", matter.id)
         context["selected_highlights"] = request.session.get(selected_session_key, [])
     elif object_type == "fact" and matter:
@@ -340,10 +329,7 @@ def remove_label_from(request, object_type, object_id):
     }
 
     # Add selection state for row templates that include a checkbox
-    if object_type == "caselaw" and matter:
-        selected_session_key = get_session_key("selected_caselaws", matter.id)
-        context["selected_caselaws"] = request.session.get(selected_session_key, [])
-    elif object_type == "highlight" and matter:
+    if object_type == "highlight" and matter:
         selected_session_key = get_session_key("selected_highlights", matter.id)
         context["selected_highlights"] = request.session.get(selected_session_key, [])
     elif object_type == "fact" and matter:

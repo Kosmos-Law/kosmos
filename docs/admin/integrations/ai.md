@@ -1,8 +1,8 @@
-# AI providers and research
+# AI providers
 
 How to switch on the AI features: where the provider keys go, what each
 provider runs, what Kosmos looks like with no AI at all, semantic search,
-CourtListener, how long chats are kept, where the system prompt lives,
+how long chats are kept, where the system prompt lives,
 and what data leaves your server.
 
 AI is optional. Kosmos does not include AI of its own: it calls Google
@@ -21,7 +21,6 @@ All variables named here are described in the
 |---|---|---|
 | Anthropic (`ANTHROPIC_API_KEY`) | Anthropic | Every background AI feature. |
 | Gemini (`GEMINI_API_KEY`) | Google Gemini | Every background AI feature, and [semantic search](#semantic-search). |
-| `COURTLISTENER_API_KEY` | CourtListener | Saved case law and case law search. See [CourtListener](#courtlistener). |
 
 Asking Claude about a matter is not done in Kosmos: people work in
 Claude's own apps, connected to Kosmos over its MCP server (see
@@ -118,7 +117,7 @@ With neither key set (in `config/.env` or in Settings), Kosmos hides:
 - the drafts companion (see [Drafting with LibreOffice](libreoffice.md));
 - **Assessment**, **Assess** and **Chat** on intakes;
 - the AI context controls: the **AI** column and the AI bulk action on
-  **Documents** and **Case Law**, and the **AI Context** field of the
+  **Documents**, and the **AI Context** field of the
   document form (the stored settings are kept);
 - **Settings → Tasks**, which holds only AI quick task entry. The quick
   task line reads "Matter - Description" whatever the stored setting says.
@@ -202,41 +201,6 @@ Things to know:
 - If the embedding call fails during a search, the search still returns
   keyword results.
 
-## CourtListener
-
-[CourtListener](https://www.courtlistener.com/) is a free case law
-database run by the Free Law Project. Kosmos uses its API to resolve
-citations, fetch opinion text and check the citations in AI replies. Create an account there, generate an API token, set it
-as `COURTLISTENER_API_KEY` in `config/.env`, and restart the web
-application and the worker. It has no screen in Settings.
-
-Saved case law follows the token. Users with the Research permission
-(and administrators) see a matter's saved cases:
-
-as the matter's **Case Law** tab. Cases are added by citation, read and
-highlighted; with an AI key each gets a summary and the tab has an
-**AI** column.
-
-Without the token, Kosmos makes no CourtListener requests at all:
-
-- saved case law is hidden on every matter, and its addresses (the list,
-  adding by citation, the case viewer) answer 404. Cases already saved
-  stay in the database and reappear when the token is set again;
-- the text of case law already saved cannot be fetched.
-
-Restart both services after setting the token.
-
-CourtListener limits requests per account. Kosmos spaces its requests a
-quarter of a second apart within each process and, when CourtListener
-answers "too many requests", waits and retries up to three times. Heavy
-use can still run into the account's hourly or daily limit, and lookups
-fail until it resets. The limits are set by
-CourtListener for your account, not by Kosmos.
-
-Links for statute citations are built in the code, and only for the
-United States Code, the Code of Federal Regulations and the Georgia
-Code. Statutes of other states are shown without a link.
-
 ## Chat retention
 
 AI chats on a matter are deleted once the matter has been closed for
@@ -315,9 +279,6 @@ matter search. Without a Gemini key none of this is sent.
 
 With no AI key at all, nothing is sent to either provider.
 
-**To CourtListener, when its token is set:** the citation lookups and
-opinion fetches made for saved case law and for citation checks.
-
 Users can keep individual items out: documents, emails and archived
 conversations have an AI context setting, and "Never" excludes the item
 from the matter tools and from the semantic index. There is no switch
@@ -333,10 +294,7 @@ that excludes a whole matter.
    no AI key is involved.
 3. Open an intake and start its chat, which runs on Gemini when that
    key is set. A reply with no "Error:" prefix confirms the Gemini key.
-4. As a user with the Research permission, add a case by citation
-   under **Case Law**. The preview confirms the CourtListener token, and
-   the summary written for the case confirms the AI key.
-5. Upload a PDF, wait for text extraction, and search the matter for a
+4. Upload a PDF, wait for text extraction, and search the matter for a
    phrase that paraphrases its content without using its words. A hit
    confirms semantic search.
 
@@ -383,10 +341,3 @@ search is keyword-only by design.
 **Forwarded intake emails arrive with no details filled in.** No AI key
 is set, so the intake is built from the raw message. Set a key; intakes
 already created are not re-read, but **Assess** works on them.
-
-**There is no Case Law view or tab.** Check `COURTLISTENER_API_KEY` and
-the user's Research permission.
-
-**Research returns nothing.** Check `COURTLISTENER_API_KEY`, then the log
-for "CourtListener 429", which means the account's request limit was
-reached.

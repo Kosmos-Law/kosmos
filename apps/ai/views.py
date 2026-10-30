@@ -1,5 +1,5 @@
 """The views the intake chat's message templates still call: a
-reply's status and cancel, deleting a message, and citation vetting.
+reply's status and cancel, and deleting a message.
 The matter chat itself is retired (docs/decisions/2026-10-30-ai-chat-retired.md)."""
 
 import logging
@@ -230,45 +230,3 @@ def delete_message(request, message_id):
 
     # Trigger messagesUpdated event to refresh the message list
     return HttpResponse(status=204, headers={"HX-Trigger": "messagesUpdated"})
-
-
-@login_required
-def citation_vetting_detail(request, message_id, citation_index):
-    """Return a modal fragment describing the Flash vetting verdict for one citation."""
-    message = get_object_or_404(
-        Message,
-        pk=message_id,
-        conversation__matter__in=accessible_matters(request.user),
-    )
-
-    citations = message.verified_citations or []
-    if citation_index < 0 or citation_index >= len(citations):
-        return HttpResponse(status=404)
-
-    citation = citations[citation_index]
-    return render(
-        request,
-        "ai/citation-vetting-modal.html",
-        {
-            "citation": citation,
-            "vetting": citation.get("vetting") or {},
-            "message": message,
-        },
-    )
-
-
-@login_required
-def message_vetting_status(request, message_id):
-    """Return the updated assistant message content with current vetting badges.
-
-    The wrapping element advertises an HTMX poll trigger only while any case
-    citation is still in a non-terminal vetting state; once everything is
-    done, the fragment is returned without the trigger and polling stops.
-    """
-    message = get_object_or_404(
-        Message,
-        pk=message_id,
-        conversation__matter__in=accessible_matters(request.user),
-    )
-
-    return render(request, "ai/vetting-wrapper.html", {"message": message})

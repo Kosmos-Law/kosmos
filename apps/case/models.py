@@ -246,22 +246,10 @@ class Document(AuditMixin, models.Model):
 
 
 class Highlight(AuditMixin, models.Model):
-    """Text highlight/annotation on a document or case law."""
+    """Text highlight/annotation on a document."""
 
-    # Source - one of document or caselaw must be set
     document = models.ForeignKey(
-        "Document",
-        on_delete=models.CASCADE,
-        related_name="highlights",
-        null=True,
-        blank=True,
-    )
-    caselaw = models.ForeignKey(
-        "CaseLaw",
-        on_delete=models.CASCADE,
-        related_name="highlights",
-        null=True,
-        blank=True,
+        "Document", on_delete=models.CASCADE, related_name="highlights"
     )
 
     slug = models.CharField(max_length=255)
@@ -269,12 +257,9 @@ class Highlight(AuditMixin, models.Model):
     page_number = models.PositiveIntegerField(null=True, blank=True)
     paragraph_number = models.CharField(max_length=20, blank=True, null=True)
 
-    # PDF coordinates (for document highlights only)
+    # PDF coordinates
     # {"rects": [{"x1": float, "y1": float, "x2": float, "y2": float}, ...]}
     coordinates = models.JSONField(null=True, blank=True)
-
-    # Text locator for case law highlights (character offset from start)
-    char_offset = models.PositiveIntegerField(null=True, blank=True)
 
     COLOR_CHOICES = [
         ("yellow", "Yellow"),
@@ -302,36 +287,16 @@ class Highlight(AuditMixin, models.Model):
         indexes = [
             GinIndex(fields=["search_vector"]),
             models.Index(fields=["document", "page_number"]),
-            models.Index(fields=["caselaw", "char_offset"]),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=(
-                    models.Q(document__isnull=False, caselaw__isnull=True)
-                    | models.Q(document__isnull=True, caselaw__isnull=False)
-                ),
-                name="highlight_has_one_source",
-            )
         ]
 
     def __str__(self):
-        if self.document:
-            return f"{self.slug} - Page {self.page_number}"
-        elif self.caselaw:
-            return f"{self.slug} - {self.caselaw.citation}"
-        return self.slug
+        return f"{self.slug} - Page {self.page_number}"
 
     @property
     def source(self):
-        """Return the source object (document or caselaw)."""
-        return self.document or self.caselaw
-
-    @property
-    def source_type(self):
-        """Return 'document' or 'caselaw'."""
-        if self.document:
-            return "document"
-        return "caselaw"
+        """The document the highlight sits on. (Highlights on saved case
+        law went with the case law feature, October 2026.)"""
+        return self.document
 
     @property
     def importance_name(self):
@@ -342,39 +307,13 @@ class Highlight(AuditMixin, models.Model):
 
     @property
     def citation(self):
-        """Return citation for either document or case law source."""
-        if self.document:
-            doc_citation = self.document.citation
-            # Remove closing ")" to insert location, keeping the period
-            # Format with paragraph: (Abbrev. ¶ 5.)
-            # Format with page: (Abbrev. at 5.)
-            base = doc_citation[:-1]  # Remove closing ")" only
-            if self.paragraph_number:
-                para = self.paragraph_number.rstrip(".")
-                return f"{base} ¶ {para}.)"
-            return f"{base} at {self.page_number}.)"
-        elif self.caselaw:
-            # Case law citation format: Abbreviated Name, Vol. Rep. Page, Pin (Year)
-            from apps.case.abbreviate import abbreviate_case_name
-
-            case_name = abbreviate_case_name(self.caselaw.case_name)
-            reporter_cite = self.caselaw.citation
-
-            if self.page_number:
-                import re
-
-                # Find first page number (digits followed by comma, space, or paren)
-                # Pattern: volume reporter page -> insert pin after page
-                match = re.search(r"(\d+\s+[A-Za-z.\s]+\d+)(,|\s+\()", reporter_cite)
-                if match:
-                    # Insert pin cite after first page number
-                    insert_pos = match.end(1)
-                    reporter_cite = (
-                        f"{reporter_cite[:insert_pos]}, "
-                        f"{self.page_number}{reporter_cite[insert_pos:]}"
-                    )
-            return f"{case_name}, {reporter_cite}."
-        return ""
+        """The document's citation with the highlight's location: a
+        paragraph as (Abbrev. ¶ 5.), otherwise a page as (Abbrev. at 5.)."""
+        base = self.document.citation[:-1]  # drop the closing ")" only
+        if self.paragraph_number:
+            para = self.paragraph_number.rstrip(".")
+            return f"{base} ¶ {para}.)"
+        return f"{base} at {self.page_number}.)"
 
 
 class Fact(AuditMixin, models.Model):
@@ -454,73 +393,6 @@ class Witness(AuditMixin, models.Model):
     class Meta:
         db_table = "app_witness"
         ordering = ["name"]
-
-
-class CaseLaw(AuditMixin, models.Model):
-    """A case law opinion retrieved from CourtListener."""
-
-    matter = models.ForeignKey(
-        Matter, on_delete=models.CASCADE, related_name="case_laws"
-    )
-
-    # Citation info
-    citation = models.CharField(max_length=255)  # e.g., "410 U.S. 113"
-    case_name = models.CharField(max_length=500)  # e.g., "Roe v. Wade"
-
-    # Court/date info
-    court = models.CharField(max_length=255)  # Full court name
-    court_id = models.CharField(max_length=50, blank=True)  # CourtListener court ID
-    date_filed = models.DateField(null=True, blank=True)
-    docket_number = models.CharField(max_length=255, blank=True)
-
-    # CourtListener IDs for future reference
-    cluster_id = models.IntegerField(null=True, blank=True)
-    opinion_id = models.IntegerField(null=True, blank=True)
-    courtlistener_url = models.URLField(max_length=500, blank=True)
-
-    # Case text — summary stored in DB, full text fetched from CourtListener on demand
-    summary = models.TextField(blank=True)  # AI-generated 200-word summary
-    text = models.TextField(blank=True)  # Legacy — no longer populated
-    html = models.TextField(blank=True)  # Legacy — no longer populated
-
-    # User notes and importance
-    notes = models.TextField(blank=True)
-    importance = models.IntegerField(default=4)
-
-    # AI context inclusion: auto (selector decides), always, or never
-    ai_context = models.CharField(
-        max_length=6, choices=AI_CONTEXT_CHOICES, default="auto"
-    )
-
-    # Labels (like other case app models)
-    labels = models.ManyToManyField(Label, blank=True, related_name="case_laws")
-
-    history = HistoricalRecords()
-
-    def __str__(self):
-        return f"{self.case_name}, {self.citation}"
-
-    @property
-    def page_count(self):
-        """Compute page count from star-pagination markers in HTML."""
-        import re
-
-        if not self.html:
-            return None
-        # Count star-pagination spans: <span class="star-pagination">*123</span>
-        matches = re.findall(r'class="star-pagination"', self.html)
-        return len(matches) if matches else None
-
-    class Meta:
-        db_table = "app_case_law"
-        ordering = ["-date_filed", "case_name"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["matter", "cluster_id"],
-                name="unique_case_per_matter",
-                condition=models.Q(cluster_id__isnull=False),
-            )
-        ]
 
 
 class MaterialChunk(models.Model):

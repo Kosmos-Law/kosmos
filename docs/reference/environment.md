@@ -81,14 +81,13 @@ variable belongs to stays off or falls back until it is set.
 | `SOFFICE_BIN` | `soffice` | Headless LibreOffice binary for the server-side redline module (apps/drafts/redline.py). Drafting does not currently use that module: edits are applied by the companion extension in the user's LibreOffice. |
 | `UNO_PYTHON` | `/usr/bin/python3` | A Python interpreter that has the UNO bindings (the system python3 with the python3-uno package), not the project virtualenv. Used only by the same server-side redline module. |
 
-## AI and research
+## AI
 
 | Variable | Default | Description |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | empty | Anthropic API key, for the Claude models. |
 | `GEMINI_API_KEY` | empty | Google Gemini API key, for the Gemini models and for the embeddings behind semantic search (the one feature only Gemini provides). |
 | `SEMANTIC_AUTO_INDEX` | `True` | Re-embed a record for semantic search whenever it is saved. The built-in default is True; nothing is queued while no Gemini key is set. After setting one, run manage.py build_semantic_index once. (boolean) |
-| `COURTLISTENER_API_KEY` | empty | CourtListener API token, for case law search and citation checking. While it is blank, the AI is not offered the case law search tools. |
 | `CHAT_RETENTION_DAYS` | `180` | Days after a matter closes before the weekly purge deletes its AI chats. 0 keeps them indefinitely. (integer) |
 
 ## QuickBooks Online

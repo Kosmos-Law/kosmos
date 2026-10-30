@@ -3,22 +3,18 @@ the material kinds of the semantic index, and the matter lookups the
 access middleware resolves its routes with. Called from CaseConfig.ready().
 """
 
-from django.db.models import Q
-
 from apps.accounts.access import register_matter_lookup
 from apps.case import semantic, tabs
 
 
 def register():
-    from apps.case.caselaws.views import get_caselaws_data
     from apps.case.documents.views import get_document_data
     from apps.case.facts.views import get_facts_data
     from apps.case.highlights.views import get_highlights_data
     from apps.case.labels.views import get_label_data
-    from apps.case.models import CaseLaw, Document, Fact, Highlight, Label, Witness
+    from apps.case.models import Document, Fact, Highlight, Label, Witness
     from apps.case.search.views import get_search_data
     from apps.case.witnesses.views import get_witnesses_data
-    from apps.settings.courtlistener import caselaw_available
 
     def tab(name, label, order, data, **options):
         tabs.register(
@@ -41,23 +37,11 @@ def register():
     # 60 is the Emails tab (apps.mail).
     tab("labels", "Labels", 70, lambda r, m: get_label_data(r, m.id))
     tab("search", "Search", 80, lambda r, m: get_search_data(r, m, m.id))
-    # Saved case law, when CourtListener is on.
-    tab(
-        "caselaws",
-        "Case Law",
-        95,
-        lambda r, m: get_caselaws_data(r, m, m.id),
-        available=lambda user, matter_id: caselaw_available(user),
-    )
 
     register_matter_lookup("document_id", Document, ("matter_id",), "document")
     register_matter_lookup(
-        "highlight_id",
-        Highlight,
-        ("document__matter_id", "caselaw__matter_id"),
-        "highlight",
+        "highlight_id", Highlight, ("document__matter_id",), "highlight"
     )
-    register_matter_lookup("caselaw_id", CaseLaw, ("matter_id",), "caselaw")
     register_matter_lookup("fact_id", Fact, ("matter_id",), "fact")
     register_matter_lookup("witness_id", Witness, ("matter_id",), "witness")
     register_matter_lookup("label_id", Label, ("matter_id",))
@@ -75,9 +59,10 @@ def register():
         )
 
     def highlight_source(highlight):
-        source = highlight.document or highlight.caselaw
-        matter_id = source.matter_id if source else None
-        return matter_id, f"{highlight.citation}\n{highlight.text or ''}"
+        return (
+            highlight.document.matter_id,
+            f"{highlight.citation}\n{highlight.text or ''}",
+        )
 
     semantic.register_kind(
         "document",
@@ -90,8 +75,8 @@ def register():
         Highlight,
         highlight_source,
         backfill=lambda matter: Highlight.objects.filter(
-            Q(document__matter=matter) | Q(caselaw__matter=matter)
-        ).select_related("document", "caselaw"),
+            document__matter=matter
+        ).select_related("document"),
     )
     semantic.register_kind(
         "fact",

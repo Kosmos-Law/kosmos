@@ -189,12 +189,10 @@ def stored_sort_key(filter_data, valid_keys, default):
 FilterSet's own `order_by` filter; `sort_keys(fields)` builds it from a
 tuple for a list without one. The sort view answers 400 to a key outside
 the set (`facts_sort()` in `apps/case/facts/views.py`); the reader
-substitutes the default. Saved case law (`apps/case/caselaws/views.py`)
-takes the bare column name from the header and stores it with a
-direction, defaulting to descending for a new column; before the check
+substitutes the default. Before the check
 (2026-10-02, "a list's sort takes only the list's own keys") a stray
-key there made every load of the list a server error for that user and
-matter. The trust summary does the same with its own `_SORT_KEYS` set
+key in the session made every load of a list a server error for that
+user and matter. The trust summary does the same with its own `_SORT_KEYS` set
 (`apps/trust/get_trust_data.py`), and the tests in
 `apps/case/tests/test_list_sort_keys.py` cover the case lists.
 

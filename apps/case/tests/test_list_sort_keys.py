@@ -9,7 +9,7 @@ the list a server error for that user and matter."""
 
 import pytest
 
-from apps.case.models import CaseLaw, Witness
+from apps.case.models import Witness
 
 pytestmark = pytest.mark.django_db
 
@@ -18,7 +18,6 @@ LISTS = [
     ("facts", "facts/sort", "facts_filter", "description"),
     ("witnesses", "witnesses/sort", "witnesses_filter", "affiliation"),
     ("highlights", "highlights/filter/sort", "highlights_filter", "slug"),
-    ("caselaws", "caselaws/sort", "caselaws_filter", "case_name"),
 ]
 BAD_KEYS = ["password", "matter__name", "--importance", "created_by__password"]
 
@@ -26,9 +25,6 @@ BAD_KEYS = ["password", "matter__name", "--importance", "created_by__password"]
 @pytest.fixture
 def rows(matter, user, fact, highlight):
     Witness.objects.create(user=user, matter=matter, name="Dr. Alice Reed")
-    CaseLaw.objects.create(
-        matter=matter, case_name="Roe v. Wade", citation="410 U.S. 113"
-    )
 
 
 def _store(client, matter, prefix, order_by):
@@ -71,7 +67,6 @@ def test_a_bad_key_already_stored_does_not_break_the_list(
         "facts": "facts",
         "witnesses": "witnesses",
         "highlights": "highlights",
-        "caselaws": "case_laws",
     }[tab]
     assert len(response.context[rows_key]) == 1
 
@@ -85,7 +80,6 @@ def test_a_bad_stored_key_falls_back_to_each_lists_default_order(
         "facts": "date",
         "witnesses": "name",
         "highlights": "-created",
-        "caselaws": "-created_at",
     }
 
     for tab, default in expected.items():
@@ -104,10 +98,3 @@ def test_a_bad_stored_key_keeps_the_rest_of_the_filter(client, matter, user, fac
     response = client.get(f"/case/{matter.id}/facts/list/")
 
     assert list(response.context["facts"]) == []
-
-
-def test_full_cases_takes_only_the_bare_column_name(client, matter, rows):
-    """The header sends the column; the list chooses the direction."""
-    response = client.get(f"/case/{matter.id}/caselaws/sort/-case_name/")
-
-    assert response.status_code == 400

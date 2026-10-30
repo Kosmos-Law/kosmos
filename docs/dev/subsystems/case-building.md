@@ -1,13 +1,11 @@
 # Case building
 
 The Case shell is the per-matter workspace: documents and their OCR text,
-highlights, the timeline of facts, witnesses, labels, saved case law, and
+highlights, the timeline of facts, witnesses, labels, and
 search inside the matter. It is one Django app, `apps/case`, with one
 sub-package per tab, plus `apps/search` (the sidebar search across
 matters). The
 AI tab is documented on its own pages; this page only links to them.
-Saved case law is a view of the AI tab in the interface but its code and
-model live here.
 
 ## Where the code is
 
@@ -15,20 +13,18 @@ model live here.
 |---|---|
 | `apps/case/views.py`, `apps/case/urls.py` | The shell: tab switching, matter selection, every `case:` route |
 | `apps/case/tabs.py`, `apps/case/registrations.py` | The tab registry, and what the case app registers at start-up: its tabs, its semantic-index kinds, its matter lookups |
-| `apps/case/services.py` | The public surface the apps above the case builder import from (with `models.py`, `courtlistener.py` and `jurisdictions.py`); see [Module boundaries](../architecture.md#module-boundaries) |
+| `apps/case/services.py` | The public surface the apps above the case builder import from (with `models.py`); see [Module boundaries](../architecture.md#module-boundaries) |
 | `apps/case/semantic.py` | The semantic index: chunking, embedding, the kind registry, save-time re-indexing, `semantic_entries()` |
-| `apps/case/models.py` | `Label`, `Document`, `Highlight`, `Fact`, `Witness`, `CaseLaw` |
+| `apps/case/models.py` | `Label`, `Document`, `Highlight`, `Fact`, `Witness` |
 | `apps/case/documents/` | Documents tab, upload, duplicate detection, mbox import, OCR task, viewer |
 | `apps/drive/` | Migrations only: the shell that drops the removed Drive mirror's tables and, after it, the removed Files integration's (see [Google Drive is removed](../../decisions/2026-10-27-google-drive-removed.md) and [The AI chat is retired](../../decisions/2026-10-30-ai-chat-retired.md)) |
 | `apps/case/highlights/` | Highlights tab and the viewer's highlight endpoints |
 | `apps/case/facts/`, `apps/case/witnesses/` | Timeline and Witnesses tabs, the Timeline PDF |
 | `apps/case/labels/` | Labels tab and the apply-labels modal used by every tab |
-| `apps/case/caselaws/` | Saved cases (the AI tab's Case Law view), the case-law viewer, the summary task |
-| `apps/case/courtlistener.py`, `courtlistener_throttle.py`, `jurisdictions.py` | The CourtListener client (citation lookup, cluster and opinion fetches, opinion search); the process-wide request throttle; the state court lists |
 | `apps/case/search/`, `apps/case/search_config.py` | Search inside a matter; watson registration |
 | `apps/search/` | The sidebar search across matters, contacts and intakes |
 | `apps/accounts/middleware.py`, `apps/accounts/access.py` | Matter membership enforced from the URL |
-| `templates/case/` | One folder per tab; `viewer.html` and `caselaw-viewer.html` are standalone pages |
+| `templates/case/` | One folder per tab; `viewer.html` is a standalone page |
 | `static/pdfjs/` | pdf.js, installed by `scripts/update_pdfjs.py`; `web/viewer.html` is customised |
 
 ## Data model
@@ -50,17 +46,12 @@ definition and `parse_importance()` the one parser.
   text per write.
 - **`Label`**: `matter` nullable; null means a global label. Unique on
   (`matter`, `name`).
-- **`Highlight`**: exactly one of `document` or `caselaw`, enforced by the
-  check constraint `highlight_has_one_source`. Document highlights carry
-  `page_number` and `coordinates` (PDF rectangles); case-law highlights
-  carry `char_offset`. Six colours, `labels`, `witnesses`.
+- **`Highlight`**: on a `document`, with `page_number` and `coordinates`
+  (PDF rectangles). Six colours, `labels`, `witnesses`.
 - **`Fact`**: `matter`, `date`, `time`, `description` (150 characters),
   optional row `color`, `documents` and `highlights` as sources, `labels`.
 - **`Witness`**: `matter`, contact fields, `alignment` (friendly, neutral,
   hostile), `knowledge`.
-- **`CaseLaw`**: a CourtListener cluster saved to a matter, unique on
-  (`matter`, `cluster_id`). `text` and `html` are legacy and no longer
-  written; the opinion is fetched on demand.
 
 The proceeding rule lives in `Document.save()`: a document with a
 proceeding is `Record` unless it is `Discovery`. Every path that writes
@@ -97,9 +88,7 @@ and list URLs, its template, its data function, its order, whether this
 server and user can open it (`available`) and whether the nav lists it
 (`listed`, defaulting to `available`), and the wrapper id and HTMX
 trigger its list answers to. The case app registers its own tabs in
-`apps/case/registrations.py`; the AI tab is registered by `apps/ai/apps.py`
-(available once a provider is configured, and lit for the saved case law
-that is a view inside it) and the Emails tab by `apps/mail/apps.py`
+`apps/case/registrations.py`, and the Emails tab by `apps/mail/apps.py`
 (available once Google sign-in is set up or the matter holds synced
 emails). `tab_available(user, tab, matter_id)` is the registry's answer,
 so a remembered tab that has gone falls back to Documents, and the Case
@@ -221,34 +210,6 @@ between matters (`_drop_other_matters_labels()`) the leaving matter's
 labels stay behind and global labels
 travel with the document.
 
-### Saved cases
-
-`caselaws_lookup` asks CourtListener for a citation and parks the result
-in the session; `caselaws_save` creates the `CaseLaw` and runs the summary
-task. `caselaw_viewer` fetches the opinion on demand (`fetch_opinion`,
-falling back to the cluster's first sub-opinion and caching the
-`opinion_id`) and renders `html_with_citations` with `|safe` in
-`templates/case/caselaw-viewer.html`. That is a known decision: the
-markup is CourtListener's, the viewer anchors highlights on it, and when
-the viewers were hardened in October 2026 (highlight JSON and research
-excerpts) this one was left as it is pending a real sanitiser. Saved
-cases and the viewer need `perm_research`, enforced by URL pattern in the
-middleware.
-
-The list is the matter's Case Law tab, shown when `caselaw_available`
-(a CourtListener token, and an admin or a `perm_research` user). With
-AI configured it has an AI column, a bulk AI menu and a summary per
-case; without, none of those. Without a CourtListener token the list,
-lookup and viewer 404 (`CASELAW_PATTERN` in `PermissionMiddleware`).
-
-Jurisdictions (`apps/case/jurisdictions.py`) feed the agent's
-`search_caselaw` court filter: a state lists its supreme and appellate
-courts and home circuit, and federal adds the state's district courts,
-that circuit and the Supreme Court. District lists are filled in as users
-need them (Georgia so far); verify any new id against the CourtListener
-courts endpoint, because a typo silently narrows every search that uses
-the filter.
-
 ### Search
 
 Search inside a matter (`apps/case/search/views.py`) is hybrid:
@@ -257,8 +218,7 @@ registered in `apps/case/search_config.py`), keeping the document,
 highlight and fact hits on this matter, then meaning matches from
 the pgvector index (`apps/case/semantic.py`, `semantic_entries()`)
 appended and marked `semantic` (none without a Gemini key, which the
-embeddings need). Highlights on case law are left out
-because the result row renders document highlights only. The importance
+embeddings need). The importance
 filter means "at least this important", as on the other tabs. The sidebar
 search (`apps/search/`)
 runs watson over matters, contacts and intakes with synonym
@@ -272,7 +232,6 @@ the MCP server.
 |---|---|---|
 | `apps.case.documents.tasks.process_document_ocr` | upload, file replacement, mbox import, retry and force | `ocr_status="failed"`, `ocr_error` set, badge offers retry |
 | `apps.case.documents.tasks.generate_document_summary` | the OCR task, only with AI configured | logged, document keeps no summary |
-| `apps.case.caselaws.tasks._generate_caselaw_summary` | `caselaws_save` and the agent's `save-caselaw` block, through `generate_caselaw_summary()`, only with AI configured | logged, the case keeps no summary |
 
 The `post_save` signal in `apps/case/documents/signals.py` also queues OCR
 on a document created with its file in the first save. Schedules are
@@ -282,7 +241,7 @@ listed in the [schedules reference](../../reference/schedules.md).
 
 Everything under `/case/` passes `PermissionMiddleware.process_view`,
 which resolves every id in the URL (matter, document, highlight, fact,
-witness, label, case law, and the `object_type`/`object_id` pairs of the
+witness, label, and the `object_type`/`object_id` pairs of the
 label and witness modals) to a matter through `MATTER_LOOKUPS` in
 `apps/accounts/access.py` and refuses a user who is not a member of all of
 them. The tab views therefore carry only `@login_required` (the shell
@@ -291,8 +250,7 @@ views in `views.py` that take a matter id also carry
 cannot see is checked in the app: a matter in a form or POST body
 (`documents/access.py`), a source or label id in a body
 (`facts/access.py`, `labels/views.py`), and lists that would reach across
-matters (`documents_for_user()` on the duplicate warning). Saved cases
-and the case-law viewer need `perm_research`. The
+matters (`documents_for_user()` on the duplicate warning). The
 matrix is in the [permissions reference](../../reference/permissions.md).
 
 ## Things that bite
@@ -316,18 +274,11 @@ matrix is in the [permissions reference](../../reference/permissions.md).
 - **Sort keys from the session reach `order_by()`.** A stored key the
   list does not know would 500 every load; use `sorting.py` for any new
   sortable list.
-- **The CourtListener throttle is per process.** `courtlistener_throttle.py`
-  spaces requests within one process; qcluster workers, the vetting
-  thread pool and the agent's research tools each keep their own clock,
-  so the account's per-minute limit is the real ceiling.
-- **The case-law viewer trusts CourtListener's HTML.** Any change to how
-  opinions are fetched must keep that in mind, or add a sanitiser with an
-  allow-list of CourtListener's own elements.
 
 ## Related
 
 - Guide: [Documents](../../guide/documents.md), [Timeline, witnesses
-  and highlights](../../guide/facts.md), [Case law](../../guide/research.md)
+  and highlights](../../guide/facts.md)
 - Admin: [Storage](../../admin/integrations/storage.md)
 - Subsystems: [Matters](matters.md), [AI context](ai/context.md),
   [Drafts](drafts.md),

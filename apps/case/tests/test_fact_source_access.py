@@ -4,7 +4,7 @@ highlight or a label on the same matter (or a global label) is accepted."""
 
 import pytest
 
-from apps.case.models import CaseLaw, Document, Highlight, Label
+from apps.case.models import Document, Highlight, Label
 from apps.management.selection import get_session_key
 from apps.matters.models import Matter
 
@@ -82,24 +82,6 @@ class TestFactSources:
 
         assert list(fact.documents.all()) == [document]
         assert list(fact.highlights.all()) == [highlight]
-
-    def test_a_highlight_on_the_matters_saved_case_is_accepted(
-        self, client, fact, matter, user
-    ):
-        case_law = CaseLaw.objects.create(
-            matter=matter, case_name="Roe v. Wade", citation="410 U.S. 113"
-        )
-        on_case = Highlight.objects.create(
-            caselaw=case_law, slug="Holding", text="Held.", created_by=user
-        )
-
-        response = client.post(
-            f"/case/facts/{fact.id}/sources/add/",
-            {"type": "highlight", "id": on_case.id},
-        )
-
-        assert response.status_code == 200
-        assert list(fact.highlights.all()) == [on_case]
 
     def test_a_malformed_id_is_a_404_not_an_error(self, client, fact):
         response = client.post(

@@ -338,7 +338,7 @@ def test_permissions_matrix_renders(admin_client, staff_member):
     content = response.content.decode()
     assert "toggle-switch" in content
     assert "Staffer" in content or "staffer" in content
-    for label in ("All Matters", "Financial", "Intakes", "Reports", "Research"):
+    for label in ("All Matters", "Financial", "Intakes", "Reports"):
         assert label in content
 
 

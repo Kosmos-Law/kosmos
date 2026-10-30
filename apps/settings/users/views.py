@@ -183,7 +183,6 @@ def toggle_permission(request, user_id, perm):
         "perm_financial",
         "perm_intakes",
         "perm_reports",
-        "perm_research",
         "perm_accounting",
     ]
     if perm not in VALID_PERMS:

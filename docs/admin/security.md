@@ -50,7 +50,7 @@ Changing `SECRET_KEY` later signs every user out and invalidates every
 payment link, intake-form link and password-reset link already sent. AI
 keys entered under **Settings → Integrations** can no longer be read
 either, and must be entered again (see
-[AI providers and research](integrations/ai.md#in-settings)).
+[AI providers](integrations/ai.md#in-settings)).
 
 ## TLS and nginx
 
@@ -416,7 +416,7 @@ Each of these is off until its keys are set.
   or summary draws on (document text, emails, timeline), text sent
   for semantic indexing, forwarded intake email, the firm's user names and
   titles, and the name and email address of the user who asked. Keys are in
-  the [environment reference](../reference/environment.md#ai-and-research)
+  the [environment reference](../reference/environment.md#ai)
   or, encrypted in the database, under **Settings → Integrations**. With
   no AI key, nothing is sent and every AI feature is hidden.
 - **Google Workspace**: calendar events and contacts are synchronized in
@@ -428,9 +428,6 @@ Each of these is off until its keys are set.
   Card and bank details go from the client's browser to the processor and
   never reach Kosmos. Keys are in the
   [environment reference](../reference/environment.md#billing-and-payments).
-- **CourtListener**: research queries, the citations being checked, and
-  the text of each AI chat reply, which is posted to its citation lookup.
-  See [AI providers and research](integrations/ai.md#what-is-sent-to-the-providers).
 - **Mailgun**: receives mail forwarded to the intake address before Kosmos
   does. See [Intakes from forwarded email](integrations/inbound-email.md).
 - **Your SMTP provider**: sign-in codes, password resets, invoices and

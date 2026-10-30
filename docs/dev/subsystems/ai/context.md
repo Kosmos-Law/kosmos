@@ -20,22 +20,21 @@ it is optional: with no provider key configured, none of it is reachable
 | Module | Holds |
 |---|---|
 | `apps/ai/models.py` | `Conversation`, `Message` |
-| `apps/ai/views.py` | `ai_status` / `cancel_request`, the status poll the intake chat uses; `delete_message`; the citation vetting modal and status the shared message templates call |
+| `apps/ai/views.py` | `ai_status` / `cancel_request`, the status poll the intake chat uses; `delete_message` |
 | `apps/ai/context.py` | The shared helpers: `build_request_info()`, `build_chat_history()`, `load_legal_prompt()`, `SOURCE_LINKING`, and the section formatters (`format_matter_overview()`, `format_contacts()`, …) the matter tools and the MCP API read |
-| `apps/ai/agent_tools.py` | The read-only matter tools (search, documents, email, the matter record, case law); `search_materials()` in `api.py` runs the MCP server's search through them |
+| `apps/ai/agent_tools.py` | The read-only matter tools (search, documents, email, the matter record); `search_materials()` in `api.py` runs the MCP server's search through them |
 | `apps/ai/prompts/legal.md` | The legal system prompt |
 | `apps/llm/status.py` | The cross-process status store and heartbeat (the intake chat's turn) |
-| `apps/ai/access.py` | Who may use a conversation and the Financial and Research gates |
+| `apps/ai/access.py` | Who may use a conversation and the Financial gate |
 | `apps/llm/anthropic_client.py`, `gemini_client.py` | `send_to_claude()`, `send_to_gemini_streaming()`: one completion with streaming and prompt caching |
 | `apps/llm/providers.py` | `complete()`, the one call for background AI work; the `fast` and `deep` tiers and their model ids; `provider()`, `chat_llm()`, `AINotConfigured` |
 | `apps/settings/ai.py` | Whether AI is set up: `configured_providers()`, `ai_enabled()`, `gemini_key()`, `anthropic_key()`, `key_source()`, and the encryption of keys stored on `Firm` |
-| `config/context.py` | The `integrations` context processor: `ai_enabled`, `caselaw_available` and the firm's `case_file_enabled` and `accounting_enabled` for templates |
+| `config/context.py` | The `integrations` context processor: `ai_enabled` and the firm's `case_file_enabled` and `accounting_enabled` for templates |
 | `apps/ai/fact_blocks.py`, `witness_blocks.py` | The fenced write blocks' parsers, now reached by the MCP API's create routes |
-| `apps/ai/vetting.py` | `has_pending_vetting()`, the reader of stored vetting results |
 | `apps/ai/purge.py` | The closed-matter chat purge |
 | `apps/case/semantic.py`, `apps/llm/embeddings.py` | The pgvector index behind `search_materials` |
 | `apps/llm/pricing.py` | Estimated cost per message |
-| `templates/ai/` | `messages.html` and `message-single.html` (the intake chat's window), `status.html` (its poller), the trail and citation partials, and `draft-chip.html` and `companion-setup.html`, which the drafts views render |
+| `templates/ai/` | `messages.html` and `message-single.html` (the intake chat's window), `status.html` (its poller), the trail partials, and `draft-chip.html` and `companion-setup.html`, which the drafts views render |
 | `apps/intakes/chat.py` | The intake chat, built on the same models and status protocol |
 
 ## Data model
@@ -50,8 +49,9 @@ engine wrote after each answer.
 
 A `Message` has a `role`, `content`, the sending `user` for user
 messages, token counts, and the JSON fields the renderers read:
-`verified_citations`, `activity_log`, `agent_run` (the old agentic
-turns' trails) and `research_trail`. Both models keep
+`activity_log` and `agent_run` (the old agentic turns' trails), with
+`verified_citations` and `research_trail` left from the retired research
+features and read by nothing. Both models keep
 `HistoricalRecords`. Nothing writes a matter conversation now; the
 intake chat writes its own.
 
@@ -86,20 +86,16 @@ process at once.
 Four layers keep a server without a key free of AI:
 
 - **Templates.** The `config.context.integrations` context processor puts
-  lazy `ai_enabled` and `caselaw_available` in every template context
-  (evaluated only when a template reads them). They hide the AI tab and
-  its Case Law switch (`case-nav.html`, `ai/view-pills.html`), the
-  intake Assessment pill and its Assess and Chat buttons, the AI column
-  and bulk menu on Documents and Case Law, and the Settings > Tasks menu
-  entry.
+  a lazy `ai_enabled` in every template context (evaluated only when a
+  template reads it). It hides the intake Assessment pill and its Assess
+  and Chat buttons, the AI column and bulk menu on Documents, and the
+  Settings > Tasks menu entry.
 - **Routes.** `PermissionMiddleware.__call__` matches `AI_PATTERN`
   (`/case/…/ai/`, `/case/drafts/`, `/intakes/<id>/assess`,
   `/intakes/<id>/chat/` and `/settings/tasks/`) and answers 404 for everyone, admins included,
-  when `ai_enabled()` is false. `CASELAW_PATTERN` does the same for saved
-  case law and the cluster viewer when there is no CourtListener token.
-  Both run before the permission checks.
+  when `ai_enabled()` is false, before the permission checks.
 - **The remembered tab.** `tab_available(user, tab)` in
-  `apps/case/views.py` says whether `ai` or `caselaws` can be shown;
+  `apps/case/views.py` says whether a tab can be shown;
   `get_last_tab()` falls back to Documents for a stored tab that no
   longer is.
 - **Background work.** Every summary task, its queueing helper, the
@@ -108,15 +104,10 @@ Four layers keep a server without a key free of AI:
   leaving the stored value alone. `quick_add_ai_enabled()` requires both
   `Firm.quick_task_ai` and `ai_enabled()`.
 
-Saved case law follows CourtListener rather than AI:
-`courtlistener.caselaw_available(user)` is a token plus admin or
-`perm_research`. With AI on, the list is a view of the AI tab; with AI
-off, `case-nav.html` shows it as its own Case Law tab.
-
-Tests: the root `conftest.py` gives every test fake Gemini, Anthropic and
-CourtListener keys (autouse `_integration_keys`), the same on a laptop
+Tests: the root `conftest.py` gives every test fake Gemini and Anthropic
+keys (autouse `_integration_keys`), the same on a laptop
 with real keys in `config/.env` as in CI, so a stray real call fails
-instead of spending. Request the `ai_off` or `courtlistener_off` fixture
+instead of spending. Request the `ai_off` fixture
 to test the unset case; `apps/case/tests/test_ai_optional.py` and
 `apps/settings/tests/test_ai_keys.py` are the examples.
 
@@ -130,8 +121,7 @@ matter, an intake chat the Intakes permission) guards the poll and
 cancel views.
 
 `has_financial_access()` (admin or `perm_financial`) decides whether the
-matter tools offer invoices, and `has_research_access()` (admin or
-`perm_research`) whether they offer case law. The matrix is in the
+matter tools offer invoices. The matrix is in the
 [permissions reference](../../../reference/permissions.md).
 
 ## Things that bite
@@ -149,7 +139,7 @@ matter tools offer invoices, and `has_research_access()` (admin or
 
 - [MCP server and JSON APIs](../mcp.md), where questions about a matter
   are answered now.
-- [AI providers and research](../../../admin/integrations/ai.md) covers
+- [AI providers](../../../admin/integrations/ai.md) covers
   keys, the prompt file and retention for operators;
   [Background worker](../../../admin/worker.md) covers qcluster.
 - Neighbouring pages: [MCP server and JSON APIs](../mcp.md),

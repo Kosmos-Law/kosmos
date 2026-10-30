@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 from django.urls import reverse
 
-from apps.case.models import CaseLaw, Document, Highlight
+from apps.case.models import Document
 
 pytestmark = pytest.mark.django_db
 
@@ -33,30 +33,6 @@ def _search(client, matter, **filters):
     session[f"search_filter_{matter.id}"] = {"query": "negligence", **filters}
     session.save()
     return client.get(reverse("case:search-results", args=[matter.id]))
-
-
-def test_keyword_match_on_a_case_law_highlight_does_not_break_search(
-    client, user, matter, highlight, keyword_hits
-):
-    case_law = CaseLaw.objects.create(
-        matter=matter, citation="1 U.S. 1", case_name="A v. B", court="Supreme Court"
-    )
-    opinion_highlight = Highlight.objects.create(
-        caselaw=case_law,
-        slug="Opinion passage",
-        text="negligence per se",
-        page_number=1,
-        coordinates={"rects": []},
-        color="yellow",
-        created_by=user,
-    )
-    keyword_hits(opinion_highlight, highlight)
-
-    response = _search(client, matter)
-
-    assert response.status_code == 200
-    results = response.context["results"]
-    assert [r["object"] for r in results] == [highlight]
 
 
 def _document(matter, user, name, importance):

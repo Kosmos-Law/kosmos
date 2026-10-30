@@ -101,47 +101,6 @@
         </button>
         <div class="dropdown" x-data="dropdown()">
           <button type="button"
-                  id="highlights-source-filter"
-                  class="select-btn filter-dropdown-button {% if source_type %}toggle-active{% endif %}"
-                  x-ref="button"
-                  @click="toggle()"
-                  :aria-expanded="open">
-            <span>
-              {% if source_type == "case" %}
-                <i class="icon-gavel with-text"></i>Cases
-              {% elif source_type == "document" %}
-                <i class="icon-file-text with-text"></i>Documents
-              {% else %}
-                <i class="icon-layers with-text"></i>All Sources
-              {% endif %}
-            </span>
-            <small>
-              <i class="icon-chevron-down"></i>
-            </small>
-          </button>
-          <ul class="dropdown-menu" x-ref="menu" x-show="open">
-            <li>
-              <a class="dropdown-item {% if not source_type %}active{% endif %}"
-                 href="#"
-                 hx-get="{% url 'case:highlights-filter-source-type' matter.id 'all' %}"
-                 hx-target="#highlights"><i class="icon-layers"></i> All Sources</a>
-            </li>
-            <li>
-              <a class="dropdown-item {% if source_type == 'case' %}active{% endif %}"
-                 href="#"
-                 hx-get="{% url 'case:highlights-filter-source-type' matter.id 'case' %}"
-                 hx-target="#highlights"><i class="icon-gavel"></i> Cases</a>
-            </li>
-            <li>
-              <a class="dropdown-item {% if source_type == 'document' %}active{% endif %}"
-                 href="#"
-                 hx-get="{% url 'case:highlights-filter-source-type' matter.id 'document' %}"
-                 hx-target="#highlights"><i class="icon-file-text"></i> Documents</a>
-            </li>
-          </ul>
-        </div>
-        <div class="dropdown" x-data="dropdown()">
-          <button type="button"
                   id="highlights-importance-filter"
                   class="select-btn filter-dropdown-button importance-dropdown {% if importance_value %}toggle-active{% endif %}"
                   x-ref="button"

@@ -1,13 +1,12 @@
 """The case builder's public surface for the apps that sit on top of it.
 
 Everything another app needs from the case app is imported from here, from
-apps.case.models, or from apps.case.courtlistener; the subpackages are
+or from apps.case.models; the subpackages are
 private, and the import-linter contracts in pyproject.toml hold that line.
 What is listed here is what a later extraction of the case builder into its
 own package would have to keep.
 """
 
-from apps.case.caselaws.tasks import generate_caselaw_summary
 from apps.case.documents.mbox import (
     EmailMetadata,
     extract_last_name,
@@ -41,7 +40,6 @@ __all__ = [
     "Tab",
     "extract_existing_text",
     "extract_last_name",
-    "generate_caselaw_summary",
     "generate_email_description",
     "generate_email_pdf",
     "get_matter_from_url",

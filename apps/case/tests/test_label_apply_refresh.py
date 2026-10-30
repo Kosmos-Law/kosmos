@@ -8,8 +8,6 @@ those the list is told to reload instead.
 import pytest
 from django.urls import reverse
 
-from apps.case.models import CaseLaw
-
 pytestmark = pytest.mark.django_db
 
 
@@ -45,17 +43,6 @@ def test_notes_take_no_labels(client, label):
     )
 
     assert response.status_code == 400
-
-
-def test_case_law_row_is_refreshed_through_the_list(client, matter, label):
-    case_law = CaseLaw.objects.create(
-        matter=matter, citation="1 U.S. 1", case_name="A v. B", court="Supreme Court"
-    )
-
-    response = _apply(client, "caselaw", case_law, label)
-
-    assert response["HX-Trigger"] == "caselawsChanged"
-    assert "<tr" not in response.content.decode()
 
 
 def test_highlight_table_row_is_refreshed_through_the_list(client, highlight, label):

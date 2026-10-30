@@ -9,7 +9,7 @@ global labels; and the Labels filter was built over every matter's labels.
 import pytest
 from django.urls import reverse
 
-from apps.case.models import CaseLaw, Highlight, Label
+from apps.case.models import Label
 from apps.matters.models import Matter
 
 pytestmark = pytest.mark.django_db
@@ -32,30 +32,11 @@ def foreign_label(other_matter):
     return Label.objects.create(matter=other_matter, name="Foreign", color="red")
 
 
-@pytest.fixture
-def caselaw_highlight(matter, user):
-    case_law = CaseLaw.objects.create(
-        matter=matter,
-        case_name="Roe v. Wade",
-        citation="410 U.S. 113",
-        text="The opinion of the court. " * 40,
-        created_by=user,
-    )
-    return Highlight.objects.create(
-        caselaw=case_law,
-        slug="Holding",
-        text="The opinion of the court.",
-        char_offset=0,
-        color="yellow",
-        created_by=user,
-    )
-
-
-def test_caselaw_highlight_modal_offers_the_matters_labels(
-    client, caselaw_highlight, label, global_label, foreign_label
+def test_highlight_modal_offers_the_matters_labels(
+    client, highlight, label, global_label, foreign_label
 ):
     response = client.get(
-        reverse("case:labels-apply-modal", args=["highlight", caselaw_highlight.id])
+        reverse("case:labels-apply-modal", args=["highlight", highlight.id])
     )
 
     assert response.status_code == 200

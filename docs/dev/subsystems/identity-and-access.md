@@ -49,9 +49,10 @@ the machinery behind it and does not repeat the gates.
   user; `UniqueEmailMixin` (`apps/accounts/forms.py`) gives every form
   that edits it the same rule with a readable message. `username` is a
   display name.
-- The five permission flags, listed in `CustomUser.PERM_FIELDS`:
+- The permission flags, listed in `CustomUser.PERM_FIELDS`:
   `perm_all_matters`, `perm_financial`, `perm_intakes`, `perm_reports`,
-  `perm_research`. All default to on except `perm_reports`. The Users page
+  `perm_accounting`. All default to on except `perm_reports` and
+  `perm_accounting`. The Users page
   toggles them one at a time (`toggle_permission` validates the name
   against its own `VALID_PERMS` list, which must match `PERM_FIELDS`).
 - `user_rate`: the default hourly rate. A time entry takes the matter's
@@ -219,8 +220,7 @@ partial update is never answered with a redirect.
 
 `PermissionMiddleware.__call__` runs before URL resolution. Its first
 check applies to every request: a path matching `AI_PATTERN` while no AI
-provider is configured, or `CASELAW_PATTERN` while there is no
-CourtListener token, gets `404` (the feature does not exist on this
+provider is configured gets `404` (the feature does not exist on this
 server; see [AI is optional](ai/context.md#ai-is-optional)). A signed-in
 user also gets `404` on `CASE_FILE_PATTERN` while the firm's
 administrator has the case file switched off (Settings >
@@ -229,8 +229,7 @@ runs for signed-in non-admins only and answers `403` with an empty body.
 It checks, in order: `ADMIN_ONLY_PATHS` (the settings pages that change the
 firm); `PERMISSION_PATHS`, a list of `(prefix, flag)` pairs; then
 `PERMISSION_PATTERNS`, compiled regexes for pages whose path begins with a
-matter id (`/matters/<id>/rates`, `/matters/<id>/ledger`, and the Research
-tab's routes, saved cases and the case viewer's cluster pages included).
+matter id (`/matters/<id>/rates` and `/matters/<id>/ledger`).
 The comment above `PERMISSION_PATTERNS` states the rule: hiding a tab in
 the navigation is not a gate, the URL has to refuse too.
 

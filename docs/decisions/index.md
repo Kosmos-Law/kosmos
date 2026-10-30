@@ -96,4 +96,5 @@ to write one is in [Writing documentation](../dev/writing-docs.md#decision-recor
 - [Firm files live in Dropbox, and the AI reads them in place (2026-10-29)](2026-10-29-firm-files-live-in-dropbox.md)
 - [Notes are app-owned and carry no AI knobs (2026-08-11)](2026-08-11-notes-are-app-owned-with-no-ai-knobs.md), replaced by
 - [Notes are retired (2026-10-27)](2026-10-27-notes-retired.md)
-- [The case-law viewer renders CourtListener's HTML unsanitised (2026-10-02)](2026-10-02-opinion-html-rendered-as-is.md)
+- [The case-law viewer renders CourtListener's HTML unsanitised (2026-10-02)](2026-10-02-opinion-html-rendered-as-is.md), superseded by
+- [Saved case law is retired (2026-10-30)](2026-10-30-case-law-retired.md)

@@ -1,4 +1,4 @@
-{% load humanize markdown_extras citation_extras %}
+{% load humanize markdown_extras %}
 <script>
   // Idempotent globals; defined here too because message-single may be the
   // initial swap target via HTMX before the messages partial has loaded. The
@@ -6,7 +6,7 @@
   if (!window.aiCleanForExport) {
     window.aiCleanForExport = function (root) {
       root
-        .querySelectorAll(".citation-vetting, .citation-badge-wrapper")
+        .querySelectorAll(".citation-badge-wrapper")
         .forEach((n) => n.remove());
       root.querySelectorAll("mark").forEach((m) => {
         const span = document.createElement("span");
@@ -79,15 +79,12 @@
     {% if message.role == "assistant" %}
       {% if message.agent_run %}
         {% include "ai/agent-trail.html" with message=message %}
-      {% elif message.research_trail %}
-        {% include "ai/research-trail.html" with message=message %}
       {% elif message.activity_log %}
         {% include "ai/activity-log.html" with message=message %}
       {% endif %}
-      {% include "ai/vetting-wrapper.html" with message=message %}
-      {% if message.research_trail %}
-        {% include "ai/authorities.html" with message=message %}
-      {% endif %}
+      <div id="message-body-{{ message.id }}"
+           class="ai-message-text ai-markdown"
+           data-no-auto-scroll>{{ message.content|render_markdown }}</div>
     {% else %}
       <div class="ai-message-text">{{ message.content|linebreaks }}</div>
     {% endif %}

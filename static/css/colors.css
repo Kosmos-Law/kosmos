@@ -207,9 +207,8 @@
   --error-background: var(--orange-100);
   --error-border: var(--urgent);
 
-  /* Semantic status-green chips (citation verification, vetting states in
-     the AI chat) — themable, unlike the provider brand badges which stay
-     constant. Defaults are Matcha's limes. */
+  /* Semantic status-green chips — themable, unlike the provider brand
+     badges which stay constant. Defaults are Matcha's limes. */
   --status-green-bg: var(--lime-100);
   --status-green-ink: var(--lime-800);
   --status-green-line: var(--lime-300);

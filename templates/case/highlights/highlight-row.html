@@ -11,11 +11,7 @@
   <td class="highlight">
     <div class="dropdown" x-data="dropdown()">
       <h3 class="highlight-slug">
-        {% if highlight.caselaw %}
-          <span class="app-badge badge-blue"><i class="icon-gavel"></i></span>
-        {% else %}
-          <span class="app-badge badge-lime"><i class="icon-file-text"></i></span>
-        {% endif %}
+        <span class="app-badge badge-lime"><i class="icon-file-text"></i></span>
         <a href="#" x-ref="button" @click.prevent="toggle()">
           <span class="hl-{{ highlight.color }}">{{ highlight.slug|default:"Untitled" }}</span>
         </a>
@@ -88,13 +84,7 @@
     </div>
   </td>
   <td class="date">
-    {% if highlight.document %}
-      <span>{{ highlight.document.date|date:'Y-m-d'|default:"—" }}</span>
-    {% elif highlight.caselaw %}
-      <span>{{ highlight.caselaw.date_filed|date:'Y-m-d'|default:"—" }}</span>
-    {% else %}
-      <span>—</span>
-    {% endif %}
+    <span>{{ highlight.document.date|date:'Y-m-d'|default:"—" }}</span>
   </td>
   <td class="importance">
     <div class="dropdown" x-data="dropdown()">
