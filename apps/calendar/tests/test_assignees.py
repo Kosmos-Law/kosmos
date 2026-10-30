@@ -176,7 +176,8 @@ def test_the_menu_draws_the_ticks(client, ada):
 
     menu = client.get(reverse("calendar:filter-menus")).content.decode()
 
-    assert menu.count("icon-square-check") == 1
+    # The Tasks button's icon-square-check-big is not a tick.
+    assert menu.count('class="icon-square-check"') == 1
     assert "All assignees" in menu
 
 

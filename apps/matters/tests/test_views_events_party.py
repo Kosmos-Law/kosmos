@@ -18,6 +18,8 @@ def test_missing_party_renders_empty(client, user, matter):
         status="Pending",
         description="Imported from Google",
     )
+    # The tab opens on the calendar; the Party cell is in the list view.
+    client.get(reverse("matters:events-view-mode", args=[matter.id, "list"]))
     response = client.get(reverse("matters:events", args=[matter.id]))
     assert response.status_code == 200
     assert "Imported from Google" in response.content.decode()
