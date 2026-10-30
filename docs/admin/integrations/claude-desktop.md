@@ -33,7 +33,10 @@ is in the developer guide: [MCP server and JSON APIs](../../dev/subsystems/mcp.m
 - **The well-known paths at the root.** `/.well-known/oauth-protected-resource`
   and `/.well-known/oauth-authorization-server` are served by Kosmos; a
   reverse proxy that routes `/.well-known/` elsewhere (for certificate
-  renewal, say) must pass these two on.
+  renewal, say) must pass these two on. A rule that refuses hidden
+  paths (`location ~ /\.` in nginx) catches them too; the shipped
+  `kosmos-security.conf` puts a `location ^~ /.well-known/oauth-`
+  before its own.
 
 ## User setup
 
@@ -68,11 +71,27 @@ instructions, e.g.:
 
 ## What Claude can write
 
-Two write surfaces, both create-only, neither destructive:
+Seven writes, none destructive. Each creates one record (or, for
+complete_task, changes one status) only when the user asks for it, and
+Claude asks before calling a write tool unless the user has chosen
+"always allow" for it in Claude's connector settings.
 
-- **Timeline facts and witnesses**: Claude can add them to a matter, with
-  the same validation the in-app chat applies.
-- **Tasks**: Claude can add tasks, assigned to the user who connected.
+- **Timeline facts and witnesses**: added to a matter, with the same
+  validation the in-app chat applied.
+- **Tasks**: added, assigned to the user who connected; and marked
+  complete, which the Tasks page can undo. A task with an unfinished
+  checklist is refused, as on the Tasks page.
+- **Time entries**: logged on an hourly matter as the connected user, at
+  that user's rate for the matter (Claude cannot set a rate). The entry
+  is unbilled until it is put on an invoice in Kosmos.
+- **Events**: added to a matter's calendar or the firm's, with the same
+  rules as the event form. The event is the firm's (everyone's) unless
+  the user asks for it on their own calendar.
+- **Contacts**: added to the address book, and optionally put on a matter
+  with a role and a group. A contact with the same name is not duplicated.
+
+Nothing on the money side (invoices, payments, trust) and nothing that
+sends mail can be changed from Claude.
 
 ## Troubleshooting
 
@@ -82,6 +101,12 @@ Two write surfaces, both create-only, neither destructive:
   certificate is valid, and that the proxy passes `/.well-known/` on.
   `curl -i https://<host>/mcp` from outside should answer `401` with a
   `WWW-Authenticate` header.
+- **"Couldn't register with Kosmos's sign-in service"**: Claude could
+  not read the well-known documents, fell back to `/register` at the
+  root, and found nothing there. `curl -i
+  https://<host>/.well-known/oauth-authorization-server` should answer
+  `200` with JSON; a `403` from nginx means a hidden-files rule is in
+  front of it (see the well-known note above).
 - **The sign-in page says the connection cannot be made**: the
   application's redirect address is not one it registered, or its
   client id is unknown. Remove the connector in Claude and add it again.

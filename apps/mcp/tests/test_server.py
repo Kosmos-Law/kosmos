@@ -7,7 +7,11 @@ import pytest
 from django.test import Client
 from django.utils import timezone
 
+from apps.activity.time.models import TimeEntry
+from apps.calendar.models import Event
 from apps.case.models import Fact
+from apps.contacts.models import Contact
+from apps.matters.models import Group, Relationship, Role
 from apps.mcp.models import McpToken
 from apps.mcp.tools import TOOLS
 from apps.tasks.models import Task
@@ -260,6 +264,85 @@ class TestTools:
         )
         assert "Already on the witness list" in text(again)
 
+    def test_add_time_entry_at_the_users_rate(self, access_token, matter, user):
+        outcome = call(
+            access_token,
+            "add_time_entry",
+            matter_id=matter.id,
+            actions="Review deposition transcript",
+            hours=0.3,
+            date="2026-10-01",
+        )
+        assert text(outcome).startswith("- Logged 0.3h on 2026-10-01:")
+        entry = TimeEntry.objects.get()
+        assert entry.user == user and entry.rate == 100 and entry.invoice is None
+
+    def test_add_time_entry_refusal_is_a_tool_error(self, access_token, matter):
+        outcome = call(
+            access_token,
+            "add_time_entry",
+            matter_id=matter.id,
+            actions="Research",
+            hours=1,
+            category="Nope",
+        )
+        assert outcome["isError"] is True
+        assert "Kosmos API error (400)" in outcome["content"][0]["text"]
+
+    def test_add_event(self, access_token, matter, user):
+        outcome = call(
+            access_token,
+            "add_event",
+            matter_id=matter.id,
+            description="Status hearing",
+            date="2026-11-12",
+            start_time="09:30",
+            assigned_to_me=True,
+        )
+        assert "Status hearing" in text(outcome) and "[Test Matter]" in text(outcome)
+        event = Event.objects.get()
+        assert event.matter == matter and list(event.assignees.all()) == [user]
+
+    def test_complete_task(self, access_token, matter, user):
+        task = Task.objects.create(
+            user=user, matter=matter, description="serve the subpoena", status="Pending"
+        )
+        manifest = call(
+            access_token, "read_matter", matter_id=matter.id, section="tasks"
+        )
+        assert f"[task:{task.id}]" in text(manifest)
+        outcome = call(access_token, "complete_task", task_id=task.id)
+        assert text(outcome).startswith("- Completed:")
+        task.refresh_from_db()
+        assert task.status == "Complete"
+        again = call(access_token, "complete_task", task_id=task.id)
+        assert "Already complete" in text(again)
+
+    def test_add_contact_on_a_matter(self, access_token, matter):
+        # Seeded by the migrations, but a flushed test database may have
+        # lost them and a leaked row may have doubled them.
+        group = Group.objects.filter(
+            name="Adversary", matter__isnull=True
+        ).first() or Group.objects.create(name="Adversary", order=2)
+        if not Role.objects.filter(name="Counsel").exists():
+            Role.objects.create(name="Counsel")
+        outcome = call(
+            access_token,
+            "add_contact",
+            name="Dana Whitfield",
+            email="dana@whitfield.example",
+            matter_id=matter.id,
+            role="Counsel",
+            group="Adversary",
+        )
+        assert text(outcome).startswith("- Added contact: **Dana Whitfield**")
+        contact = Contact.objects.get(name="Dana Whitfield")
+        rel = Relationship.objects.get(matter=matter, contact=contact)
+        assert rel.group == group
+        again = call(access_token, "add_contact", name="dana whitfield")
+        assert "Already in contacts" in text(again)
+        assert Contact.objects.filter(name__iexact="dana whitfield").count() == 1
+
     def test_unknown_tool_is_invalid_params(self, access_token):
         body = rpc(access_token, "tools/call", {"name": "drop_tables"}).json()
         assert body["error"]["code"] == -32602
@@ -270,6 +353,18 @@ class TestTools:
         ).json()
         assert body["error"]["code"] == -32602
         assert "matter_id" in body["error"]["message"]
+
+    def test_wrong_hours_type_is_invalid_params(self, access_token, matter):
+        body = rpc(
+            access_token,
+            "tools/call",
+            {
+                "name": "add_time_entry",
+                "arguments": {"matter_id": matter.id, "actions": "x", "hours": True},
+            },
+        ).json()
+        assert body["error"]["code"] == -32602
+        assert "hours" in body["error"]["message"]
 
     def test_wrong_argument_type_is_invalid_params(self, access_token):
         body = rpc(
