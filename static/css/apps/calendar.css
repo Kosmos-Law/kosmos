@@ -664,14 +664,17 @@
    their padding (2.5rem), so today's events start on the same line as
    its neighbours' and a bar spanning the days keeps clear of them. The
    number is in the lavender (the violet icon colour) on the pale lavender
-   selection circle. */
+   selection circle, ringed in the selection border. The line height
+   takes off the 1px border on each side to keep the number centred. */
 .fc .fc-day-today .fc-daygrid-day-number {
   background-color: var(--selected-background);
+  border: 1px solid var(--selected-border);
   border-radius: 50%;
+  box-sizing: border-box;
   color: var(--icon-violet);
   font-weight: 500;
   height: 2rem;
-  line-height: 2rem;
+  line-height: calc(2rem - 2px);
   margin: 0.25rem;
   padding: 0;
   text-align: center;
@@ -806,7 +809,7 @@
 
 .fc-multiMonthRolling-view .fc-day-today .fc-daygrid-day-number {
   height: 1.5rem;
-  line-height: 1.5rem;
+  line-height: calc(1.5rem - 2px);
   width: 1.5rem;
 }
 
