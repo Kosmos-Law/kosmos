@@ -3,14 +3,12 @@ Generate and store PDFs for all existing invoices that don't have one.
 
 Usage:
     python manage.py generate_invoice_pdfs
-    python manage.py generate_invoice_pdfs --base-url http://localhost:8000
     python manage.py generate_invoice_pdfs --overwrite  # regenerate all PDFs
     python manage.py generate_invoice_pdfs --limit 5    # only process 5 invoices
     python manage.py generate_invoice_pdfs --clear      # delete all stored PDFs and reset
     python manage.py generate_invoice_pdfs --sent-since 2026-08-03  # re-do recent sends
 """
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.dateparse import parse_date
 
@@ -22,11 +20,6 @@ class Command(BaseCommand):
     help = "Generate and store PDFs for existing invoices"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--base-url",
-            default=f"file://{settings.BASE_DIR}",
-            help="Base URL for resolving static files (default: file:// path)",
-        )
         parser.add_argument(
             "--overwrite",
             action="store_true",
@@ -53,7 +46,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        base_url = options["base_url"]
         overwrite = options["overwrite"]
         limit = options["limit"]
         sent_since = None
@@ -90,7 +82,7 @@ class Command(BaseCommand):
 
         for i, invoice in enumerate(invoices.iterator(), 1):
             try:
-                store_invoice_pdf(invoice, base_url=base_url)
+                store_invoice_pdf(invoice)
                 success += 1
                 self.stdout.write(f"  Invoice #{invoice.id} done")
             except Exception as e:

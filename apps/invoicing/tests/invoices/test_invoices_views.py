@@ -236,8 +236,8 @@ def test_a_status_change_stores_the_pdf_only_when_it_must(
 ):
     calls = []
     monkeypatch.setattr(
-        "apps.invoicing.invoices.views.store_invoice_pdf",
-        lambda invoice, request: calls.append(invoice.pk),
+        "apps.invoicing.invoices.views.refresh_invoice_pdf_later",
+        lambda invoice: calls.append(invoice.pk),
     )
     invoice.status = before
     invoice.save()

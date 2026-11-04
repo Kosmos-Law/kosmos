@@ -46,7 +46,7 @@ def _recording_store(calls):
     """A stand-in for store_invoice_pdf that notes the status the PDF would
     be rendered with and how many entries it would show."""
 
-    def store(invoice, request=None, *, base_url=""):
+    def store(invoice):
         calls.append(
             (invoice.status, TimeEntry.objects.filter(invoice=invoice).count())
         )
@@ -133,3 +133,101 @@ def test_void_remakes_pdf_stamped_void_with_entries(
     assert invoice.status == "VOID"
     assert TimeEntry.objects.filter(invoice=invoice).count() == 0
     assert invoice.pdf_file.read() == b"%PDF-1.4 new copy"
+
+
+# A status change remakes the PDF on the task worker. It drops the stale
+# copy first, so nothing serves it while the task waits in the queue.
+
+_GEN = "apps.invoicing.invoices.functions.generate_invoice"
+
+
+def test_approving_drops_the_draft_copy_and_queues_a_fresh_one(
+    client, invoice, offline_send, django_capture_on_commit_callbacks
+):
+    _with_stored_copy(invoice, "DRAFT")
+    with (
+        patch("django_q.tasks.async_task") as queued,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        response = client.post(
+            reverse(
+                "invoicing:invoices-edit-status",
+                kwargs={"pk": invoice.pk, "status": "APPROVED", "view": "list"},
+            )
+        )
+
+    assert response.status_code == 204
+    invoice.refresh_from_db()
+    assert invoice.status == "APPROVED"
+    assert not invoice.pdf_file
+    assert queued.call_args.args == (f"{_GEN}.store_missing_invoice_pdf", invoice.pk)
+
+
+def test_the_task_stores_the_missing_copy(invoice, offline_send):
+    from apps.invoicing.invoices.functions.generate_invoice import (
+        store_missing_invoice_pdf,
+    )
+
+    invoice.status = "APPROVED"
+    invoice.save()
+    calls = []
+    with patch(f"{_GEN}.store_invoice_pdf", _recording_store(calls)):
+        store_missing_invoice_pdf(invoice.pk)
+
+    assert [status for status, _ in calls] == ["APPROVED"]
+
+
+@pytest.mark.parametrize(
+    "status, stored",
+    [
+        ("APPROVED", True),  # a send or the client's link made one meanwhile
+        ("DRAFT", False),  # moved back to Draft before the task ran
+    ],
+)
+def test_the_task_skips_when_it_is_not_needed(invoice, offline_send, status, stored):
+    from apps.invoicing.invoices.functions.generate_invoice import (
+        store_missing_invoice_pdf,
+    )
+
+    if stored:
+        _with_stored_copy(invoice, status)
+    else:
+        invoice.status = status
+        invoice.save()
+    calls = []
+    with patch(f"{_GEN}.store_invoice_pdf", _recording_store(calls)):
+        store_missing_invoice_pdf(invoice.pk)
+        store_missing_invoice_pdf(999999)  # deleted invoice
+
+    assert calls == []
+
+
+@pytest.mark.parametrize("status, queued", [("APPROVED", True), ("DRAFT", False)])
+def test_saving_an_edit_drops_the_copy_and_remakes_it_unless_draft(
+    client, invoice, offline_send, django_capture_on_commit_callbacks, status, queued
+):
+    """Nothing serves a draft's stored copy (the PDF views render drafts
+    fresh, the pay link refuses them, sending renders its own), so a Draft
+    just loses the stale one."""
+    _with_stored_copy(invoice, status)
+    with (
+        patch("django_q.tasks.async_task") as task,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        response = client.post(
+            reverse("invoicing:invoices-edit", kwargs={"pk": invoice.pk}),
+            {
+                "date_limit": invoice.date_limit or "",
+                "date_issued": invoice.date_issued,
+                "message": "Thank you",
+                "comment": "",
+                "show_comp": "False",
+                "discount": "0",
+            },
+        )
+
+    assert response.status_code == 204
+    invoice.refresh_from_db()
+    assert invoice.message == "Thank you"
+    assert not invoice.pdf_file
+    assert task.called is queued

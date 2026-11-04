@@ -42,7 +42,7 @@ from utils.toasts import toast_email_sent, toast_error
 from .filters import InvoiceFilter
 from .forms import EditInvoiceForm, InvoiceForm
 from .functions import generate_invoice
-from .functions.generate_invoice import store_invoice_pdf
+from .functions.generate_invoice import refresh_invoice_pdf_later, store_invoice_pdf
 from .functions.send_invoice import (
     InvoiceSendError,
     days_since_sent,
@@ -588,7 +588,7 @@ def invoices_add(request):
             invoice = form.save(commit=False)
             invoice.created_by = request.user
             invoice.save()
-            store_invoice_pdf(invoice, request)
+            refresh_invoice_pdf_later(invoice)
 
             filter_data = request.session.get("invoices_filter", {})
             filter_data["status"] = "DRAFT"
@@ -646,7 +646,7 @@ def invoices_edit(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
 
     # Only an invoice that has not gone out can be edited: its dates decide
-    # which entries it holds, and saving regenerates its PDF. The page offers
+    # which entries it holds, and saving remakes its PDF. The page offers
     # Edit for Draft and Approved only; this holds the request to the same.
     if invoice.status not in UNSENT_STATUSES:
         return HttpResponse(status=403)
@@ -657,7 +657,7 @@ def invoices_edit(request, pk):
         )
         if form.is_valid():
             invoice.save()
-            store_invoice_pdf(invoice, request)
+            refresh_invoice_pdf_later(invoice)
 
             return HttpResponse(
                 status=204, headers={"HX-Trigger": "invoiceDetailChanged"}
@@ -706,7 +706,7 @@ def invoices_void(request, pk):
     # a blank page. The client's link no longer serves it; this is the firm's
     # record of what was cancelled.
     invoice.status = "VOID"
-    store_invoice_pdf(invoice, request)
+    store_invoice_pdf(invoice)
 
     invoice.void()
 
@@ -729,7 +729,7 @@ def invoices_pdf(request, pk):
         response["Content-Disposition"] = filename
         return response
 
-    file = generate_invoice(invoice, request)
+    file = generate_invoice(invoice)
 
     with open(file.name, "rb") as pdf:
         response = HttpResponse(pdf.read(), content_type="application/pdf")
@@ -753,7 +753,7 @@ def invoices_pdf_download(request, pk):
         response["Content-Disposition"] = f"attachment; {filename}"
         return response
 
-    file = generate_invoice(invoice, request)
+    file = generate_invoice(invoice)
 
     with open(file.name, "rb") as pdf:
         response = HttpResponse(pdf.read(), content_type="application/pdf")
@@ -884,12 +884,13 @@ def invoices_edit_status(request, pk, status, view):
     invoice.status = status
     invoice.save()
 
-    # Approving or sending stores the invoice's PDF, and so does leaving
+    # Approving or sending remakes the invoice's PDF, and so does leaving
     # Draft by any other road: the copy kept from the draft carries the
     # DRAFT watermark, and it is what the client's link serves. Any other
     # change (Sent to Deferred, say) leaves the copy the client was sent.
+    # The render runs on the task worker so the menu answers at once.
     if status in ("APPROVED", "SENT") or (was_draft and status != "DRAFT"):
-        store_invoice_pdf(invoice, request)
+        refresh_invoice_pdf_later(invoice)
 
     trigger = "invoicesChanged" if view == "list" else "invoiceDetailChanged"
 

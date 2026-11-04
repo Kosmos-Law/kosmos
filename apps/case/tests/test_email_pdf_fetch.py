@@ -87,8 +87,9 @@ def test_rendering_does_not_fetch_what_the_email_names(opened):
         # A static address that climbs out of the static directory.
         f"{BASE_URL}/static/../config/.env",
         f"{BASE_URL}/static/%2e%2e/config/.env",
-        # Plain http to a font host is not the template's link.
-        "http://fonts.googleapis.com/css2?family=Noto+Serif",
+        # The typeface is bundled; no font host is reached either.
+        "https://fonts.googleapis.com/css2?family=Noto+Serif",
+        "https://fonts.gstatic.com/s/notoserif/v23/font.woff2",
     ],
 )
 def test_fetcher_refuses(opened, url):

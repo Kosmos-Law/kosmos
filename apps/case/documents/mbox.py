@@ -19,11 +19,6 @@ from django.utils._os import safe_join
 from weasyprint import HTML
 from weasyprint.urls import URLFetcher, URLFetcherResponse
 
-# The only hosts an email PDF may reach over the network: the two the
-# template itself (templates/case/documents/email_pdf.html) links for its
-# typeface. Nothing an email's own HTML names is on this list.
-TEMPLATE_FONT_HOSTS = frozenset({"fonts.googleapis.com", "fonts.gstatic.com"})
-
 
 class EmailMetadata(NamedTuple):
     """Parsed email metadata for document creation."""
@@ -284,10 +279,10 @@ def email_pdf_url_fetcher(base_url: str):
     would fetch each from the server. This fetcher serves only:
 
     - inline ``data:`` URLs (nothing is fetched);
-    - the application's own static files, read from disk;
-    - the font hosts the PDF template itself links.
+    - the application's own static files (the typeface included), read
+      from disk.
 
-    Everything else is refused. WeasyPrint logs the refusal and renders the
+    Everything else is refused, so rendering reaches no network at all. WeasyPrint logs the refusal and renders the
     email without that resource.
     """
 
@@ -303,11 +298,6 @@ def email_pdf_url_fetcher(base_url: str):
                 url,
                 body=open(static_path, "rb"),
                 headers={"Content-Type": content_type or "application/octet-stream"},
-            )
-        if scheme == "https" and parts.hostname in TEMPLATE_FONT_HOSTS:
-            # No redirects: an allowed host must not be a way to anywhere else.
-            return URLFetcher(allowed_protocols=["https"], allow_redirects=False).fetch(
-                url
             )
         raise ValueError(f"Refused to fetch {url!r} while rendering an email PDF")
 

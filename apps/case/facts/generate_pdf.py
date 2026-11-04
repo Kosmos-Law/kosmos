@@ -2,9 +2,9 @@ from tempfile import NamedTemporaryFile
 
 from django.http.response import Http404
 from django.template.loader import render_to_string
-from weasyprint import HTML
 
 from apps.case.models import Fact
+from apps.management.pdf import pdf_html
 from apps.matters.models import Matter
 from apps.matters.proceedings.models import Proceeding
 
@@ -40,7 +40,7 @@ def generate_facts_pdf(matter_id, request, facts=None, filter_summary=None):
     }
 
     html_string = render_to_string("case/facts/pdf.html", context)
-    html = HTML(string=html_string, base_url=request.build_absolute_uri())
+    html = pdf_html(html_string)
 
     with NamedTemporaryFile(suffix=".pdf", delete=False) as pdf_file:
         html.write_pdf(target=pdf_file.name)
