@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import api
 from .activity import views as activity
 from .categories import views as categories
 from .client_wizard import (
@@ -544,4 +545,7 @@ urlpatterns = [
         activity.fee_claim_report_modal,
         name="fee-claim-report-modal",
     ),
+    # Token-authed JSON: matters and their proceedings in fields (api.py).
+    path("matters/api/", api.api_matters, name="api-matters"),
+    path("matters/api/<int:matter_id>/", api.api_matter, name="api-matter"),
 ]

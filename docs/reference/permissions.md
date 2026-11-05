@@ -347,6 +347,8 @@ are scoped identically; the token is the user's, there are no scopes.
 | `/case/api/documents/<id>/` | `kosmos_api_auth` | GET | Document on an open matter the user can access; otherwise 404 |
 | `/case/api/invoices/<id>/` | `kosmos_api_auth` | GET | Invoice on an open matter the user can access (404), and financial access (403) |
 | `/case/api/tasks/` | `kosmos_api_auth` | POST | Creates a task for the token's user; an optional matter must be open and accessible |
+| `/matters/api/` | `kosmos_api_auth` | GET | Matters of any status the user can access, as fields (name, status, client, client reference); `?q=` and `?status=` narrow the list |
+| `/matters/api/<id>/` | `kosmos_api_auth` | GET | One accessible matter of any status with its proceedings as fields; otherwise 404 |
 | `/search/api/` | `kosmos_api_auth` | GET | Matters and proceedings limited to accessible matters of any status; contacts unrestricted; intakes only with `perm_intakes` |
 | `/case/drafts/companion/api/…` | `companion_auth` | GET, POST | Draft links whose conversation belongs to the token's user; otherwise 404 |
 
