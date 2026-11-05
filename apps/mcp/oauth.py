@@ -596,6 +596,30 @@ def _token_response(connection):
     )
 
 
+def _origin(uri):
+    parts = urlsplit(uri)
+    return (parts.scheme.lower(), parts.netloc.lower())
+
+
+def _replace_earlier_connections(connection, redirect_uri):
+    """One connection for each Kosmos Discover. Discover registers afresh
+    every time it connects, so the installation is known by where it comes
+    back to; a new connection from there ends the ones before it, whoever
+    allowed them. So a Discover is never connected twice, as two users or
+    with a stale connection left from before, and an administrator sees
+    one row for it. Only the Discover at that address can get here: the
+    code was sent to it and to nowhere else."""
+    origin = _origin(redirect_uri)
+    earlier = (
+        McpConnection.objects.filter(resource=RESOURCE_MATTERS)
+        .exclude(pk=connection.pk)
+        .select_related("client")
+    )
+    for other in earlier:
+        if any(_origin(uri) == origin for uri in other.client.redirect_uris):
+            other.delete()
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 @_with_client
@@ -624,6 +648,8 @@ def token(request, client):
         connection = McpConnection.objects.create(
             user=code.user, client=client, resource=resource
         )
+        if resource == RESOURCE_MATTERS:
+            _replace_earlier_connections(connection, code.redirect_uri)
         return _token_response(connection)
     if grant_type == "refresh_token":
         connection = McpToken.refresh(request.POST.get("refresh_token", ""), client)

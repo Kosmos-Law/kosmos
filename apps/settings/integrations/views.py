@@ -1,10 +1,11 @@
 import logging
+from urllib.parse import urlsplit
 
 import google_auth_oauthlib.flow
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 from googleapiclient.discovery import build
@@ -13,6 +14,7 @@ import apps.contacts.google as contacts_google
 import apps.mail.google as mail_google
 from apps.contacts.models import GoogleContactCopy, GoogleContactsSetting
 from apps.mail.models import GmailAccount
+from apps.mcp.models import RESOURCE_MATTERS, McpConnection
 from apps.settings.features import accounting_enabled
 from apps.settings.integrations import PENDING_TOAST_KEY, quickbooks
 from apps.settings.integrations.oauth import google_oauth_configured
@@ -71,6 +73,29 @@ def _visible_gmail_accounts(user, gmail_status):
     return [account for account in accounts if account.user_id == user.id]
 
 
+def _discover_connections(user):
+    """Kosmos Discover's connections (apps/mcp, the matters API's tokens):
+    the user's own, and for an administrator everyone's, since what is
+    connected is the firm's Discover and whoever allowed it may be away."""
+    connections = McpConnection.objects.filter(
+        resource=RESOURCE_MATTERS
+    ).select_related("client", "user")
+    if not user.is_admin:
+        connections = connections.filter(user=user)
+    return connections
+
+
+def _discover_rows(user):
+    """The connections for the page, each with ``host``: which Discover it
+    is, by the address it gave when it registered."""
+    rows = list(_discover_connections(user))
+    for connection in rows:
+        connection.host = (
+            urlsplit(connection.client.client_uri).netloc or connection.client.name
+        )
+    return rows
+
+
 @login_required
 def index(request):
     # Email is per-user (GmailAccount rows), not a shared token file.
@@ -95,6 +120,7 @@ def index(request):
         # page offers none and says why instead.
         "google_oauth_ready": google_oauth_configured(),
         "pending_toast": request.session.pop(PENDING_TOAST_KEY, None),
+        "discover_connections": _discover_rows(request.user),
     }
     if request.user.is_admin:
         context.update(_ai_context())
@@ -102,6 +128,19 @@ def index(request):
             context.update(quickbooks.context())
 
     return render(request, "settings/integrations/index.html", context)
+
+
+@login_required
+@require_POST
+def discover_disconnect(request, connection_id):
+    """End one of Kosmos Discover's connections: its tokens stop working at
+    once, and Discover says Kosmos is no longer connected until someone
+    connects again from there. One's own, or any for an administrator."""
+    connection = get_object_or_404(
+        _discover_connections(request.user), pk=connection_id
+    )
+    connection.delete()
+    return redirect("settings:integrations-index")
 
 
 def _require_known(app):

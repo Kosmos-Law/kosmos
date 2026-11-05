@@ -27,11 +27,16 @@ Discover is then connected *as that Kosmos user*:
   there. Kosmos's per-user limits are not applied again inside Discover,
   so connect as a user whose matters the whole Discover team may see.
 
+A Discover has one connection. Connecting again from the same Discover,
+as the same user or another, replaces the connection before it. A second
+Discover installation (a test copy, say) at another address has its own.
+
 ## Seeing and ending the connection
 
-The user who allowed it finds it under **Settings**, **Claude**,
-**Connected**, as "Kosmos Discover: matters and proceedings, read-only",
-with when it was last used. **Disconnect** ends it at once. So does
+The connection is listed under **Settings**, **Integrations**, **Kosmos
+Discover**: who it is connected as, which Discover it came from, and when
+it was last used. The user who allowed it sees it there, and an
+administrator sees every user's. **Disconnect** ends it at once. So does
 disconnecting from Discover's own settings, and so does deactivating the
 user. Discover keeps the copy it already has and says that Kosmos no
 longer answers; an administrator there connects again.

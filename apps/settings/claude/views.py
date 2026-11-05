@@ -18,7 +18,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import ApiToken
-from apps.mcp.models import McpConnection
+from apps.mcp.models import RESOURCE_MCP, McpConnection
 from apps.mcp.oauth import mcp_url
 
 
@@ -27,9 +27,10 @@ def claude_index(request):
     context = {
         "subapp": "claude",
         "connector_url": mcp_url(request),
-        "connections": McpConnection.objects.filter(user=request.user).select_related(
-            "client"
-        ),
+        # Claude's connections. Kosmos Discover's is under Integrations.
+        "connections": McpConnection.objects.filter(
+            user=request.user, resource=RESOURCE_MCP
+        ).select_related("client"),
         "token": ApiToken.objects.filter(user=request.user).first(),
     }
     return render(request, "settings/claude/index.html", context)
@@ -40,7 +41,9 @@ def claude_index(request):
 def claude_disconnect(request, connection_id):
     """End one connection. Its tokens stop working at once; Claude shows
     the connector as needing sign-in."""
-    connection = get_object_or_404(McpConnection, pk=connection_id, user=request.user)
+    connection = get_object_or_404(
+        McpConnection, pk=connection_id, user=request.user, resource=RESOURCE_MCP
+    )
     connection.delete()
     return redirect("settings:claude-index")
 

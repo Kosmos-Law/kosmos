@@ -596,11 +596,27 @@ class TestMattersResource:
         refused = Client(HTTP_AUTHORIZATION=f"Bearer {access}").get("/matters/api/")
         assert refused.status_code == 401
 
-    def test_settings_lists_it_and_disconnect_ends_it(self, client, oauth_client):
-        access = self.tokens(client, oauth_client).json()["access_token"]
-        page = client.get("/settings/claude/").content.decode()
-        assert "matters and proceedings, read-only" in page
-        connection = McpConnection.objects.get()
-        client.post(f"/settings/claude/disconnect/{connection.id}/")
-        api = Client(HTTP_AUTHORIZATION=f"Bearer {access}")
-        assert api.get("/matters/api/").status_code == 401
+    def test_a_discover_has_one_connection(self, client, oauth_client, user):
+        """Connecting again from the same Discover, as anyone, replaces
+        the connection before; another Discover's is left alone."""
+        elsewhere = McpClient.objects.create(
+            client_id="another-discover",
+            name="Kosmos Discover",
+            redirect_uris=["https://discover.elsewhere.example.com/cb"],
+        )
+        other = McpConnection.objects.create(
+            user=user, client=elsewhere, resource="matters"
+        )
+        claude = McpConnection.objects.create(user=user, client=oauth_client)
+        first = self.tokens(client, oauth_client).json()["access_token"]
+        # The same Discover registers anew each time it connects.
+        again = McpClient.objects.create(
+            client_id="discover-again",
+            name="Kosmos Discover",
+            redirect_uris=[CLAUDE_CALLBACK],
+        )
+        second = self.tokens(client, again).json()["access_token"]
+        assert McpToken.by_access_token(first, "matters") is None
+        assert McpToken.by_access_token(second, "matters") is not None
+        left = set(McpConnection.objects.values_list("pk", flat=True))
+        assert other.pk in left and claude.pk in left and len(left) == 3

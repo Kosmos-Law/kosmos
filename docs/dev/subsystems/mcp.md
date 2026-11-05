@@ -46,7 +46,8 @@ not accept it.
   URI it was issued for. Deleted when redeemed.
 - **`McpConnection`**: a user's standing authorization of a client,
   with `created_at` and `last_used_at`. This is what Settings → Claude
-  lists and Disconnect deletes; its tokens go with it (`CASCADE`).
+  lists (the `mcp` ones) and Disconnect deletes; its tokens go with it
+  (`CASCADE`).
   `resource` is what the connection's tokens are for: `mcp` (the MCP
   server, the default) or `matters` (the matters API; see
   [The matters API's tokens](#the-matters-apis-tokens)).
@@ -110,10 +111,18 @@ different one, and `McpToken.by_access_token(token, resource)` finds a
 token only at its own. So a Discover token is refused by `/mcp` and by
 every other API, and a Claude token by `/matters/api/`.
 
+A Discover has one connection: it registers afresh each time it connects,
+so the installation is known by the origin of its redirect URI, and a new
+matters connection from that origin deletes the earlier ones
+(`_replace_earlier_connections()`), whoever allowed them.
+
 `matters_api_auth` is the API's decorator: `Authorization: Bearer` with a
 matters token, or the user's `X-Kosmos-Token` as on the other JSON APIs.
-The connection is listed under Settings → Claude ("matters and
-proceedings, read-only") and Disconnect ends it like any other.
+The connection is not Claude's, so Settings → Claude does not list it:
+it is under Settings → Integrations, Kosmos Discover
+(`apps/settings/integrations/views.py`, `discover_disconnect`), where the
+user who allowed it sees it and an administrator sees every user's, and
+Disconnect ends it.
 
 ### Redirect URIs
 

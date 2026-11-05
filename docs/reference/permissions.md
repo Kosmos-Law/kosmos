@@ -333,7 +333,9 @@ MCP server there is one other: the matters API (`/matters/api/`), which
 tokens read matters and proceedings there and are refused at `/mcp`; a
 Claude connection's token is refused at `/matters/api/`. That API's
 decorator, `matters_api_auth`, takes such a bearer token or the user's
-`X-Kosmos-Token`.
+`X-Kosmos-Token`. A Discover connection is listed and ended under
+Settings → Integrations, not Settings → Claude: by the user who allowed
+it, or by an administrator, who sees every user's.
 
 | Fact | Value |
 |---|---|

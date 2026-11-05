@@ -1,0 +1,58 @@
+{% comment %}
+  Settings > Integrations: Kosmos Discover's connection to Kosmos. It is
+  made from Discover (an administrator there signs in here and allows it),
+  so this section only shows what is connected and ends it. Administrators
+  see every user's connection and the section even when it is empty; anyone
+  else sees it only for a connection of their own.
+{% endcomment %}
+<h2 class="settings-section">Kosmos Discover</h2>
+<hr />
+<p class="detail-text">
+  Kosmos Discover, the eDiscovery application, can pull its matters and
+  their proceedings from Kosmos. It reads the name, status, client,
+  reference, description and proceedings of the matters its connected user
+  can see, and nothing else; it cannot change anything here. The connection
+  is made from Discover, under Settings, Kosmos there.
+</p>
+{% if discover_connections %}
+  <table class="table settings-table discover-connections">
+    <thead>
+      <tr>
+        <th>Connected as</th>
+        <th>From</th>
+        <th>Connected</th>
+        <th>Last used</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for connection in discover_connections %}
+        <tr>
+          <td>{{ connection.user.get_full_name|default:connection.user.username }}</td>
+          <td>{{ connection.host }}</td>
+          <td>{{ connection.created_at|date:"M j, Y" }}</td>
+          <td>
+            {% if connection.last_used_at %}
+              {{ connection.last_used_at|date:"M j, Y, g:i a" }}
+            {% else %}
+              Not yet
+            {% endif %}
+          </td>
+          <td class="discover-connection-actions">
+            <form method="post"
+                  action="{% url 'settings:discover-disconnect' connection.id %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn btn-sm btn-secondary"
+                      onclick="return confirm('Disconnect Kosmos Discover? It loses access immediately and keeps the copies it has. An administrator connects again from Discover.')">
+                Disconnect
+              </button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="detail-text">Nothing is connected yet.</p>
+{% endif %}

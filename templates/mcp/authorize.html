@@ -35,7 +35,12 @@
           That is a program on your own computer; allow this only if you
           started the connection from there just now.
         {% endif %}
-        You can disconnect it at any time under Settings, Claude.
+        You can disconnect it at any time under Settings,
+        {% if matters_only %}
+          Integrations.
+        {% else %}
+          Claude.
+        {% endif %}
       </p>
       <form class="account-form" method="post">
         {% csrf_token %}

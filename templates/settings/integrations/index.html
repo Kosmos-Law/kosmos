@@ -122,6 +122,9 @@
       own. Everyone connects their own.
     </p>
     {% include "settings/integrations/google-contacts.html" %}
+    {% if user.role == 'ADMIN' or discover_connections %}
+      {% include "settings/integrations/discover.html" %}
+    {% endif %}
   </div>
   {% if pending_toast %}
     {% comment %}

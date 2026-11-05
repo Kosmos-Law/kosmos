@@ -630,7 +630,13 @@ h2.settings-section {
   max-width: 40rem;
 }
 
-.claude-connection-actions {
+/* Kosmos Discover's (Integrations): the same table with two more columns. */
+.discover-connections {
+  max-width: 64rem;
+}
+
+.claude-connection-actions,
+.discover-connection-actions {
   text-align: right;
   white-space: nowrap;
 }

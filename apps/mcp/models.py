@@ -125,7 +125,8 @@ class McpAuthorizationCode(models.Model):
 
 class McpConnection(models.Model):
     """A user's standing authorization of a client: what Settings > Claude
-    lists and what Disconnect removes. Its tokens are McpToken rows."""
+    lists (Settings > Integrations for Kosmos Discover's) and what
+    Disconnect removes. Its tokens are McpToken rows."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
