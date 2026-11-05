@@ -70,6 +70,11 @@ urlpatterns = [
         name="google-contacts-auto",
     ),
     path(
+        "settings/integrations/discover/<int:connection_id>/disconnect/",
+        integration_urls.discover_disconnect,
+        name="discover-disconnect",
+    ),
+    path(
         "settings/integrations/ai/<str:provider>/",
         integration_urls.ai_key_save,
         name="ai-key-save",

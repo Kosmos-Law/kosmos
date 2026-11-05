@@ -32,6 +32,7 @@ nav = [
       { "Intakes from email" = "admin/integrations/inbound-email.md" },
       { "Drafting with LibreOffice" = "admin/integrations/libreoffice.md" },
       { "Claude" = "admin/integrations/claude-desktop.md" },
+      { "Kosmos Discover" = "admin/integrations/discover.md" },
     ] },
     { "Operate" = [
       { "Background worker" = "admin/worker.md" },

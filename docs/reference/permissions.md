@@ -327,6 +327,16 @@ OAuth bearer token issued when the user signs in and clicks Allow on
 functions as the `/case/api/` and `/search/api/` routes below, so they
 are scoped identically; the token is the user's, there are no scopes.
 
+A token is good only at the resource it was authorized for. Besides the
+MCP server there is one other: the matters API (`/matters/api/`), which
+[Kosmos Discover](../admin/integrations/discover.md) signs in for. Its
+tokens read matters and proceedings there and are refused at `/mcp`; a
+Claude connection's token is refused at `/matters/api/`. That API's
+decorator, `matters_api_auth`, takes such a bearer token or the user's
+`X-Kosmos-Token`. A Discover connection is listed and ended under
+Settings → Integrations, not Settings → Claude: by the user who allowed
+it, or by an administrator, who sees every user's.
+
 | Fact | Value |
 |---|---|
 | Token model | `McpToken` under a `McpConnection` (`apps/mcp/models.py`), SHA-256 digests only |
@@ -347,8 +357,8 @@ are scoped identically; the token is the user's, there are no scopes.
 | `/case/api/documents/<id>/` | `kosmos_api_auth` | GET | Document on an open matter the user can access; otherwise 404 |
 | `/case/api/invoices/<id>/` | `kosmos_api_auth` | GET | Invoice on an open matter the user can access (404), and financial access (403) |
 | `/case/api/tasks/` | `kosmos_api_auth` | POST | Creates a task for the token's user; an optional matter must be open and accessible |
-| `/matters/api/` | `kosmos_api_auth` | GET | Matters of any status the user can access, as fields (name, status, client, client reference); `?q=` and `?status=` narrow the list |
-| `/matters/api/<id>/` | `kosmos_api_auth` | GET | One accessible matter of any status with its proceedings as fields; otherwise 404 |
+| `/matters/api/` | `matters_api_auth` | GET | Matters of any status the user can access, as fields (name, status, client, client reference); `?q=` and `?status=` narrow the list |
+| `/matters/api/<id>/` | `matters_api_auth` | GET | One accessible matter of any status with its proceedings as fields; otherwise 404 |
 | `/search/api/` | `kosmos_api_auth` | GET | Matters and proceedings limited to accessible matters of any status; contacts unrestricted; intakes only with `perm_intakes` |
 | `/case/drafts/companion/api/…` | `companion_auth` | GET, POST | Draft links whose conversation belongs to the token's user; otherwise 404 |
 

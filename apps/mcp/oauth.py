@@ -24,10 +24,14 @@ What is implemented, and from which specification:
 - The authorization code grant with PKCE (S256, required of every client)
   and the ``iss`` response parameter (RFC 9207); refresh tokens, rotated
   on use (OAuth 2.1 section 4.3.1); revocation (RFC 7009); resource
-  indicators (RFC 8707) checked against this server's MCP URL.
+  indicators (RFC 8707).
 
-There are no scopes: a token is the user's, and what it reaches is what
-the user may reach in Kosmos. Revoking is server-side, from Settings >
+There are no scopes. What a token reaches is set by the ``resource`` it
+was authorized for, and within that by what its user may reach in Kosmos.
+There are two resources: the MCP server (``/mcp``, the default, Claude's),
+and the matters API (``/matters/api/``), which Kosmos Discover signs in
+for and which gives matters and their proceedings, read-only. A token for
+one is refused at the other. Revoking is server-side, from Settings >
 Claude, and deactivating the user ends every token at once.
 """
 
@@ -54,11 +58,20 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from utils.ratelimit import rate_limited
 
-from .models import McpAuthorizationCode, McpClient, McpConnection, McpToken, digest
+from .models import (
+    RESOURCE_MATTERS,
+    RESOURCE_MCP,
+    McpAuthorizationCode,
+    McpClient,
+    McpConnection,
+    McpToken,
+    digest,
+)
 
 logger = logging.getLogger(__name__)
 
 MCP_PATH = "/mcp"
+MATTERS_API_PATH = "/matters/api"
 LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "::1", "[::1]")
 METADATA_DOCUMENT_CACHE = 60 * 60
 METADATA_DOCUMENT_MAX_BYTES = 64 * 1024
@@ -91,18 +104,36 @@ def resource_metadata_url(request):
     return base_url(request) + "/.well-known/oauth-protected-resource" + MCP_PATH
 
 
-def _same_resource(request, resource):
-    """Whether a ``resource`` parameter names this MCP server, allowing for
-    a trailing slash and the case of the scheme and host."""
-    wanted = urlsplit(mcp_url(request))
-    given = urlsplit(resource.strip())
+def matters_api_url(request):
+    """The matters API's canonical URL: the ``resource`` a program that
+    only reads matters and proceedings (Kosmos Discover) asks for."""
+    return base_url(request) + MATTERS_API_PATH + "/"
+
+
+def _same_url(given, wanted):
+    """Whether two URLs name the same resource, allowing for a trailing
+    slash and the case of the scheme and host."""
+    given, wanted = urlsplit(given.strip()), urlsplit(wanted)
     return (
         given.scheme.lower() == wanted.scheme.lower()
         and given.netloc.lower() == wanted.netloc.lower()
-        and given.path.rstrip("/") == wanted.path
+        and given.path.rstrip("/") == wanted.path.rstrip("/")
         and not given.query
         and not given.fragment
     )
+
+
+def resource_for(request, resource):
+    """Which of this server's resources a ``resource`` parameter names:
+    RESOURCE_MCP (also when there is none: Claude need not send it),
+    RESOURCE_MATTERS, or None for anything else."""
+    if not resource:
+        return RESOURCE_MCP
+    if _same_url(resource, mcp_url(request)):
+        return RESOURCE_MCP
+    if _same_url(resource, matters_api_url(request)):
+        return RESOURCE_MATTERS
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -415,6 +446,7 @@ class AuthorizationRequest:
                 "The redirect URI is not one this client registered.",
             )
         self.redirect_uri = uri
+        self.resource = resource_for(request, self.params["resource"])
         self.error = None
         if self.params["response_type"] != "code":
             self.error = ("unsupported_response_type", "Only response_type=code.")
@@ -422,9 +454,7 @@ class AuthorizationRequest:
             self.error = ("invalid_request", "PKCE (code_challenge) is required.")
         elif self.params["code_challenge_method"] not in ("S256",):
             self.error = ("invalid_request", "Only code_challenge_method=S256.")
-        elif self.params["resource"] and not _same_resource(
-            request, self.params["resource"]
-        ):
+        elif self.resource is None:
             self.error = ("invalid_target", "The resource is not this server.")
 
     def redirect(self, request, **extra):
@@ -470,6 +500,7 @@ def authorize(request):
             "mcp/authorize.html",
             {
                 "client": auth.client,
+                "matters_only": auth.resource == RESOURCE_MATTERS,
                 "redirect_host": urlsplit(auth.redirect_uri).hostname,
                 "loopback_only": all(
                     _is_loopback(urlsplit(u)) for u in auth.client.redirect_uris
@@ -565,6 +596,30 @@ def _token_response(connection):
     )
 
 
+def _origin(uri):
+    parts = urlsplit(uri)
+    return (parts.scheme.lower(), parts.netloc.lower())
+
+
+def _replace_earlier_connections(connection, redirect_uri):
+    """One connection for each Kosmos Discover. Discover registers afresh
+    every time it connects, so the installation is known by where it comes
+    back to; a new connection from there ends the ones before it, whoever
+    allowed them. So a Discover is never connected twice, as two users or
+    with a stale connection left from before, and an administrator sees
+    one row for it. Only the Discover at that address can get here: the
+    code was sent to it and to nowhere else."""
+    origin = _origin(redirect_uri)
+    earlier = (
+        McpConnection.objects.filter(resource=RESOURCE_MATTERS)
+        .exclude(pk=connection.pk)
+        .select_related("client")
+    )
+    for other in earlier:
+        if any(_origin(uri) == origin for uri in other.client.redirect_uris):
+            other.delete()
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 @_with_client
@@ -582,10 +637,19 @@ def token(request, client):
             request.POST.get("code_verifier", ""), code.code_challenge
         ):
             return _token_error("invalid_grant", "The PKCE verifier does not match.")
-        resource = request.POST.get("resource", "")
-        if resource and not _same_resource(request, resource):
-            return _token_error("invalid_target", "The resource is not this server.")
-        connection = McpConnection.objects.create(user=code.user, client=client)
+        # The tokens are for the resource the user allowed on the consent
+        # screen; the exchange may name it again, never another.
+        resource = resource_for(request, code.resource)
+        named = request.POST.get("resource", "")
+        if resource is None or (named and resource_for(request, named) != resource):
+            return _token_error(
+                "invalid_target", "The resource is not the one that was authorized."
+            )
+        connection = McpConnection.objects.create(
+            user=code.user, client=client, resource=resource
+        )
+        if resource == RESOURCE_MATTERS:
+            _replace_earlier_connections(connection, code.redirect_uri)
         return _token_response(connection)
     if grant_type == "refresh_token":
         connection = McpToken.refresh(request.POST.get("refresh_token", ""), client)
@@ -593,9 +657,11 @@ def token(request, client):
             return _token_error(
                 "invalid_grant", "The refresh token is unknown, expired or revoked."
             )
-        resource = request.POST.get("resource", "")
-        if resource and not _same_resource(request, resource):
-            return _token_error("invalid_target", "The resource is not this server.")
+        named = request.POST.get("resource", "")
+        if named and resource_for(request, named) != connection.resource:
+            return _token_error(
+                "invalid_target", "The resource is not the one that was authorized."
+            )
         return _token_response(connection)
     return _token_error(
         "unsupported_grant_type",

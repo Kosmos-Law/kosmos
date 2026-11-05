@@ -26,6 +26,7 @@ not accept it.
 | `apps/mcp/urls.py` | The well-known documents at the root, `/mcp`, `/mcp/oauth/*` |
 | `templates/mcp/` | The consent screen and the refusal page, on the sign-in pages' shell |
 | `apps/accounts/api_auth.py` | `kosmos_api_auth`, the `X-Kosmos-Token` decorator, and `ApiError`, what every service function raises |
+| `apps/matters/api.py` | The matters API (matters and proceedings as fields) and `matters_api_auth`, which takes a bearer token issued for that API |
 | `apps/ai/api.py` | The service functions over a matter (`list_matters`, `read_section`, `read_document`, `read_email_thread`, `search_materials`, `read_conversation`, `read_invoice`, `create_fact`, `create_witness`, `create_task`, `create_time_entry`, `create_event`, `complete_task`, `create_contact`) and the JSON views over them |
 | `apps/search/api.py` | `search_practice()` and its JSON view |
 | `apps/settings/claude/views.py` | Settings → Claude: the connector address, the connections and Disconnect, the API token |
@@ -45,7 +46,11 @@ not accept it.
   URI it was issued for. Deleted when redeemed.
 - **`McpConnection`**: a user's standing authorization of a client,
   with `created_at` and `last_used_at`. This is what Settings → Claude
-  lists and Disconnect deletes; its tokens go with it (`CASCADE`).
+  lists (the `mcp` ones) and Disconnect deletes; its tokens go with it
+  (`CASCADE`).
+  `resource` is what the connection's tokens are for: `mcp` (the MCP
+  server, the default) or `matters` (the matters API; see
+  [The matters API's tokens](#the-matters-apis-tokens)).
 - **`McpToken`**: one access token (an hour) and the refresh token that
   replaces it (ninety days). Refreshing marks the row's refresh token
   used and creates the next row; the old access token lives out its
@@ -85,8 +90,39 @@ be replayed, and a presented token is looked up by hashing it.
    a refresh rotates it.
 
 Base addresses come from `PUBLIC_BASE_URL` when set, else the request.
-There are no scopes: what a token reaches is what its user may reach.
-Every redirect carries `iss` (RFC 9207).
+There are no scopes: what a token reaches is its resource, and within
+that what its user may reach. Every redirect carries `iss` (RFC 9207).
+
+### The matters API's tokens
+
+The authorization server serves one resource besides the MCP server: the
+matters API at `/matters/api/` (`apps/matters/api.py`), which gives
+matters and their proceedings as fields, read-only.
+[Kosmos Discover](../../admin/integrations/discover.md) is its client. An
+admin there clicks Connect; Discover reads the authorization server
+metadata, registers itself (RFC 7591, a confidential client), and sends
+the browser to `/mcp/oauth/authorize` with
+`resource=https://host/matters/api/`. The consent screen says what that
+grants (`matters_only` in the template), and the code, the connection
+(`McpConnection.resource = "matters"`) and every refresh stay on that
+resource: `resource_for()` maps a `resource` parameter to `mcp`,
+`matters` or nothing, the exchange and the refresh refuse to name a
+different one, and `McpToken.by_access_token(token, resource)` finds a
+token only at its own. So a Discover token is refused by `/mcp` and by
+every other API, and a Claude token by `/matters/api/`.
+
+A Discover has one connection: it registers afresh each time it connects,
+so the installation is known by the origin of its redirect URI, and a new
+matters connection from that origin deletes the earlier ones
+(`_replace_earlier_connections()`), whoever allowed them.
+
+`matters_api_auth` is the API's decorator: `Authorization: Bearer` with a
+matters token, or the user's `X-Kosmos-Token` as on the other JSON APIs.
+The connection is not Claude's, so Settings → Claude does not list it:
+it is under Settings → Integrations, Kosmos Discover
+(`apps/settings/integrations/views.py`, `discover_disconnect`), where the
+user who allowed it sees it and an administrator sees every user's, and
+Disconnect ends it.
 
 ### Redirect URIs
 
