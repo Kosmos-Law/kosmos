@@ -7,6 +7,7 @@ from django.test import Client
 from apps.accounts.models import ApiToken, CustomUser
 from apps.matters.models import Matter
 from apps.matters.proceedings.models import Proceeding
+from apps.mcp.models import RESOURCE_MATTERS, McpClient, McpConnection, McpToken
 
 pytestmark = pytest.mark.django_db
 
@@ -124,3 +125,65 @@ def test_the_api_is_read_only_and_404s_an_unknown_matter(api, matter):
     assert api.post(f"/matters/api/{matter.id}/").status_code == 405
     response = api.get("/matters/api/999999/")
     assert response.status_code == 404 and "error" in response.json()
+
+
+# ------------------------------------------- the bearer (how Discover connects)
+
+
+@pytest.fixture
+def bearer(user):
+    """A client holding an access token issued for the matters API."""
+    oauth_client = McpClient.objects.create(
+        client_id="discover-test",
+        name="Kosmos Discover",
+        redirect_uris=["https://discover.example.com/kosmos/callback/"],
+    )
+    connection = McpConnection.objects.create(
+        user=user, client=oauth_client, resource=RESOURCE_MATTERS
+    )
+    access, _refresh, _expires = McpToken.issue(connection)
+    return Client(HTTP_AUTHORIZATION=f"Bearer {access}")
+
+
+def test_a_matters_token_reads_the_api_as_its_user(bearer, user, matter):
+    body = bearer.get("/matters/api/").json()
+    assert [m["id"] for m in body["matters"]] == [matter.id]
+    assert body["user"] == {
+        "name": user.get_full_name() or user.username,
+        "email": user.email,
+    }
+    assert bearer.get(f"/matters/api/{matter.id}/").json()["matter"]["id"] == matter.id
+    # Using it is recorded on the connection Settings > Claude lists.
+    assert McpConnection.objects.get().last_used_at is not None
+
+
+def test_a_bad_bearer_is_refused_even_with_a_good_api_token(user, matter):
+    client = Client(
+        HTTP_AUTHORIZATION="Bearer nope",
+        HTTP_X_KOSMOS_TOKEN=ApiToken.for_user(user).key,
+    )
+    response = client.get("/matters/api/")
+    assert response.status_code == 401
+    assert response["WWW-Authenticate"].startswith("Bearer")
+
+
+def test_a_matters_token_dies_with_its_user(bearer, user, matter):
+    user.is_active = False
+    user.save()
+    assert bearer.get("/matters/api/").status_code == 401
+
+
+def test_a_matters_token_is_limited_like_its_user(bearer, user, matter):
+    user.perm_all_matters = False
+    user.save()
+    assert bearer.get("/matters/api/").json()["matters"] == []
+    assert bearer.get(f"/matters/api/{matter.id}/").status_code == 404
+
+
+def test_a_matters_token_opens_nothing_else(bearer, matter):
+    # The other token APIs want X-Kosmos-Token; the MCP server its own
+    # resource's token.
+    assert bearer.get("/case/api/matters/").status_code == 401
+    assert bearer.get("/search/api/?q=sample").status_code == 401
+    assert bearer.post("/mcp", "{}", content_type="application/json").status_code == 401
+    assert bearer.post("/matters/api/").status_code == 405

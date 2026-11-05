@@ -25,6 +25,17 @@ CODE_LIFETIME = timedelta(minutes=5)
 # window issues another token pair instead of treating it as theft.
 REFRESH_REUSE_GRACE = timedelta(seconds=60)
 
+# What a connection's tokens are for (the ``resource`` it was authorized
+# for, RFC 8707). A token is good at its own resource and nowhere else:
+# the MCP server (Claude: everything the tools reach), or the matters API
+# (Kosmos Discover: matters and their proceedings, read-only).
+RESOURCE_MCP = "mcp"
+RESOURCE_MATTERS = "matters"
+RESOURCE_CHOICES = (
+    (RESOURCE_MCP, "The MCP server"),
+    (RESOURCE_MATTERS, "The matters API"),
+)
+
 
 def digest(secret):
     return hashlib.sha256(secret.encode()).hexdigest()
@@ -122,6 +133,9 @@ class McpConnection(models.Model):
         related_name="mcp_connections",
     )
     client = models.ForeignKey(McpClient, on_delete=models.CASCADE)
+    resource = models.CharField(
+        max_length=20, choices=RESOURCE_CHOICES, default=RESOURCE_MCP
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
 
@@ -183,13 +197,18 @@ class McpToken(models.Model):
         return access, refresh, int(ACCESS_TOKEN_LIFETIME.total_seconds())
 
     @classmethod
-    def by_access_token(cls, token):
-        """The live connection the access token belongs to, or None."""
+    def by_access_token(cls, token, resource=RESOURCE_MCP):
+        """The live connection the access token belongs to, or None. A
+        token issued for another resource is not this one's."""
         if not token:
             return None
         row = (
             cls.objects.select_related("connection__user", "connection__client")
-            .filter(access_hash=digest(token), access_expires_at__gt=timezone.now())
+            .filter(
+                access_hash=digest(token),
+                access_expires_at__gt=timezone.now(),
+                connection__resource=resource,
+            )
             .first()
         )
         if row is None or not row.connection.user.is_active:

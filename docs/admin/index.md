@@ -53,6 +53,8 @@ Each integration stays off until it is configured.
 - [Claude](integrations/claude-desktop.md): per-user access from
   claude.ai, Claude Desktop and Claude Code through the built-in remote
   MCP server.
+- [Kosmos Discover](integrations/discover.md): the eDiscovery
+  application's read-only connection to matters and proceedings.
 
 ## Operate
 

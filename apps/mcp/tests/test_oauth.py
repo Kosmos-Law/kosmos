@@ -17,7 +17,7 @@ from apps.mcp.models import (
     McpToken,
 )
 
-from .conftest import CHALLENGE, CLAUDE_CALLBACK, VERIFIER, authorize_params
+from .conftest import CHALLENGE, CLAUDE_CALLBACK, VERIFIER, authorize_params, rpc
 
 pytestmark = pytest.mark.django_db
 
@@ -507,3 +507,100 @@ class TestRevoke:
             {"token": "nothing", "client_id": oauth_client.client_id},
         )
         assert response.status_code == 200
+
+
+class TestMattersResource:
+    """A second resource, the matters API: what Kosmos Discover signs in
+    for. Its tokens read matters and proceedings and are refused by the
+    MCP server; Claude's are refused by the matters API."""
+
+    RESOURCE = "http://testserver/matters/api/"
+
+    def tokens(self, client, oauth_client, **exchange_fields):
+        code = consent(client, oauth_client, resource=self.RESOURCE)["code"]
+        fields = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": CLAUDE_CALLBACK,
+            "client_id": oauth_client.client_id,
+            "code_verifier": VERIFIER,
+            **exchange_fields,
+        }
+        return exchange(**fields)
+
+    def test_consent_screen_says_what_it_reads(self, client, oauth_client):
+        response = client.get(
+            "/mcp/oauth/authorize",
+            authorize_params(oauth_client, resource=self.RESOURCE),
+        )
+        body = response.content.decode()
+        assert "wants to read your matters" in body
+        assert "it cannot change anything" in body
+        # Not what Claude is offered.
+        assert "search" not in body and "add timeline facts" not in body
+
+    def test_tokens_are_for_the_matters_api_only(self, client, oauth_client, user):
+        response = self.tokens(client, oauth_client)
+        assert response.status_code == 200
+        access = response.json()["access_token"]
+        connection = McpConnection.objects.get()
+        assert connection.resource == "matters" and connection.user == user
+        assert McpToken.by_access_token(access, "matters") == connection
+        assert McpToken.by_access_token(access) is None
+        api = Client(HTTP_AUTHORIZATION=f"Bearer {access}")
+        assert api.get("/matters/api/").status_code == 200
+        assert rpc(access, "tools/list").status_code == 401
+
+    def test_the_exchange_cannot_name_another_resource(self, client, oauth_client):
+        response = self.tokens(client, oauth_client, resource="http://testserver/mcp")
+        assert response.json()["error"] == "invalid_target"
+        assert not McpConnection.objects.exists()
+
+    def test_a_resource_is_not_needed_at_the_exchange(self, client, oauth_client):
+        # The code carries it: leaving it out does not widen the grant.
+        assert self.tokens(client, oauth_client).status_code == 200
+        assert McpConnection.objects.get().resource == "matters"
+
+    def test_refresh_stays_on_the_resource(self, client, oauth_client):
+        refresh = self.tokens(client, oauth_client).json()["refresh_token"]
+        widened = exchange(
+            grant_type="refresh_token",
+            refresh_token=refresh,
+            client_id=oauth_client.client_id,
+            resource="http://testserver/mcp",
+        )
+        assert widened.json()["error"] == "invalid_target"
+        again = exchange(
+            grant_type="refresh_token",
+            refresh_token=refresh,
+            client_id=oauth_client.client_id,
+            resource=self.RESOURCE,
+        )
+        access = again.json()["access_token"]
+        assert McpToken.by_access_token(access, "matters") is not None
+        assert McpToken.by_access_token(access) is None
+
+    def test_claude_connections_are_unchanged(self, client, oauth_client):
+        # No resource, or the MCP server's: a connection for the MCP server.
+        code = consent(client, oauth_client, resource=None)["code"]
+        response = exchange(
+            grant_type="authorization_code",
+            code=code,
+            redirect_uri=CLAUDE_CALLBACK,
+            client_id=oauth_client.client_id,
+            code_verifier=VERIFIER,
+        )
+        access = response.json()["access_token"]
+        assert McpConnection.objects.get().resource == "mcp"
+        assert rpc(access, "tools/list").status_code == 200
+        refused = Client(HTTP_AUTHORIZATION=f"Bearer {access}").get("/matters/api/")
+        assert refused.status_code == 401
+
+    def test_settings_lists_it_and_disconnect_ends_it(self, client, oauth_client):
+        access = self.tokens(client, oauth_client).json()["access_token"]
+        page = client.get("/settings/claude/").content.decode()
+        assert "matters and proceedings, read-only" in page
+        connection = McpConnection.objects.get()
+        client.post(f"/settings/claude/disconnect/{connection.id}/")
+        api = Client(HTTP_AUTHORIZATION=f"Bearer {access}")
+        assert api.get("/matters/api/").status_code == 401

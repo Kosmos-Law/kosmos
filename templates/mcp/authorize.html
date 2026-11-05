@@ -8,15 +8,27 @@
     <div class="auth-card">
       {% auth_brand %}
       <div class="auth-subtitle">Connect {{ client.name }} to Kosmos</div>
-      <p class="auth-info">
-        <strong>{{ client.name }}</strong> wants to work in Kosmos as
-        <strong>{{ user.email }}</strong>. It will be able to read the open
-        matters you have access to (contacts, activity, events, tasks,
-        documents, highlights, the timeline, witnesses, emails and, if you
-        hold the Financial permission, rates, the ledger and trust), search
-        the practice, and add timeline facts, witnesses and tasks. It can
-        never edit or delete existing records.
-      </p>
+      {% if matters_only %}
+        <p class="auth-info">
+          <strong>{{ client.name }}</strong> wants to read your matters in
+          Kosmos as <strong>{{ user.email }}</strong>. It will be able to
+          read the name, status, client, reference, description and
+          proceedings of every matter you have access to, open or closed,
+          and will keep its own copy of them up to date. The people who use
+          {{ client.name }} can see that list there. It cannot read anything
+          else in Kosmos, and it cannot change anything.
+        </p>
+      {% else %}
+        <p class="auth-info">
+          <strong>{{ client.name }}</strong> wants to work in Kosmos as
+          <strong>{{ user.email }}</strong>. It will be able to read the open
+          matters you have access to (contacts, activity, events, tasks,
+          documents, highlights, the timeline, witnesses, emails and, if you
+          hold the Financial permission, rates, the ledger and trust), search
+          the practice, and add timeline facts, witnesses and tasks. It can
+          never edit or delete existing records.
+        </p>
+      {% endif %}
       <p class="auth-info mcp-consent-redirect">
         After you allow it, you return to <strong>{{ redirect_host }}</strong>.
         {% if loopback_only %}

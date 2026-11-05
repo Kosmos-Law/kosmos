@@ -61,7 +61,10 @@
         <tbody>
           {% for connection in connections %}
             <tr>
-              <td>{{ connection.client.name }}</td>
+              <td>
+                {{ connection.client.name }}
+                {% if connection.resource == "matters" %}<span class="text-muted">matters and proceedings, read-only</span>{% endif %}
+              </td>
               <td>{{ connection.created_at|date:"M j, Y" }}</td>
               <td>
                 {% if connection.last_used_at %}
@@ -76,7 +79,7 @@
                   {% csrf_token %}
                   <button type="submit"
                           class="btn btn-sm btn-secondary"
-                          onclick="return confirm('Disconnect {{ connection.client.name|escapejs }}? It loses access immediately; connect again from Claude to restore it.')">
+                          onclick="return confirm('Disconnect {{ connection.client.name|escapejs }}? It loses access immediately; connect again from {% if connection.resource == "matters" %}its own settings{% else %}Claude{% endif %} to restore it.')">
                     Disconnect
                   </button>
                 </form>
