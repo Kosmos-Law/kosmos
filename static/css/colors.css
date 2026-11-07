@@ -10,8 +10,8 @@
    wash of light behind see-through surfaces, data-wash on <html>;
    matcha-gradient.css), nord-light (Nord Snow Storm),
    basic (after the 2017 LawPay UI: white ground, navy buttons, azure
-   accents), letterhead (after a firm engagement letter: bone
-   paper, hairline rules, fountain-pen blue) — and four dark — dark
+   accents), paper (Matcha's stone ladder on the blog's paper hue, with
+   the blog's Gruvbox green) — and four dark — dark
    (Gruvbox), cosmic (Nord), kosmic (Nord under the sky), everforest.
    The non-Gruvbox darks ARE the dark theme structurally — they share the
    dark token block and every dark structural rule, and only repoint the
@@ -701,136 +701,84 @@
 }
 
 /* ==========================================================================
-   Letterhead — the fourth LIGHT theme, after a firm engagement
-   letter: one warm stone axis (hue 68–100), hairline rules as the
-   only graphic device, links and selection in the letter's own inks
-   (soft-ink links, chip-fill selection), ink-filled primary buttons.
-   Fountain-pen blue recedes to the calendar, the charts, and the blue
-   highlight class. Functional colors survive as quiet warm-shifted ink
-   stamps at roughly half Matcha's chroma. Structurally a light theme:
-   token-only block, no scoped rules — the default fill-based active
-   idiom IS cl's chip.
+   Paper — the fourth LIGHT theme, Matcha on the blog's paper
+   (jamescraig.dev). It IS Matcha structurally and tonally: the stone
+   ladder keeps every lightness step, and this block only carries the
+   ramp onto the blog's page hue and chroma (oklch 0.0083 at 91.5°) by
+   repointing --stone-* at the --paper-* ramp in palette.css — the
+   idiom the non-Gruvbox darks use for --gb-*. Every :root token that
+   reads a stone step follows without being named here. The blog's
+   one accent, Gruvbox faded aqua, takes the lime's roles (links,
+   primary buttons, Add, success, the green tints) and rules and inks
+   selection over a plain stone fill; the brand runs from it into
+   Gruvbox faded yellow. Orange, red, yellow and the violet accent icons stay
+   Matcha's. Structurally a light theme: token-only block, no scoped
+   rules, and no gradient (that is Matcha's alone).
    ========================================================================== */
-[data-theme="letterhead"] {
+[data-theme="paper"] {
   color-scheme: light;
 
-  /* Typography & Text — cl's ink ramp over bone paper */
-  --color-primary: var(--lh-ink);
-  --color-darker: var(--lh-press);
-  --color-muted: var(--lh-ink-soft);
-  --color-muted-more: var(--lh-ink-faint);
-  --color-lighter: var(--lh-rule);
+  /* The ladder — Matcha's steps on the blog's paper */
+  --stone-25: var(--paper-25);
+  --stone-50: var(--paper-50);
+  --stone-75: var(--paper-75);
+  --stone-100: var(--paper-100);
+  --stone-125: var(--paper-125);
+  --stone-150: var(--paper-150);
+  --stone-175: var(--paper-175);
+  --stone-200: var(--paper-200);
+  --stone-215: var(--paper-215);
+  --stone-225: var(--paper-225);
+  --stone-250: var(--paper-250);
+  --stone-300: var(--paper-300);
+  --stone-350: var(--paper-350);
+  --stone-375: var(--paper-375);
+  --stone-400: var(--paper-400);
+  --stone-500: var(--paper-500);
+  --stone-600: var(--paper-600);
+  --stone-700: var(--paper-700);
+  --stone-800: var(--paper-800);
+  --stone-900: var(--paper-900);
 
-  /* Links — the letter's own soft ink, darkening to full ink on
-     hover (cl's topbar idiom). --brand-ink, --accent-link,
-     --focus-ring, --field-focus derive from --link in :root and
-     follow into the ink family — blue recedes to the calendar,
-     charts, and the blue highlight class */
-  --link: var(--lh-ink-soft);
-  --link-hover: var(--lh-ink);
-  /* Brand gradient — the letter's soft ink warming into old-gold ink */
-  --brand-grad-to: var(--lh-gold-ink);
+  /* Links — the blog's accent, darkening on hover as the blog does
+     (Matcha's lime lifts). --brand-ink, --accent-link, --add,
+     --focus-ring and --field-focus follow from :root */
+  --link: var(--paper-green);
+  --link-hover: var(--paper-green-deep);
+  /* Brand gradient — the accent green into Gruvbox faded yellow */
+  --brand-grad-to: var(--paper-gold);
 
-  /* Backgrounds — paper ground, field chrome, chip actives */
-  --background-nav: var(--lh-rule);
-  --background-body: var(--lh-paper);
-  --background-subnav: var(--lh-field);
-  --background-subnav-contrast: var(--lh-chip);
-  --background-control: var(--lh-field);
-  --background-section: var(--lh-paper-dim);
-  --background-th: var(--lh-paper-dim);
-  --background-td: var(--lh-paper);
-  --background-medium-light: var(--lh-mid);
-  --background-light: var(--lh-bright);
-  --ai-frame: var(--lh-chip);
-  --ai-surface: var(--lh-bright);
-  --ai-raised: var(--lh-paper);
-  --past-due-bg: var(--lh-amber-wash);
-  --due-soon-bg: var(--lh-amber-wash);
-  --toast-warning-header-bg: var(--lh-amber-tint);
-  --toast-warning-body-bg: var(--lh-amber-wash);
+  /* Selection — no wash: the stone a step under the hover tier (the
+     sidebar's active step), ruled in the accent at full strength under
+     the accent as ink, so the green marks "you are here" without
+     flooding the fill */
+  --selected-background: var(--stone-250);
+  --selected-border: var(--paper-green);
+  --selected-color: var(--paper-green-deep);
+  /* The field focus a step greener than :root's derivation (80% of the
+     ring instead of 65%) */
+  --field-focus: color-mix(in oklch, var(--focus-ring) 80%, var(--input-background));
 
-  /* Navigation — actives keep the :root fill idiom (cl's chip); the
-     subnav tab wears the chip itself, divided by the hairline */
-  --background-subnav-tab-active: var(--lh-chip);
-  --subnav-divider: var(--lh-rule);
+  /* Status — the accent family takes the lime's roles
+     (--false/--error/--error-border follow --urgent from :root) */
+  --success: var(--paper-green);
+  --true: var(--paper-green);
+  --status-green-bg: var(--paper-green-tint);
+  --status-green-ink: var(--paper-green-deep);
+  --status-green-line: var(--paper-green-line);
+  --status-green-hover: var(--paper-green-hover);
+  --btn-success-bg: var(--paper-green-tint);
 
-  /* Sidebar — the field tier, chip marks current */
-  --background-sidebar: var(--lh-field);
-  --background-sidebar-hover: var(--lh-field-dim);
-  --background-sidebar-active: var(--lh-chip);
+  /* Labels and row highlights — the green tint for the lime-100s */
+  --label-green: var(--paper-green-tint);
+  --hl-green: var(--paper-green-tint);
 
-  /* Buttons — cl buttons are INK, not blue: blue stays reserved for
-     clickable text, ink means "press here" */
-  --button-primary-background: var(--lh-ink);
-  --button-primary-color: var(--lh-on-ink);
-  --btn-secondary-bg: var(--lh-blue-wash);
-  --btn-success-bg: var(--lh-green-tint);
-  --btn-danger-bg: var(--lh-red-tint);
-
-  /* Forms & Inputs — cl's signature shaded wells: field darker than
-     paper, defined by the rule hairline */
-  --input-border: var(--lh-rule);
-  --input-background: var(--lh-field);
-  --input-placeholder: var(--lh-ink-faint);
-
-  /* Borders — the rule carries the medium step; the ladder warms
-     around it */
-  --border-light: var(--lh-chip);
-  --border-medium: var(--lh-rule);
-  --border-medium-dark: var(--lh-rule-dark);
-  --border-dark: var(--lh-rule-strong);
-
-  /* Selection — the stone ladder, a shade deeper than the chip so it
-     stands apart from the "you are here" fills around it */
-  --selected-background: var(--lh-chip-dim);
-  --selected-color: var(--lh-press);
-  --selected-border: var(--lh-rule-dark);
-
-  /* Status — warm-muted inks (--false/--error/--error-border follow
-     --urgent from :root) */
-  --urgent: var(--lh-red-ink);
-  --warning: var(--lh-amber-ink);
-  --success: var(--lh-green-ink);
-  --true: var(--lh-green-ink);
-  --error-background: var(--lh-red-tint);
-  --status-green-bg: var(--lh-green-tint);
-  --status-green-ink: var(--lh-green-ink);
-  --status-green-line: var(--lh-green-line);
-  --status-green-hover: var(--lh-green-hover);
-
-  /* Labels — the paper tints (label-gray follows the control tier) */
-  --label-green: var(--lh-green-tint);
-  --label-orange: var(--lh-orange-tint);
-  --label-purple: var(--lh-plum-tint);
-  --label-red: var(--lh-red-tint);
-  --label-yellow: var(--lh-amber-tint);
-
-  /* Icons — plum is the one hue no other Letterhead role uses, so
-     "on" reads; Add must stay green (:root derives it from --link,
-     which is blue here) */
-  --icon-violet: var(--lh-plum-ink);
-  --icon-violet-muted: var(--lh-plum-soft);
-  --icon-yellow: var(--lh-gold-ink);
-  --add: var(--lh-green-ink);
-
-  /* Row highlights — the tints; gray inherits the warm control tier */
-  --hl-blue: var(--lh-blue-wash);
-  --hl-slate: var(--lh-slate-tint);
-  --hl-green: var(--lh-green-tint);
-  --hl-orange: var(--lh-orange-tint);
-  --hl-violet: var(--lh-plum-tint);
-  --hl-red: var(--lh-red-tint);
-  --hl-yellow: var(--lh-amber-tint);
-
-  /* Calendar entries: the control grays, no lime; the dot is the fountain-pen blue */
-  --calendar-chip: var(--background-control);
-  --calendar-allday: var(--background-control);
-  --calendar-task: var(--background-light);
-  --calendar-chip-border: var(--border-medium-dark);
-  --calendar-dot: var(--lh-blue);
-  --calendar-holiday: var(--lh-blue-wash);
-  --calendar-today: var(--lh-blue-wash);
+  /* Calendar entries — Matcha's chips (the chip itself follows the
+     stone ladder) with the breath of lime turned to the accent green
+     at the same lightness and chroma */
+  --calendar-allday: oklch(0.87 0.018 155.4);
+  --calendar-task: oklch(0.92 0.016 155.4);
+  --calendar-dot: oklch(0.58 0.045 155.4);
 }
 
 /* ==========================================================================

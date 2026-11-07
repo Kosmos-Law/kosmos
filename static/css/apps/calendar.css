@@ -1047,3 +1047,30 @@
   border-color: var(--control-active-line) !important;
   color: var(--control-active-color) !important;
 }
+
+/* Paper — the active view button is a rounded chip lifted out of
+   FullCalendar's button group (as the matters mode pills): its own
+   corners and a z-index lift so its ring paints over the
+   neighbours' edges (FullCalendar already overlaps the group's inner
+   borders with a -1px margin, so the width holds). */
+[data-theme="paper"] .fc .fc-button-group > .fc-button.fc-button-active {
+  border-radius: var(--radius-sm);
+  position: relative;
+  z-index: 1;
+}
+
+/* Paper — the view toggle's active button (list | calendar here, list |
+   board on the tasks page) is the same rounded chip lifted out of its
+   pair: its own corners, the first button's right border restored with
+   the -1px margin holding the pair's width, and a z-index lift so its
+   ring paints over the neighbour's edge. */
+[data-theme="paper"] .view-toggle button.toggle-active {
+  border-radius: var(--radius-sm);
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="paper"] .view-toggle button.toggle-active:first-child {
+  border-right: 1px solid var(--selected-border);
+  margin-right: -1px;
+}

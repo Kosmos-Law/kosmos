@@ -8,8 +8,9 @@ yellow, behind the page, see-through cards, veiled chrome), `basic`
 (after the 2017 LawPay UI: white ground, navy buttons, azure accents;
 formerly `oxford`, and the `--oxford-*` palette keeps the source name),
 `nord-light` (Nord's Snow Storm surfaces, Polar Night text, frost blue
-links, frost cyan selection) and `letterhead` (after a firm engagement
-letter: bone paper, hairline rules, fountain-pen blue). Four are dark:
+links, frost cyan selection) and `paper` (Matcha's stone ladder, every
+lightness step kept, carried onto the paper hue of jamescraig.dev, with
+the blog's Gruvbox green as the one accent). Four are dark:
 `dark` (Gruvbox), `cosmic` (Nord), `kosmic` (Nord under the landing
 page's animated night sky) and `everforest` (green-gray surfaces, cream
 text, signature-green links).
@@ -27,10 +28,11 @@ every `:root` (light) default and their blocks in `colors.css` only
 repoint colour tokens. Light structural rules are the unscoped defaults,
 so they get them for free; a rule scoped to `[data-theme="light"]` alone
 does NOT apply to them. Scope to
-`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="letterhead"])`
+`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="paper"])`
 (or the subset that needs it) when a light structural rule must reach the
 other light themes. Retired themes: `sky`, `kosmos`, `kosmos-dark`,
-`latte`, `mocha`, `everforest-light`, and `matcha-mist` / `matcha-lavender`,
+`latte`, `mocha`, `everforest-light`, `letterhead` (stored settings move to
+`paper`), and `matcha-mist` / `matcha-lavender`,
 which became Matcha's gradient; renamed: `oxford` to `basic`
 (`theme.js` migrates stored settings).
 

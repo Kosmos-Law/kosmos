@@ -292,3 +292,18 @@
 :is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .toolbar .chart-toggle button.toggle-active {
   background: var(--background-sidebar-active);
 }
+
+/* Paper — the active segment is a rounded chip lifted out of the
+   group (as the matters mode pills): its own corners, all four borders
+   with the -1px margin holding the group width, and a z-index lift so
+   its ring paints over the neighbours' edges. */
+[data-theme="paper"] .toolbar .chart-toggle button.toggle-active {
+  border-radius: var(--radius-sm);
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="paper"] .toolbar .chart-toggle button.toggle-active:not(:last-child) {
+  border-right: 1px solid var(--selected-border);
+  margin-right: -1px;
+}

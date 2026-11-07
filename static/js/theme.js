@@ -4,7 +4,7 @@
 
   // Legacy: retired themes map to their nearest survivor — sky, kosmos,
   // latte, and everforest-light to light (Matcha); kosmos-dark and mocha
-  // to dark (Gruvbox). oxford was renamed basic. Matcha Mist, then Matcha
+  // to dark (Gruvbox); letterhead to paper. oxford was renamed basic. Matcha Mist, then Matcha
   // Lavender, became Matcha with a gradient: the wash carries over as the
   // gradient setting, cool from the old low intensity and warm otherwise.
   var LEGACY = {
@@ -15,6 +15,7 @@
     'kosmos-dark': 'dark',
     mocha: 'dark',
     oxford: 'basic',
+    letterhead: 'paper',
     'matcha-mist': 'light',
     'matcha-lavender': 'light',
   };

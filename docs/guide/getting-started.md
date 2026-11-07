@@ -208,8 +208,8 @@ Everything here is under **Settings** in the sidebar.
   this page after you sign in and lets you go nowhere else until it is
   done. If you lose your phone, ask an administrator to reset it.
 - **Settings → Appearance**: under **Theme**, pick **Auto** (follows your
-  computer), a light theme (**Basic**, **Letterhead**, **Matcha**,
-  **Nord**) or a dark one (**Everforest**, **Gruvbox**, **Kosmic**, **Nord**). Kosmic is
+  computer), a light theme (**Basic**, **Matcha**, **Nord**, **Paper**)
+  or a dark one (**Everforest**, **Gruvbox**, **Kosmic**, **Nord**). Kosmic is
   Nord over the animated night sky from the Kosmos website. Under Matcha,
   **Gradient** lays a wash of light behind the page: **Cool** is green and
   lavender, **Warm** adds a patch of sun; **None** is the plain page. Under
