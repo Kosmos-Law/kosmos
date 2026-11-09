@@ -347,6 +347,12 @@ def time_edit(request, id):
     if refusal:
         return refusal
     original_matter_id = entry.matter_id
+    # Opened from the approval badge's Edit, by someone who may approve it
+    approving = bool(
+        request.GET.get("approve")
+        and entry.needs_approval
+        and may_approve(entry, request.user)
+    )
 
     # Hourly matters the user may work on, plus the entry's own matter
     # whatever its status.
@@ -367,9 +373,17 @@ def time_edit(request, id):
             if form.cleaned_data.get("apply_codes"):
                 entry.actions = _apply_abbreviation_codes(entry.actions)
 
+            # Saving from the approval badge's Edit approves the entry.
+            approved = approving and entry.needs_approval
+            if approved:
+                entry.needs_approval = False
+
             entry.save()
 
-            return HttpResponse(status=204, headers={"HX-Trigger": "timeChanged"})
+            response = HttpResponse(status=204, headers={"HX-Trigger": "timeChanged"})
+            if approved:
+                toast_success(response, "Saved and approved the entry.")
+            return response
 
     else:
         form = TimeEntryForm(instance=entry, user=request.user)
@@ -384,6 +398,7 @@ def time_edit(request, id):
         "entry": entry,
         "form": form,
         "matter_list": matter_list,
+        "approving": approving,
     }
 
     return render(request, "activity/time/form.html", context)
@@ -607,6 +622,11 @@ def time_bulk_update_comp(request):
     return render(request, "activity/bulk-comp-form.html", context)
 
 
+def may_approve(entry, user):
+    """An admin approves any entry, anyone else only their own."""
+    return user.is_admin or entry.user_id == user.id
+
+
 def approve_entries(entries, user):
     """Approve the entries that are ``user``'s to approve: an admin approves
     any, anyone else only their own. Returns (approved, skipped), skipped
@@ -615,7 +635,7 @@ def approve_entries(entries, user):
     for entry in entries:
         if not entry.needs_approval:
             continue
-        if entry.user_id != user.id and not user.is_admin:
+        if not may_approve(entry, user):
             skipped += 1
             continue
         entry.needs_approval = False
@@ -654,6 +674,41 @@ def time_bulk_approve(request):
     approved, skipped = approve_entries(entries, request.user)
     clear_selected_ids(request, key)
     return approval_response(approved, skipped, TIME_TRIGGER)
+
+
+@login_required
+@require_POST
+def time_approve(request, entry_id):
+    """Approve one entry, from the menu on its Needs approval badge."""
+    entry = entry_for_user(TimeEntry, entry_id, request.user)
+    if not may_approve(entry, request.user):
+        raise PermissionDenied
+    response = HttpResponse(status=204, headers={"HX-Trigger": TIME_TRIGGER})
+    if entry.needs_approval:
+        entry.needs_approval = False
+        entry.save(update_fields=["needs_approval"])
+        toast_success(response, "Approved the entry.")
+    return response
+
+
+@login_required
+@require_POST
+def time_reject(request, entry_id):
+    """Reject one entry awaiting approval, which deletes it. Only an entry
+    still awaiting approval can be rejected; an approved one is deleted
+    from its form like any other."""
+    entry = entry_for_user(TimeEntry, entry_id, request.user)
+    if not may_approve(entry, request.user):
+        raise PermissionDenied
+    if not entry.needs_approval:
+        return HttpResponse(status=400, content="This entry is already approved.")
+    refusal = locked_response(entry)
+    if refusal:
+        return refusal
+    entry.delete()
+    response = HttpResponse(status=204, headers={"HX-Trigger": TIME_TRIGGER})
+    toast_success(response, "Rejected the entry.")
+    return response
 
 
 # ============================================================================

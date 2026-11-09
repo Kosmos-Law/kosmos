@@ -1,0 +1,49 @@
+{% comment %}
+The Needs approval badge on a time entry the AI logged. For whoever may
+approve it (the entry's own user, or an admin) the badge is a menu:
+approve it, edit it (saving approves it), or reject it (which deletes it).
+{% endcomment %}
+{% if entry.needs_approval %}
+  {% if entry.user_id == request.user.id or request.user.is_admin %}
+    <div class="dropdown badge-menu" x-data="dropdown()">
+      <button type="button"
+              class="app-badge app-badge-sm badge-yellow"
+              title="Logged by the AI; approve, edit or reject it"
+              x-ref="button"
+              @click="toggle()"
+              :aria-expanded="open">
+        Needs approval <i class="icon-chevron-down"></i>
+      </button>
+      <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+        <li>
+          <a class="dropdown-item"
+             href="#"
+             hx-post="{% url 'activity:time-approve' entry.id %}"
+             hx-swap="none"><i class="icon-check"></i> Approve</a>
+        </li>
+        {% if not entry.locked %}
+          <li>
+            <a class="dropdown-item"
+               href="#"
+               hx-get="{% url 'activity:time-edit' id=entry.id %}?approve=1"
+               hx-target="#htmx-modal-container"
+               data-bs-toggle="modal"
+               data-bs-target="#htmx-modal-container"><i class="icon-pencil"></i> Edit</a>
+          </li>
+          <li>
+            <a class="dropdown-item"
+               href="#"
+               hx-post="{% url 'activity:time-reject' entry.id %}"
+               hx-swap="none"
+               hx-confirm="Reject this time entry? It will be deleted, and this cannot be undone."
+               data-confirm-text="Reject"
+               data-confirm-style="danger"><i class="icon-circle-x"></i> Reject</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  {% else %}
+    <span class="app-badge app-badge-sm badge-yellow"
+          title="Logged by the AI; {{ entry.user.username }} or an admin can approve it">Needs approval</span>
+  {% endif %}
+{% endif %}
