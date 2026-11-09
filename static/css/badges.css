@@ -37,6 +37,21 @@ a.app-badge:visited {
   margin-right: 0.25rem;
 }
 
+/* A badge that opens a menu (the Needs approval badge on a time entry):
+   it sits inline with the text beside it, and its chevron trails the label. */
+.badge-menu {
+  display: inline-block;
+}
+
+.badge-menu > .app-badge {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.badge-menu > .app-badge i {
+  margin: 0 0 0 0.125rem;
+}
+
 /* ------------------------------------------------
 Badge color classes
 ------------------------------------------------ */

@@ -81,7 +81,13 @@
            @click.prevent="codesOpen = !codesOpen">View Abbreviation Codes</a>
       </div>
       <div class="modal-footer-right">
-        <button type="submit" form="time-entry-form" class="btn btn-success">Submit</button>
+        <button type="submit" form="time-entry-form" class="btn btn-success">
+          {% if approving %}
+            Approve
+          {% else %}
+            Submit
+          {% endif %}
+        </button>
       </div>
       <div id="codes-reference-container"
            class="codes-reference-container"
