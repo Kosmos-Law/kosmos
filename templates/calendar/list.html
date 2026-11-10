@@ -5,10 +5,16 @@
         <button type="button" hx-get="/events/add" hx-target="#htmx-modal-container">
           <i class="icon-plus"></i>
         </button>
+        {% include "calendar/view-toggle.html" %}
         {% include "calendar/status-dropdown.html" %}
         {% include "calendar/assigned-dropdown.html" %}
         {% include "calendar/matter-dropdown.html" %}
-        {% include "calendar/overlays.html" %}
+        <button type="button"
+                class="{% if filter_active %}toggle-active{% endif %}"
+                hx-get="{% url 'calendar:filter' %}"
+                hx-target="#htmx-modal-container">
+          <i class="icon-list-filter with-text"></i>Filter
+        </button>
       </div>
     </div>
     <div class="toolbar-right">

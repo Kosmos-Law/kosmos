@@ -5,6 +5,7 @@
         <button type="button" hx-get="/events/add" hx-target="#htmx-modal-container">
           <i class="icon-plus"></i>
         </button>
+        {% include "calendar/view-toggle.html" %}
         {% comment %}
         In calendar view a change to the filter refetches the events and
         leaves this page in place (events-calendar.js), so the menus fetch
@@ -17,9 +18,10 @@
              hx-target="this"
              hx-swap="innerHTML">{% include "calendar/filter-menus.html" %}</div>
         {% comment %}
-        The calendar's menu: the federal holidays, the Filter dialog and
-        the list view, behind one sliders button (the user's tasks have
-        their own button, with the menus before it). The list view's toolbar keeps its own buttons.
+        The calendar's menu: the federal holidays and the Filter dialog,
+        behind one sliders button (the user's tasks have their own
+        button, with the menus before it). The list view's toolbar has a
+        Filter button instead.
         {% endcomment %}
         {% include "calendar/overlays.html" %}
       </div>

@@ -1,0 +1,26 @@
+{% comment %}
+The list-or-calendar switch, a pair of buttons on the toolbar of both
+views, on the main calendar and on a matter's Events tab (context:
+matter), where the choice is the tab's own. Either button posts its view
+and the page re-renders on eventsViewChanged.
+{% endcomment %}
+<div class="view-toggle">
+  <button type="button"
+          class="{% if view_mode != 'calendar' %}toggle-active{% endif %}"
+          aria-pressed="{% if view_mode != 'calendar' %}true{% else %}false{% endif %}"
+          hx-post="{% if matter %}{% url 'matters:events-view-mode' id=matter.id mode='list' %}{% else %}{% url 'calendar:view-mode' 'list' %}{% endif %}"
+          hx-swap="none"
+          title="List view"
+          aria-label="List view">
+    <i class="icon-list"></i>
+  </button>
+  <button type="button"
+          class="{% if view_mode == 'calendar' %}toggle-active{% endif %}"
+          aria-pressed="{% if view_mode == 'calendar' %}true{% else %}false{% endif %}"
+          hx-post="{% if matter %}{% url 'matters:events-view-mode' id=matter.id mode='calendar' %}{% else %}{% url 'calendar:view-mode' 'calendar' %}{% endif %}"
+          hx-swap="none"
+          title="Calendar view"
+          aria-label="Calendar view">
+    <i class="icon-calendar"></i>
+  </button>
+</div>
