@@ -3,8 +3,9 @@ Shared toolbar for the matter Events tab's list and calendar views: the main
 calendar's toolbar minus the matter and assignee menus (the matter is
 implicit) and the Filter row of the sliders menu. That dialog is the firm
 Calendar's, which this tab does not read; the tab filters by status (the
-dropdown here) and sorts by its column headers. The sliders menu holds the
-overlays and the list-or-calendar switch, as on the Calendar.
+dropdown here) and sorts by its column headers. The list-or-calendar switch
+is the Calendar's pair of buttons; the sliders menu holds the overlays, so
+it shows on the calendar view only.
 {% endcomment %}
 <div class="toolbar mobile-min-toolbar">
   <div class="toolbar-left">
@@ -13,8 +14,11 @@ overlays and the list-or-calendar switch, as on the Calendar.
               hx-target="#htmx-modal-container">
         <i class="icon-plus"></i>
       </button>
+      {% include "calendar/view-toggle.html" %}
       {% include "matters/events/status-dropdown.html" %}
-      {% include "calendar/overlays.html" %}
+      {% if view_mode == "calendar" %}
+        {% include "calendar/overlays.html" %}
+      {% endif %}
     </div>
   </div>
   <div class="toolbar-right">

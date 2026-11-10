@@ -77,22 +77,32 @@ def test_the_matter_tab_shows_the_holidays_too(client, matter):
     assert not any(row["id"].startswith("holiday-") for row in feed)
 
 
-def test_the_matter_tabs_menu_has_the_overlays_and_its_own_view_switch(client, matter):
+def test_the_matter_tab_has_the_overlays_menu_and_its_own_view_switch(client, matter):
     menu = client.get(
         reverse("calendar:overlays-matter", args=[matter.id])
     ).content.decode()
+    to_list = reverse(
+        "matters:events-view-mode", kwargs={"id": matter.id, "mode": "list"}
+    )
+    to_calendar = reverse(
+        "matters:events-view-mode", kwargs={"id": matter.id, "mode": "calendar"}
+    )
+    tab = reverse("matters:events-index", kwargs={"id": matter.id})
 
     assert "Holidays" in menu and "My tasks" in menu
     assert reverse("calendar:filter") not in menu
-    # the tab opens on the calendar, so the switch offers the list
-    assert (
-        reverse("matters:events-view-mode", kwargs={"id": matter.id, "mode": "list"})
-        in menu
-    )
-    page = client.get(
-        reverse("matters:events-index", kwargs={"id": matter.id})
-    ).content.decode()
+    # the switch is a pair of buttons on the toolbar, not a row of the menu
+    assert to_list not in menu
+    page = client.get(tab).content.decode()
     assert "calendar-menu" in page and "fullcalendar-container" in page
+    assert to_list in page and to_calendar in page
+
+    # the list keeps the switch; the menu, whose overlays draw on the
+    # grid, leaves with the calendar
+    client.post(to_list)
+    page = client.get(tab).content.decode()
+    assert to_list in page and to_calendar in page
+    assert "calendar-menu" not in page and "fullcalendar-container" not in page
 
 
 def test_a_range_over_the_new_year_has_both_years():
@@ -106,11 +116,15 @@ def test_the_menu_offers_the_toggle(client):
     assert "Holidays" in _menu(client)
 
 
-def test_the_menu_offers_the_filter_and_the_list_view(client):
+def test_the_menu_offers_the_filter_and_the_toolbar_the_list_view(client):
     menu = _menu(client)
 
     assert reverse("calendar:filter") in menu
-    assert reverse("calendar:view-mode", args=["list"]) in menu
+    # the view switch is a pair of buttons on the toolbar
+    assert reverse("calendar:view-mode", args=["list"]) not in menu
+    page = client.get(reverse("calendar:index")).content.decode()
+    assert reverse("calendar:view-mode", args=["list"]) in page
+    assert reverse("calendar:view-mode", args=["calendar"]) in page
     # the Filter row says when a filter is on
     assert "calendar-menu-note" not in menu
     client.post(reverse("calendar:filter"), {"status": "Complete", "order_by": "date"})
@@ -163,13 +177,14 @@ def test_a_deadline_on_a_court_day_stands(client):
     assert response.context["results"]["next_workday"] is None
 
 
-def test_the_list_views_menu_offers_the_filter_and_the_calendar(client):
+def test_the_list_views_toolbar_offers_the_filter_and_the_calendar(client):
     client.post(reverse("calendar:view-mode", args=["list"]))
 
-    menu = _menu(client)
-
-    assert reverse("calendar:view-mode", args=["calendar"]) in menu
-    assert reverse("calendar:filter") in menu
-    assert reverse("calendar:show-holidays", args=["off"]) not in menu
     page = client.get(reverse("calendar:index")).content.decode()
-    assert "calendar-menu" in page
+
+    assert reverse("calendar:view-mode", args=["calendar"]) in page
+    assert reverse("calendar:view-mode", args=["list"]) in page
+    assert reverse("calendar:filter") in page
+    # the overlays draw only on the grid, so the list has no menu for them
+    assert "calendar-menu" not in page
+    assert reverse("calendar:show-holidays", args=["off"]) not in page

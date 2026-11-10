@@ -26,12 +26,13 @@ belong to a matter. The same event appears in several places:
 ## Look at the calendar
 
 Click **Calendar** in the sidebar. Kosmos opens in the calendar view and
-keeps your choice of view until you sign out. The sliders button at the
-right of the toolbar's menus opens the calendar's menu. In the calendar
-view it offers **My tasks** and **Holidays** (below), **Filter**, and
-**List view**; in the list view, **Filter** and **Calendar view**. On a
+keeps your choice of view until you sign out. The pair of buttons beside
+**+** on the toolbar switches between the **List view** and the
+**Calendar view**. In the calendar view, the sliders button at the right
+of the toolbar's menus opens the calendar's menu: **Holidays** (below)
+and **Filter**. The list view has a **Filter** button in its place. On a
 narrow screen, such as a phone, the calendar view is the **Agenda**
-(below), and the list is still a tap away in the menu.
+(below), and the list is still a tap away on the toolbar.
 
 ### Calendar view
 
@@ -162,8 +163,9 @@ for everyone and cannot be restored.
 The Calendar opens on pending events, earliest first. The toolbar menus
 and the **Filter** dialog apply to both views, and Kosmos keeps your
 choices until you change them or sign out. **Filter** is in the sliders
-menu in both views, and reads "on" beside it while a filter other than
-the default is set.
+menu in the calendar view, where it reads "on" beside it while a filter
+other than the default is set, and a button on the list view's toolbar,
+highlighted while one is.
 
 - The status menu chooses **All Statuses**, **Pending**, **Complete** or
   **Missed**.
@@ -174,7 +176,8 @@ the default is set.
   the bottom clears them.
 - The matter menu chooses **All Matters**, **Unassigned** (events with no
   matter) or one pending or open matter.
-- Click **Filter** in the sliders menu to open **Filter Events**. **Date** takes a first and
+- Click **Filter** (in the sliders menu, or on the list view's toolbar)
+  to open **Filter Events**. **Date** takes a first and
   last date. **Matter**, **Assigned to**, **Party** and **Status** are
   lists that narrow by those fields, and **Ordering** sets the sort. Click
   **Apply**. **Restore Defaults** returns to pending events sorted by
@@ -198,8 +201,9 @@ Open a matter and click **Events**. The tab has the same calendar views
 (**Year** to **Agenda**) and the same list for that matter alone, and
 opens on the calendar, as the Calendar does; its list shows every event
 on one page. The status menu starts on **Pending** and is kept for each
-matter separately. The sliders menu holds **My tasks** (your open tasks
-on that matter), **Holidays** and the list-or-calendar switch, but no
+matter separately. The same pair of buttons switches between the list
+and the calendar. In the calendar view the sliders menu holds **My
+tasks** (your open tasks on that matter) and **Holidays**, but no
 **Filter**: use the status menu and the sort buttons. The list has no
 **Matter** column. See [Matters](matters.md).
 

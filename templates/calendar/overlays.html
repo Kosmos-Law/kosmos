@@ -1,8 +1,9 @@
 {% comment %}
-The calendar's menu, behind the sliders button on the toolbar of both
-views, on the main calendar and on a matter's Events tab (context:
-matter): on the grid the overlays (tasks, holidays) as check rows, then
-the Filter dialog (the main calendar's) and the other view. The rows re-render on eventsChanged
+The calendar's menu, behind the sliders button on the calendar view's
+toolbar, on the main calendar and on a matter's Events tab (context:
+matter): the overlays (tasks, holidays) as check rows, then the Filter
+dialog (the main calendar's). The list view has no menu; the switch
+between the views is calendar/view-toggle.html. The rows re-render on eventsChanged
 (calendar/menu-items.html);
 the dropdown itself stays, so a check row keeps the menu open for the
 next, and the dropdown component closes it on a link.
