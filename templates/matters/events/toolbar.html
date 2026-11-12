@@ -5,19 +5,24 @@ implicit) and the Filter row of the sliders menu. That dialog is the firm
 Calendar's, which this tab does not read; the tab filters by status (the
 dropdown here) and sorts by its column headers. The list-or-calendar switch
 is the Calendar's pair of buttons; the sliders menu holds the overlays, so
-it shows on the calendar view only.
+it shows on the calendar view only. While events are ticked in the list,
+the bulk actions take the tools' place (calendar/bulk-toolbar.html).
 {% endcomment %}
 <div class="toolbar mobile-min-toolbar">
   <div class="toolbar-left">
     <div class="filter-tools">
-      <button hx-get="/events/add/{{ matter.id }}/matters"
-              hx-target="#htmx-modal-container">
-        <i class="icon-plus"></i>
-      </button>
-      {% include "calendar/view-toggle.html" %}
-      {% include "matters/events/status-dropdown.html" %}
-      {% if view_mode == "calendar" %}
-        {% include "calendar/overlays.html" %}
+      {% if selected_events and view_mode != "calendar" %}
+        {% include "calendar/bulk-toolbar.html" %}
+      {% else %}
+        <button hx-get="/events/add/{{ matter.id }}/matters"
+                hx-target="#htmx-modal-container">
+          <i class="icon-plus"></i>
+        </button>
+        {% include "calendar/view-toggle.html" %}
+        {% include "matters/events/status-dropdown.html" %}
+        {% if view_mode == "calendar" %}
+          {% include "calendar/overlays.html" %}
+        {% endif %}
       {% endif %}
     </div>
   </div>

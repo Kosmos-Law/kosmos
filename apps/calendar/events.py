@@ -3,12 +3,49 @@ from logging import getLogger
 
 from apps.calendar.filter import EventFilter, assignee_tokens
 from apps.management.pagination import CustomPaginator
+from apps.management.selection import (
+    all_visible_selected,
+    get_selected_ids,
+    get_session_key,
+)
 
 logger = getLogger(__name__)
 
 SESSION_KEY = "events_filter"
 SHOW_TASKS_KEY = "events_show_tasks"
 SHOW_HOLIDAYS_KEY = "events_show_holidays"
+
+# What an event's status may be: the form's choices and the bulk action's
+EVENT_STATUSES = ("Pending", "Complete", "Missed")
+
+
+def selected_events_key(matter_id=None):
+    """The session key of an event list's selection: the firm Calendar's
+    list, or one matter's Events tab."""
+    return get_session_key("selected_events", matter_id)
+
+
+def selection_context(request, events, matter_id=None):
+    """What an event list needs to draw its check boxes and, while any
+    are ticked, the bulk actions on its toolbar."""
+    selected = get_selected_ids(request, selected_events_key(matter_id))
+    # For the Delete button's question: how many of them have guests, who
+    # will be told. Asked only while something is ticked.
+    invited = 0
+    if selected:
+        from apps.calendar import invitations
+        from apps.calendar.models import Event
+
+        invited = invitations.with_guests_to_tell(
+            Event.objects.filter(id__in=selected)
+        ).count()
+    return {
+        "selected_events": selected,
+        "selected_events_invited": invited,
+        "event_statuses": EVENT_STATUSES,
+        "all_selected": all_visible_selected(selected, [e.id for e in events]),
+    }
+
 
 DEFAULT_FILTER = {
     "status": "Pending",
@@ -185,4 +222,8 @@ def get_table_data(request):
     table_data["objects"] = event_list
     table_data["current_order"] = current_order
 
-    return table_data | toolbar_context(request, filter)
+    return (
+        table_data
+        | toolbar_context(request, filter)
+        | selection_context(request, event_list)
+    )

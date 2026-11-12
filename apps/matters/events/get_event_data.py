@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.calendar.events import annotate_durations
+from apps.calendar.events import annotate_durations, selection_context
 from apps.calendar.models import Event
 from apps.management.sorting import sort_keys, stored_sort_key
 from apps.matters.proceedings.models import Proceeding
@@ -52,6 +52,6 @@ def get_event_data(request, matter):
         "events_filter_status": filter_status,
         "current_order": current_order,
         "third_day": third_day,
-    }
+    } | selection_context(request, events, matter.id)
 
     return event_data

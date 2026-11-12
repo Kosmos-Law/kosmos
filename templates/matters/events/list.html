@@ -4,6 +4,10 @@
     <table class="table events-list card-table">
       <thead>
         <tr>
+          <th class="col-select">
+            {% url 'calendar:select-all-matter' matter.id as select_all_url %}
+            {% include "selection/select-all-btn.html" with select_all_url=select_all_url all_selected=all_selected %}
+          </th>
           <th class="date">
             Date
             <button class="btn-sort {% if current_order == 'date' %}active{% endif %}"
@@ -39,6 +43,10 @@
       <tbody>
         {% for event in events %}
           <tr class="{% if event.date < third_day and event.status == 'Pending' %}hl-yellow{% endif %}">
+            <td class="col-select card-hide">
+              {% url 'calendar:toggle-select-matter' matter.id event.id as toggle_url %}
+              {% include "selection/checkbox.html" with toggle_url=toggle_url obj_id=event.id selected_ids=selected_events %}
+            </td>
             <td class="date">
               {{ event.date|date:"Y-m-d" }}
               {% if event.end_date %}<span class="event-end-date">to {{ event.end_date|date:"Y-m-d" }}</span>{% endif %}
@@ -63,7 +71,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="6" class="empty-message">No events found for this matter.</td>
+            <td colspan="7" class="empty-message">No events found for this matter.</td>
           </tr>
         {% endfor %}
       </tbody>

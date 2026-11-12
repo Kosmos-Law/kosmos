@@ -1,0 +1,37 @@
+{% comment %}
+The dialog of a bulk action on the selected events (Move, Assign): one
+form, posted to the action, which answers 204 when done and closes this.
+{% endcomment %}
+<div class="modal-dialog modal-sm">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h1 class="modal-title">{{ title }}</h1>
+      <div>
+        <button type="button" @click="$dispatch('close-modal')">
+          <i class="icon-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="text-muted">
+        {{ count }} event{{ count|pluralize }} selected.
+        {% if intro %}{{ intro }}{% endif %}
+        {% if invited %}{{ invited }} of them {{ invited|pluralize:"has,have" }} guests: {{ invited_note }}.{% endif %}
+      </p>
+      <form id="events-bulk-form"
+            hx-post="{{ action }}"
+            hx-target="#htmx-modal-container"
+            role="form"
+            class="form-compact">
+        {% csrf_token %}
+        {{ form }}
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button"
+              class="btn btn-secondary"
+              @click="$dispatch('close-modal')">Cancel</button>
+      <button type="submit" form="events-bulk-form" class="btn btn-success">Apply</button>
+    </div>
+  </div>
+</div>
