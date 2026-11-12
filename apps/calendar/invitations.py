@@ -456,6 +456,15 @@ def send_cancellation(event, guests, user):
     )
 
 
+def with_guests_to_tell(events):
+    """Of these events, the ones whose guests hear of a change or a
+    deletion: those with guests an invitation has gone out to. None when
+    the firm has no calendar address to send from."""
+    if not can_invite():
+        return events.none()
+    return events.filter(guests__isnull=False).exclude(invite_uid="").distinct()
+
+
 def after_change(event, before, user):
     """After an event is saved: if what its guests were told has changed,
     send the invitation again."""

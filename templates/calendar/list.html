@@ -2,19 +2,23 @@
   <div class="toolbar">
     <div class="toolbar-left">
       <div class="filter-tools">
-        <button type="button" hx-get="/events/add" hx-target="#htmx-modal-container">
-          <i class="icon-plus"></i>
-        </button>
-        {% include "calendar/view-toggle.html" %}
-        {% include "calendar/status-dropdown.html" %}
-        {% include "calendar/assigned-dropdown.html" %}
-        {% include "calendar/matter-dropdown.html" %}
-        <button type="button"
-                class="{% if filter_active %}toggle-active{% endif %}"
-                hx-get="{% url 'calendar:filter' %}"
-                hx-target="#htmx-modal-container">
-          <i class="icon-list-filter with-text"></i>Filter
-        </button>
+        {% if selected_events %}
+          {% include "calendar/bulk-toolbar.html" %}
+        {% else %}
+          <button type="button" hx-get="/events/add" hx-target="#htmx-modal-container">
+            <i class="icon-plus"></i>
+          </button>
+          {% include "calendar/view-toggle.html" %}
+          {% include "calendar/status-dropdown.html" %}
+          {% include "calendar/assigned-dropdown.html" %}
+          {% include "calendar/matter-dropdown.html" %}
+          <button type="button"
+                  class="{% if filter_active %}toggle-active{% endif %}"
+                  hx-get="{% url 'calendar:filter' %}"
+                  hx-target="#htmx-modal-container">
+            <i class="icon-list-filter with-text"></i>Filter
+          </button>
+        {% endif %}
       </div>
     </div>
     <div class="toolbar-right">
@@ -29,6 +33,10 @@
     <table class="table full-width-table events-table card-table">
       <thead>
         <tr>
+          <th class="col-select">
+            {% url 'calendar:select-all' as select_all_url %}
+            {% include "selection/select-all-btn.html" with select_all_url=select_all_url all_selected=all_selected %}
+          </th>
           <th class="date">
             Date
             <button class="btn-sort {% if current_order == 'date' %}active{% endif %}"
@@ -81,6 +89,10 @@
       <tbody>
         {% for event in objects %}
           <tr class="{% if event.date < third_day and event.status == 'Pending' %}hl-yellow{% endif %}">
+            <td class="col-select card-hide">
+              {% url 'calendar:toggle-select' event.id as toggle_url %}
+              {% include "selection/checkbox.html" with toggle_url=toggle_url obj_id=event.id selected_ids=selected_events %}
+            </td>
             <td class="date">
               {{ event.date|date:"Y-m-d" }}
               {% if event.end_date %}<span class="event-end-date">to {{ event.end_date|date:"Y-m-d" }}</span>{% endif %}
@@ -112,7 +124,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="7" class="empty-message">No events found.</td>
+            <td colspan="8" class="empty-message">No events found.</td>
           </tr>
         {% endfor %}
       </tbody>

@@ -20,6 +20,13 @@ display
   width: 100%;
 }
 
+.events-list .col-select {
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+  width: 2.5rem;
+}
+
 .events-list .date {
   width: 12rem;
 }

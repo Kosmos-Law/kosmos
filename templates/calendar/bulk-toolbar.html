@@ -1,0 +1,57 @@
+{% comment %}
+The event list's toolbar while events are ticked, in place of its usual
+tools, on the firm Calendar's list and on a matter's Events tab (context:
+matter): the number selected, which clears the selection, and the bulk
+actions: Status, Move and Assign (each a dialog, calendar/bulk-modal.html)
+and Delete, which asks first. After an action the list re-renders with
+nothing selected.
+{% endcomment %}
+<button type="button"
+        class="btn-icon toggle-active"
+        title="Clear the selection"
+        hx-post="{% if matter %}{% url 'calendar:clear-selection-matter' matter.id %}{% else %}{% url 'calendar:clear-selection' %}{% endif %}"
+        hx-swap="none">
+  {{ selected_events|length }} <i class="icon-x bulk-clear-icon"></i>
+</button>
+<div class="dropdown events-bulk-status" x-data="dropdown()">
+  <button type="button"
+          class="btn-icon"
+          x-ref="button"
+          @click="toggle()"
+          :aria-expanded="open">
+    <span><i class="icon-square-check-big with-text"></i> Status</span>
+    <small><i class="icon-chevron-down"></i></small>
+  </button>
+  <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+    {% for status in event_statuses %}
+      <li>
+        <a class="dropdown-item"
+           href="#"
+           hx-post="{% if matter %}{% url 'calendar:bulk-set-status-matter' matter.id %}{% else %}{% url 'calendar:bulk-set-status' %}{% endif %}"
+           hx-vals='{"status": "{{ status }}"}'
+           hx-swap="none">{{ status }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+<button type="button"
+        class="btn-icon"
+        hx-get="{% if matter %}{% url 'calendar:bulk-move-matter' matter.id %}{% else %}{% url 'calendar:bulk-move' %}{% endif %}"
+        hx-target="#htmx-modal-container">
+  <i class="icon-calendar with-text"></i> Move
+</button>
+<button type="button"
+        class="btn-icon"
+        hx-get="{% if matter %}{% url 'calendar:bulk-assign-matter' matter.id %}{% else %}{% url 'calendar:bulk-assign' %}{% endif %}"
+        hx-target="#htmx-modal-container">
+  <i class="icon-user with-text"></i> Assign
+</button>
+<button type="button"
+        class="btn-icon"
+        title="Delete the selected events"
+        aria-label="Delete the selected events"
+        hx-post="{% if matter %}{% url 'calendar:bulk-delete-matter' matter.id %}{% else %}{% url 'calendar:bulk-delete' %}{% endif %}"
+        hx-confirm="Delete {{ selected_events|length }} selected event{{ selected_events|length|pluralize }}? This cannot be undone.{% if selected_events_invited %} The guests of {{ selected_events_invited }} of them will be told it is cancelled.{% endif %}"
+        hx-swap="none">
+  <i class="icon-trash-2"></i>
+</button>

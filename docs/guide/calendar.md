@@ -92,6 +92,28 @@ three days from now, including one already past, is highlighted.
 | **Party** | **Client**, **Opposing**, **All** or **Other**. |
 | **Status** | **Pending**, **Complete** or **Missed**. |
 
+#### Change several events at once
+
+Tick the box at the left of each event, or the box in the heading to
+tick every event on the page. While any are ticked, the toolbar shows
+their number and these actions in place of its usual tools. After an
+action the boxes clear. Click the number to clear them without changing
+anything. The boxes are not shown on a narrow screen, such as a phone.
+
+- **Status**: choose **Pending**, **Complete** or **Missed** to give all
+  of them that status.
+- **Move**: enter a number of calendar days and click **Apply**. Each
+  event moves that far and keeps its length; a negative number moves
+  them earlier. Weekends and holidays are not skipped, so check the new
+  dates. Guests of a moved event are sent the new date, and the dialog
+  says how many events have guests.
+- **Assign**: tick the people and click **Apply**. They replace whoever
+  each event was assigned to; with nobody ticked the events become the
+  firm's.
+- The bin deletes them, after asking. This cannot be undone. Guests are
+  told the event is cancelled, and the question says how many events
+  have guests.
+
 ## Add an event
 
 1. Click **Calendar** in the sidebar, then the **+** button at the left of
@@ -205,7 +227,8 @@ matter separately. The same pair of buttons switches between the list
 and the calendar. In the calendar view the sliders menu holds **My
 tasks** (your open tasks on that matter) and **Holidays**, but no
 **Filter**: use the status menu and the sort buttons. The list has no
-**Matter** column. See [Matters](matters.md).
+**Matter** column, and the same boxes and actions to change several
+events at once; the box in its heading ticks every event shown. See [Matters](matters.md).
 
 ## Work out a deadline
 

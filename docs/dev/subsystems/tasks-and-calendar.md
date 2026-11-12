@@ -249,7 +249,9 @@ signed-in user may reach it. The helpers are `tasks_for_user()` and
 `matters_for_events()` for the matter choices (Pending and Open, plus
 through `include_id` the one matter a form was opened from or an item
 already sits on). Bulk actions re-filter the session's selection through
-`tasks_for_user()` before acting. The matter tabs use
+`tasks_for_user()` before acting, and the event lists' (status, move,
+assign and delete, `apps/calendar/selection_views.py`) through
+`events_for_user()`. The matter tabs use
 `@matter_access_required` on the matter id in the URL. There are no task
 or calendar permission flags. The matrix is in the
 [permissions reference](../../reference/permissions.md).

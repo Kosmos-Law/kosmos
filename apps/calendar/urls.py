@@ -3,6 +3,15 @@ from django.urls import path
 from apps.calendar.api import api_events
 from apps.calendar.guest_views import guest_add, guest_delete
 from apps.calendar.reminder_views import reminder_add, reminder_delete
+from apps.calendar.selection_views import (
+    events_bulk_assign,
+    events_bulk_delete,
+    events_bulk_move,
+    events_bulk_set_status,
+    events_clear_selection,
+    events_select_all,
+    events_toggle_select,
+)
 from apps.calendar.views import (
     events_add,
     events_api,
@@ -95,6 +104,54 @@ urlpatterns = [
         "events/<int:id>/reminders/<int:reminder_id>/delete",
         reminder_delete,
         name="reminder-delete",
+    ),
+    # Multi-select on the lists, and the bulk actions on the selection:
+    # the firm Calendar's list, or with a matter its Events tab's
+    path(
+        "events/selection/toggle/<int:event_id>",
+        events_toggle_select,
+        name="toggle-select",
+    ),
+    path(
+        "events/selection/matter/<int:matter_id>/toggle/<int:event_id>",
+        events_toggle_select,
+        name="toggle-select-matter",
+    ),
+    path("events/selection/all", events_select_all, name="select-all"),
+    path(
+        "events/selection/matter/<int:matter_id>/all",
+        events_select_all,
+        name="select-all-matter",
+    ),
+    path("events/selection/clear", events_clear_selection, name="clear-selection"),
+    path(
+        "events/selection/matter/<int:matter_id>/clear",
+        events_clear_selection,
+        name="clear-selection-matter",
+    ),
+    path("events/selection/status", events_bulk_set_status, name="bulk-set-status"),
+    path(
+        "events/selection/matter/<int:matter_id>/status",
+        events_bulk_set_status,
+        name="bulk-set-status-matter",
+    ),
+    path("events/selection/move", events_bulk_move, name="bulk-move"),
+    path(
+        "events/selection/matter/<int:matter_id>/move",
+        events_bulk_move,
+        name="bulk-move-matter",
+    ),
+    path("events/selection/assign", events_bulk_assign, name="bulk-assign"),
+    path(
+        "events/selection/matter/<int:matter_id>/assign",
+        events_bulk_assign,
+        name="bulk-assign-matter",
+    ),
+    path("events/selection/delete", events_bulk_delete, name="bulk-delete"),
+    path(
+        "events/selection/matter/<int:matter_id>/delete",
+        events_bulk_delete,
+        name="bulk-delete-matter",
     ),
     path("events/filter/", events_filter, name="filter"),
     path("events/filter/menus/", events_filter_menus, name="filter-menus"),
