@@ -62,7 +62,7 @@
    under dialogs. One list of every card surface, so they all let the same
    amount through:
      .card                       the cards proper
-     .week-strip                 the dash's calendar week
+     .event-card                 the dash's upcoming events
      .table, .totals-table table tables (their cells are clear, by the
                                  --background-td token, so the table
                                  carries the one surface)
@@ -76,7 +76,7 @@
 
 :is([data-theme="light"], [data-theme="paper"])[data-wash] :is(
   .card,
-  .week-strip,
+  .event-card,
   .table,
   .totals-table table,
   .fc .fc-scrollgrid,
@@ -92,6 +92,15 @@
 :is([data-theme="light"], [data-theme="paper"])[data-wash] :is(.card, .table, .contacts-detail > .detail) :is(.card, .table, .totals-table table) {
   background: transparent;
   box-shadow: none;
+}
+
+/* The dash's due and past-due event cards keep their yellow, let through */
+:is([data-theme="light"], [data-theme="paper"])[data-wash] .event-card.is-soon {
+  background: var(--due-soon-bg);
+}
+
+:is([data-theme="light"], [data-theme="paper"])[data-wash] .event-card.past-due {
+  background: var(--past-due-bg);
 }
 
 /* The report charts take a card's frame to go with its fill */

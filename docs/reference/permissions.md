@@ -123,7 +123,7 @@ matter's `members`.
 | `entry_for_user` | Opening, saving, deleting or toggling one time, expense or flat-fee entry by its id | `apps/activity/access.py` | 403 |
 | `has_matter_access` | The rate, trust-available and flat-fee-amount lookups behind the entry forms | `apps/activity/time/views.py`, `apps/activity/flat_fees/views.py` | 403 |
 | `matters_for_entry_form` | Matter choices in the entry forms and in the bulk "move to matter" menus | `apps/activity/access.py` | Matter not listed |
-| `assigned_matters` filter | "Upcoming Events" on the dashboard (events on no matter are shown to everyone) | `apps/dash/views.py` | Events not listed |
+| `assigned_matters` filter | "Upcoming Events" on the dashboard (events on no matter are shown to everyone) | `apps/dash/events.py` | Events not listed |
 | `filter_matters_for_user` | Dashboard matter lists | `apps/dash/views.py` | Matter not listed |
 | `filter_matters_for_user`, `has_matter_access` | `/case/` landing redirect | `apps/case/views.py` | Redirects to an accessible matter |
 | `perm_all_matters` only (role not consulted) | Daily digest email content | `apps/tasks/digest.py` | Items for other matters omitted |
