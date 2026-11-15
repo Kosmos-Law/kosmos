@@ -26,10 +26,6 @@
         <span>Kosmic <small>(dark)</small></span>
       </label>
       <label class="theme-option">
-        <input type="radio" name="theme" value="letterhead">
-        <span>Letterhead <small>(light)</small></span>
-      </label>
-      <label class="theme-option">
         <input type="radio" name="theme" value="light">
         <span>Matcha <small>(light)</small></span>
       </label>
@@ -40,6 +36,10 @@
       <label class="theme-option">
         <input type="radio" name="theme" value="nord-light">
         <span>Nord <small>(light)</small></span>
+      </label>
+      <label class="theme-option">
+        <input type="radio" name="theme" value="paper">
+        <span>Paper <small>(light)</small></span>
       </label>
     </fieldset>
     {% comment %}
@@ -54,7 +54,7 @@
       </select>
     </div>
     {% comment %}
-      Matcha only (settings.css shows it under that theme): a wash of
+      Matcha and Paper only (settings.css shows it under those themes): a wash of
       light behind the page. Outside the fieldset, as above.
     {% endcomment %}
     <div class="gradient-option">

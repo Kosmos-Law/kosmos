@@ -62,7 +62,8 @@
 }
 
 [data-theme="kosmic"] .sky-motion-option,
-[data-theme="light"] .gradient-option {
+[data-theme="light"] .gradient-option,
+[data-theme="paper"] .gradient-option {
   display: flex;
   align-items: center;
   gap: 0.75rem;

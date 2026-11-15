@@ -111,7 +111,8 @@
       var legacy = {
         sky: 'light', kosmos: 'light', latte: 'light',
         'everforest-light': 'light', 'kosmos-dark': 'dark', mocha: 'dark',
-        oxford: 'basic', 'matcha-mist': 'light', 'matcha-lavender': 'light'
+        oxford: 'basic', letterhead: 'paper',
+        'matcha-mist': 'light', 'matcha-lavender': 'light'
       };
       // Matcha Lavender became Matcha with a gradient: its wash carries
       // over, cool from the low intensity, warm otherwise.
@@ -124,7 +125,7 @@
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : setting;
       document.documentElement.setAttribute('data-theme', resolved);
-      if (resolved === 'light' && (gradient === 'cool' || gradient === 'warm')) {
+      if ((resolved === 'light' || resolved === 'paper') && (gradient === 'cool' || gradient === 'warm')) {
         document.documentElement.setAttribute('data-wash', gradient);
       }
       document.documentElement.setAttribute(

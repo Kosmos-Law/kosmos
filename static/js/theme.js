@@ -4,7 +4,7 @@
 
   // Legacy: retired themes map to their nearest survivor — sky, kosmos,
   // latte, and everforest-light to light (Matcha); kosmos-dark and mocha
-  // to dark (Gruvbox). oxford was renamed basic. Matcha Mist, then Matcha
+  // to dark (Gruvbox); letterhead to paper. oxford was renamed basic. Matcha Mist, then Matcha
   // Lavender, became Matcha with a gradient: the wash carries over as the
   // gradient setting, cool from the old low intensity and warm otherwise.
   var LEGACY = {
@@ -15,6 +15,7 @@
     'kosmos-dark': 'dark',
     mocha: 'dark',
     oxford: 'basic',
+    letterhead: 'paper',
     'matcha-mist': 'light',
     'matcha-lavender': 'light',
   };
@@ -117,9 +118,9 @@
     link.setAttribute('href', 'data:image/svg+xml,' + encodeURIComponent(svg));
   }
 
-  // Matcha's gradient (none, cool or warm) is per device like the theme.
-  // It only takes effect under Matcha, as data-wash on <html>; the other
-  // themes carry no attribute, so their styles never see it.
+  // The gradient (none, cool or warm) is per device like the theme. It
+  // only takes effect under Matcha and Paper, as data-wash on <html>; the
+  // other themes carry no attribute, so their styles never see it.
   function gradient() {
     var value = localStorage.getItem(GRADIENT_KEY);
     return value === 'cool' || value === 'warm' ? value : 'none';
@@ -127,7 +128,7 @@
 
   function applyGradient(resolved) {
     var value = gradient();
-    if (resolved === 'light' && value !== 'none') {
+    if ((resolved === 'light' || resolved === 'paper') && value !== 'none') {
       document.documentElement.setAttribute('data-wash', value);
     } else {
       document.documentElement.removeAttribute('data-wash');

@@ -9,10 +9,13 @@
    (cpl has it paused) and without the tab window: Kosmos's nav is pills,
    not tabs. Cool is green and lavender; warm adds the sun.
 
-   Every colour here is a token in the gradient block of colors.css; this
-   file only says which surfaces carry them. Everything is scoped to
-   data-theme="light" with data-wash set, so plain Matcha and the other
-   themes pay nothing for it.
+   Paper takes the same option and the same rules with its own light
+   (straw and sage, after cpl's Matcha Paper Sage).
+
+   Every colour here is a token in the gradient blocks of colors.css
+   (Matcha's and Paper's); this file only says which surfaces carry them.
+   Everything is scoped to Matcha or Paper with data-wash set, so the
+   plain themes and the others pay nothing for it.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -24,17 +27,17 @@
    once.
    -------------------------------------------------------------------------- */
 
-[data-theme="light"][data-wash] {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] {
   background-color: var(--background-body);
 }
 
-[data-theme="light"][data-wash] body {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] body {
   background-color: transparent;
   isolation: isolate;
 }
 
-[data-theme="light"][data-wash] body::before,
-[data-theme="light"][data-wash] body::after {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] body::before,
+:is([data-theme="light"], [data-theme="paper"])[data-wash] body::after {
   content: "";
   inset: 0;
   pointer-events: none;
@@ -42,12 +45,12 @@
   z-index: -1;
 }
 
-[data-theme="light"][data-wash] body::before {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] body::before {
   background: var(--mist-wash);
 }
 
 /* Grain: tone-on-tone, drawn as a mask so the ink follows the theme */
-[data-theme="light"][data-wash] body::after {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] body::after {
   background: var(--mist-ink);
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.1 -.35'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
   opacity: var(--mist-grain);
@@ -71,7 +74,7 @@
    layers would stack into a near-solid panel.
    -------------------------------------------------------------------------- */
 
-[data-theme="light"][data-wash] :is(
+:is([data-theme="light"], [data-theme="paper"])[data-wash] :is(
   .card,
   .event-card,
   .table,
@@ -86,7 +89,7 @@
     0 0.75rem 2rem -1rem var(--mist-card-shadow);
 }
 
-[data-theme="light"][data-wash] :is(.card, .table, .contacts-detail > .detail) :is(.card, .table, .totals-table table) {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] :is(.card, .table, .contacts-detail > .detail) :is(.card, .table, .totals-table table) {
   background: transparent;
   box-shadow: none;
 }
@@ -101,7 +104,7 @@
 }
 
 /* The report charts take a card's frame to go with its fill */
-[data-theme="light"][data-wash] .activity-chart-canvas-wrap {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] .activity-chart-canvas-wrap {
   border: solid 1px var(--border-medium);
   border-radius: var(--radius-md);
   padding: 1rem;
@@ -109,7 +112,7 @@
 
 /* Total rows are a head's band, let through as the heads are, not the
    solid control colour */
-[data-theme="light"][data-wash] :is(.total, tr.total th, tr.total td) {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] :is(.total, tr.total th, tr.total td) {
   background: var(--background-th);
 }
 
@@ -119,7 +122,7 @@
    bar rather than on it.
    -------------------------------------------------------------------------- */
 
-[data-theme="light"][data-wash] :is(.sidebar-nav li.active a, .subnav .active) {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] :is(.sidebar-nav li.active a, .subnav .active) {
   background: color-mix(in srgb, var(--selected-background) 85%, transparent);
 }
 
@@ -128,7 +131,7 @@
    it shows through, and takes a sheen of the light laid over it.
    -------------------------------------------------------------------------- */
 
-[data-theme="light"][data-wash] :is(.modal-content, .confirm-modal-dialog, .cmd-palette) {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] :is(.modal-content, .confirm-modal-dialog, .cmd-palette) {
   background-image: var(--mist-sheen);
   box-shadow:
     0 1.5rem 3rem -1rem var(--mist-shadow),
@@ -137,19 +140,19 @@
 
 /* Menus: the sheen on the menu, so the items are cleared to let it
    through (the hovered one still lights up) */
-[data-theme="light"][data-wash] .dropdown-menu {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] .dropdown-menu {
   background-color: var(--background-light);
   background-image: var(--mist-sheen-soft);
 }
 
-[data-theme="light"][data-wash] .dropdown-menu li:not(:hover) {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] .dropdown-menu li:not(:hover) {
   background: transparent;
 }
 
 /* Phones: the sidebar is a drawer over the page and the top bar is sticky
    over it, so both go solid (Matcha's sidebar colour) under the sheen. */
 @media (width <= 768px) {
-  [data-theme="light"][data-wash] :is(.sidebar, .mobile-topbar) {
+  :is([data-theme="light"], [data-theme="paper"])[data-wash] :is(.sidebar, .mobile-topbar) {
     background-color: var(--stone-200);
     background-image: var(--mist-sheen);
   }
