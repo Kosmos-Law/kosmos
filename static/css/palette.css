@@ -426,45 +426,62 @@
   --ef-purple: oklch(0.75 0.082 349);
   --ef-yellow: oklch(0.808 0.086 84);        /* dark: brand gradient's warm end */
 
-  /* Paper (after jamescraig.dev) — Matcha's stone ladder, every step kept
-     at its exact lightness, carried onto the blog's page colour: #f2f0ea
-     is oklch(95.5% 0.0083 91.5deg), and Matcha's body ground (stone-125,
-     95.4%) already sits on that rung. Hue and chroma are constant down
-     the ramp; lightness stays the only dial, as in Matcha. The theme
-     block in colors.css repoints --stone-* onto these, the way the
-     non-Gruvbox darks repoint --gb-*. */
-  --paper-25: oklch(99.6% 0.0083 91.5deg);
-  --paper-50: oklch(98.5% 0.0083 91.5deg);
-  --paper-75: oklch(97.5% 0.0083 91.5deg);
-  --paper-100: oklch(97% 0.0083 91.5deg);
-  --paper-125: oklch(95.4% 0.0083 91.5deg);
-  --paper-150: oklch(94.7% 0.0083 91.5deg);
-  --paper-175: oklch(93.9% 0.0083 91.5deg);
-  --paper-200: oklch(92.4% 0.0083 91.5deg);
-  --paper-215: oklch(91.6% 0.0083 91.5deg);
-  --paper-225: oklch(90.0% 0.0083 91.5deg);
-  --paper-250: oklch(88.5% 0.0083 91.5deg);
-  --paper-300: oklch(86.9% 0.0083 91.5deg);
-  --paper-350: oklch(83.5% 0.0083 91.5deg);
-  --paper-375: oklch(79.6% 0.0083 91.5deg);
-  --paper-400: oklch(71.6% 0.0083 91.5deg);
-  --paper-500: oklch(55.3% 0.0083 91.5deg);
-  --paper-600: oklch(44.4% 0.0083 91.5deg);
-  --paper-700: oklch(37.4% 0.0083 91.5deg);
-  --paper-800: oklch(26.8% 0.0083 91.5deg);
-  --paper-900: oklch(0% 0.0083 91.5deg);
+  /* Paper (after the Mint-Y-Paper desktop theme and the Matcha Paper
+     Obsidian theme, a light Gruvbox; cpl's Matcha Paper is the same
+     port) — Matcha's stone ladder brought down onto warm paper. The
+     desktop's own colours are the anchors: its paper is the lightest
+     surface, its base the content ground, its bg_color the chrome and
+     its borders the rules, and the steps between are interpolated. The
+     warmth grows as the ladder darkens (chroma 0.008 to 0.03, the hue
+     turning from 91.5 to 88), as the desktop's does. The ink steps
+     (500 and darker) stay Matcha's. The theme block in colors.css
+     repoints --stone-* onto these, the way the non-Gruvbox darks
+     repoint --gb-*. */
+  --paper-25: oklch(0.962 0.008 91.5);
+  --paper-50: oklch(0.955 0.008 91.5);    /* paper            #f2f0ea */
+  --paper-75: oklch(0.95 0.008 91.5);
+  --paper-100: oklch(0.946 0.008 91);
+  --paper-125: oklch(0.94 0.008 91);      /* base             #edebe5 */
+  --paper-150: oklch(0.928 0.011 90);     /* insensitive_bg   #eae7df */
+  --paper-175: oklch(0.922 0.0125 89.5);
+  --paper-200: oklch(0.916 0.014 89);     /* bg_color         #e7e3d9 */
+  --paper-215: oklch(0.907 0.016 88.5);
+  --paper-225: oklch(0.898 0.018 88);
+  --paper-250: oklch(0.88 0.021 88);
+  --paper-300: oklch(0.856 0.025 88);
+  --paper-350: oklch(0.822 0.03 88);      /* borders          #cdc4af */
+  --paper-375: oklch(0.785 0.027 84);
+  --paper-400: oklch(0.709 0.02 75);      /* placeholder      #aca397 */
+  --paper-nav: oklch(0.846 0.027 88);     /* the top bar, between 300 and 350 */
 
-  /* The blog's accent — Gruvbox faded aqua (--color-accent and its
-     hover), the one working colour on the page; a warm Gruvbox faded
-     yellow for the brand gradient's far end, the light-mode counterpart
-     of the dark theme's bright yellow. */
-  --paper-green: oklch(0.534 0.082 155.4);       /* links, primary buttons, success */
-  --paper-green-deep: oklch(0.46 0.082 155.4);   /* link hover, status-green ink */
-  --paper-gold: oklch(0.618 0.128 70.7);         /* brand gradient's warm end */
+  /* The lavender — Matcha's violet hue, deeper and at well under its
+     strength, so it reads as a small pop against the paper rather than
+     as a visited link. One colour for every use, with a lighter step
+     where Matcha's own is lighter. */
+  --paper-lavender: oklch(0.45 0.19 295);
+  --paper-lavender-mid: oklch(0.5 0.19 295);
+  --paper-lavender-light: oklch(0.56 0.18 295);
+  --paper-lavender-lighter: oklch(0.68 0.12 295);
 
-  /* The green diluted to paper tints — labels, highlights, status chips,
-     and a shade deeper for the status chip's hover */
-  --paper-green-tint: oklch(0.935 0.038 155.4);
-  --paper-green-hover: oklch(0.905 0.045 155.4);
-  --paper-green-line: oklch(0.82 0.07 155.4);    /* status-green chip line */
+  /* The tints — Matcha's 50 and 100 steps are brighter than this paper,
+     and a tint lighter than its ground reads as a hole. Each keeps its
+     hue and comes down to just under the content ground: -wash for the
+     50 step, -tint for the 100. */
+  --paper-blue-wash: oklch(0.93 0.018 250);
+  --paper-blue-tint: oklch(0.915 0.03 250);
+  --paper-slate-wash: oklch(0.93 0.008 250);
+  --paper-slate-tint: oklch(0.915 0.012 250);
+  --paper-lime-wash: oklch(0.93 0.03 122);
+  --paper-lime-tint: oklch(0.915 0.045 122);
+  --paper-orange-wash: oklch(0.93 0.024 72);
+  --paper-orange-tint: oklch(0.915 0.04 70);
+  --paper-red-wash: oklch(0.93 0.018 20);
+  --paper-red-tint: oklch(0.915 0.03 20);
+  --paper-yellow-wash: oklch(0.935 0.034 98);
+  --paper-yellow-tint: oklch(0.925 0.05 98);
+  --paper-amber-wash: oklch(0.935 0.032 92);
+  --paper-amber-tint: oklch(0.925 0.05 92);
+  --paper-violet-wash: oklch(0.93 0.016 300);
+  --paper-violet-tint: oklch(0.915 0.03 300);
+  --paper-violet-deep: oklch(0.9 0.04 298);      /* the 150 step */
 }

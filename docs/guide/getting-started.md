@@ -210,9 +210,10 @@ Everything here is under **Settings** in the sidebar.
 - **Settings → Appearance**: under **Theme**, pick **Auto** (follows your
   computer), a light theme (**Basic**, **Matcha**, **Nord**, **Paper**)
   or a dark one (**Everforest**, **Gruvbox**, **Kosmic**, **Nord**). Kosmic is
-  Nord over the animated night sky from the Kosmos website. Under Matcha,
-  **Gradient** lays a wash of light behind the page: **Cool** is green and
-  lavender, **Warm** adds a patch of sun; **None** is the plain page. Under
+  Nord over the animated night sky from the Kosmos website. Under Matcha
+  and Paper, **Gradient** lays a wash of light behind the page: **Cool** is
+  green and lavender under Matcha and straw and sage under Paper, **Warm**
+  adds a patch of sun; **None** is the plain page. Under
   **Navigation**, pick **Vertical** (the sidebar) or **Horizontal** (a bar
   across the top). Both apply at once. There is no save button.
 - **Settings → Notifications**: click **Enable** beside **Daily Digest

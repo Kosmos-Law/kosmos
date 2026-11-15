@@ -125,7 +125,7 @@
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : setting;
       document.documentElement.setAttribute('data-theme', resolved);
-      if (resolved === 'light' && (gradient === 'cool' || gradient === 'warm')) {
+      if ((resolved === 'light' || resolved === 'paper') && (gradient === 'cool' || gradient === 'warm')) {
         document.documentElement.setAttribute('data-wash', gradient);
       }
       document.documentElement.setAttribute(

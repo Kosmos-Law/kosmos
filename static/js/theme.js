@@ -118,9 +118,9 @@
     link.setAttribute('href', 'data:image/svg+xml,' + encodeURIComponent(svg));
   }
 
-  // Matcha's gradient (none, cool or warm) is per device like the theme.
-  // It only takes effect under Matcha, as data-wash on <html>; the other
-  // themes carry no attribute, so their styles never see it.
+  // The gradient (none, cool or warm) is per device like the theme. It
+  // only takes effect under Matcha and Paper, as data-wash on <html>; the
+  // other themes carry no attribute, so their styles never see it.
   function gradient() {
     var value = localStorage.getItem(GRADIENT_KEY);
     return value === 'cool' || value === 'warm' ? value : 'none';
@@ -128,7 +128,7 @@
 
   function applyGradient(resolved) {
     var value = gradient();
-    if (resolved === 'light' && value !== 'none') {
+    if ((resolved === 'light' || resolved === 'paper') && value !== 'none') {
       document.documentElement.setAttribute('data-wash', value);
     } else {
       document.documentElement.removeAttribute('data-wash');
