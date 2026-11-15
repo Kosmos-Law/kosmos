@@ -8,8 +8,10 @@ yellow, behind the page, see-through cards, veiled chrome), `basic`
 (after the 2017 LawPay UI: white ground, navy buttons, azure accents;
 formerly `oxford`, and the `--oxford-*` palette keeps the source name),
 `nord-light` (Nord's Snow Storm surfaces, Polar Night text, frost blue
-links, frost cyan selection) and `letterhead` (after a firm engagement
-letter: bone paper, hairline rules, fountain-pen blue). Four are dark:
+links, frost cyan selection) and `paper` (Matcha on warm paper: the stone ladder
+brought down onto the colours of the Mint-Y-Paper desktop theme, the
+lime kept, selection a deeper step of the paper with its words in a
+quieter lavender, and the pale tints lowered under the ground). Four are dark:
 `dark` (Gruvbox), `cosmic` (Nord), `kosmic` (Nord under the landing
 page's animated night sky) and `everforest` (green-gray surfaces, cream
 text, signature-green links).
@@ -27,23 +29,26 @@ every `:root` (light) default and their blocks in `colors.css` only
 repoint colour tokens. Light structural rules are the unscoped defaults,
 so they get them for free; a rule scoped to `[data-theme="light"]` alone
 does NOT apply to them. Scope to
-`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="letterhead"])`
+`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="paper"])`
 (or the subset that needs it) when a light structural rule must reach the
 other light themes. Retired themes: `sky`, `kosmos`, `kosmos-dark`,
-`latte`, `mocha`, `everforest-light`, and `matcha-mist` / `matcha-lavender`,
+`latte`, `mocha`, `everforest-light`, `letterhead` (stored settings move to
+`paper`), and `matcha-mist` / `matcha-lavender`,
 which became Matcha's gradient; renamed: `oxford` to `basic`
 (`theme.js` migrates stored settings).
 
 **Matcha's gradient is Matcha plus an atmosphere.** Appearance's
 **Gradient** (none, cool or warm) is a per-device setting like Kosmic's
 sky motion: `theme.js` keeps it in `localStorage` under `gradient` and,
-under Matcha alone, sets `data-wash` on `<html>` to `cool` or `warm`
+under Matcha and Paper alone, sets `data-wash` on `<html>` to `cool` or `warm`
 (before first paint in `base.html`); none, and every other theme, carry
 no attribute. The `[data-theme="light"][data-wash]` block in `colors.css`
 adds the light (`--mist-*`: the wash, the sun, the sheens, the veil, the
 see-through card colour) and darkens text, borders and selection a touch
 to hold against it; `[data-wash="cool"]` swaps in the wash without the
-sun. The rules that lay the wash behind the page and clear the surfaces
+sun. Paper has its own block of the same tokens,
+`[data-theme="paper"][data-wash]` (straw light and sage shade, after
+cpl's Matcha Paper Sage), and shares the rules. The rules that lay the wash behind the page and clear the surfaces
 over it live together in `static/css/matcha-gradient.css`, scoped the same
 way, rather than spread across the component files: they are one effect,
 and every card surface that lets the light through is listed there.

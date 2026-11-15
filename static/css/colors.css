@@ -10,8 +10,8 @@
    wash of light behind see-through surfaces, data-wash on <html>;
    matcha-gradient.css), nord-light (Nord Snow Storm),
    basic (after the 2017 LawPay UI: white ground, navy buttons, azure
-   accents), letterhead (after a firm engagement letter: bone
-   paper, hairline rules, fountain-pen blue) — and four dark — dark
+   accents), paper (Matcha on the warm paper of the Mint-Y-Paper desktop
+   theme, with a deeper, quieter lavender) — and four dark — dark
    (Gruvbox), cosmic (Nord), kosmic (Nord under the sky), everforest.
    The non-Gruvbox darks ARE the dark theme structurally — they share the
    dark token block and every dark structural rule, and only repoint the
@@ -701,136 +701,174 @@
 }
 
 /* ==========================================================================
-   Letterhead — the fourth LIGHT theme, after a firm engagement
-   letter: one warm stone axis (hue 68–100), hairline rules as the
-   only graphic device, links and selection in the letter's own inks
-   (soft-ink links, chip-fill selection), ink-filled primary buttons.
-   Fountain-pen blue recedes to the calendar, the charts, and the blue
-   highlight class. Functional colors survive as quiet warm-shifted ink
-   stamps at roughly half Matcha's chroma. Structurally a light theme:
-   token-only block, no scoped rules — the default fill-based active
-   idiom IS cl's chip.
+   Paper — the fourth LIGHT theme, Matcha on warm paper (the Mint-Y-Paper
+   desktop theme and the Matcha Paper Obsidian theme; cpl's Matcha Paper
+   is the same port). The grounds take the desktop's colours by
+   repointing --stone-* at the --paper-* ramp in palette.css — the idiom
+   the non-Gruvbox darks use for --gb-* — so every :root token that reads
+   a stone step follows without being named here: the content ground is
+   the desktop's base, the chrome its bg_color, the fields its paper.
+   The ink and the lime stay Matcha's. Selection is a deeper step of the
+   paper with its words in the lavender, not a lavender wash, which goes
+   grey against the paper's yellow; the lavender is one deeper, quieter
+   violet wherever Matcha uses its own; and the pale tints come down
+   under the paper. Structurally a light theme: token-only block; its
+   gradient follows below.
    ========================================================================== */
-[data-theme="letterhead"] {
+[data-theme="paper"] {
   color-scheme: light;
 
-  /* Typography & Text — cl's ink ramp over bone paper */
-  --color-primary: var(--lh-ink);
-  --color-darker: var(--lh-press);
-  --color-muted: var(--lh-ink-soft);
-  --color-muted-more: var(--lh-ink-faint);
-  --color-lighter: var(--lh-rule);
+  /* The ladder — Matcha's steps on the paper; 500 and darker (the ink)
+     stay Matcha's */
+  --stone-25: var(--paper-25);
+  --stone-50: var(--paper-50);
+  --stone-75: var(--paper-75);
+  --stone-100: var(--paper-100);
+  --stone-125: var(--paper-125);
+  --stone-150: var(--paper-150);
+  --stone-175: var(--paper-175);
+  --stone-200: var(--paper-200);
+  --stone-215: var(--paper-215);
+  --stone-225: var(--paper-225);
+  --stone-250: var(--paper-250);
+  --stone-300: var(--paper-300);
+  --stone-350: var(--paper-350);
+  --stone-375: var(--paper-375);
+  --stone-400: var(--paper-400);
 
-  /* Links — the letter's own soft ink, darkening to full ink on
-     hover (cl's topbar idiom). --brand-ink, --accent-link,
-     --focus-ring, --field-focus derive from --link in :root and
-     follow into the ink family — blue recedes to the calendar,
-     charts, and the blue highlight class */
-  --link: var(--lh-ink-soft);
-  --link-hover: var(--lh-ink);
-  /* Brand gradient — the letter's soft ink warming into old-gold ink */
-  --brand-grad-to: var(--lh-gold-ink);
+  /* The top bar: lighter than the rule step Matcha gives it */
+  --background-nav: var(--paper-nav);
 
-  /* Backgrounds — paper ground, field chrome, chip actives */
-  --background-nav: var(--lh-rule);
-  --background-body: var(--lh-paper);
-  --background-subnav: var(--lh-field);
-  --background-subnav-contrast: var(--lh-chip);
-  --background-control: var(--lh-field);
-  --background-section: var(--lh-paper-dim);
-  --background-th: var(--lh-paper-dim);
-  --background-td: var(--lh-paper);
-  --background-medium-light: var(--lh-mid);
-  --background-light: var(--lh-bright);
-  --ai-frame: var(--lh-chip);
-  --ai-surface: var(--lh-bright);
-  --ai-raised: var(--lh-paper);
-  --past-due-bg: var(--lh-amber-wash);
-  --due-soon-bg: var(--lh-amber-wash);
-  --toast-warning-header-bg: var(--lh-amber-tint);
-  --toast-warning-body-bg: var(--lh-amber-wash);
+  /* The lavender — every step Matcha uses at strength is the one
+     colour or a lighter step of it. --icon-violet, the brand gradient's
+     far end, the priority flags and the AI marks follow from :root and
+     the component stylesheets. */
+  --violet-400: var(--paper-lavender-lighter);
+  --violet-500: var(--paper-lavender-light);
+  --violet-600: var(--paper-lavender-mid);
+  --violet-700: var(--paper-lavender);
+  --violet-800: var(--paper-lavender);
 
-  /* Navigation — actives keep the :root fill idiom (cl's chip); the
-     subnav tab wears the chip itself, divided by the hairline */
-  --background-subnav-tab-active: var(--lh-chip);
-  --subnav-divider: var(--lh-rule);
+  /* The tints — the 50 and 100 steps, under the paper. The labels, row
+     highlights, status chips, button washes, past-due and warning
+     surfaces and today's cell all read these steps and follow. */
+  --blue-50: var(--paper-blue-wash);
+  --blue-100: var(--paper-blue-tint);
+  --slate-50: var(--paper-slate-wash);
+  --slate-100: var(--paper-slate-tint);
+  --lime-50: var(--paper-lime-wash);
+  --lime-100: var(--paper-lime-tint);
+  --orange-50: var(--paper-orange-wash);
+  --orange-100: var(--paper-orange-tint);
+  --red-50: var(--paper-red-wash);
+  --red-100: var(--paper-red-tint);
+  --yellow-50: var(--paper-yellow-wash);
+  --yellow-100: var(--paper-yellow-tint);
+  --amber-50: var(--paper-amber-wash);
+  --amber-100: var(--paper-amber-tint);
+  --violet-50: var(--paper-violet-wash);
+  --violet-75: var(--paper-violet-wash);
+  --violet-100: var(--paper-violet-tint);
+  --violet-150: var(--paper-violet-deep);
 
-  /* Sidebar — the field tier, chip marks current */
-  --background-sidebar: var(--lh-field);
-  --background-sidebar-hover: var(--lh-field-dim);
-  --background-sidebar-active: var(--lh-chip);
+  /* Selection — two steps under the chrome's paper (bg_color), so it
+     shows on the bars and toolbars as well as on the content ground,
+     ruled in the border step, with its words in the lavender */
+  --selected-background: var(--stone-225);
+  --selected-border: var(--stone-350);
+  --selected-color: var(--paper-lavender);
 
-  /* Buttons — cl buttons are INK, not blue: blue stays reserved for
-     clickable text, ink means "press here" */
-  --button-primary-background: var(--lh-ink);
-  --button-primary-color: var(--lh-on-ink);
-  --btn-secondary-bg: var(--lh-blue-wash);
-  --btn-success-bg: var(--lh-green-tint);
-  --btn-danger-bg: var(--lh-red-tint);
+  /* Calendar entries — the same breath of lime, at the paper's
+     lightness for the step each stands on and a little stronger, so it
+     still reads as green against the warmth */
+  --calendar-allday: oklch(0.85 0.034 122);
+  --calendar-task: oklch(0.89 0.03 122);
+}
 
-  /* Forms & Inputs — cl's signature shaded wells: field darker than
-     paper, defined by the rule hairline */
-  --input-border: var(--lh-rule);
-  --input-background: var(--lh-field);
-  --input-placeholder: var(--lh-ink-faint);
+/* ==========================================================================
+   Paper's gradient — a sheet of paper in the shade of leaves. Adapted
+   from cpl's Matcha Paper Sage (theme-matcha-paper-sage.css). On when
+   Appearance's Gradient is cool or warm under Paper; the rules that put
+   it on the page are Matcha's own, in matcha-gradient.css.
 
-  /* Borders — the rule carries the medium step; the ladder warms
-     around it */
-  --border-light: var(--lh-chip);
-  --border-medium: var(--lh-rule);
-  --border-medium-dark: var(--lh-rule-dark);
-  --border-dark: var(--lh-rule-strong);
+   The light is a pale straw barely warmer than the paper, and where it
+   runs out the shade is sage. Both stay in the paper's warm family: a
+   pale cool tint goes grey on this ground, so the lavender is kept out
+   of the wash and left as the small pop it is. The wash lies on the
+   diagonal, straw at the top left to sage at the bottom right, with the
+   shade reaching round into the other corners and the light breaking
+   through again on the right. Cool is that alone; warm adds a patch of
+   sun in the middle, as Matcha's does.
+   ========================================================================== */
+[data-theme="paper"][data-wash] {
+  --mist-light: oklch(0.955 0.034 100);
+  --mist-shade: oklch(0.8 0.05 150);
+  /* a third note, low on the page: the paper's own tan, a little deeper */
+  --mist-ground: oklch(0.87 0.028 85);
+  /* the sun: the straw a little stronger, with no red in it */
+  --mist-sun: oklch(0.95 0.055 97);
 
-  /* Selection — the stone ladder, a shade deeper than the chip so it
-     stands apart from the "you are here" fills around it */
-  --selected-background: var(--lh-chip-dim);
-  --selected-color: var(--lh-press);
-  --selected-border: var(--lh-rule-dark);
+  --mist-leaves:
+    /* the light: where it comes in, and where it breaks through again */
+    radial-gradient(60vmax 28vmax at 8% 0%, color-mix(in oklab, var(--mist-light) 62%, transparent), transparent 70%),
+    radial-gradient(38vmax 26vmax at 30% 42%, color-mix(in oklab, var(--mist-light) 40%, transparent), transparent 70%),
+    radial-gradient(34vmax 24vmax at 80% 58%, color-mix(in oklab, var(--mist-light) 42%, transparent), transparent 70%),
+    /* the shade: deepest at the bottom right, reaching round both ways */
+    radial-gradient(48vmax 30vmax at 96% 4%, color-mix(in oklab, var(--mist-shade) 30%, transparent), transparent 70%),
+    radial-gradient(42vmax 34vmax at 6% 96%, color-mix(in oklab, var(--mist-shade) 28%, transparent), transparent 70%),
+    radial-gradient(70vmax 50vmax at 92% 104%, color-mix(in oklab, var(--mist-shade) 42%, transparent), transparent 70%),
+    radial-gradient(44vmax 22vmax at 56% 26%, color-mix(in oklab, var(--mist-shade) 20%, transparent), transparent 70%),
+    radial-gradient(40vmax 26vmax at 50% 78%, color-mix(in oklab, var(--mist-ground) 34%, transparent), transparent 70%),
+    /* the diagonal under them all */
+    linear-gradient(135deg, color-mix(in oklab, var(--mist-light) 22%, transparent), transparent 45%, color-mix(in oklab, var(--mist-shade) 20%, transparent));
+  --mist-wash:
+    radial-gradient(75vmax 32vmax at 45% 52%, color-mix(in oklab, var(--mist-sun) 55%, transparent), transparent 75%),
+    var(--mist-leaves);
 
-  /* Status — warm-muted inks (--false/--error/--error-border follow
-     --urgent from :root) */
-  --urgent: var(--lh-red-ink);
-  --warning: var(--lh-amber-ink);
-  --success: var(--lh-green-ink);
-  --true: var(--lh-green-ink);
-  --error-background: var(--lh-red-tint);
-  --status-green-bg: var(--lh-green-tint);
-  --status-green-ink: var(--lh-green-ink);
-  --status-green-line: var(--lh-green-line);
-  --status-green-hover: var(--lh-green-hover);
+  /* More grain than Matcha's: on paper it is the sheet's own tooth */
+  --mist-ink: oklch(0.36 0.02 70);
+  --mist-grain: 0.09;
 
-  /* Labels — the paper tints (label-gray follows the control tier) */
-  --label-green: var(--lh-green-tint);
-  --label-orange: var(--lh-orange-tint);
-  --label-purple: var(--lh-plum-tint);
-  --label-red: var(--lh-red-tint);
-  --label-yellow: var(--lh-amber-tint);
+  --mist-sheen-soft:
+    radial-gradient(24rem 12rem at 0% 0%, color-mix(in oklab, var(--mist-light) 30%, transparent), transparent),
+    radial-gradient(20rem 10rem at 100% 100%, color-mix(in oklab, var(--mist-shade) 14%, transparent), transparent);
+  --mist-sheen:
+    radial-gradient(48rem 18rem at 0% 0%, color-mix(in oklab, var(--mist-light) 48%, transparent), transparent),
+    radial-gradient(40rem 16rem at 100% 100%, color-mix(in oklab, var(--mist-shade) 22%, transparent), transparent);
 
-  /* Icons — plum is the one hue no other Letterhead role uses, so
-     "on" reads; Add must stay green (:root derives it from --link,
-     which is blue here) */
-  --icon-violet: var(--lh-plum-ink);
-  --icon-violet-muted: var(--lh-plum-soft);
-  --icon-yellow: var(--lh-gold-ink);
-  --add: var(--lh-green-ink);
+  /* Shadows take the paper's colour: a warm brown, not black */
+  --mist-shadow: oklch(0.3 0.04 70 / 26%);
+  --mist-card-shadow: oklch(0.3 0.04 70 / 18%);
 
-  /* Row highlights — the tints; gray inherits the warm control tier */
-  --hl-blue: var(--lh-blue-wash);
-  --hl-slate: var(--lh-slate-tint);
-  --hl-green: var(--lh-green-tint);
-  --hl-orange: var(--lh-orange-tint);
-  --hl-violet: var(--lh-plum-tint);
-  --hl-red: var(--lh-red-tint);
-  --hl-yellow: var(--lh-amber-tint);
+  /* The chrome: a thin warm veil over the page's own light */
+  --mist-veil: oklch(0.45 0.03 80 / 13%);
+  --mist-veil-hover: oklch(0.45 0.03 80 / 9%);
 
-  /* Calendar entries: the control grays, no lime; the dot is the fountain-pen blue */
-  --calendar-chip: var(--background-control);
-  --calendar-allday: var(--background-control);
-  --calendar-task: var(--background-light);
-  --calendar-chip-border: var(--border-medium-dark);
-  --calendar-dot: var(--lh-blue);
-  --calendar-holiday: var(--lh-blue-wash);
-  --calendar-today: var(--lh-blue-wash);
+  /* Cards: the card colour taken a little way to the lightest paper
+     (white would bleach it), let through so the wash shows behind */
+  --mist-card-opacity: 68%;
+  --mist-card: color-mix(in srgb, color-mix(in oklab, var(--background-section) 60%, var(--stone-50)) var(--mist-card-opacity), transparent);
+
+  /* Paper's tokens, adjusted to hold against the light, as Matcha's are */
+  --color-primary: color-mix(in oklab, var(--stone-600) 50%, var(--stone-700));
+  --selected-background: color-mix(in oklab, var(--stone-225) 50%, var(--stone-250));
+  --border-medium: color-mix(in oklab, var(--stone-300) 75%, var(--stone-400));
+  --border-medium-dark: color-mix(in oklab, var(--stone-350) 80%, var(--stone-400));
+  --border-dark: color-mix(in oklab, var(--stone-400) 85%, var(--stone-500));
+  --input-border: var(--border-medium);
+  --background-sidebar: var(--mist-veil);
+  --background-sidebar-hover: var(--mist-veil-hover);
+  --background-subnav: var(--mist-veil);
+  --background-td: transparent;
+  --background-th: color-mix(in srgb, var(--background-control) var(--mist-card-opacity), transparent);
+  --due-soon-bg: color-mix(in srgb, var(--yellow-50) 80%, transparent);
+  --past-due-bg: var(--due-soon-bg);
+  --calendar-chip: color-mix(in oklab, var(--stone-300) 80%, transparent);
+}
+
+/* The cool gradient: the leaves without the sun */
+[data-theme="paper"][data-wash="cool"] {
+  --mist-wash: var(--mist-leaves);
 }
 
 /* ==========================================================================
