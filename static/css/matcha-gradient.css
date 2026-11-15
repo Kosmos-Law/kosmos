@@ -95,11 +95,11 @@
 }
 
 /* The dash's due and past-due event cards keep their yellow, let through */
-[data-theme="light"][data-wash] .event-card.is-soon {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] .event-card.is-soon {
   background: var(--due-soon-bg);
 }
 
-[data-theme="light"][data-wash] .event-card.past-due {
+:is([data-theme="light"], [data-theme="paper"])[data-wash] .event-card.past-due {
   background: var(--past-due-bg);
 }
 
