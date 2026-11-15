@@ -39,7 +39,7 @@
   position: relative;
 }
 
-/* A section's heading row (Calendar, Collections) */
+/* A section's heading row (Upcoming Events, Collections) */
 .events-header {
   align-items: center;
   display: flex;
@@ -52,107 +52,106 @@
 }
 
 /* ==========================================================================
- Calendar Week — a week of the calendar's month grid (after Cloud Portal's
- home card), drawn by FullCalendar under this heading; the grid's own
- rules are calendar.css's. See templates/dash/events_section.html and
- apps/dash/week.py.
+ Upcoming Events: one row of fixed-width cards, left-set
+ (templates/dash/events_section.html, apps/dash/events.py). When the
+ cards outrun the row (the sidebar open) it scrolls sideways inside
+ itself rather than wrapping a card to a second line or widening the
+ page; on a phone they stack. The padding gives the scrollbar and the
+ hover shadow room.
 ========================================================================== */
 
-/* The heading in three parts: the title with its link to the calendar,
-   the week's span between its chevrons in the middle, and the Tasks
-   toggle at the end.
-   The outer columns share the width left over equally, so the stepper
-   stays centred whatever the title holds. */
-.events-header.week-title {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+/* With nothing pending the section draws nothing, but its refetch
+   wrapper would still take a slot (and a row gap) at the top of the dash */
+#dash-events:not(:has(.dash-row)) {
+  display: none;
 }
 
-.week-title-start,
-.week-nav {
-  align-items: center;
+.event-cards {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
 }
 
-.week-nav {
-  position: relative;
-}
-
-/* The Tasks toggle is a toolbar button, selected (toggle-active) when the
-   tasks are shown; the toolbar here is only its holder, without the
-   toolbar's own bottom padding */
-.week-title-end {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.week-title-end.toolbar {
-  padding: 0;
-}
-
-.week-nav-arrow {
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--icon-muted);
-  cursor: pointer;
-  padding: 0.25rem;
-}
-
-.week-nav-arrow:hover {
-  background: var(--background-control);
-  color: var(--color-primary);
-}
-
-.week-nav-range {
-  color: var(--color-secondary);
-  min-width: 8rem;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* Off this week, a small button back to it stands just left of the
-   stepper, the way the calendar's toolbar has its Today button. It is
-   set off the stepper's edge rather than in its row, so the stepper
-   stays put when it comes and goes. */
-.week-nav-today {
-  background: var(--background-control);
+.event-card {
+  background: var(--background-body);
   border: 1px solid var(--border-medium);
-  border-radius: var(--radius-sm);
-  color: var(--button-toolbar, var(--color-primary));
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
   cursor: pointer;
-  margin-right: 0.75rem;
-  padding: 0 0.5rem;
-  position: absolute;
-  right: 100%;
+  display: flex;
+  flex: 0 0 16rem;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  /* without it a long unwrapped matter or location would push the card
+     past its width instead of ending in an ellipsis */
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.event-card:hover {
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+/* Today's and tomorrow's are due soon, one gone by and still pending is
+   past due: a fill in the lights, a rail in the darks (below) */
+.event-card.is-soon {
+  background: var(--due-soon-bg);
+}
+
+.event-card.past-due {
+  background: var(--past-due-bg);
+}
+
+.event-card-when {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.event-card-matter {
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.week-nav-today:hover {
+.event-card-title {
   color: var(--color-primary);
+  font-weight: 500;
+  margin: 0;
+
+  /* a URL pasted as the description wraps instead of overflowing */
+  overflow-wrap: anywhere;
 }
 
-/* On a phone the week is its agenda (events-calendar.js) */
+.event-card-meta {
+  align-items: center;
+  color: var(--color-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.event-card-type {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.event-card-location {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (width <= 768px) {
-  /* the title and the Tasks toggle share the top line, and the stepper
-     takes its own line under them, centred */
-  .events-header.week-title {
-    grid-template-columns: minmax(0, 1fr) auto;
-    row-gap: 0.5rem;
-  }
-
-  .week-nav {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-content: center;
-  }
-
-  /* the stepper has its line to itself here, so the button back to this
-     week simply leads it */
-  .week-nav-today {
-    margin-right: 0.25rem;
-    position: static;
+  /* the cards stack, each the full width */
+  .event-cards {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: visible;
+    padding-bottom: 0;
   }
 }
 
@@ -330,4 +329,23 @@
     margin-left: auto;
     margin-right: auto;
   }
+}
+
+/* ==========================================================================
+ Dark mode — the event cards' due states move from a fill to a rail on
+ the left edge, as the task boards' do
+========================================================================== */
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .event-card {
+  border-left: 3px solid var(--border-medium);
+}
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .event-card.is-soon {
+  background: var(--background-body);
+  border-left-color: var(--yellow-400);
+}
+
+:is([data-theme="dark"], [data-theme="cosmic"], [data-theme="kosmic"], [data-theme="everforest"]) .event-card.past-due {
+  background: var(--background-body);
+  border-left-color: var(--past-due-rail);
 }

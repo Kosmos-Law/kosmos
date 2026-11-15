@@ -88,28 +88,27 @@ document.body.addEventListener("htmx:beforeRequest", (event) => {
 });
 
 // Where an entry stands in its day, for the calendar's order: the events,
-// then the tasks, led by any overdue ones the dash gathers on today, then
-// the dash's "N more tasks" fold. FullCalendar hands its order function
+// then the tasks, then the "N more tasks" fold. FullCalendar hands its order function
 // the entry with its extended props, by version either under extendedProps
 // or spread onto it.
 function entryRank(entry) {
   const props = entry.extendedProps || entry;
   if (props.kind === "more-tasks") {
-    return 3;
+    return 2;
   }
   if (props.kind === "task") {
-    return props.overdue ? 1 : 2;
+    return 1;
   }
   return 0;
 }
 
-// The views drawn as the month grid is: the month, the five weeks from
-// this one, and the dash's week
-const MONTH_GRIDS = ["dayGridMonth", "monthRolling", "dashWeek"];
+// The views drawn as the month grid is: the month and the five weeks from
+// this one
+const MONTH_GRIDS = ["dayGridMonth", "monthRolling"];
 
 // The calendar's month grids show every event, the rows growing to hold
 // them; a day's tasks past the first few fold into "N more tasks", which
-// opens the day. (The dash's week has the server's own fold.)
+// opens the day.
 const TASK_FOLD_VIEWS = ["dayGridMonth", "monthRolling"];
 const MONTH_TASK_LIMIT = 2;
 
@@ -167,14 +166,6 @@ function addTaskBox(info) {
   box.setAttribute("aria-label", `Mark "${info.event.title}" done`);
   box.title = "Mark done";
   host.prepend(box);
-  // An overdue task gathered on today (the dash) is dated after its box
-  const due = info.event.extendedProps.due_label;
-  if (due) {
-    const label = document.createElement("span");
-    label.className = "fc-task-due";
-    label.textContent = due;
-    box.after(label);
-  }
 }
 
 // In the month grid a chip's title stops at two lines (apps/calendar.css).
@@ -202,7 +193,7 @@ function fitMonthChip(info) {
 }
 
 // A Zoom meeting wears a camera where its dot would be (the month grid,
-// the year, the dash's week, the agenda), in the dot's colour. Week and
+// the year, the agenda), in the dot's colour. Week and
 // Day draw no dot, so they are left as they are.
 function addMeetingIcon(info) {
   if (!(info.event.extendedProps || {}).zoom) {
@@ -239,36 +230,26 @@ document.addEventListener("alpine:init", () => {
   //   addUrl     — add-event modal endpoint (default: /events/add)
   //   editOrigin — origin suffix for the edit modal, so saves fire the right
   //                HX-Trigger (e.g. "matters" → matterEventChanged)
-  //   week       — the dash's Calendar Week: one week of the month grid
-  //                (the agenda on a phone), stepped by the card's own
-  //                heading, with its Tasks toggle (tasks, tasksUrls)
-  // The grid is built in the x-ref "grid" when there is one (the dash card,
-  // whose heading is outside it), else in the component's own element.
   Alpine.data("eventsCalendar", (opts = {}) => ({
     calendar: null,
     apiUrl: opts.apiUrl || "/events/feed/",
     addUrl: opts.addUrl || "/events/add",
     editOrigin: opts.editOrigin || "",
-    week: Boolean(opts.week),
-    tasks: Boolean(opts.tasks),
-    tasksUrls: opts.tasksUrls || {},
-    weekRange: "",
     // whether the last fetch folded tasks (null before the first)
     tasksFolded: null,
-    isCurrentWeek: true,
 
     initCalendar() {
-      const calendarEl = this.$refs.grid || this.$el;
+      const calendarEl = this.$el;
       // Never build twice into one element (FullCalendar marks it "fc")
       if (calendarEl.classList.contains("fc")) {
         return;
       }
       const phone = onPhone();
 
-      this.calendar = new FullCalendar.Calendar(calendarEl, {
-        ...this.calendarOptions(phone),
-        ...(this.week ? this.weekOptions(phone) : {}),
-      });
+      this.calendar = new FullCalendar.Calendar(
+        calendarEl,
+        this.calendarOptions(phone),
+      );
 
       this.calendar.render();
 
@@ -285,89 +266,13 @@ document.addEventListener("alpine:init", () => {
       });
     },
 
-    // The dash's Calendar Week over the calendar's own options: a week of
-    // the month grid, Sunday first (the agenda on a phone), with no toolbar
-    // (the card's heading steps it) and the heading's span kept in step. A
-    // day's number opens the calendar on that day, and a day shows five
-    // rows before the rest fold into "+N more".
-    weekOptions(phone) {
-      return {
-        initialView: phone ? "dashAgenda" : "dashWeek",
-        initialDate: undefined,
-        headerToolbar: false,
-        dayMaxEventRows: 5,
-        views: {
-          ...this.calendarOptions(phone).views,
-          dashWeek: {
-            type: "dayGrid",
-            duration: { weeks: 1 },
-            dayHeaderFormat: { weekday: "short" },
-            // one row of days carries no numbers of its own; this puts
-            // the month view's back
-            dayCellContent: (arg) => String(arg.date.getDate()),
-          },
-          dashAgenda: {
-            type: "list",
-            duration: { weeks: 1 },
-            listDayFormat: { weekday: "short", month: "short", day: "numeric" },
-            listDaySideFormat: false,
-            displayEventEnd: false,
-            eventTimeFormat: SHORT_TIME,
-            noEventsContent: "Nothing on the calendar this week.",
-          },
-        },
-        navLinkDayClick: (date) => {
-          window.location.href = `/events/?date=${this.formatDate(date)}`;
-        },
-        datesSet: (info) => this.setWeekHeading(info),
-        windowResize: undefined,
-      };
-    },
-
-    // The card's span (Oct 11 – 17, Oct 25 – Nov 1, the year when it is
-    // not this one) and whether the week holds today, for This Week
-    setWeekHeading(info) {
-      const first = info.view.currentStart;
-      const last = new Date(info.view.currentEnd);
-      last.setDate(last.getDate() - 1);
-      const month = (date) => date.toLocaleString("en-US", { month: "short" });
-      let range = `${month(first)} ${first.getDate()} – `;
-      range +=
-        last.getMonth() === first.getMonth()
-          ? `${last.getDate()}`
-          : `${month(last)} ${last.getDate()}`;
-      const year = new Date().getFullYear();
-      if (first.getFullYear() !== year || last.getFullYear() !== year) {
-        range += `, ${last.getFullYear()}`;
-      }
-      this.weekRange = range;
-      const now = new Date();
-      this.isCurrentWeek =
-        now >= info.view.currentStart && now < info.view.currentEnd;
-    },
-
-    // The Tasks toggle: the session keeps the choice, and the grid
-    // refetches with or without the tasks
-    toggleTasks() {
-      const next = !this.tasks;
-      fetch(this.tasksUrls[next ? "on" : "off"], {
-        method: "POST",
-        headers: { "X-CSRFToken": this.getCsrfToken() },
-      }).then((response) => {
-        if (response.ok) {
-          this.tasks = next;
-          this.calendar.refetchEvents();
-        }
-      });
-    },
-
     calendarOptions(phone) {
       return {
         // Core settings. A phone opens the month's agenda with a toolbar
         // pared to navigation; wider screens get the full set of views,
         // the agenda among them.
         initialView: phone ? "listRolling" : this.savedView(),
-        // A link from the dash's week names the day to open on
+        // A link from the dash's Today row names the day to open on
         initialDate: this.linkedDate(),
         headerToolbar: phone
           ? { left: "prev,next", center: "title", right: "today" }
@@ -590,13 +495,9 @@ document.addEventListener("alpine:init", () => {
         return;
       }
       // A month grid's fold of a day's tasks opens that day, where all
-      // of them show; the dash's leads to the task list
+      // of them show
       if (props.kind === "more-tasks") {
-        if (props.day) {
-          this.calendar.changeView("timeGridDay", props.day);
-        } else {
-          window.location.href = "/tasks/";
-        }
+        this.calendar.changeView("timeGridDay", props.day);
         return;
       }
       // A task's box marks it done; it leaves the grid, which shows only

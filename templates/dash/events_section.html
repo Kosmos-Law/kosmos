@@ -1,64 +1,69 @@
 {% comment %}
-The dash's Calendar Week: a one-week slice of the calendar's month view,
-Sunday to Saturday, drawn by FullCalendar from dash:week-feed
-(apps/dash/week.py) through the calendar's own component
-(events-calendar.js). It works as the month view does: the weekday header
-row over the days, today's number circled, an all-day event a filled chip
-and a timed one a dot, its time and its title. An event drags to another
-day; a click opens it; a click on an empty part of a day adds an event on
-that day; a day's number opens the calendar on it. With the Tasks toggle on
-(as it starts), the user's open tasks are on their days, after the events,
-a box before the title that marks the task done; on the week holding today
-the overdue ones are gathered on today, dated and in the urgent colour.
-Past three tasks, a day's others fold into "N more tasks", to the task
-list. The chevrons step a week; on a phone the week is its agenda. The
-card refetches when an event or a task changes.
+Upcoming Events (apps/dash/events.py): a row of cards, the pending
+events the user may see, soonest first. One gone by and still pending
+leads with the past-due treatment; today's and tomorrow's are marked due
+soon. A card opens the event; its matter's name goes to the matter's
+events. The row scrolls sideways when the cards outrun it and stacks on
+a phone. With nothing pending the section shows nothing.
 {% endcomment %}
-<div class="dash-row" id="dash-events" x-data="eventsCalendar({week: true, apiUrl: '{% url 'dash:week-feed' %}', tasks:
-  {% if week_tasks %}
-    true
-  {% else %}
-    false
-  {% endif %}
-  , tasksUrls: {on: '{% url 'dash:week-tasks' 'on' %}', off: '{% url 'dash:week-tasks' 'off' %}'}})" x-init="initCalendar()">
-  <div class="events-header week-title">
-    <div class="week-title-start">
-      <h2>Calendar Week</h2>
-      <a href="{% url 'calendar:index' %}" class="btn-ghost"><i class="icon-arrow-up-right"></i></a>
+{% if upcoming_events %}
+  <div class="dash-row">
+    <div class="events-header">
+      <h2>Upcoming Events</h2>
+      <a href="{% url 'calendar:index' %}"
+         class="btn-ghost"
+         aria-label="Calendar"
+         title="Calendar"><i class="icon-arrow-up-right"></i></a>
     </div>
-    <div class="week-nav">
-      <button type="button"
-              class="week-nav-today"
-              x-show="!isCurrentWeek"
-              x-cloak
-              @click="calendar.today()">This Week</button>
-      <button type="button"
-              class="week-nav-arrow"
-              aria-label="Previous week"
-              title="Previous week"
-              @click="calendar.prev()">
-        <i class="icon-chevron-left"></i>
-      </button>
-      <span class="week-nav-range" x-text="weekRange"></span>
-      <button type="button"
-              class="week-nav-arrow"
-              aria-label="Next week"
-              title="Next week"
-              @click="calendar.next()">
-        <i class="icon-chevron-right"></i>
-      </button>
-    </div>
-    <div class="week-title-end toolbar">
-      <button type="button"
-              :class="tasks && 'toggle-active'"
-              :aria-pressed="tasks ? 'true' : 'false'"
-              @click="toggleTasks()">
-        <i class="icon-square-check-big"></i>Tasks
-      </button>
+    <div class="event-cards">
+      {% for event in upcoming_events %}
+        <div class="event-card{% if event.date < today %} past-due{% elif event.date == today or event.date == tomorrow %} is-soon{% endif %}"
+             hx-get="{% url 'calendar:detail' id=event.id %}"
+             hx-target="#htmx-modal-container"
+             hx-trigger="click">
+          <div class="event-card-when">
+            <i class="icon-calendar with-text"></i>
+            {% if event.date == yesterday %}
+              Yesterday
+            {% elif event.date == today %}
+              Today
+            {% elif event.date == tomorrow %}
+              Tomorrow
+            {% else %}
+              {{ event.date|date:"D, M j" }}
+            {% endif %}
+            ·
+            {% if event.start_time %}
+              {{ event.start_time|time:"g:i A" }}
+            {% else %}
+              All day
+            {% endif %}
+            {% if event.end_date %}· to {{ event.end_date|date:"D, M j" }}{% endif %}
+          </div>
+          {% if event.matter %}
+            <a class="event-card-matter"
+               href="{% url 'matters:events-index' id=event.matter.id %}"
+               onclick="event.stopPropagation()">{{ event.matter.name }}</a>
+          {% endif %}
+          <p class="event-card-title">{{ event.description }}</p>
+          <div class="event-card-meta">
+            {% if event.event_type %}
+              <span class="event-card-type">
+                {% if event.event_type == "Phone" %}
+                  <i class="icon-phone"></i>
+                {% elif event.event_type == "In-person" %}
+                  <i class="icon-map-pin"></i>
+                {% else %}
+                  <i class="icon-video"></i>
+                {% endif %}
+                {{ event.event_type }}
+              </span>
+            {% endif %}
+            {% if event.party %}<span>{{ event.party }}</span>{% endif %}
+            {% if event.location %}<span class="event-card-location">{{ event.location }}</span>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
     </div>
   </div>
-  <div class="dash-week-calendar"
-       x-ref="grid"
-       hx-disinherit="*"
-       hx-boost="false"></div>
-</div>
+{% endif %}

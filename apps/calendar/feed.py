@@ -1,5 +1,5 @@
-"""Events and tasks as FullCalendar entries: what the calendar's feed and
-the dash's Calendar Week hand the grid."""
+"""Events and tasks as FullCalendar entries: what the calendar's feed
+hands the grid."""
 
 from datetime import datetime, timedelta
 
@@ -68,24 +68,16 @@ def task_title(task):
     return title
 
 
-def task_entry(task, day=None, overdue=False):
+def task_entry(task):
     """An open task as a FullCalendar entry: an all-day entry on its due
-    day (or on day, for an overdue task gathered elsewhere), told from an
-    event by its id prefix and its kind, which may be dragged to another
-    day but not stretched. An overdue one carries its due date, which the
-    grid writes before its title, and the urgent colour."""
-    classes = "fc-event-task"
-    props = {"kind": "task", "task_id": task.id}
-    if overdue:
-        classes += " fc-event-overdue"
-        props["due_label"] = f"{task.date_due:%b} {task.date_due.day}"
-        props["overdue"] = True
+    day, told from an event by its id prefix and its kind, which may be
+    dragged to another day but not stretched."""
     return {
         "id": f"task-{task.id}",
         "title": task_title(task),
-        "start": str(day or task.date_due),
+        "start": str(task.date_due),
         "allDay": True,
-        "className": classes,
+        "className": "fc-event-task",
         "durationEditable": False,
-        "extendedProps": props,
+        "extendedProps": {"kind": "task", "task_id": task.id},
     }

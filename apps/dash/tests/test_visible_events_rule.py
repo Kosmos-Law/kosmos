@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.calendar.models import Event
-from apps.dash import week
+from apps.dash import events
 
 pytestmark = pytest.mark.django_db
 
@@ -29,7 +29,7 @@ def test_the_dash_calls_events_for_user(user, monkeypatch):
         description="Hearing", status="Pending", date=timezone.localdate()
     )
     seen = []
-    monkeypatch.setattr(week, "events_for_user", _none_and_note(seen))
-    today = timezone.localdate()
-    assert week.week_feed(user, today, today, today) == []
+    monkeypatch.setattr(events, "events_for_user", _none_and_note(seen))
+    context = events.events_context(user, timezone.localdate())
+    assert list(context["upcoming_events"]) == []
     assert seen == [Event]

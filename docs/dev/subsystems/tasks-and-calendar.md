@@ -215,6 +215,7 @@ calendar toggle is shared across matters.
 ### The Dash
 
 `dash_index` in `apps/dash/views.py` shows the next seven Pending events
+(`apps/dash/events.py`, refetched through `dash:events-section`)
 (past-due ones sort first and stay until marked), the unbilled-time
 section and, for administrators, the collections section.
 `DailyDashCheckMiddleware` redirects each user to the Dash on their first
