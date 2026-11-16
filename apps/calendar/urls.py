@@ -33,6 +33,7 @@ from apps.calendar.views import (
     events_list,
     events_overlays,
     events_quick_update,
+    events_set_status,
     events_show_holidays,
     events_show_tasks,
     events_task_date,
@@ -52,6 +53,16 @@ urlpatterns = [
     # The token-authenticated JSON API another app reads (Cloud Portal does)
     path("events/api/", api_events, name="api-events"),
     path("events/<int:id>/quick-update", events_quick_update, name="quick-update"),
+    path(
+        "events/<int:id>/status/<str:status>",
+        events_set_status,
+        name="set-status",
+    ),
+    path(
+        "events/<int:id>/status/<str:status>/matter/<int:matter_id>",
+        events_set_status,
+        name="set-status-matter",
+    ),
     path("events/view/<str:mode>", events_view_mode, name="view-mode"),
     path("events/show-tasks/<str:state>", events_show_tasks, name="show-tasks"),
     path(

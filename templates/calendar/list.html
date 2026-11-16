@@ -120,7 +120,7 @@
             </td>
             <td class="location">{{ event.event_type|default:"" }}</td>
             <td class="party">{{ event.party|default:"" }}</td>
-            <td class="status">{{ event.status }}</td>
+            <td class="status">{% include "calendar/event-status.html" %}</td>
           </tr>
         {% empty %}
           <tr>

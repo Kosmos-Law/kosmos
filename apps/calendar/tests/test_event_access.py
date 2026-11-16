@@ -210,3 +210,14 @@ def test_filtering_by_an_unassigned_matter_shows_neither_it_nor_its_name(
     assert other_matter.name.encode() not in response.content
     listed = restricted_client.get(reverse("calendar:index")).context["objects"]
     assert events["theirs"] not in listed
+
+
+def test_status_of_an_event_on_an_unassigned_matter_is_refused(
+    restricted_client, events
+):
+    theirs = events["theirs"]
+    url = reverse("calendar:set-status", args=[theirs.id, "Complete"])
+
+    assert restricted_client.post(url).status_code == 403
+    theirs.refresh_from_db()
+    assert theirs.status == "Pending"
