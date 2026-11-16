@@ -67,7 +67,7 @@
               {% endif %}
             </td>
             <td class="location">{{ event.event_type|default:"" }}</td>
-            <td class="status">{{ event.status }}</td>
+            <td class="status">{% include "calendar/event-status.html" with matter_id=matter.id %}</td>
           </tr>
         {% empty %}
           <tr>

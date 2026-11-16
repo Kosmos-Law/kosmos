@@ -1,0 +1,27 @@
+{% comment %}
+An event's status on its list row, as a menu that sets it: on the firm
+Calendar's list, or with matter_id on a matter's Events tab. The list
+re-renders on the trigger the change sends (eventsChanged, or
+matterEventChanged with a matter).
+{% endcomment %}
+<div class="dropdown" x-data="dropdown()">
+  <button class="button-link"
+          type="button"
+          x-ref="button"
+          @click="toggle()"
+          :aria-expanded="open">{{ event.status|default:"Set status" }}</button>
+  <ul class="dropdown-menu" x-ref="menu" x-show="open" hx-swap="none">
+    {% for status in event_statuses %}
+      <li>
+        {% if matter_id %}
+          {% url 'calendar:set-status-matter' event.id status matter_id as set_url %}
+        {% else %}
+          {% url 'calendar:set-status' event.id status as set_url %}
+        {% endif %}
+        <a class="dropdown-item {% if event.status == status %}active{% endif %}"
+           href="#"
+           hx-post="{{ set_url }}">{{ status }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>

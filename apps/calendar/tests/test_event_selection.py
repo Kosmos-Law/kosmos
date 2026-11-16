@@ -365,3 +365,60 @@ def test_a_matters_tab_moves_assigns_and_deletes_its_own(client, user, matter):
     client.post(reverse("calendar:toggle-select-matter", args=[matter.id, here.id]))
     client.post(reverse("calendar:bulk-delete-matter", args=[matter.id]))
     assert list(Event.objects.all()) == [unassigned]
+
+
+def test_each_row_has_a_menu_that_sets_its_status(client, matter):
+    event = _event(matter)
+
+    body = _firm_list(client).content.decode()
+    for status in ("Pending", "Complete", "Missed"):
+        assert reverse("calendar:set-status", args=[event.id, status]) in body
+
+    response = client.post(reverse("calendar:set-status", args=[event.id, "Complete"]))
+
+    assert response.status_code == 204
+    assert response["HX-Trigger"] == "eventsChanged"
+    event.refresh_from_db()
+    assert event.status == "Complete"
+
+
+def test_setting_a_row_status_refuses_an_unknown_one_and_a_get(client, matter):
+    event = _event(matter)
+    url = reverse("calendar:set-status", args=[event.id, "Done"])
+
+    assert client.post(url).status_code == 400
+    assert (
+        client.get(
+            reverse("calendar:set-status", args=[event.id, "Missed"])
+        ).status_code
+        == 405
+    )
+    event.refresh_from_db()
+    assert event.status == "Pending"
+
+
+def test_each_row_on_a_matter_tab_has_a_menu_that_sets_its_status(client, matter):
+    event = _event(matter)
+    url = reverse("calendar:set-status-matter", args=[event.id, "Missed", matter.id])
+
+    assert url in _matter_list(client, matter).content.decode()
+    response = client.post(url)
+
+    assert response.status_code == 204
+    assert response["HX-Trigger"] == "matterEventChanged"
+    event.refresh_from_db()
+    assert event.status == "Missed"
+
+
+def test_a_matter_tab_cannot_set_the_status_of_another_matters_event(
+    client, matter, practice_area
+):
+    other = Matter.objects.create(
+        name="Other", status="Open", practice_area=practice_area
+    )
+    event = _event(other)
+    url = reverse("calendar:set-status-matter", args=[event.id, "Missed", matter.id])
+
+    assert client.post(url).status_code == 404
+    event.refresh_from_db()
+    assert event.status == "Pending"

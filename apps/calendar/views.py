@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -24,6 +24,7 @@ from apps.matters.models import Matter
 from utils.toasts import toast_warning
 
 from .events import (
+    EVENT_STATUSES,
     SESSION_KEY,
     SHOW_HOLIDAYS_KEY,
     SHOW_TASKS_KEY,
@@ -690,6 +691,24 @@ def events_quick_update(request, id):
     event.save()
 
     return _event_change_response("eventsChanged")
+
+
+@login_required
+@require_POST
+def events_set_status(request, id, status, matter_id=None):
+    """Set one event's status from the status menu on its list row: the
+    firm Calendar's list, or with a matter its Events tab's, which is the
+    list told to re-render."""
+    event = event_for_user(id, request.user)
+    if matter_id is not None and event.matter_id != matter_id:
+        raise Http404("The event is not on this matter.")
+    if status not in EVENT_STATUSES:
+        return HttpResponseBadRequest("Unknown status.")
+    if event.status != status:
+        event.status = status
+        event.save(update_fields=["status"])
+    trigger = "matterEventChanged" if matter_id is not None else "eventsChanged"
+    return _event_change_response(trigger)
 
 
 @login_required
