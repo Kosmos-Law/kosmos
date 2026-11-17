@@ -749,6 +749,14 @@
   --violet-700: var(--paper-lavender);
   --violet-800: var(--paper-lavender);
 
+  /* The green — the lime steps Matcha uses at strength, turned off the
+     paper's yellow. --link, its hover, --success, --true and the
+     status-green ink follow from :root. */
+  --lime-600: var(--paper-green-light);
+  --lime-700: var(--paper-green-mid);
+  --lime-750: var(--paper-green);
+  --lime-800: var(--paper-green-ink);
+
   /* The tints — the 50 and 100 steps, under the paper. The labels, row
      highlights, status chips, button washes, past-due and warning
      surfaces and today's cell all read these steps and follow. */
@@ -778,11 +786,11 @@
   --selected-border: var(--stone-350);
   --selected-color: var(--paper-lavender);
 
-  /* Calendar entries — the same breath of lime, at the paper's
-     lightness for the step each stands on and a little stronger, so it
-     still reads as green against the warmth */
-  --calendar-allday: oklch(0.85 0.034 122);
-  --calendar-task: oklch(0.89 0.03 122);
+  /* Calendar entries — the same breath of the link green, at the
+     paper's lightness for the step each stands on and a little stronger,
+     so it still reads as green against the warmth */
+  --calendar-allday: oklch(0.85 0.038 128);
+  --calendar-task: oklch(0.89 0.033 128);
 }
 
 /* ==========================================================================
