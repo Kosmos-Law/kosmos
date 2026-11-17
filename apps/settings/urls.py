@@ -2,6 +2,7 @@ from django.urls import path
 
 import apps.settings.accounting.views as accounting_urls
 import apps.settings.appearance.views as appearance_urls
+import apps.settings.billing.views as billing_urls
 import apps.settings.claude.views as claude_urls
 import apps.settings.contacts.views as contact_urls
 import apps.settings.features.views as features_urls
@@ -105,6 +106,7 @@ urlpatterns = [
         name="quickbooks-disconnect",
     ),
     path("settings/firm/", firm_urls.firm_index, name="firm-index"),
+    path("settings/billing/", billing_urls.billing_index, name="billing-index"),
     path("settings/features/", features_urls.features_index, name="features-index"),
     path(
         "settings/accounting/",

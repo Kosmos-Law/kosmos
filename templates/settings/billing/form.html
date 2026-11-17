@@ -1,0 +1,23 @@
+<div id="billing-details"
+     class="form-responsive form-spacious firm-form"
+     hx-on:keydown="if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') { event.preventDefault(); document.getElementById('billing-save').click() }">
+  {% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    <div>
+      {{ field }}
+      {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+      {{ field.errors }}
+    </div>
+  {% endfor %}
+  <br />
+  <div class="flex-center-space">
+    <div>
+      <button id="billing-save"
+              type="button"
+              class="btn btn-success"
+              hx-post="{% url 'settings:billing-index' %}"
+              hx-target="#billing-settings"
+              hx-include="#billing-details">Save Billing Settings</button>
+    </div>
+  </div>
+</div>

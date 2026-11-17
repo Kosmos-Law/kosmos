@@ -65,6 +65,16 @@ Terms (migration settings 0009).
   the figures that report them" (2026-10-02), the paragraph "The firm's
   own wording".
 
+## Update (2026-11-16)
+
+`payment_terms` is a `TextField` edited in a text area (migration
+settings 0019), and it is no longer quoted only by the reminders: the
+invoice PDF prints it at its foot (`invoice-terms`), and the first
+invoice email states it too. The same guard applies: blank prints
+nothing. Both fields, with the billing email and invoice BCC, are now
+edited on their own tab, **Settings → Billing** (`apps/settings/billing`);
+they remain fields on `Firm`.
+
 ## Related
 
 - [Time and billing](../dev/subsystems/time-and-billing.md), "The PDF"

@@ -148,7 +148,8 @@ included.
 
 The sender addresses above are usually unattended. Where replies go is
 set in the application, not in `config/.env`. An admin fills these in
-under **Settings → Firm**:
+under **Settings → Firm** (Email, Intake Email) and **Settings → Billing**
+(Billing Email, Invoice BCC):
 
 | Field | Used for |
 |---|---|
@@ -260,5 +261,6 @@ invoice's history.
 `python manage.py setup_schedules` has been run, and that the user has
 switched the digest on and has an address on their account.
 
-**Clients reply to an address nobody reads.** Fill in the Email and
-Billing Email fields under **Settings → Firm**.
+**Clients reply to an address nobody reads.** Fill in the Email field
+under **Settings → Firm** and the Billing Email field under
+**Settings → Billing**.

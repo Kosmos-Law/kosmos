@@ -1,5 +1,5 @@
 """An invoice's trust note and a reminder's payment terms are the firm's own
-wording, set under Settings, Firm. Blank leaves them out; nothing about one
+wording, set under Settings, Billing. Blank leaves them out; nothing about one
 firm's fee agreement is written into the templates."""
 
 import pytest
@@ -43,11 +43,40 @@ def test_the_invoice_prints_the_firms_trust_note_only_when_set():
     assert "Funds in trust are applied at the end of the matter." in with_note
 
 
-def test_the_firm_form_offers_both(admin_client):
-    body = admin_client.get("/settings/firm/").content.decode()
+INVOICE_EMAILS = ["emails/invoice_email.txt", "emails/invoice_email.html"]
+
+
+@pytest.mark.parametrize("template", INVOICE_EMAILS)
+def test_the_invoice_email_states_the_firms_terms_only_when_set(template):
+    context = {"invoice": None, "client_name": "Client", "amount_due": 100}
+    blank = render_to_string(template, context | {"payment_terms": ""})
+    with_terms = render_to_string(
+        template, context | {"payment_terms": "Payment is due upon receipt."}
+    )
+
+    assert "due upon receipt" not in blank
+    assert "Payment is due upon receipt." in with_terms
+
+
+def test_the_invoice_prints_the_firms_terms_at_its_foot_only_when_set():
+    firm = Firm(name="Example Law")
+    context = {"company": firm, "confirmed_balance": 0, "invoice": None}
+
+    blank = render_to_string("invoicing/invoices/invoice.html", context)
+    firm.payment_terms = "Payment is due upon receipt.\nWe accept checks."
+    with_terms = render_to_string("invoicing/invoices/invoice.html", context)
+
+    assert "invoice-terms" not in blank
+    assert "Payment is due upon receipt.<br>We accept checks." in with_terms
+
+
+def test_the_billing_form_offers_both(admin_client):
+    body = admin_client.get("/settings/billing/").content.decode()
 
     assert "Payment Terms" in body
     assert "Invoice Trust Note" in body
+    # the terms may run to more than a line
+    assert '<textarea name="payment_terms"' in body
 
 
 def test_checklists_are_in_the_settings_menu_for_everyone(client, user):

@@ -18,7 +18,8 @@ permissions.
 | **Profile** | Everyone | Your own name, email address, password and sidebar icon. |
 | **Security** | Everyone | Your authenticator app, and signing out everywhere else. Administrators also see the firm-wide switch that requires the app. |
 | **Appearance** | Everyone | Your theme and navigation layout. |
-| **Firm** | Administrators | The firm's name, address, email addresses, logos and its own wording for invoices and reminders. |
+| **Firm** | Administrators | The firm's name, address, email addresses and logos. |
+| **Billing** | Administrators | Where replies to billing email go, who gets a copy, and the firm's own wording for invoices and reminders. |
 | **Notifications** | Everyone | Your daily digest email, and how event notifications reach you. |
 | **Users** | Administrators | Accounts, roles and hourly rates. |
 | **Permissions** | Administrators | What each user can open. |
@@ -51,12 +52,8 @@ details updated" confirms the save.
 | **Address line 1**, **Address line 2**, **City**, **State**, **Zip code** | Under the firm's name on PDFs, and at the foot of invoice, payment request and intake form emails. |
 | **Phone** | On PDFs and in intake form emails. Enter a ten-digit US number. |
 | **Email** | On PDFs and intake forms. Replies to intake form emails go here. It also stands in when **Billing Email** or **Intake Email** is blank. |
-| **Billing Email** | Where a client's reply to an invoice, payment request or reminder goes, and the contact address printed in those emails. |
-| **Invoice BCC** | One or more addresses, separated by commas. Each gets a blind copy of every invoice, payment request and reminder email. |
 | **Intake Email** | Copied on every email you send to a prospective client from an intake, and filled in as **Reply-To** when you write one. |
 | **Jurisdiction** | The firm's default jurisdiction. A matter with no jurisdiction of its own shows "Firm Default" with this value on its **Overview**, and AI chat on that matter works from it. |
-| **Payment Terms** | One sentence in the firm's own words, for example the payment terms in your fee agreement. It is added to the reminder emails for an invoice and for a payment request (not for a trust deposit request). Leave it blank and reminders say nothing about terms. |
-| **Invoice Trust Note** | Printed under **Funds in Trust** on an invoice, when the client has money in trust. Leave it blank and the invoice shows the balance alone. |
 
 To add a logo, click the file chooser beside its name and pick a PNG or
 JPG file of 2 MB or less. It uploads at once: there is nothing to save. To
@@ -95,6 +92,21 @@ solid white or light background. The background is part of the image,
 so it stays light in any email program; in dark mode it shows as a light
 card around the logo, so leave a little clear space inside it. Emails
 then carry the email logo, and everything else carries the **Logo**.
+
+
+## Billing
+
+**Settings → Billing** holds what Kosmos uses when it bills: where
+clients' replies go, who is copied, and the firm's own wording on
+invoices and reminders. Change the fields and click **Save Billing
+Settings**. "Billing settings updated" confirms the save.
+
+| Field | Where it shows up |
+|---|---|
+| **Billing Email** | Where a client's reply to an invoice, payment request or reminder goes, and the contact address printed in those emails. Left blank, the firm's **Email** is used. |
+| **Invoice BCC** | One or more addresses, separated by commas. Each gets a blind copy of every invoice, payment request and reminder email. |
+| **Payment Terms** | The firm's terms in its own words, for example "Payment is due upon receipt." It is printed at the foot of every invoice and added to the invoice email and to the reminder emails for an invoice and for a payment request (not for a trust deposit request). Leave it blank and invoices and emails say nothing about terms. |
+| **Invoice Trust Note** | Printed under **Funds in Trust** on an invoice, when the client has money in trust. Leave it blank and the invoice shows the balance alone. |
 
 ## Security
 

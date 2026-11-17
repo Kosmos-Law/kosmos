@@ -188,6 +188,7 @@
           <p class="note">{{ invoice.message }}</p>
         </div>
       {% endif %}
+      {% if company.payment_terms %}<p class="invoice-terms">{{ company.payment_terms|linebreaksbr }}</p>{% endif %}
     </div>
   </body>
 </html>

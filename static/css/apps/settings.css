@@ -101,14 +101,18 @@ Firm Form
 .firm-form #id_billing_email,
 .firm-form #id_invoice_bcc,
 .firm-form #id_intake_email,
-.firm-form #id_jurisdiction {
+.firm-form #id_jurisdiction,
+.firm-form #id_payment_terms,
+.firm-form #id_invoice_trust_note {
   max-width: 23.5rem;
   width: 100%;
 }
 
-/* BCC is a textarea; keep it the same width as the inputs and let the row
-   count (not the global textarea height) drive its height. */
-.firm-form #id_invoice_bcc {
+/* The textareas (Settings > Billing) keep the inputs' width, and their row
+   count (not the global textarea height) drives their height. */
+.firm-form #id_invoice_bcc,
+.firm-form #id_payment_terms,
+.firm-form #id_invoice_trust_note {
   height: auto;
 }
 

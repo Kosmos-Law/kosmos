@@ -57,9 +57,10 @@ class Firm(AuditMixin):
     logo_email = models.ImageField(upload_to="company/", blank=True, null=True)
     jurisdiction = models.CharField(max_length=100, blank=True)
     # Wording that depends on a firm's own fee agreement. Blank leaves the
-    # sentence out of the document.
+    # sentence out of the document. The payment terms are printed at the
+    # foot of the invoice PDF and in the invoice and reminder emails.
     invoice_trust_note = models.TextField(blank=True, default="")
-    payment_terms = models.CharField(max_length=255, blank=True, default="")
+    payment_terms = models.TextField(blank=True, default="")
     # Quick task entry: the fuzzy "Matter - description" prefix matcher is
     # the default; AI interpretation of the whole line is an opt-in add-on.
     quick_task_ai = models.BooleanField(default=False)

@@ -4,7 +4,9 @@ Invoice {{ invoice.id }} - {{ invoice.date_issued|date:"F j, Y" }}
 Dear Client,
 
 {% if cover_message %}{{ cover_message }}{% else %}{% if attach_pdf %}Please find attached your invoice. The invoice details are included in the PDF attachment.{% elif pay_url %}Your invoice is ready. You can view, download, and pay it securely at the link below.{% else %}Your invoice is ready. You can view and download it at the link below.{% endif %}{% endif %}
-
+{% if payment_terms %}
+{{ payment_terms }}
+{% endif %}
 If you have any questions about this invoice, please reply to this email{% if billing_email %} or contact us at {{ billing_email }}{% endif %}.
 
 Client:      {{ client_name }}

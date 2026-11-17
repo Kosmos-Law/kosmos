@@ -144,7 +144,7 @@ discounts, for every invoice the list is showing.
 If the client has confirmed money in trust, the PDF adds **Funds in
 Trust** with the client's **Retainer Balance**. Under it the PDF prints
 the **Invoice Trust Note** that an administrator has entered on
-**Settings → Firm**. Until a note is entered, the balance prints alone.
+**Settings → Billing**. Until a note is entered, the balance prints alone.
 See [Settings](settings.md#firm).
 
 Good to know:
@@ -207,17 +207,18 @@ email fails, the dialog says why and the status does not change.
 The email comes from your firm's name followed by "Billing", for example
 "Example Law Billing", with the subject "Example Law - Invoice 123". It
 greets the client with "Dear Client," and carries your message, the
-client's name, the invoice number and the amount due. Its **Pay now**
+**Payment Terms** from **Settings → Billing** (when an administrator has
+entered them), the client's name, the invoice number and the amount due. Its **Pay now**
 button opens a page where the client can download the PDF and pay. If your
 firm does not take online payments, the button reads **View invoice** and
 the page only offers the PDF. See [Payments](payments.md). Replies and
 blind copies go to the **Billing Email** and **Invoice BCC** addresses on
-**Settings → Firm**. See [Settings](settings.md).
+**Settings → Billing**. See [Settings](settings.md).
 
 After the first email, the send button offers **Resend Invoice** and
 **Send Reminder**. A reminder says how long ago the invoice went out.
 After that it carries the **Payment Terms** sentence that an
-administrator has entered on **Settings → Firm**. Until one is entered,
+administrator has entered on **Settings → Billing**. Until one is entered,
 the reminder states no terms. Your message goes above the reminder's own
 text. A reminder does not change the status. Every attempt is kept under
 **History** → **Delivery History** with its **Date**, **Type**,

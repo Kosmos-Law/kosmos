@@ -23,7 +23,8 @@ def test_firm_page_renders_single_form(admin_client):
     # One save button, and the merged research field is on the same form.
     assert "Save Firm Details" in content
     assert "id_jurisdiction" in content
-    assert "id_billing_email" in content
+    # the billing fields are on Settings > Billing
+    assert "id_billing_email" not in content
     # The removed payment-appearance subsection left no Save button of its own.
     assert content.count("Save Firm Details") == 1
 
