@@ -392,8 +392,11 @@
   --background-td: transparent;
   --background-th: color-mix(in srgb, var(--background-control) var(--mist-card-opacity), transparent);
 
-  /* The due and past-due yellow, let through as the cards are */
-  --due-soon-bg: color-mix(in srgb, var(--yellow-50) 80%, transparent);
+  /* The due and past-due yellow, let through as the cards are, and half a
+     step stronger than Matcha's own: the 50 step is all but white, and
+     over a see-through card on a sunlit wash it went with the rest of the
+     light; the full 100 step was louder than the yellow on solid stone. */
+  --due-soon-bg: color-mix(in srgb, color-mix(in oklab, var(--yellow-50), var(--yellow-100)) 80%, transparent);
   --past-due-bg: var(--due-soon-bg);
 }
 

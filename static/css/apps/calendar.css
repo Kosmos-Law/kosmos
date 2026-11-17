@@ -982,6 +982,24 @@
 }
 
 
+/* Due and past-due events (hl-yellow: pending, before the third day) take
+   the tasks' past-due wash, not the stronger yellow-100 the .hl-yellow
+   utility applies, so a late event and a late task are the same yellow —
+   in the calendar's list and on the matter's events tab. Like the tasks'
+   rows, the fill is on the cells: tables.css paints every td the cell
+   ground, which buries a fill on the row (the row shows only where the
+   cells are see-through, under the gradient), and a fill on both would
+   double under the gradient's let-through wash. The mobile cards take it
+   on the row instead (below). The darks' transparent !important cells win,
+   so they keep their rail. */
+:is(.events-table, .events-list) tbody tr.hl-yellow {
+  background: transparent !important;
+}
+
+:is(.events-table, .events-list) tbody tr.hl-yellow > td {
+  background: var(--past-due-bg);
+}
+
 /* ==========================================================================
    Mobile — events list as cards
 
@@ -1001,11 +1019,13 @@
   .events-table td.duration { order: 6; }
   .events-table td.status { order: 7; }
 
-  /* Due / past-due events (hl-yellow) use the same convention as the task
-     cards: a --past-due-bg card fill, overriding the pale yellow-100 fill the
-     .hl-yellow utility applies. No coloured rail in light mode. */
+  /* The card is the row: the due fill moves onto it from the cells */
   .events-table tbody tr.hl-yellow {
     background: var(--past-due-bg) !important;
+  }
+
+  .events-table tbody tr.hl-yellow > td {
+    background: transparent;
   }
 
   /* Dark/cosmic: --past-due-bg resolves to the card background (no visible
