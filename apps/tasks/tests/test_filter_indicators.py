@@ -74,6 +74,54 @@ def test_quick_filter_next_workday_single_day_window(client):
     assert response.context["custom_filter_active"] in (False, None, {})
 
 
+def test_detect_label_today_next():
+    # Friday: through Monday, overdue included (no start date).
+    friday = date(2026, 5, 15)
+    assert _detect_filter_label({"date_due_max": "2026-05-18"}, friday) == "today_next"
+    # Wednesday: through Thursday.
+    wednesday = date(2026, 5, 13)
+    assert (
+        _detect_filter_label({"date_due_max": "2026-05-14"}, wednesday) == "today_next"
+    )
+
+
+def test_quick_filter_today_next_runs_through_the_next_workday(client, user):
+    from apps.tasks.models import Task
+    from apps.tasks.services import next_workday
+
+    today = date.today()
+    nxt = next_workday(today)
+    overdue = Task.objects.create(
+        user=user,
+        description="Overdue",
+        status="Pending",
+        date_due=today - timedelta(days=2),
+    )
+    on_next = Task.objects.create(
+        user=user, description="Next", status="Pending", date_due=nxt
+    )
+    after = Task.objects.create(
+        user=user,
+        description="After",
+        status="Pending",
+        date_due=nxt + timedelta(days=1),
+    )
+
+    client.post(reverse("tasks:filter-quick", args=["today_next"]))
+    session = _session_for(client, "tasks_filter")
+    assert session.get("filter_label") == "today_next"
+    assert session.get("date_due_min") == ""
+    assert session.get("date_due_max") == str(nxt)
+
+    response = client.get(reverse("tasks:list"))
+    assert response.context["filter_label"] == "today_next"
+    body = response.content.decode()
+    assert "Today + Next" in body
+    assert overdue.description in body
+    assert on_next.description in body
+    assert after.description not in body
+
+
 def test_detect_label_next7():
     today = date(2026, 5, 15)
     next7_end = today + timedelta(days=6)

@@ -205,6 +205,7 @@ the current choice. Click it and pick another.
 | **Past Due** | Due before today. |
 | **Today** | Due today or earlier. |
 | **Next Workday** | Due on the next weekday only. |
+| **Today + Next** | Due by the next weekday, today and earlier included. On a Friday, that runs through Monday. |
 | **Next 7 Days** | Due within the next seven days, today included, or earlier. |
 | **This Calendar Week** | Due by Saturday of this week, or earlier. |
 | **Next Calendar Week** | Due from Sunday to Saturday of next week only. |

@@ -308,6 +308,8 @@ def detect_filter_label(filter_data, today):
         and not has_due_date
     ):
         return "next_workday"
+    if not date_due_min and date_due_max == next_workday_s and not has_due_date:
+        return "today_next"
     if date_due_min:
         return "custom"
     if not date_due_max:
@@ -370,6 +372,14 @@ def quick_date_filters(today):
         "next_workday": {
             "filter_label": "next_workday",
             "date_due_min": next_workday(today).strftime("%Y-%m-%d"),
+            "date_due_max": next_workday(today).strftime("%Y-%m-%d"),
+            "has_due_date": "",
+        },
+        # Today and the next workday together, open-ended at the start like
+        # today so overdue tasks stay visible.
+        "today_next": {
+            "filter_label": "today_next",
+            "date_due_min": "",
             "date_due_max": next_workday(today).strftime("%Y-%m-%d"),
             "has_due_date": "",
         },
