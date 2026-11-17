@@ -65,6 +65,7 @@ class PermissionMiddleware:
         "/settings/users/",
         "/settings/permissions/",
         "/settings/firm/",
+        "/settings/billing/",
         "/settings/contacts/",
         "/settings/matters/",
         "/settings/tasks/",

@@ -370,6 +370,7 @@ def test_toggle_perm_fires_matrix_reload(admin_client, staff_member):
     "path",
     [
         "/settings/firm/",
+        "/settings/billing/",
         "/settings/tasks/",
         "/settings/contacts/",
         "/settings/matters/",
@@ -388,7 +389,7 @@ def test_firm_details_cannot_be_changed_by_a_non_admin(client):
 
     Firm.objects.create(name="Firm", invoice_bcc="")
     response = client.post(
-        "/settings/firm/", {"name": "Firm", "invoice_bcc": "elsewhere@example.com"}
+        "/settings/billing/", {"invoice_bcc": "elsewhere@example.com"}
     )
     assert response.status_code == 403
     assert Firm.objects.first().invoice_bcc == ""

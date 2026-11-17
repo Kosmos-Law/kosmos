@@ -1,6 +1,5 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from django.urls import reverse
 
 from apps.management.templatetags.phone_numbers import phone_number
@@ -34,8 +33,10 @@ LOGO_SLOTS = {
 
 
 class FirmForm(forms.ModelForm):
-    """Firm-settings form: contact details, invoice BCC, and research
-    jurisdiction — saved together by the "Save Firm Details" button.
+    """Firm-settings form: contact details and research jurisdiction — saved
+    together by the "Save Firm Details" button. What billing uses (billing
+    email, invoice BCC, payment terms, trust note) is on Settings > Billing
+    (apps.settings.billing).
 
     The logo is intentionally NOT part of this form: it uploads/removes on its
     own (see firm_logo_form + the firm-upload-logo/firm-remove-logo endpoints),
@@ -52,27 +53,13 @@ class FirmForm(forms.ModelForm):
             "zip_code",
             "phone",
             "email",
-            "billing_email",
-            "invoice_bcc",
             "intake_email",
             "jurisdiction",
-            "payment_terms",
-            "invoice_trust_note",
         ]
-        widgets = {
-            "invoice_bcc": forms.Textarea(attrs={"rows": 2}),
-            "invoice_trust_note": forms.Textarea(attrs={"rows": 3}),
-        }
         labels = {
-            "billing_email": "Billing Email",
-            "invoice_bcc": "Invoice BCC",
             "intake_email": "Intake Email",
-            "payment_terms": "Payment Terms",
-            "invoice_trust_note": "Invoice Trust Note",
         }
         help_texts = {
-            "payment_terms": "One sentence added to payment reminders, for example the terms in your fee agreement. Leave blank to say nothing.",
-            "invoice_trust_note": "Printed under Funds in Trust on an invoice when the client holds money in trust. Leave blank to print the balance alone.",
             "jurisdiction": "Used for a matter that has no jurisdiction of its own: on its Overview, and in AI chat and intake assessments.",
         }
 
@@ -87,8 +74,6 @@ class FirmForm(forms.ModelForm):
             "zip_code",
             "phone",
             "email",
-            "billing_email",
-            "invoice_bcc",
             "intake_email",
             "jurisdiction",
         ]
@@ -116,20 +101,6 @@ class FirmForm(forms.ModelForm):
                 raise ValidationError("Enter a valid 10-digit US phone number.")
             return normalized
         return value
-
-    def clean_invoice_bcc(self):
-        """Normalize + validate the comma/semicolon-separated BCC list."""
-        raw = self.cleaned_data.get("invoice_bcc", "")
-        addresses = [a.strip() for a in raw.replace(";", ",").split(",") if a.strip()]
-        invalid = []
-        for addr in addresses:
-            try:
-                validate_email(addr)
-            except ValidationError:
-                invalid.append(addr)
-        if invalid:
-            raise ValidationError(f"Invalid email address(es): {', '.join(invalid)}")
-        return ", ".join(addresses)
 
 
 class FirmLogoForm(forms.ModelForm):

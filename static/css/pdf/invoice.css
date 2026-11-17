@@ -68,6 +68,18 @@ Content
   text-align: justify;
 }
 
+/* The firm's payment terms (Settings, Firm), at the foot of the invoice */
+.invoice-terms {
+  border-top: 1px solid var(--slate-300);
+  break-inside: avoid;
+  color: var(--color-darker);
+  font-size: 10pt;
+  line-height: 1.5;
+  margin-bottom: 0;
+  margin-top: 18pt;
+  padding-top: 8pt;
+}
+
 h3 {
   font-size: 13pt;
   font-weight: normal;

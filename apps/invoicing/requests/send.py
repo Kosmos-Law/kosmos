@@ -275,7 +275,7 @@ def send_request_reminder(
 
     The reminder notes how many days ago the request went out and (for
     operating requests) the firm's own payment terms, when it has set any
-    (Settings, Firm); trust reminders use softer retainer language.
+    (Settings, Billing); trust reminders use softer retainer language.
     Includes the same pay link, no attachments. Logs a reminder-kind
     transmission on the request AND on each invoice the request's earlier
     sends attached (the reminder concerns those invoices); the days-since

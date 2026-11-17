@@ -27,8 +27,8 @@ def logo_slots(firm):
 
 @login_required
 def firm_index(request):
-    """Firm settings page: one form for contact details, invoice BCC, and
-    research jurisdiction. Re-renders on save and fires a toast. The logos
+    """Firm settings page: one form for contact details and research
+    jurisdiction (the billing fields are on Settings > Billing). Re-renders on save and fires a toast. The logos
     upload/remove on their own (see the logo endpoints below)."""
     firm = Firm.objects.first()
 

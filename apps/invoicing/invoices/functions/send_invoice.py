@@ -270,7 +270,7 @@ def send_reminder(
     """Email a payment reminder for an already-sent invoice. Returns True.
 
     The reminder notes how many days ago the invoice went out, the firm's own
-    payment terms when it has set any (Settings, Firm), and that
+    payment terms when it has set any (Settings, Billing), and that
     accommodations are available on request. attach_pdf optionally attaches a
     courtesy copy of the invoice PDF (off by default — it's downloadable at
     the pay link). Logs a 'reminder'-kind transmission; the invoice's status,
