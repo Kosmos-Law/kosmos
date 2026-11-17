@@ -10,8 +10,10 @@ formerly `oxford`, and the `--oxford-*` palette keeps the source name),
 `nord-light` (Nord's Snow Storm surfaces, Polar Night text, frost blue
 links, frost cyan selection) and `paper` (Matcha on warm paper: the stone ladder
 brought down onto the colours of the Mint-Y-Paper desktop theme, the
-lime kept, selection a deeper step of the paper with its words in a
-quieter lavender, and the pale tints lowered under the ground). Four are dark:
+lime turned a few degrees greener and off the paper's yellow, selection a
+deeper step of the paper with its words in the lavender, and the pale
+tints lowered under the ground and set against its warmth, so each
+reads as its own hue on the paper). Four are dark:
 `dark` (Gruvbox), `cosmic` (Nord), `kosmic` (Nord under the landing
 page's animated night sky) and `everforest` (green-gray surfaces, cream
 text, signature-green links).

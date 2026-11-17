@@ -458,30 +458,47 @@
      strength, so it reads as a small pop against the paper rather than
      as a visited link. One colour for every use, with a lighter step
      where Matcha's own is lighter. */
-  --paper-lavender: oklch(0.45 0.19 295);
-  --paper-lavender-mid: oklch(0.5 0.19 295);
-  --paper-lavender-light: oklch(0.56 0.18 295);
-  --paper-lavender-lighter: oklch(0.68 0.12 295);
+  --paper-lavender: oklch(0.45 0.215 295);
+  --paper-lavender-mid: oklch(0.5 0.215 295);
+  --paper-lavender-light: oklch(0.56 0.205 295);
+  --paper-lavender-lighter: oklch(0.68 0.14 295);
+
+  /* The green — Matcha's lime turned a few degrees off the paper's own
+     yellow (131 to 136), where the gamut has room for it at strength:
+     at 131 the link green was already at the edge, and its yellow side
+     sinks into the warm ground. The theme block repoints the lime steps
+     Matcha uses at strength (link, hover, success, the status ink). */
+  --paper-green: oklch(0.49 0.142 136);         /* the link, lime-750 */
+  --paper-green-ink: oklch(0.45 0.128 136);     /* lime-800 */
+  --paper-green-mid: oklch(0.53 0.156 136);     /* lime-700 */
+  --paper-green-light: oklch(0.64 0.18 136);    /* the hover, lime-600 */
 
   /* The tints — Matcha's 50 and 100 steps are brighter than this paper,
-     and a tint lighter than its ground reads as a hole. Each keeps its
-     hue and comes down to just under the content ground: -wash for the
-     50 step, -tint for the 100. */
-  --paper-blue-wash: oklch(0.93 0.018 250);
-  --paper-blue-tint: oklch(0.915 0.03 250);
-  --paper-slate-wash: oklch(0.93 0.008 250);
-  --paper-slate-tint: oklch(0.915 0.012 250);
-  --paper-lime-wash: oklch(0.93 0.03 122);
-  --paper-lime-tint: oklch(0.915 0.045 122);
-  --paper-orange-wash: oklch(0.93 0.024 72);
-  --paper-orange-tint: oklch(0.915 0.04 70);
-  --paper-red-wash: oklch(0.93 0.018 20);
-  --paper-red-tint: oklch(0.915 0.03 20);
-  --paper-yellow-wash: oklch(0.935 0.034 98);
-  --paper-yellow-tint: oklch(0.925 0.05 98);
-  --paper-amber-wash: oklch(0.935 0.032 92);
-  --paper-amber-tint: oklch(0.925 0.05 92);
-  --paper-violet-wash: oklch(0.93 0.016 300);
-  --paper-violet-tint: oklch(0.915 0.03 300);
-  --paper-violet-deep: oklch(0.9 0.04 298);      /* the 150 step */
+     and a tint lighter than its ground reads as a hole. Each comes down
+     to just under the content ground: -wash for the 50 step, -tint for
+     the 100. Each is set as a colour on the paper, not in the abstract:
+     the ground's own warmth (0.008 at 91) is added to a chosen hue and
+     strength, so what the eye sees once it has adjusted to the paper is
+     that hue, at that strength. Set flat, the reds read pink, the cool
+     tints went grey, the yellow went lemon and the amber was the yellow.
+     The eye sees: blue and slate at 250, lime at 134 (the link green),
+     orange at 62, red at 22, yellow at 97, amber at 78 (warmer than the
+     yellow, for today's cell), violet at 298. */
+  --paper-blue-wash: oklch(0.93 0.019 241);
+  --paper-blue-tint: oklch(0.915 0.033 245);
+  --paper-slate-wash: oklch(0.93 0.007 226);
+  --paper-slate-tint: oklch(0.915 0.013 237);
+  --paper-lime-wash: oklch(0.93 0.038 126);
+  --paper-lime-tint: oklch(0.915 0.054 128);
+  --paper-orange-wash: oklch(0.93 0.037 68);
+  --paper-orange-tint: oklch(0.915 0.053 66);
+  --paper-red-wash: oklch(0.93 0.03 37);
+  --paper-red-tint: oklch(0.915 0.044 32);
+  --paper-yellow-wash: oklch(0.935 0.044 96);
+  --paper-yellow-tint: oklch(0.925 0.063 96);
+  --paper-amber-wash: oklch(0.935 0.042 80);
+  --paper-amber-tint: oklch(0.925 0.06 80);
+  --paper-violet-wash: oklch(0.93 0.017 310);
+  --paper-violet-tint: oklch(0.915 0.033 304);
+  --paper-violet-deep: oklch(0.9 0.045 303);      /* the 150 step */
 }
