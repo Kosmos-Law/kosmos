@@ -782,10 +782,11 @@
   --violet-100: var(--paper-violet-tint);
   --violet-150: var(--paper-violet-deep);
 
-  /* Selection — two steps under the chrome's paper (bg_color), so it
-     shows on the bars and toolbars as well as on the content ground,
-     ruled in the border step, with its words in the lavender */
-  --selected-background: var(--stone-225);
+  /* Selection — two and a half steps under the chrome's paper
+     (bg_color), so it shows on the bars and toolbars as well as on the
+     content ground, ruled in the border step, with its words in the
+     lavender */
+  --selected-background: color-mix(in oklab, var(--stone-225) 50%, var(--stone-250));
   --selected-border: var(--stone-350);
   --selected-color: var(--paper-lavender);
 
@@ -862,7 +863,7 @@
 
   /* Paper's tokens, adjusted to hold against the light, as Matcha's are */
   --color-primary: color-mix(in oklab, var(--stone-600) 50%, var(--stone-700));
-  --selected-background: color-mix(in oklab, var(--stone-225) 50%, var(--stone-250));
+  --selected-background: var(--stone-250);
   --border-medium: color-mix(in oklab, var(--stone-300) 75%, var(--stone-400));
   --border-medium-dark: color-mix(in oklab, var(--stone-350) 80%, var(--stone-400));
   --border-dark: color-mix(in oklab, var(--stone-400) 85%, var(--stone-500));
