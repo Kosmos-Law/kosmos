@@ -3,7 +3,9 @@ Upcoming Events (apps/dash/events.py): a row of cards, the pending
 events the user may see, soonest first. One gone by and still pending
 leads with the past-due treatment; today's and tomorrow's are marked due
 soon. A card opens the event; its matter's name goes to the matter's
-events. The row scrolls sideways when the cards outrun it and stacks on
+events. The square at its top right sets the event's status from the
+calendar list's menu without opening it: clicks there don't open the card, and the change
+refetches the row, which drops an event no longer pending. The row scrolls sideways when the cards outrun it and stacks on
 a phone. With nothing pending the section shows nothing.
 {% endcomment %}
 {% if upcoming_events %}
@@ -20,25 +22,28 @@ a phone. With nothing pending the section shows nothing.
         <div class="event-card{% if event.date < today %} past-due{% elif event.date == today or event.date == tomorrow %} is-soon{% endif %}"
              hx-get="{% url 'calendar:detail' id=event.id %}"
              hx-target="#htmx-modal-container"
-             hx-trigger="click">
-          <div class="event-card-when">
-            <i class="icon-calendar with-text"></i>
-            {% if event.date == yesterday %}
-              Yesterday
-            {% elif event.date == today %}
-              Today
-            {% elif event.date == tomorrow %}
-              Tomorrow
-            {% else %}
-              {{ event.date|date:"D, M j" }}
-            {% endif %}
-            ·
-            {% if event.start_time %}
-              {{ event.start_time|time:"g:i A" }}
-            {% else %}
-              All day
-            {% endif %}
-            {% if event.end_date %}· to {{ event.end_date|date:"D, M j" }}{% endif %}
+             hx-trigger="click[!event.target.closest('.event-card-actions')]">
+          <div class="event-card-head">
+            <div class="event-card-when">
+              <i class="icon-calendar with-text"></i>
+              {% if event.date == yesterday %}
+                Yesterday
+              {% elif event.date == today %}
+                Today
+              {% elif event.date == tomorrow %}
+                Tomorrow
+              {% else %}
+                {{ event.date|date:"D, M j" }}
+              {% endif %}
+              ·
+              {% if event.start_time %}
+                {{ event.start_time|time:"g:i A" }}
+              {% else %}
+                All day
+              {% endif %}
+              {% if event.end_date %}· to {{ event.end_date|date:"D, M j" }}{% endif %}
+            </div>
+            <div class="event-card-actions">{% include "calendar/event-status.html" with icon=True %}</div>
           </div>
           {% if event.matter %}
             <a class="event-card-matter"
