@@ -2,15 +2,38 @@
 An event's status on its list row, as a menu that sets it: on the firm
 Calendar's list, or with matter_id on a matter's Events tab. The list
 re-renders on the trigger the change sends (eventsChanged, or
-matterEventChanged with a matter).
+matterEventChanged with a matter). With icon (the dash's event cards)
+the button is the status's square alone, named by its title, and the
+menu opens to its left.
 {% endcomment %}
 <div class="dropdown" x-data="dropdown()">
-  <button class="button-link"
-          type="button"
-          x-ref="button"
-          @click="toggle()"
-          :aria-expanded="open">{{ event.status|default:"Set status" }}</button>
-  <ul class="dropdown-menu" x-ref="menu" x-show="open" hx-swap="none">
+  {% if icon %}
+    <button class="status-icon"
+            type="button"
+            x-ref="button"
+            @click="toggle()"
+            :aria-expanded="open"
+            title="{{ event.status|default:'Set status' }}"
+            aria-label="Status: {{ event.status|default:'not set' }}">
+      {% if event.status == "Complete" %}
+        <i class="icon-square-check"></i>
+      {% elif event.status == "Missed" %}
+        <i class="icon-square-x"></i>
+      {% else %}
+        <i class="icon-square"></i>
+      {% endif %}
+    </button>
+  {% else %}
+    <button class="button-link"
+            type="button"
+            x-ref="button"
+            @click="toggle()"
+            :aria-expanded="open">{{ event.status|default:"Set status" }}</button>
+  {% endif %}
+  <ul class="dropdown-menu{% if icon %} dropdown-menu-end{% endif %}"
+      x-ref="menu"
+      x-show="open"
+      hx-swap="none">
     {% for status in event_statuses %}
       <li>
         {% if matter_id %}

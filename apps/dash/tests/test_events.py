@@ -96,3 +96,22 @@ def test_the_page_and_the_section_draw_the_cards(user):
 def test_with_nothing_pending_the_section_is_empty(user):
     html = _client(user).get(reverse("dash:events-section")).content.decode()
     assert "Upcoming Events" not in html
+
+
+def test_a_card_completes_its_event_without_opening_it(user):
+    event = _event(date=timezone.localdate())
+    client = _client(user)
+    html = client.get(reverse("dash:events-section")).content.decode()
+    complete = reverse("calendar:set-status", args=[event.id, "Complete"])
+    assert complete in html
+    assert reverse("calendar:set-status", args=[event.id, "Missed"]) in html
+    # the card's own click leaves its foot alone
+    assert "click[!event.target.closest('.event-card-actions')]" in html
+
+    response = client.post(complete)
+    assert response.status_code == 204
+    assert response.headers["HX-Trigger"] == "eventsChanged"
+    event.refresh_from_db()
+    assert event.status == "Complete"
+    html = client.get(reverse("dash:events-section")).content.decode()
+    assert "Upcoming Events" not in html

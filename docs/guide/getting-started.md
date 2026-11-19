@@ -64,7 +64,9 @@ next day. The Dash shows up to three sections:
   until it is marked complete or canceled, so one whose date has passed
   leads the row, marked past due; today's and tomorrow's are marked as
   due soon. Click a card to open the event, or its matter's name to go
-  to that matter's events. When the cards don't fit, the row scrolls
+  to that matter's events. To close one out without opening it, click
+  the square at the top right of the card and choose
+  **Complete** or **Missed**; the card leaves the row. When the cards don't fit, the row scrolls
   sideways; on a phone they stack. With nothing pending, the section
   is left off.
 - **Work in Progress**: work that is recorded but not yet billed, as a
