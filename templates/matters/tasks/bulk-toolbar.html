@@ -65,3 +65,24 @@
         @click.prevent=" const input = document.createElement('input'); input.style.cssText = 'position:absolute;visibility:hidden;height:0;width:0;padding:0;'; $el.parentElement.appendChild(input); flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, positionElement: $el, onReady: (_, __, fp) => { const btn = document.createElement('button'); btn.textContent = 'Clear'; btn.className = 'flatpickr-clear'; btn.type = 'button'; btn.addEventListener('click', () => { htmx.ajax('POST', '{% url 'matters:tasks-bulk-clear-due-date' matter.id %}', { swap: 'none' }); fp.close(); }); fp.calendarContainer.appendChild(btn); fp.open(); }, onChange: (_, dateStr) => { htmx.ajax('POST', '{% url 'matters:tasks-bulk-set-due-date' matter.id %}', { swap: 'none', values: { date_due: dateStr } }); }, onClose: () => { input.remove(); } }); ">
   <i class="icon-calendar with-text"></i> Date
 </button>
+<div class="dropdown" x-data="dropdown()">
+  <button type="button"
+          class="btn-icon"
+          x-ref="button"
+          @click="toggle()"
+          :aria-expanded="open">
+    <span><i class="icon-user with-text"></i> Assign</span>
+    <small><i class="icon-chevron-down"></i></small>
+  </button>
+  <ul class="dropdown-menu" x-ref="menu" x-show="open" @click="close()">
+    {% for u in users %}
+      <li>
+        <a class="dropdown-item"
+           href="#"
+           hx-post="{% url 'matters:tasks-bulk-set-user' matter.id %}"
+           hx-vals='{"user": "{{ u.id }}"}'
+           hx-swap="none"><i class="icon-user"></i> {{ u.username|title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
