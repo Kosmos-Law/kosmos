@@ -145,7 +145,7 @@
   white-space: nowrap;
 }
 
-/* The head: when, and at the right the status's square, which opens the
+/* The head: when, and at the right the status's calendar icon, which opens the
    status menu without opening the event (the card's own click skips it) */
 .event-card-head {
   align-items: flex-start;
@@ -158,7 +158,7 @@
   cursor: default;
   flex: none;
 
-  /* the square's padding sits outside the card's text lines */
+  /* the icon's padding sits outside the card's text lines */
   margin: -0.25rem -0.25rem 0 0;
 }
 

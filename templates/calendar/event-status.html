@@ -3,7 +3,7 @@ An event's status on its list row, as a menu that sets it: on the firm
 Calendar's list, or with matter_id on a matter's Events tab. The list
 re-renders on the trigger the change sends (eventsChanged, or
 matterEventChanged with a matter). With icon (the dash's event cards)
-the button is the status's square alone, named by its title, and the
+the button is the status's calendar icon alone, named by its title, and the
 menu opens to its left.
 {% endcomment %}
 <div class="dropdown" x-data="dropdown()">
@@ -16,11 +16,11 @@ menu opens to its left.
             title="{{ event.status|default:'Set status' }}"
             aria-label="Status: {{ event.status|default:'not set' }}">
       {% if event.status == "Complete" %}
-        <i class="icon-square-check"></i>
+        <i class="icon-calendar-check"></i>
       {% elif event.status == "Missed" %}
-        <i class="icon-square-x"></i>
+        <i class="icon-calendar-x"></i>
       {% else %}
-        <i class="icon-square"></i>
+        <i class="icon-calendar"></i>
       {% endif %}
     </button>
   {% else %}
