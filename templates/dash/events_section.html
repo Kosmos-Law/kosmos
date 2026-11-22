@@ -3,7 +3,7 @@ Upcoming Events (apps/dash/events.py): a row of cards, the pending
 events the user may see, soonest first. One gone by and still pending
 leads with the past-due treatment; today's and tomorrow's are marked due
 soon. A card opens the event; its matter's name goes to the matter's
-events. The square at its top right sets the event's status from the
+events. The calendar icon at its top right sets the event's status from the
 calendar list's menu without opening it: clicks there don't open the card, and the change
 refetches the row, which drops an event no longer pending. The row scrolls sideways when the cards outrun it and stacks on
 a phone. With nothing pending the section shows nothing.
@@ -25,7 +25,6 @@ a phone. With nothing pending the section shows nothing.
              hx-trigger="click[!event.target.closest('.event-card-actions')]">
           <div class="event-card-head">
             <div class="event-card-when">
-              <i class="icon-calendar with-text"></i>
               {% if event.date == yesterday %}
                 Yesterday
               {% elif event.date == today %}

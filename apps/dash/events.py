@@ -2,7 +2,7 @@
 user may see, soonest first. An event stays until it is marked complete
 or canceled, so one gone by still pending leads the row with the
 past-due treatment, and today's and tomorrow's are marked as due soon.
-The square at each card's top right sets its event's status from the
+The calendar icon at each card's top right sets its event's status from the
 menu the calendar's list uses; one no longer pending leaves the row (calendar:set-status sends eventsChanged, which refetches
 the section).
 
