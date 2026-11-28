@@ -501,4 +501,22 @@
   --paper-violet-wash: oklch(0.93 0.017 310);
   --paper-violet-tint: oklch(0.915 0.033 304);
   --paper-violet-deep: oklch(0.9 0.045 303);      /* the 150 step */
+
+  /* Genmaicha — the Booklist app's colours (~/booklist), which are the
+     blog's Gruvbox paper. It stands on Paper's ladder, whose base and
+     paper are Booklist's page and card, and adds what Booklist has of
+     its own: a warm ink, one warm line, a muted green that does all the
+     accent's work, a gold and a red. The theme block in colors.css
+     repoints the stone, lime and violet steps onto these. */
+  --genmaicha-ink: oklch(0.427 0.006 48.6);          /* gb dark1, 88% on the card */
+  --genmaicha-ink-strong: oklch(0.344 0.007 48.4);   /* gb dark1 */
+  --genmaicha-muted: oklch(0.5 0.023 62.5);
+  --genmaicha-muted-light: oklch(0.62 0.022 65);
+  --genmaicha-line: oklch(0.756 0.041 82.3);         /* gb light3 */
+  --genmaicha-green: oklch(0.534 0.082 155.4);       /* gb faded aqua */
+  --genmaicha-green-ink: oklch(0.47 0.076 155.4);
+  --genmaicha-green-mid: oklch(0.58 0.086 155.4);
+  --genmaicha-green-light: oklch(0.66 0.09 155.4);
+  --genmaicha-gold: oklch(0.618 0.128 70.7);         /* gb faded yellow */
+  --genmaicha-red: oklch(0.437 0.179 28.3);          /* gb faded red */
 }

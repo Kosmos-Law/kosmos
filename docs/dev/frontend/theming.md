@@ -2,7 +2,7 @@
 
 Theming is **token-first**, with **co-located structural overrides**.
 
-There are **eight themes**. Four are light: `light` (Matcha, with an
+There are **nine themes**. Five are light: `light` (Matcha, with an
 optional gradient: a still wash of green and lavender, warm with sunlit
 yellow, behind the page, see-through cards, veiled chrome), `basic`
 (after the 2017 LawPay UI: white ground, navy buttons, azure accents;
@@ -13,7 +13,16 @@ brought down onto the colours of the Mint-Y-Paper desktop theme, the
 lime turned a few degrees greener and off the paper's yellow, selection a
 deeper step of the paper with its words in the lavender, and the pale
 tints lowered under the ground and set against its warmth, so each
-reads as its own hue on the paper). Four are dark:
+reads as its own hue on the paper), and `genmaicha` (after the Booklist
+app: Paper's ladder with two grounds only, the page and a lighter card;
+one warm line, at full strength round a thing and a little over half
+between its rows; a warm ink; one muted green for links, selection and
+everything Matcha gives the lavender. What its tokens cannot reach is in
+`static/css/genmaicha.css`, one file for the whole look as
+`matcha-gradient.css` is for the gradient: heads and form labels in
+small capitals at 1rem, names in tables in the ink, a lit switch turned
+inside out, the finishing button filled green, dialogs without rules
+across them, tick boxes drawn in the theme's colours). Four are dark:
 `dark` (Gruvbox), `cosmic` (Nord), `kosmic` (Nord under the landing
 page's animated night sky) and `everforest` (green-gray surfaces, cream
 text, signature-green links).
@@ -31,7 +40,7 @@ every `:root` (light) default and their blocks in `colors.css` only
 repoint colour tokens. Light structural rules are the unscoped defaults,
 so they get them for free; a rule scoped to `[data-theme="light"]` alone
 does NOT apply to them. Scope to
-`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="paper"])`
+`:is([data-theme="light"], [data-theme="nord-light"], [data-theme="basic"], [data-theme="paper"], [data-theme="genmaicha"])`
 (or the subset that needs it) when a light structural rule must reach the
 other light themes. Retired themes: `sky`, `kosmos`, `kosmos-dark`,
 `latte`, `mocha`, `everforest-light`, `letterhead` (stored settings move to

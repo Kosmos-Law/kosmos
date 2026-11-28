@@ -1,0 +1,306 @@
+/* ==========================================================================
+   Genmaicha — what its tokens cannot reach (the token block is in
+   colors.css). After the Booklist app: heads and labels in small
+   capitals, names in tables in the ink, a switch that is on turned
+   inside out, the finishing button filled with the green, dialogs with
+   no rules across them.
+
+   The rules live together here rather than at the foot of each
+   component's file, as Matcha's gradient's do (matcha-gradient.css):
+   they are one look, and read as one.
+   ========================================================================== */
+
+[data-theme="genmaicha"] {
+  /* ----------------------------------------------------------------------
+     Type: headings in bold
+     ---------------------------------------------------------------------- */
+  h1,
+  h2,
+  .modal-title,
+  .confirm-modal-title {
+    font-weight: 700;
+  }
+
+  /* A head or a field's name is in spaced small capitals, in the muted
+     ink. The size stays 1rem: the capitals are the face's small ones, so
+     nothing here goes under the 1rem floor. */
+  th,
+  .table > :not(caption) > * > th,
+  .form-compact .form-group > label,
+  .form-spacious > label {
+    color: var(--genmaicha-muted);
+    font-variant-caps: all-small-caps;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  th .btn-sort {
+    font-variant-caps: normal;
+  }
+
+  /* ----------------------------------------------------------------------
+     Tables: the card inside the full line, with rounder corners; the head
+     ruled off in the full line, the rows and columns in the soft one
+     (the tokens). A name in a table is in the ink, and takes the green
+     under the pointer, as a book's title does.
+     ---------------------------------------------------------------------- */
+  .table,
+  .totals-table table,
+  .overview-table {
+    --radius-md: 0.75rem;
+
+    border-color: var(--genmaicha-line);
+  }
+
+  /* The matter overview's tables are headed by a row of their own, which
+     is ruled off in the full line and takes the table's corners */
+  .overview-table th.overview-table-head {
+    border-bottom-color: var(--genmaicha-line);
+    border-radius: calc(0.75rem - 1px) calc(0.75rem - 1px) 0 0;
+  }
+
+  .overview-table tr:last-child > :first-child {
+    border-bottom-left-radius: calc(0.75rem - 1px);
+  }
+
+  .overview-table tr:last-child > :last-child {
+    border-bottom-right-radius: calc(0.75rem - 1px);
+  }
+
+  thead th,
+  .table > thead > * > th {
+    border-bottom-color: var(--genmaicha-line);
+  }
+
+  td a:not(.btn),
+  td .button-link {
+    color: var(--color-primary);
+  }
+
+  td a:not(.btn):hover,
+  td .button-link:hover {
+    color: var(--link);
+  }
+
+  /* A total is told by its weight and the page's colour under it, since
+     the control colour it took is the cells' own here */
+  .total,
+  tr.total th,
+  tr.total td {
+    background: var(--stone-125);
+    font-weight: 700;
+  }
+
+  .btn-sort.active {
+    color: var(--color-primary);
+  }
+
+  /* ----------------------------------------------------------------------
+     Cards: the lighter ground inside the line. A field in a card, a table
+     or a dialog is a hollow, the page's colour; on the page itself it is
+     the card's.
+     ---------------------------------------------------------------------- */
+  .card {
+    background: var(--stone-50);
+    border-color: var(--genmaicha-line);
+    border-radius: 0.75rem;
+  }
+
+  .card,
+  .table,
+  .modal-content,
+  .confirm-modal-dialog {
+    --input-background: var(--stone-125);
+  }
+
+  /* ----------------------------------------------------------------------
+     Bars and tabs: the open page's name in the semibold
+     ---------------------------------------------------------------------- */
+  .sidebar-nav li.active a,
+  .subnav .active a {
+    font-weight: 600;
+  }
+
+  .detail-header .toolbar a,
+  .detail-header .toolbar button {
+    background: var(--stone-50);
+    border-color: var(--genmaicha-line);
+  }
+
+  /* ----------------------------------------------------------------------
+     A switch that is on is turned inside out: the ink for its ground and
+     the page's colour for its words, as Booklist's Unread and Read are.
+     In a menu the chosen item keeps the selected wash.
+     ---------------------------------------------------------------------- */
+  .toggle-active:not(.dropdown-menu *),
+  .toolbar button.toggle-active:not(.dropdown-menu *),
+  .toolbar a.toggle-active:not(.dropdown-menu *),
+  .detail-header .toolbar .toggle-active:not(.dropdown-menu *),
+  .toolbar .chart-toggle button.toggle-active,
+  .view-toggle button.toggle-active,
+  .toolbar .mode-pills .mode-pill.active,
+  .fc .fc-button-group > .fc-button.fc-button-active,
+  .fc .fc-button-primary:not(:disabled).fc-button-active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--stone-125);
+    font-weight: 600;
+  }
+
+  .toggle-active:not(.dropdown-menu *) i,
+  .mode-pill.active i {
+    color: inherit;
+  }
+
+  /* ----------------------------------------------------------------------
+     Buttons: the one that finishes the job is the green with the card's
+     colour for its words; Delete is worded in the red
+     ---------------------------------------------------------------------- */
+  .btn-primary,
+  .btn-success {
+    font-weight: 600;
+  }
+
+  .btn-success,
+  .btn-success:hover,
+  .btn-success:focus {
+    border-color: var(--genmaicha-green);
+    color: var(--stone-50);
+  }
+
+  .btn-secondary,
+  .btn-secondary:focus,
+  .btn-secondary:active,
+  .btn-danger {
+    border-color: var(--genmaicha-line);
+  }
+
+  .btn-danger {
+    color: var(--genmaicha-red);
+  }
+
+  .action-btn {
+    border-color: var(--genmaicha-line);
+  }
+
+  /* ----------------------------------------------------------------------
+     Menus: an item under the pointer has a breath of the green
+     ---------------------------------------------------------------------- */
+  .dropdown-menu {
+    border-color: var(--genmaicha-line);
+  }
+
+  .dropdown-menu li:hover,
+  .dropdown-item:hover,
+  .dropdown-menu li > a:hover {
+    background: var(--genmaicha-hover);
+  }
+
+  .dropdown-item.active,
+  .dropdown-menu li.active > a,
+  .dropdown-menu a.toggle-active {
+    font-weight: 600;
+  }
+
+  /* ----------------------------------------------------------------------
+     Dialogs: rounder, ruled in the full line, with no rules across them;
+     the heading and the buttons are set off by space alone
+     ---------------------------------------------------------------------- */
+  .modal-content,
+  .confirm-modal-dialog {
+    border-color: var(--genmaicha-line);
+    border-radius: 1rem;
+  }
+
+  .modal-header,
+  .confirm-modal-header {
+    border-bottom: 0;
+    padding: 1.25rem 1.25rem 0;
+  }
+
+  .modal-body,
+  .confirm-modal-content {
+    padding: 1.25rem;
+  }
+
+  .modal-footer,
+  .confirm-modal-actions {
+    border-top: 0;
+    padding: 0.25rem 1.25rem 1.25rem;
+  }
+
+  .modal-header button:hover,
+  .confirm-modal-close:hover {
+    background: var(--stone-125);
+  }
+
+  /* ----------------------------------------------------------------------
+     Tick boxes and radio buttons drawn here, not by the browser: the
+     page's colour inside the line, the green when ticked
+     ---------------------------------------------------------------------- */
+  input[type="checkbox"],
+  input[type="radio"] {
+    appearance: none;
+    background: var(--stone-125) center / 0.875rem no-repeat;
+    border: 1px solid var(--genmaicha-line-strong);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    flex: none;
+    height: 1.25rem;
+    margin: 0;
+    padding: 0;
+    vertical-align: -0.25rem;
+    width: 1.25rem;
+  }
+
+  input[type="radio"] {
+    border-radius: 50%;
+  }
+
+  input[type="checkbox"]:checked {
+    background-color: var(--genmaicha-green);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+    border-color: var(--genmaicha-green);
+  }
+
+  input[type="radio"]:checked {
+    background: var(--genmaicha-green);
+    border-color: var(--genmaicha-green);
+    box-shadow: inset 0 0 0 0.25rem var(--stone-125);
+  }
+
+  .toggle-switch .toggle-track {
+    background: var(--genmaicha-line);
+  }
+
+  .toggle-switch input:checked + .toggle-track {
+    background: var(--genmaicha-green);
+  }
+
+  /* ----------------------------------------------------------------------
+     Calendar: the span's name in bold, and today a disc of the green
+     ---------------------------------------------------------------------- */
+  .fc .fc-toolbar-title {
+    font-weight: 700;
+  }
+
+  .fc .fc-day-today .fc-daygrid-day-number {
+    background-color: var(--genmaicha-green);
+    box-shadow: none;
+    color: var(--stone-50);
+  }
+
+  /* ----------------------------------------------------------------------
+     Phone: a row turned card is the card's colour inside the full line.
+     The left edge is left alone: it is the rail a table colours by status.
+     ---------------------------------------------------------------------- */
+  @media (width <= 768px) {
+    .card-table tbody tr {
+      background: var(--stone-50);
+      border-bottom-color: var(--genmaicha-line);
+      border-right-color: var(--genmaicha-line);
+      border-top-color: var(--genmaicha-line);
+      box-shadow: none;
+    }
+  }
+}

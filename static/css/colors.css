@@ -1,5 +1,5 @@
 /* ==========================================================================
-   THEMING CONVENTION (four light themes + four dark themes)
+   THEMING CONVENTION (five light themes + four dark themes)
    --------------------------------------------------------------------------
    Theming is token-first. `:root` below defines every semantic token in its
    LIGHT value; the dark block further down RE-DEFINES those same tokens with
@@ -943,6 +943,154 @@
 
 .money-positive {
   color: var(--success) !important;
+}
+
+/* ==========================================================================
+   Genmaicha — the fifth LIGHT theme, after the Booklist app. Two grounds
+   and no more: the page, and a card a little lighter than it, which is
+   what a table, a control, the bars and a field on the page are made of.
+   One warm line rules everything, at full strength round a thing and at
+   a little over half between its rows. The ink is a warm near-black, and
+   one muted green does all the accent's work: links, what is on, what is
+   chosen, the focus ring. There is no lavender; the strong violet steps
+   are the green, and the pale ones stay Paper's so a violet label is
+   still told from a green one.
+
+   It stands on Paper's ladder (Paper's base and paper are Booklist's page
+   and card), so the block repoints the ramp steps first, as Paper does,
+   and then the semantic tokens whose step changes. Structurally a light
+   theme. What tokens cannot reach (the small capitals, the inverted
+   switches, the dialogs without rules) is in genmaicha.css.
+   ========================================================================== */
+[data-theme="genmaicha"] {
+  color-scheme: light;
+
+  /* The ladder — Paper's, with the ink steps Booklist's warm ink */
+  --stone-25: var(--paper-25);
+  --stone-50: var(--paper-50);
+  --stone-75: var(--paper-75);
+  --stone-100: var(--paper-100);
+  --stone-125: var(--paper-125);
+  --stone-150: var(--paper-150);
+  --stone-175: var(--paper-175);
+  --stone-200: var(--paper-200);
+  --stone-215: var(--paper-215);
+  --stone-225: var(--paper-225);
+  --stone-250: var(--paper-250);
+  --stone-300: var(--paper-300);
+  --stone-350: var(--paper-350);
+  --stone-375: var(--paper-375);
+  --stone-400: var(--genmaicha-muted-light);
+  --stone-500: var(--genmaicha-muted);
+  --stone-600: var(--genmaicha-ink);
+  --stone-700: var(--genmaicha-ink-strong);
+  --stone-800: var(--genmaicha-ink-strong);
+
+  /* The green — the lime steps Matcha uses at strength. --link, its
+     hover, --success, --true and the status-green ink follow from :root. */
+  --lime-600: var(--genmaicha-green-ink);
+  --lime-700: var(--genmaicha-green-mid);
+  --lime-750: var(--genmaicha-green);
+  --lime-800: var(--genmaicha-green-ink);
+
+  /* The strong violets are the green too: the filter and sort icons, the
+     switches and tick boxes, the priority flags, the AI marks */
+  --violet-400: var(--genmaicha-green-light);
+  --violet-500: var(--genmaicha-green-mid);
+  --violet-600: var(--genmaicha-green);
+  --violet-700: var(--genmaicha-green);
+  --violet-800: var(--genmaicha-green-ink);
+
+  /* The tints — Paper's, under the same ground */
+  --blue-50: var(--paper-blue-wash);
+  --blue-100: var(--paper-blue-tint);
+  --slate-50: var(--paper-slate-wash);
+  --slate-100: var(--paper-slate-tint);
+  --lime-50: var(--paper-lime-wash);
+  --lime-100: var(--paper-lime-tint);
+  --orange-50: var(--paper-orange-wash);
+  --orange-100: var(--paper-orange-tint);
+  --red-50: var(--paper-red-wash);
+  --red-100: var(--paper-red-tint);
+  --yellow-50: var(--paper-yellow-wash);
+  --yellow-100: var(--paper-yellow-tint);
+  --amber-50: var(--paper-amber-wash);
+  --amber-100: var(--paper-amber-tint);
+  --violet-50: var(--paper-violet-wash);
+  --violet-75: var(--paper-violet-wash);
+  --violet-100: var(--paper-violet-tint);
+  --violet-150: var(--paper-violet-deep);
+
+  /* Corners: rounder than Matcha's, as Booklist's are. Tables, cards
+     and dialogs are rounder still (genmaicha.css). */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.5rem;
+
+  /* The brand: the green into the gold, tea and toasted rice */
+  --brand-grad-to: var(--genmaicha-gold);
+
+  /* The line, and the same at a little over half strength on the card */
+  --genmaicha-line-soft: color-mix(in srgb, var(--genmaicha-line) 55%, var(--stone-50));
+  --genmaicha-line-strong: color-mix(in srgb, var(--genmaicha-muted) 45%, var(--genmaicha-line));
+  /* A breath of the green in the card, and twice that for what is chosen */
+  --genmaicha-hover: color-mix(in srgb, var(--genmaicha-green) 7%, var(--stone-50));
+  --genmaicha-selected: color-mix(in srgb, var(--genmaicha-green) 14%, var(--stone-50));
+
+  /* Grounds: the page is the base; everything that stands on it is the
+     card. The bars are cards laid across the page, ruled along the foot. */
+  --background-nav: var(--stone-50);
+  --background-subnav: var(--stone-125);
+  --background-subnav-contrast: var(--genmaicha-hover);
+  --background-control: var(--stone-50);
+  --background-section: var(--stone-50);
+  --background-th: var(--stone-50);
+  --background-td: var(--stone-50);
+  --background-sidebar: var(--stone-50);
+  --background-sidebar-hover: var(--genmaicha-hover);
+  --background-sidebar-active: var(--genmaicha-selected);
+  --subnav-divider: var(--genmaicha-line);
+
+  /* Type */
+  --color-lighter: var(--stone-50);
+
+  /* Rules: the soft line between rows and cells, the full line round a
+     table, a button and a field */
+  --border-light: var(--genmaicha-line-soft);
+  --border-medium: var(--genmaicha-line-soft);
+  --border-medium-dark: var(--genmaicha-line);
+  --border-dark: var(--genmaicha-line-strong);
+  --button-border: var(--genmaicha-line);
+  --input-border: var(--genmaicha-line);
+  --input-placeholder: var(--genmaicha-muted-light);
+
+  /* Buttons: Cancel and Delete are the card inside the line, the one
+     that finishes the job is the green (their words: genmaicha.css) */
+  --btn-secondary-bg: var(--stone-50);
+  --btn-success-bg: var(--genmaicha-green);
+  --btn-danger-bg: var(--stone-50);
+
+  /* Selection */
+  --selected-background: var(--genmaicha-selected);
+  --selected-border: color-mix(in srgb, var(--genmaicha-green) 40%, var(--genmaicha-line));
+  --selected-color: var(--stone-700);
+
+  /* Status */
+  --urgent: var(--genmaicha-red);
+  --warning: var(--genmaicha-red);
+  --icon-yellow: var(--genmaicha-gold);
+  --label-gray: var(--stone-125);
+  --hl-gray: var(--stone-125);
+
+  /* Calendar entries: an all-day event is the selected wash a step
+     deeper, ruled in the green let into the line; a task is a hollow,
+     the page's colour; a dot is the green */
+  --calendar-chip: var(--stone-125);
+  --calendar-allday: color-mix(in srgb, var(--genmaicha-green) 20%, var(--stone-50));
+  --calendar-task: var(--stone-125);
+  --calendar-task-icon: var(--genmaicha-muted);
+  --calendar-chip-border: color-mix(in srgb, var(--genmaicha-green) 30%, var(--genmaicha-line));
+  --calendar-dot: var(--genmaicha-green);
+  --calendar-today: color-mix(in srgb, var(--genmaicha-gold) 12%, var(--stone-50));
 }
 
 /* ==========================================================================
