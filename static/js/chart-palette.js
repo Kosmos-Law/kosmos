@@ -54,6 +54,11 @@ window.KosmosChartPalette = (function () {
       hue: 295, hueSpan: 42, chroma: 0.07, lMin: 0.57, lMax: 0.8, otherL: 0.86,
       grid: "oklch(0.88 0.021 88)", tick: "oklch(0.45 0.008 91)",
     },
+    genmaicha: {
+      // A green arc round Genmaicha's one accent; axes on the warm line.
+      hue: 150, hueSpan: 50, chroma: 0.07, lMin: 0.5, lMax: 0.82, otherL: 0.88,
+      grid: "oklch(0.86 0.026 85)", tick: "oklch(0.5 0.023 62.5)",
+    },
     everforest: {
       // Green arc around the signature everforest green; mossy axes.
       hue: 135, hueSpan: 80, chroma: 0.055, lMin: 0.52, lMax: 0.76, otherL: 0.52,
@@ -100,6 +105,7 @@ window.KosmosChartPalette = (function () {
     "nord-light": "oklch(88.5% 0.008 250)",
     basic: "oklch(90% 0.005 240)",
     paper: "oklch(0.88 0.021 88)",
+    genmaicha: "oklch(0.88 0.021 88)",
     everforest: "oklch(0.60 0.01 150)",
   };
 
@@ -118,6 +124,7 @@ window.KosmosChartPalette = (function () {
     "nord-light": "oklch(0.815 0.015 250)",
     basic: "oklch(0.852 0.014 234)",
     paper: "oklch(0.822 0.03 88)",
+    genmaicha: "oklch(0.756 0.041 82.3)",
     everforest: "oklch(0.431 0.017 232)",
   };
 
